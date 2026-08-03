@@ -35,7 +35,7 @@ export default async function PlanningPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: evenements } = await supabase
+  const { data: evenementsBrut } = await supabase
     .from("evenements_planning")
     .select("*, demandes(nom_client, priorite)")
     .eq("artisan_id", user?.id)
@@ -43,6 +43,15 @@ export default async function PlanningPage({
     .lte("date_heure", dimanche.toISOString())
     .neq("statut", "annule")
     .order("date_heure", { ascending: true });
+
+  // Supabase type "demandes(...)" comme un tableau (relation jointe), même
+  // si demande_id ne pointe jamais vers plus d'un projet — on aplatit pour
+  // correspondre au type attendu par GrilleAgenda (voir même remarque dans
+  // app/dashboard/page.tsx et app/dashboard/devis/page.tsx).
+  const evenements = (evenementsBrut ?? []).map((e) => ({
+    ...e,
+    demandes: Array.isArray(e.demandes) ? e.demandes[0] ?? null : e.demandes,
+  }));
 
   const libelleSemaine = `${lundi.toLocaleDateString("fr-FR", {
     day: "numeric",
@@ -94,7 +103,7 @@ export default async function PlanningPage({
       </div>
 
       <div className="mt-4">
-        <GrilleAgenda jours={jours} evenements={evenements ?? []} />
+        <GrilleAgenda jours={jours} evenements={evenements} />
       </div>
     </div>
   );

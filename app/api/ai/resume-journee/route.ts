@@ -13,6 +13,16 @@ import { enregistrerLog } from "@/lib/logs";
 const NB_JOURS_RELANCE_MIN = 1;
 const MAX_PAR_CATEGORIE = 4;
 
+// "demandes(nom_client)" est typé par Supabase comme un tableau (relation
+// jointe), même si demande_id ne pointe jamais vers plus d'un projet — on
+// passe par "unknown" pour aplatir sans conversion de type hasardeuse.
+function nomClientDe(item: unknown): string | undefined {
+  const demandes = (item as { demandes?: { nom_client?: string } | { nom_client?: string }[] })
+    ?.demandes;
+  const demande = Array.isArray(demandes) ? demandes[0] : demandes;
+  return demande?.nom_client;
+}
+
 export async function POST() {
   const supabase = createClient();
   const {
@@ -124,12 +134,12 @@ export async function POST() {
     });
 
     devisPrets.slice(0, MAX_PAR_CATEGORIE).forEach((d) => {
-      const nom = (d as { demandes?: { nom_client?: string } }).demandes?.nom_client ?? "un client";
+      const nom = nomClientDe(d) ?? "un client";
       lignes.push(`📤 Devis de ${nom} prêt, mais toujours pas envoyé.`);
     });
 
     devisEnAttente.slice(0, MAX_PAR_CATEGORIE).forEach((d) => {
-      const nom = (d as { demandes?: { nom_client?: string } }).demandes?.nom_client ?? "un client";
+      const nom = nomClientDe(d) ?? "un client";
       lignes.push(
         `📄 Devis envoyé à ${nom} depuis ${d.joursDepuis} jour${d.joursDepuis > 1 ? "s" : ""}, sans réponse.`
       );

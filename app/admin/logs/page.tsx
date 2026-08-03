@@ -3,6 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { Card } from "@/components/ui/Card";
 
+// "profils(nom)" est typé par Supabase comme un tableau (relation jointe),
+// même si un log n'appartient jamais qu'à un seul artisan — on passe par
+// "unknown" pour aplatir sans risquer une erreur de compilation TypeScript
+// sur une conversion de type jugée hasardeuse (tableau vs objet).
+function nomArtisanDe(log: unknown): string {
+  const profils = (log as { profils?: { nom?: string } | { nom?: string }[] })?.profils;
+  const profil = Array.isArray(profils) ? profils[0] : profils;
+  return profil?.nom ?? "Artisan inconnu";
+}
+
 const STYLE_TYPE: Record<string, string> = {
   erreur_ia: "text-signal",
   analyse_ia: "text-steel",
@@ -60,7 +70,7 @@ export default async function AdminLogsPage() {
               </span>
             </div>
             <p className="mt-1 text-xs text-ink/60">
-              {(log as { profils?: { nom?: string } }).profils?.nom ?? "Artisan inconnu"}
+              {nomArtisanDe(log)}
               {log.contexte && ` · projet ${log.contexte.slice(0, 8)}`}
             </p>
             {log.details && (

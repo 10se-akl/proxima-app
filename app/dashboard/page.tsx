@@ -90,12 +90,30 @@ export default async function DashboardHome() {
       .gte("date_heure", maintenant.toISOString()),
   ]);
 
+  // Supabase type "demandes(...)" comme un tableau au niveau TypeScript
+  // (relation jointe), même si demande_id est une clé étrangère qui ne
+  // pointe jamais vers plus d'un projet. On aplatit une bonne fois ici,
+  // pour toute donnée qui embarque cette jointe, plutôt que de forcer des
+  // casts un peu partout dans le JSX plus bas.
+  function aplatirDemandes<T extends { demandes?: unknown }>(
+    lignes: T[] | null
+  ): (Omit<T, "demandes"> & { demandes?: { nom_client?: string; statut?: string } | null })[] {
+    return (lignes ?? []).map((l) => ({
+      ...l,
+      demandes: Array.isArray(l.demandes) ? l.demandes[0] ?? null : (l.demandes as any),
+    }));
+  }
+
+  const devisListPlat = aplatirDemandes(devisList);
+  const evenementsAujourdhuiPlat = aplatirDemandes(evenementsAujourdhui);
+  const aConfirmerBrutPlat = aplatirDemandes(aConfirmerBrut);
+
   // Marge de tolérance : un chantier déborde souvent sur l'horaire prévu.
   // Sans elle, on demanderait "avez-vous fini ?" alors que l'artisan est
   // encore sur place — faux et agaçant. On attend une heure de plus après
   // la fin estimée avant de considérer qu'une réponse est due.
   const MARGE_CONFIRMATION_MIN = 60;
-  const aConfirmer = (aConfirmerBrut ?? []).filter((e) => {
+  const aConfirmer = aConfirmerBrutPlat.filter((e) => {
     const dureeParDefaut = e.type === "rendez_vous" ? 60 : 15;
     const finEstimee =
       new Date(e.date_heure).getTime() +
@@ -115,7 +133,7 @@ export default async function DashboardHome() {
   const idsProjetsTermines = new Set(
     listeProjets.filter((p) => p.statut === "termine").map((p) => p.id)
   );
-  const devisListActifs = (devisList ?? []).filter(
+  const devisListActifs = devisListPlat.filter(
     (d) => !d.demande_id || !idsProjetsTermines.has(d.demande_id)
   );
   // Idem pour les confirmations en attente : inutile de redemander "avez-vous
@@ -150,14 +168,14 @@ export default async function DashboardHome() {
   // qu'un rendez-vous est passé ne le fait jamais disparaître de l'accueil.
   // On exclut aussi tout événement lié à un projet déjà clôturé.
   const rendezVousDuJour =
-    evenementsAujourdhui?.filter(
+    evenementsAujourdhuiPlat?.filter(
       (e) =>
         e.type === "rendez_vous" &&
         e.statut !== "termine" &&
         (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
     ) ?? [];
   const rappelsDuJour =
-    evenementsAujourdhui?.filter(
+    evenementsAujourdhuiPlat?.filter(
       (e) =>
         e.type === "tache" &&
         e.statut === "a_faire" &&
@@ -322,10 +340,10 @@ export default async function DashboardHome() {
               </span>
               <span className="text-sm text-ink/80">
                 {e.titre}
-                {(e as { demandes?: { nom_client?: string } }).demandes?.nom_client && (
+                {nomClientDe(e) && (
                   <span className="text-ink/40">
                     {" "}
-                    — {(e as { demandes?: { nom_client?: string } }).demandes?.nom_client}
+                    — {nomClientDe(e)}
                   </span>
                 )}
               </span>
@@ -340,10 +358,10 @@ export default async function DashboardHome() {
             <LigneCliquable key={r.id} demandeId={r.demande_id}>
               <span className="text-sm text-ink/80">
                 📞 {r.titre}
-                {(r as { demandes?: { nom_client?: string } }).demandes?.nom_client && (
+                {nomClientDe(r) && (
                   <span className="text-ink/40">
                     {" "}
-                    — {(r as { demandes?: { nom_client?: string } }).demandes?.nom_client}
+                    — {nomClientDe(r)}
                   </span>
                 )}
               </span>
@@ -368,8 +386,7 @@ export default async function DashboardHome() {
             <LigneCliquable key={d.id} demandeId={d.demande_id}>
               <span className="text-sm text-ink/80">
                 📄{" "}
-                {(d as { demandes?: { nom_client?: string } }).demandes?.nom_client ??
-                  d.numero}{" "}
+                {nomClientDe(d) ?? d.numero}{" "}
                 <span className="text-ink/40">— à relire et valider</span>
               </span>
             </LigneCliquable>
@@ -378,8 +395,7 @@ export default async function DashboardHome() {
             <LigneCliquable key={d.id} demandeId={d.demande_id}>
               <span className="text-sm text-ink/80">
                 📄{" "}
-                {(d as { demandes?: { nom_client?: string } }).demandes?.nom_client ??
-                  d.numero}{" "}
+                {nomClientDe(d) ?? d.numero}{" "}
                 <span className="text-ink/40">— prêt, pas encore envoyé</span>
               </span>
             </LigneCliquable>
@@ -393,8 +409,7 @@ export default async function DashboardHome() {
             <LigneCliquable key={d.id} demandeId={d.demande_id} accent>
               <span className="text-sm text-ink/80">
                 ✕{" "}
-                {(d as { demandes?: { nom_client?: string } }).demandes?.nom_client ??
-                  d.numero}{" "}
+                {nomClientDe(d) ?? d.numero}{" "}
                 <span className="text-ink/40">— à reprendre quand vous êtes prêt</span>
               </span>
             </LigneCliquable>
@@ -408,8 +423,7 @@ export default async function DashboardHome() {
             <LigneCliquable key={d.id} demandeId={d.demande_id} accent>
               <span className="text-sm text-ink/80">
                 ⚠️{" "}
-                {(d as { demandes?: { nom_client?: string } }).demandes?.nom_client ??
-                  d.numero}{" "}
+                {nomClientDe(d) ?? d.numero}{" "}
                 <span className="text-ink/40">— envoyé depuis {d.joursDepuis} jours</span>
               </span>
             </LigneCliquable>

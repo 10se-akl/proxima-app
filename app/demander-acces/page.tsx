@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Field, TextareaField } from "@/components/ui/Input";
@@ -17,7 +17,18 @@ const METIERS = [
   "Autre",
 ];
 
+// Next.js exige que tout composant utilisant useSearchParams() soit
+// entouré d'une frontière <Suspense> — sinon le pré-rendu statique de la
+// page échoue au build (l'erreur ne se voit qu'au déploiement, pas en dev).
 export default function DemanderAccesPage() {
+  return (
+    <Suspense fallback={null}>
+      <DemanderAccesForm />
+    </Suspense>
+  );
+}
+
+function DemanderAccesForm() {
   const searchParams = useSearchParams();
   const parrain = searchParams.get("parraine_par");
 

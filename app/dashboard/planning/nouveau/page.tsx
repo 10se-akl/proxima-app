@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -18,7 +18,18 @@ const COULEUR_PRIORITE: Record<Priorite, string> = {
 
 type ProjetLeger = { id: string; nom_client: string; priorite: Priorite };
 
+// Next.js exige que tout composant utilisant useSearchParams() soit
+// entouré d'une frontière <Suspense> — sinon le pré-rendu statique échoue
+// au build (visible seulement au déploiement, pas en dev local).
 export default function NouvelEvenementPage() {
+  return (
+    <Suspense fallback={null}>
+      <NouvelEvenementForm />
+    </Suspense>
+  );
+}
+
+function NouvelEvenementForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-const CLE_STOCKAGE = "proxima-mode-nuit";
+const CLE_STOCKAGE = "compyo-mode-nuit";
 
 // Pas un vrai mode sombre (voir globals.css) — juste un voile qui assombrit
 // l'écran, pour travailler discrètement sans réveiller personne. Préférence

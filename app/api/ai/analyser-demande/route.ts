@@ -4,7 +4,7 @@ import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import type { AnalyseIA } from "@/types";
 
-const SYSTEM_PROMPT = `Tu es l'assistant de Proxima, un outil pour artisans du bâtiment (maçons, plombiers, électriciens, chauffagistes, couvreurs).
+const SYSTEM_PROMPT = `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment (maçons, plombiers, électriciens, chauffagistes, couvreurs).
 
 Un artisan te transmet toutes les informations qu'il a accumulées sur un projet : la description initiale, ses notes libres, et des notes vocales dictées sur le terrain (donc parfois désordonnées, avec des hésitations ou des remarques sans rapport avec le chantier).
 

@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-5">
       <Card className="w-full max-w-sm p-8">
-        <p className="font-display font-semibold text-lg">Proxima</p>
+        <p className="font-display font-semibold text-lg">Compyo</p>
         <h1 className="mt-4 text-xl font-semibold">Se connecter</h1>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">

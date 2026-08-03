@@ -15,7 +15,7 @@ type ProjetAConfirmer = { id: string; nom_client: string };
 // qui vide tout état React. On garde donc la liste des chantiers ignorés
 // "pour aujourd'hui" dans le localStorage, remise à zéro chaque jour.
 function cleIgnores(): string {
-  return `proxima_cloture_ignoree_${new Date().toISOString().slice(0, 10)}`;
+  return `compyo_cloture_ignoree_${new Date().toISOString().slice(0, 10)}`;
 }
 
 function lireIgnores(): Set<string> {

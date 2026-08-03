@@ -260,7 +260,7 @@ export default async function DashboardHome() {
           Bonjour {premierPrenom} 👋
         </h1>
         <Card className="mt-8 p-8 text-center">
-          <p className="font-display text-lg font-semibold">Bienvenue sur Proxima.</p>
+          <p className="font-display text-lg font-semibold">Bienvenue sur Compyo.</p>
           <p className="mt-2 text-sm text-ink/60 max-w-sm mx-auto">
             Tout commence par un projet. Créez le premier dès qu&apos;un client vous
             contacte — trente secondes suffisent, le reste se complète plus tard.

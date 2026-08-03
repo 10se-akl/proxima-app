@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Proxima — Assistant IA pour artisans du bâtiment",
+  title: "Compyo — Assistant IA pour artisans du bâtiment",
   description:
     "Transformez vos demandes clients en devis professionnels en quelques minutes.",
 };

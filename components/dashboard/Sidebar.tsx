@@ -30,7 +30,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
     <>
       {/* Barre mobile : logo + bouton menu, remplace la sidebar sur petit écran */}
       <div className="sm:hidden flex items-center justify-between bg-ink text-paper px-4 h-14">
-        <p className="font-display font-semibold">Proxima</p>
+        <p className="font-display font-semibold">Compyo</p>
         <button
           onClick={() => setMenuOuvert(!menuOuvert)}
           className="p-2 -mr-2"
@@ -80,7 +80,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
       <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-ink text-paper min-h-screen flex-col justify-between">
         <div>
           <div className="px-6 py-6 border-b border-white/10">
-            <p className="font-display font-semibold">Proxima</p>
+            <p className="font-display font-semibold">Compyo</p>
           </div>
           <nav className="mt-4 flex flex-col gap-1 px-3">
             {LIENS.map((lien) => {

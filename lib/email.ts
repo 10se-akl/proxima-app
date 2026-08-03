@@ -14,10 +14,10 @@ export async function notifierNouvelleCandidature(candidature: Candidature) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        from: "Proxima <onboarding@resend.dev>",
+        from: "Compyo <onboarding@resend.dev>",
         to: process.env.ADMIN_EMAIL,
         subject: `Nouvelle candidature bêta — ${candidature.prenom} ${candidature.nom}`,
-        text: `${candidature.prenom} ${candidature.nom} (${candidature.metier}) souhaite rejoindre la bêta privée de Proxima.
+        text: `${candidature.prenom} ${candidature.nom} (${candidature.metier}) souhaite rejoindre la bêta privée de Compyo.
 
 Entreprise : ${candidature.entreprise ?? "non précisé"}
 Email : ${candidature.email}

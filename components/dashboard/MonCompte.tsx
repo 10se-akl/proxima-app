@@ -164,7 +164,7 @@ export function MonCompte() {
       <Card className="p-6">
         <h2 className="text-sm font-semibold text-ink/70 mb-2">Parrainer un collègue</h2>
         <p className="text-sm text-ink/60 mb-4">
-          Un autre artisan pourrait gagner du temps avec Proxima ? Partagez ce lien — sa
+          Un autre artisan pourrait gagner du temps avec Compyo ? Partagez ce lien — sa
           candidature à la bêta sera automatiquement marquée comme venant de vous.
         </p>
         <div className="flex flex-wrap gap-3">

@@ -50,7 +50,7 @@ export default function DefinirMotDePassePage() {
   return (
     <main className="min-h-screen flex items-center justify-center px-5">
       <Card className="w-full max-w-sm p-8">
-        <p className="font-display font-semibold text-lg">Proxima</p>
+        <p className="font-display font-semibold text-lg">Compyo</p>
         <h1 className="mt-4 text-xl font-semibold">Bienvenue dans la bêta</h1>
         <p className="mt-2 text-sm text-ink/60">
           Votre candidature a été acceptée. Définissez votre mot de passe pour accéder à

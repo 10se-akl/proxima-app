@@ -7,7 +7,7 @@ import { enregistrerLog } from "@/lib/logs";
 // envoyé au client automatiquement — l'artisan copie, ajuste, et envoie
 // lui-même par son propre moyen (SMS, email...). Voir la philosophie du
 // produit : l'IA assiste, elle ne remplace jamais le contrôle de l'artisan.
-const SYSTEM_PROMPT = `Tu es l'assistant de Proxima, un outil pour artisans du bâtiment.
+const SYSTEM_PROMPT = `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment.
 
 Rédige un brouillon de réponse professionnelle à envoyer à un client, à partir des informations du projet fournies. Ton naturel, courtois, direct — comme un artisan sérieux qui répond à un client, pas comme un email marketing.
 

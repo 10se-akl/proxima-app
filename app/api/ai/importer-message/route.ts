@@ -11,7 +11,7 @@ import { enregistrerEvenement } from "@/lib/timeline";
 // du texte fourni. La date du jour lui est donnée pour résoudre des
 // expressions comme "mardi prochain" en une vraie date.
 function construirePrompt(dateDuJour: string) {
-  return `Tu es l'assistant de Proxima, un outil pour artisans du bâtiment.
+  return `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment.
 
 Nous sommes le ${dateDuJour}.
 

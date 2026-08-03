@@ -34,7 +34,7 @@ function Header() {
           <span className="grid place-items-center w-8 h-8 bg-ink text-paper font-semibold text-sm">
             P
           </span>
-          <span className="font-semibold tracking-tight">Proxima</span>
+          <span className="font-semibold tracking-tight">Compyo</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">
@@ -74,12 +74,12 @@ function Hero() {
           <h1 className="font-display text-[2.1rem] leading-[1.12] sm:text-5xl sm:leading-[1.08] font-semibold tracking-tight">
             Passez plus de temps sur vos chantiers.
             <br />
-            Proxima s&apos;occupe du reste.
+            Compyo s&apos;occupe du reste.
           </h1>
           <p className="mt-6 text-lg text-ink/70 max-w-md leading-relaxed">
             Chaque appel client, chaque photo, chaque devis, chaque rendez-vous —
             regroupés au même endroit, suivis du premier contact jusqu&apos;à la fin
-            du chantier. Vous gardez la main, Proxima s&apos;occupe de l&apos;administratif.
+            du chantier. Vous gardez la main, Compyo s&apos;occupe de l&apos;administratif.
           </p>
 
           <div className="mt-9 flex flex-wrap items-center gap-5">
@@ -102,7 +102,7 @@ function Hero() {
             <span className="w-2.5 h-2.5 rounded-full bg-ink/15" />
             <span className="w-2.5 h-2.5 rounded-full bg-ink/15" />
             <span className="ml-3 font-mono text-[11px] text-ink/50">
-              Proxima — aujourd&apos;hui
+              Compyo — aujourd&apos;hui
             </span>
           </div>
           <div className="p-5">
@@ -133,7 +133,7 @@ function Hero() {
 function Parcours() {
   const etapes = [
     { n: "01", titre: "Le client appelle", texte: "Par téléphone, SMS ou message — comme d'habitude." },
-    { n: "02", titre: "Proxima crée le projet", texte: "Automatiquement, à partir du message ou en quelques secondes." },
+    { n: "02", titre: "Compyo crée le projet", texte: "Automatiquement, à partir du message ou en quelques secondes." },
     { n: "03", titre: "Tout se regroupe au même endroit", texte: "Photos, notes, notes vocales, échanges — plus rien ne se perd." },
     { n: "04", titre: "L'IA analyse les informations", texte: "Elle résume le besoin et repère ce qu'il manque encore." },
     { n: "05", titre: "Le devis est préparé", texte: "L'IA propose les postes, un moteur de calcul fixe les prix — jamais l'inverse." },
@@ -235,7 +235,7 @@ function Differenciation() {
   return (
     <section className="bg-white border-y border-ink/10">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
-        <SectionLabel>Pourquoi Proxima est différent</SectionLabel>
+        <SectionLabel>Pourquoi Compyo est différent</SectionLabel>
         <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight max-w-lg">
           Un assistant qui suit le chantier, pas un générateur de documents.
         </h2>
@@ -243,7 +243,7 @@ function Differenciation() {
         <div className="mt-12 grid sm:grid-cols-2 gap-8 max-w-3xl">
           <div className="border border-ink/10 p-6">
             <p className="font-mono text-[11px] uppercase tracking-wider text-ink/40 mb-4">
-              Ce que Proxima n&apos;est pas
+              Ce que Compyo n&apos;est pas
             </p>
             <div className="flex flex-col gap-3">
               {nonItems.map((texte) => (
@@ -257,7 +257,7 @@ function Differenciation() {
 
           <div className="border border-signal/30 bg-signal/[0.04] p-6">
             <p className="font-mono text-[11px] uppercase tracking-wider text-signal mb-4">
-              Ce que Proxima est
+              Ce que Compyo est
             </p>
             <div className="flex items-start gap-3">
               <span className="mt-0.5 text-signal shrink-0">✓</span>
@@ -370,9 +370,9 @@ function Footer() {
           <span className="grid place-items-center w-7 h-7 bg-paper text-ink font-semibold text-xs">
             P
           </span>
-          <span className="text-sm text-paper/70">Proxima — projet en cours de validation</span>
+          <span className="text-sm text-paper/70">Compyo — projet en cours de validation</span>
         </div>
-        <p className="font-mono text-xs text-paper/40">proxima.saas@gmail.com</p>
+        <p className="font-mono text-xs text-paper/40">compyo.saas@gmail.com</p>
       </div>
     </footer>
   );

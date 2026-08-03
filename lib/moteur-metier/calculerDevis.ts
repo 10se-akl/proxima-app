@@ -17,7 +17,7 @@ import type {
 // n'est connecté — jamais présenté comme un prix ferme.
 //
 // Couvre volontairement plusieurs corps de métier (pas seulement la
-// rénovation salle de bain/cuisine) : Proxima cible aussi les plombiers,
+// rénovation salle de bain/cuisine) : Compyo cible aussi les plombiers,
 // électriciens, chauffagistes et couvreurs — le catalogue doit refléter
 // leur travail, pas seulement celui d'un maçon-rénovateur.
 const REFERENCE_MATERIAUX: { motsCles: string[]; prixUnitaire: number }[] = [

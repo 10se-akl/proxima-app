@@ -11,7 +11,7 @@ import type { PosteTravailIA, ParametresEntreprise } from "@/types";
 // pas un détail : elle garantit que deux artisans avec les mêmes postes
 // mais des paramètres différents obtiennent des devis différents et
 // justifiables, jamais une estimation "inventée" par le modèle de langage.
-const SYSTEM_PROMPT = `Tu es l'assistant de Proxima, un outil pour artisans du bâtiment.
+const SYSTEM_PROMPT = `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment.
 
 À partir d'un projet déjà cadré, identifie la liste des postes de travaux nécessaires.
 

@@ -85,7 +85,7 @@ function DemanderAccesForm() {
     return (
       <main className="min-h-screen flex items-center justify-center px-5 bg-paper">
         <Card className="w-full max-w-md p-10 text-center">
-          <p className="font-display font-semibold text-lg">Proxima</p>
+          <p className="font-display font-semibold text-lg">Compyo</p>
           <h1 className="mt-4 text-xl font-semibold">Candidature envoyée.</h1>
           <p className="mt-3 text-sm text-ink/65">
             Nous examinons chaque candidature individuellement. Si elle est retenue, vous
@@ -206,7 +206,7 @@ function DemanderAccesForm() {
             />
 
             <Field
-              label="Comment avez-vous découvert Proxima ?"
+              label="Comment avez-vous découvert Compyo ?"
               value={form.decouverte}
               onChange={update("decouverte")}
             />

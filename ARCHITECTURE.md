@@ -1,4 +1,4 @@
-# Architecture — Proxima MVP
+# Architecture — Compyo MVP
 
 ## Stack
 - **Frontend** : Next.js 14 (App Router) + TypeScript + Tailwind CSS

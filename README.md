@@ -1,4 +1,4 @@
-# Proxima — MVP
+# Compyo — MVP
 
 Assistant IA pour artisans du bâtiment : transformez une demande client en devis structuré.
 
@@ -27,7 +27,7 @@ Si un numéro de version s'affiche (ex: v20.11.0), c'est bon.
 
 1. Va sur **https://supabase.com**, crée un compte gratuit
 2. Clique sur **"New Project"**
-3. Donne-lui un nom (ex: "proxima"), choisis un mot de passe pour la base de données
+3. Donne-lui un nom (ex: "compyo"), choisis un mot de passe pour la base de données
    (note-le quelque part), choisis une région proche de toi (ex: Paris/Frankfurt)
 4. Attends 1-2 minutes que le projet soit prêt
 5. Une fois dans le projet, va dans l'onglet **"SQL Editor"** (menu de gauche)
@@ -102,7 +102,7 @@ panneau admin. Voici comment le configurer.
 - Un artisan candidate sur `/demander-acces`
 - Vous consultez les candidatures sur `/admin/candidatures` (connecté avec votre compte
   admin)
-- Vous cliquez sur "Accepter" → Proxima crée le compte et envoie un email à l'artisan avec
+- Vous cliquez sur "Accepter" → Compyo crée le compte et envoie un email à l'artisan avec
   un lien pour définir son mot de passe → il arrive ensuite directement sur son tableau de
   bord
 
@@ -122,7 +122,7 @@ charge, à partir de vos propres paramètres d'entreprise.
    de Supabase, cliquez sur "Run"
 2. Relancez `npm run dev`
 3. Allez sur `/dashboard/parametres` et remplissez au moins votre coût horaire et votre
-   TVA — sans ça, Proxima utilise des valeurs par défaut (45€/h, 20% de TVA) pour ne
+   TVA — sans ça, Compyo utilise des valeurs par défaut (45€/h, 20% de TVA) pour ne
    jamais bloquer un devis, mais vos vrais chiffres seront plus justes
 4. Testez à nouveau la génération d'un devis sur un projet : vous verrez maintenant le
    détail complet (sous-total, déplacement, marge, TVA) au lieu d'un simple total
@@ -286,7 +286,7 @@ Aucune mise à jour SQL nécessaire. Relancez `npm run dev`.
 
 Aucune mise à jour SQL. Relancez `npm run dev`.
 
-Quand vous créez un projet en version rapide, Proxima devine maintenant le type de
+Quand vous créez un projet en version rapide, Compyo devine maintenant le type de
 chantier (salle de bain, cuisine, plomberie...) à partir de votre description — par
 reconnaissance de mots-clés, sans IA, donc gratuit et instantané. Il s'affiche en petit
 tag sur la carte du projet, et reste modifiable via "+ Compléter les informations" si la

@@ -1,0 +1,118 @@
+"use client";
+
+import { useState } from "react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { ModeNuitToggle } from "@/components/dashboard/ModeNuitToggle";
+
+const LIENS = [
+  { href: "/dashboard", label: "Accueil" },
+  { href: "/dashboard/demandes", label: "Projets" },
+  { href: "/dashboard/devis", label: "Devis" },
+  { href: "/dashboard/planning", label: "Planning" },
+  { href: "/dashboard/parametres", label: "Paramètres" },
+];
+
+export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const supabase = createClient();
+  const [menuOuvert, setMenuOuvert] = useState(false);
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  }
+
+  return (
+    <>
+      {/* Barre mobile : logo + bouton menu, remplace la sidebar sur petit écran */}
+      <div className="sm:hidden flex items-center justify-between bg-ink text-paper px-4 h-14">
+        <p className="font-display font-semibold">Proxima</p>
+        <button
+          onClick={() => setMenuOuvert(!menuOuvert)}
+          className="p-2 -mr-2"
+          aria-label="Menu"
+        >
+          <span className="block w-5 h-px bg-paper mb-1.5" />
+          <span className="block w-5 h-px bg-paper mb-1.5" />
+          <span className="block w-5 h-px bg-paper" />
+        </button>
+      </div>
+
+      {menuOuvert && (
+        <div className="sm:hidden bg-ink text-paper px-3 pb-4">
+          <nav className="flex flex-col gap-1">
+            {LIENS.map((lien) => {
+              const actif = pathname === lien.href;
+              return (
+                <Link
+                  key={lien.href}
+                  href={lien.href}
+                  onClick={() => setMenuOuvert(false)}
+                  className={`px-3 py-2.5 text-sm transition-colors ${
+                    actif
+                      ? "bg-white/10 text-white font-medium"
+                      : "text-paper/60 hover:text-paper hover:bg-white/5"
+                  }`}
+                >
+                  {lien.label}
+                </Link>
+              );
+            })}
+          </nav>
+          <div className="mt-3 pt-3 border-t border-white/10 px-3 flex flex-col gap-2 items-start">
+            <p className="text-xs text-paper/50 font-mono truncate">{nomArtisan}</p>
+            <ModeNuitToggle />
+            <button
+              onClick={handleLogout}
+              className="text-xs text-paper/60 hover:text-paper underline"
+            >
+              Se déconnecter
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Sidebar classique, visible uniquement à partir de la taille tablette */}
+      <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-ink text-paper min-h-screen flex-col justify-between">
+        <div>
+          <div className="px-6 py-6 border-b border-white/10">
+            <p className="font-display font-semibold">Proxima</p>
+          </div>
+          <nav className="mt-4 flex flex-col gap-1 px-3">
+            {LIENS.map((lien) => {
+              const actif = pathname === lien.href;
+              return (
+                <Link
+                  key={lien.href}
+                  href={lien.href}
+                  className={`px-3 py-2.5 text-sm rounded-none transition-colors ${
+                    actif
+                      ? "bg-white/10 text-white font-medium"
+                      : "text-paper/60 hover:text-paper hover:bg-white/5"
+                  }`}
+                >
+                  {lien.label}
+                </Link>
+              );
+            })}
+          </nav>
+        </div>
+
+        <div className="px-6 py-6 border-t border-white/10 flex flex-col gap-2 items-start">
+          <p className="text-xs text-paper/50 font-mono truncate">{nomArtisan}</p>
+          <ModeNuitToggle />
+          <button
+            onClick={handleLogout}
+            className="text-xs text-paper/60 hover:text-paper underline"
+          >
+            Se déconnecter
+          </button>
+        </div>
+      </aside>
+    </>
+  );
+}

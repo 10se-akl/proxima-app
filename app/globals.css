@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* "Atténuer la luminosité" — pas un vrai mode sombre (ça demanderait de
+   revoir la couleur de chaque écran individuellement), juste un voile
+   semi-transparent au-dessus de toute l'app pour travailler discrètement
+   dans le noir. Activé/désactivé par ModeNuitToggle, mémorisé en local. */
+.mode-nuit {
+  position: relative;
+}
+.mode-nuit::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0.55;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Règles d'impression pour l'export du devis en PDF (voir DevisPreview).
+   Objectif : que "Imprimer → Enregistrer en PDF" produise un document que
+   le client ne peut pas distinguer d'un devis fait à la main — sans avoir
+   à installer une librairie de génération PDF côté serveur. */
+@media print {
+  @page {
+    margin: 16mm 14mm;
+  }
+
+  body * {
+    visibility: hidden;
+  }
+  #devis-imprimable,
+  #devis-imprimable * {
+    visibility: visible;
+  }
+  #devis-imprimable {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    border: none !important;
+  }
+  #devis-imprimable img {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Le voile de "atténuer la luminosité" ne doit jamais apparaître sur un
+     PDF exporté — sans quoi le devis envoyé au client serait assombri. */
+  .mode-nuit::after {
+    display: none;
+  }
+}

@@ -16,7 +16,7 @@ function lundiDeLaSemaine(offsetSemaines: number): Date {
 export default async function PlanningPage({
   searchParams,
 }: {
-  searchParams: { semaine?: string };
+  searchParams: { semaine?: string; rdvCree?: string };
 }) {
   const offset = Number(searchParams.semaine ?? "0") || 0;
   const lundi = lundiDeLaSemaine(offset);

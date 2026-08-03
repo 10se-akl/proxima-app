@@ -446,7 +446,7 @@ function nomClientDe(item: unknown): string | undefined {
 // s'il n'y a vraiment rien en attente. L'ordre des `if` EST la priorité :
 // on s'arrête à la première catégorie non vide.
 function determinerProchaineAction(listes: {
-  aConfirmer: { id: string; titre: string; demande_id: string | null; demandes?: { nom_client?: string } }[];
+  aConfirmer: { id: string; titre: string; demande_id: string | null; demandes?: { nom_client?: string } | null }[];
   projetsAConfirmerTermine: { id: string; nom_client: string }[];
   rendezVousDuJour: { id: string; titre: string; demande_id: string | null; date_heure: string }[];
   devisAValider: { id: string; demande_id: string | null; numero: string }[];

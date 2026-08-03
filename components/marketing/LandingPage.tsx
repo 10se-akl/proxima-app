@@ -32,7 +32,7 @@ function Header() {
       <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-2.5">
           <span className="grid place-items-center w-8 h-8 bg-ink text-paper font-semibold text-sm">
-            P
+            C
           </span>
           <span className="font-semibold tracking-tight">Compyo</span>
         </Link>
@@ -368,11 +368,11 @@ function Footer() {
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
           <span className="grid place-items-center w-7 h-7 bg-paper text-ink font-semibold text-xs">
-            P
+            C
           </span>
           <span className="text-sm text-paper/70">Compyo — projet en cours de validation</span>
         </div>
-        <p className="font-mono text-xs text-paper/40">compyo.saas@gmail.com</p>
+        <p className="font-mono text-xs text-paper/40">proxima.saas@gmail.com</p>
       </div>
     </footer>
   );

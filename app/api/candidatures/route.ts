@@ -25,24 +25,24 @@ export async function POST(request: NextRequest) {
 
   const supabase = createClient();
 
-  const { data, error } = await supabase
-    .from("candidatures")
-    .insert({
-      nom,
-      prenom,
-      entreprise: entreprise || null,
-      metier,
-      telephone,
-      email,
-      nb_employes: nbEmployes || null,
-      devis_par_semaine: devisParSemaine || null,
-      probleme_principal: problemePrincipal,
-      decouverte: decouverte || null,
-    })
-    .select()
-    .single();
+  // Pas de .select() après l'insert : la règle de sécurité interdit
+  // volontairement à un visiteur anonyme de relire les candidatures (pour
+  // protéger la liste des candidats). Demander une relecture ici ferait
+  // échouer .single() même quand l'insertion elle-même a réussi.
+  const { error } = await supabase.from("candidatures").insert({
+    nom,
+    prenom,
+    entreprise: entreprise || null,
+    metier,
+    telephone,
+    email,
+    nb_employes: nbEmployes || null,
+    devis_par_semaine: devisParSemaine || null,
+    probleme_principal: problemePrincipal,
+    decouverte: decouverte || null,
+  });
 
-  if (error || !data) {
+  if (error) {
     console.error(error);
     return NextResponse.json(
       { error: "Impossible d'enregistrer la candidature" },
@@ -50,8 +50,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Ne bloque jamais la réponse au visiteur si l'email échoue.
-  notifierNouvelleCandidature(data as Candidature);
+  // Ne bloque jamais la réponse au visiteur si l'email échoue. On reconstruit
+  // l'objet à partir des données déjà en main plutôt que de les relire.
+  notifierNouvelleCandidature({
+    nom,
+    prenom,
+    entreprise: entreprise || null,
+    metier,
+    telephone,
+    email,
+    nb_employes: nbEmployes || null,
+    devis_par_semaine: devisParSemaine || null,
+    probleme_principal: problemePrincipal,
+    decouverte: decouverte || null,
+  } as Candidature);
 
   return NextResponse.json({ ok: true });
 }

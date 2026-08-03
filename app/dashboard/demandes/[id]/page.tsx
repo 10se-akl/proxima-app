@@ -158,6 +158,7 @@ export default function DetailDemandePage({
   }
 
   async function genererDevis() {
+    if (!demande) return;
     // Avant de lancer le calcul, on prévient si l'IA a elle-même signalé des
     // informations manquantes non résolues (ex : mesures, accès chantier) —
     // un devis généré sans ça a de bonnes chances d'être faux. On ne

@@ -3,8 +3,18 @@ import type { Candidature } from "@/types";
 // Notification optionnelle : si RESEND_API_KEY n'est pas configurée,
 // la candidature est quand même enregistrée, seul l'email est sauté.
 // L'admin peut toujours consulter /admin/candidatures manuellement.
+//
+// NOTIFICATION_EMAIL est volontairement séparée d'ADMIN_EMAIL : ADMIN_EMAIL
+// détermine qui a le droit d'accéder à /admin/candidatures (doit correspondre
+// à un compte Compyo existant), alors que le domaine de test Resend
+// (onboarding@resend.dev) n'a le droit d'envoyer qu'à l'adresse du compte
+// Resend lui-même. Ces deux contraintes peuvent tomber sur des adresses
+// différentes — les confondre a déjà cassé soit l'accès admin, soit l'envoi
+// d'email selon laquelle des deux on utilisait. Si NOTIFICATION_EMAIL n'est
+// pas définie, on retombe sur ADMIN_EMAIL pour ne rien casser par défaut.
 export async function notifierNouvelleCandidature(candidature: Candidature) {
-  if (!process.env.RESEND_API_KEY || !process.env.ADMIN_EMAIL) return;
+  const destinataire = process.env.NOTIFICATION_EMAIL || process.env.ADMIN_EMAIL;
+  if (!process.env.RESEND_API_KEY || !destinataire) return;
 
   try {
     const res = await fetch("https://api.resend.com/emails", {
@@ -15,7 +25,7 @@ export async function notifierNouvelleCandidature(candidature: Candidature) {
       },
       body: JSON.stringify({
         from: "Compyo <onboarding@resend.dev>",
-        to: process.env.ADMIN_EMAIL,
+        to: destinataire,
         subject: `Nouvelle candidature bêta — ${candidature.prenom} ${candidature.nom}`,
         text: `${candidature.prenom} ${candidature.nom} (${candidature.metier}) souhaite rejoindre la bêta privée de Compyo.
 

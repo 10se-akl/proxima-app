@@ -38,9 +38,16 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-5">
+    <main className="min-h-screen flex flex-col items-center justify-center px-5">
+      <div className="w-full max-w-sm mb-4">
+        <Link href="/" className="text-sm text-ink/60 hover:text-ink">
+          ← Retour à l&apos;accueil
+        </Link>
+      </div>
       <Card className="w-full max-w-sm p-8">
-        <p className="font-display font-semibold text-lg">Compyo</p>
+        <Link href="/" className="font-display font-semibold text-lg hover:opacity-70 transition-opacity">
+          Compyo
+        </Link>
         <h1 className="mt-4 text-xl font-semibold">Se connecter</h1>
 
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">

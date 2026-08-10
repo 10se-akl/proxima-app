@@ -148,32 +148,61 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // ressembler à un vrai document professionnel dès le premier essai,
     // pas à un ticket généré au hasard. On compte les devis déjà émis
     // cette année et on incrémente.
+    //
+    // Deux requêtes concurrentes (double clic, deux onglets, un retry
+    // réseau) pourraient en théorie compter le même total et tenter
+    // d'insérer le même numéro — la base le refuse grâce à une
+    // contrainte unique (artisan_id, numero). Un seul artisan à la fois
+    // sur son propre compte ne produit jamais plus de 2-3 requêtes
+    // simultanées en pratique (pas une équipe qui clique en même temps) :
+    // une boucle de quelques tentatives, en recomptant à chaque fois,
+    // couvre largement ce cas réel sans construire un compteur atomique
+    // en base, disproportionné à cette échelle.
     const anneeCourante = new Date().getFullYear();
-    const { count: nbDevisCetteAnnee } = await supabase
-      .from("devis")
-      .select("id", { count: "exact", head: true })
-      .eq("artisan_id", user.id)
-      .gte("created_at", `${anneeCourante}-01-01`)
-      .lt("created_at", `${anneeCourante + 1}-01-01`);
+    const MAX_TENTATIVES_NUMERO = 5;
+    // TypeScript ne garde pas le narrowing de "user non-null" (vérifié plus
+    // haut) à l'intérieur d'une fonction imbriquée définie plus loin — on
+    // capture l'id dans une constante juste avant, une seule fois.
+    const artisanId = user.id;
 
-    const numero = `${anneeCourante}-${String((nbDevisCetteAnnee ?? 0) + 1).padStart(3, "0")}`;
+    async function inserer() {
+      const { count: nbDevisCetteAnnee } = await supabase
+        .from("devis")
+        .select("id", { count: "exact", head: true })
+        .eq("artisan_id", artisanId)
+        .gte("created_at", `${anneeCourante}-01-01`)
+        .lt("created_at", `${anneeCourante + 1}-01-01`);
 
-    const { data: devis, error: insertError } = await supabase
-      .from("devis")
-      .insert({
-        demande_id: demandeId,
-        artisan_id: user.id,
-        numero,
-        lignes: devisCalcule.lignes,
-        sous_total_ht: devisCalcule.sous_total_ht,
-        deplacement: devisCalcule.deplacement,
-        marge_pct: devisCalcule.marge_pct,
-        tva_pct: devisCalcule.tva_pct,
-        montant_tva: devisCalcule.montant_tva,
-        total_estime: devisCalcule.total_ttc,
-      })
-      .select()
-      .single();
+      const numero = `${anneeCourante}-${String((nbDevisCetteAnnee ?? 0) + 1).padStart(3, "0")}`;
+
+      return supabase
+        .from("devis")
+        .insert({
+          demande_id: demandeId,
+          artisan_id: artisanId,
+          numero,
+          lignes: devisCalcule.lignes,
+          sous_total_ht: devisCalcule.sous_total_ht,
+          deplacement: devisCalcule.deplacement,
+          marge_pct: devisCalcule.marge_pct,
+          tva_pct: devisCalcule.tva_pct,
+          montant_tva: devisCalcule.montant_tva,
+          total_estime: devisCalcule.total_ttc,
+        })
+        .select()
+        .single();
+    }
+
+    let devis: Awaited<ReturnType<typeof inserer>>["data"] = null;
+    let insertError: Awaited<ReturnType<typeof inserer>>["error"] = null;
+
+    // Code Postgres 23505 = violation de contrainte unique. On ne
+    // reboucle que pour cette cause précise, jamais pour une vraie
+    // erreur (plus de tentatives ne résoudrait rien d'autre).
+    for (let tentative = 1; tentative <= MAX_TENTATIVES_NUMERO; tentative++) {
+      ({ data: devis, error: insertError } = await inserer());
+      if (!insertError || insertError.code !== "23505") break;
+    }
 
     if (insertError || !devis) {
       await enregistrerLog(supabase, {

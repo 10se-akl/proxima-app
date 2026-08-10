@@ -41,6 +41,25 @@ export async function PATCH(
     return NextResponse.json({ ok: true });
   }
 
+  // Un même email peut légitimement revenir plusieurs fois (candidat qui
+  // postule deux fois, test de l'admin, etc.) — si un profil existe déjà
+  // pour cette adresse, inutile de retenter une invitation qui échouerait
+  // de toute façon (Supabase refuse de créer un deuxième compte pour un
+  // email déjà enregistré). On considère juste cette candidature traitée.
+  const { data: profilExistant } = await admin
+    .from("profils")
+    .select("id")
+    .eq("email", candidature.email)
+    .maybeSingle();
+
+  if (profilExistant) {
+    await admin.from("candidatures").update({ statut: "accepted" }).eq("id", params.id);
+    return NextResponse.json({
+      ok: true,
+      info: "Un compte existait déjà pour cet email — candidature marquée acceptée, aucune nouvelle invitation envoyée.",
+    });
+  }
+
   // action === "accepter" : crée le compte et envoie l'email d'invitation
   // (Supabase gère l'envoi de cet email lui-même, via son propre système).
   const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
@@ -52,8 +71,36 @@ export async function PATCH(
 
   if (inviteError || !invite.user) {
     console.error(inviteError);
+    // Un compte auth peut exister sans profil correspondant (ex : créé lors
+    // d'un test précédent avant que cette vérification n'existe). Dans ce
+    // cas Supabase refuse une deuxième invitation avec un message du type
+    // "already been registered" — on répare l'incohérence au lieu d'échouer
+    // platement, en retrouvant ce compte pour lui recréer son profil.
+    const messageErreur = inviteError?.message?.toLowerCase() ?? "";
+    if (messageErreur.includes("already") || messageErreur.includes("registered")) {
+      const { data: listeUtilisateurs } = await admin.auth.admin.listUsers();
+      const utilisateurExistant = listeUtilisateurs?.users.find(
+        (u) => u.email?.toLowerCase() === candidature.email.toLowerCase()
+      );
+      if (utilisateurExistant) {
+        const { error: profilError } = await admin.from("profils").insert({
+          id: utilisateurExistant.id,
+          nom: `${candidature.prenom} ${candidature.nom}`,
+          entreprise: candidature.entreprise,
+          metier: candidature.metier,
+          email: candidature.email,
+        });
+        if (!profilError) {
+          await admin.from("candidatures").update({ statut: "accepted" }).eq("id", params.id);
+          return NextResponse.json({
+            ok: true,
+            info: "Un compte existait déjà sans profil — profil recréé, candidature acceptée.",
+          });
+        }
+      }
+    }
     return NextResponse.json(
-      { error: "Impossible de créer le compte / envoyer l'invitation" },
+      { error: inviteError?.message ?? "Impossible de créer le compte / envoyer l'invitation" },
       { status: 500 }
     );
   }

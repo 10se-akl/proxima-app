@@ -283,6 +283,31 @@ create table if not exists evenements_projet (
   created_at timestamptz not null default now()
 );
 
+-- ============================================================
+-- Module 12 — Numéro de devis unique par artisan. Le code calcule le
+-- numéro en comptant les devis déjà émis puis en ajoutant 1 (ex :
+-- 2026-014). Sans cette contrainte, deux requêtes concurrentes (double
+-- clic accidentel, deux onglets ouverts au même moment) pourraient
+-- compter le même total et créer deux devis avec le même numéro — ce
+-- qui viole l'obligation légale de numérotation unique, chronologique
+-- et continue. La base refuse maintenant l'insertion dans ce cas, et
+-- le code (voir app/api/ai/generer-devis/route.ts) réessaie avec le
+-- numéro suivant si ça arrive.
+-- ============================================================
+
+-- Postgres ne supporte pas "add constraint if not exists" — ce bloc
+-- ajoute la contrainte seulement si elle n'existe pas déjà, pour pouvoir
+-- réexécuter ce fichier sans erreur.
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'devis_artisan_numero_unique'
+  ) then
+    alter table devis add constraint devis_artisan_numero_unique
+      unique (artisan_id, numero);
+  end if;
+end $$;
+
 create index if not exists evenements_projet_demande_id_idx
   on evenements_projet (demande_id, created_at);
 

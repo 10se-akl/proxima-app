@@ -11,6 +11,16 @@ export function ActionsCandidature({ candidature }: { candidature: Candidature }
   const [erreur, setErreur] = useState<string | null>(null);
 
   async function agir(action: "accepter" | "refuser") {
+    // Confirmation explicite avant d'agir : accepter crée réellement un
+    // compte et envoie une invitation, refuser est définitif (pas de
+    // "annuler" ensuite) — un clic accidentel ne doit jamais suffire.
+    const confirme = window.confirm(
+      action === "accepter"
+        ? `Accepter ${candidature.prenom} ${candidature.nom} ? Un compte Compyo sera créé et un email d'invitation lui sera envoyé immédiatement.`
+        : `Refuser ${candidature.prenom} ${candidature.nom} ? Cette action est définitive.`
+    );
+    if (!confirme) return;
+
     setErreur(null);
     setChargement(action);
 
@@ -23,7 +33,8 @@ export function ActionsCandidature({ candidature }: { candidature: Candidature }
     setChargement(null);
 
     if (!res.ok) {
-      setErreur("Action impossible. Réessayez.");
+      const data = await res.json().catch(() => null);
+      setErreur(data?.error ?? "Action impossible. Réessayez.");
       return;
     }
 

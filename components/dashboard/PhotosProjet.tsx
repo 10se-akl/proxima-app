@@ -79,7 +79,14 @@ export function PhotosProjet({
       .update({ photos: cheminsMisAJour })
       .eq("id", demandeId);
 
-    if (!updateError) {
+    if (updateError) {
+      // Les fichiers sont bien envoyés dans le stockage à ce stade, mais
+      // le projet ne les référence pas encore : sans ce message, l'artisan
+      // croirait ses photos perdues alors qu'elles existent, juste non
+      // reliées. Il peut réessayer sans risque de doublon (nouveaux
+      // chemins horodatés à chaque tentative).
+      setErreur("Photos envoyées mais non enregistrées sur le projet. Réessayez.");
+    } else {
       onChemins(cheminsMisAJour);
       await enregistrerEvenement(supabase, {
         demandeId,
@@ -97,9 +104,21 @@ export function PhotosProjet({
 
   async function supprimerPhoto(chemin: string) {
     if (!window.confirm("Supprimer cette photo ?")) return;
-    await supabase.storage.from("photos").remove([chemin]);
+    setErreur(null);
+    const { error: storageError } = await supabase.storage.from("photos").remove([chemin]);
     const cheminsMisAJour = chemins.filter((c) => c !== chemin);
-    await supabase.from("demandes").update({ photos: cheminsMisAJour }).eq("id", demandeId);
+    const { error: updateError } = await supabase
+      .from("demandes")
+      .update({ photos: cheminsMisAJour })
+      .eq("id", demandeId);
+
+    // On ne met à jour l'affichage que si les deux suppressions ont
+    // réussi — sinon l'écran montrerait une photo comme supprimée alors
+    // qu'elle existe encore côté stockage ou côté projet.
+    if (storageError || updateError) {
+      setErreur("Impossible de supprimer cette photo. Réessayez.");
+      return;
+    }
     onChemins(cheminsMisAJour);
   }
 

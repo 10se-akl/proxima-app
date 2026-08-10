@@ -3,6 +3,28 @@ import { createClient } from "@/lib/supabase/server";
 import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { enregistrerEvenement } from "@/lib/timeline";
+import type { TypeChantier } from "@/types";
+
+// Même garde-fou que dans confirmer-import-captures : "type_chantier" est
+// un texte libre en base, sans contrainte enum — on revalide côté serveur
+// avant d'écrire, plutôt que de faire confiance à la réponse de l'IA.
+const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
+  "renovation_complete",
+  "salle_de_bain",
+  "cuisine",
+  "peinture",
+  "toiture",
+  "electricite",
+  "plomberie",
+  "chauffage",
+  "autre",
+];
+
+function typeChantierValide(valeur: string): TypeChantier {
+  return (TYPES_CHANTIER_VALIDES as string[]).includes(valeur)
+    ? (valeur as TypeChantier)
+    : "autre";
+}
 
 // L'IA extrait des informations FACTUELLES présentes dans le message
 // (nom, coordonnées si mentionnées, résumé du besoin, et une date/heure de
@@ -77,7 +99,7 @@ export async function POST(request: NextRequest) {
         telephone_client: extrait.telephone_client,
         email_client: extrait.email_client,
         adresse_client: extrait.adresse_client,
-        type_chantier: extrait.type_chantier || "autre",
+        type_chantier: typeChantierValide(extrait.type_chantier),
         description: extrait.description_resumee,
         informations_disponibles: `Message d'origine :\n${messageBrut}`,
       })

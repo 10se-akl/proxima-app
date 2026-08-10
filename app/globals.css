@@ -2,6 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Animations discrètes pour la landing page — implémentées en CSS pur
+   plutôt qu'avec Framer Motion : le bac à sable de développement n'a pas
+   accès au registre npm pour installer une nouvelle dépendance de façon
+   fiable, et une transition CSS déclenchée par IntersectionObserver
+   produit le même résultat visuel (un léger fondu + glissement au
+   défilement) sans ajouter de poids ni de risque de build. Voir le hook
+   useRevealOnScroll dans components/marketing/LandingPage.tsx. */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /* "Atténuer la luminosité" — pas un vrai mode sombre (ça demanderait de
    revoir la couleur de chaque écran individuellement), juste un voile
    semi-transparent au-dessus de toute l'app pour travailler discrètement

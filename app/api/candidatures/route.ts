@@ -50,9 +50,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Ne bloque jamais la réponse au visiteur si l'email échoue. On reconstruit
-  // l'objet à partir des données déjà en main plutôt que de les relire.
-  notifierNouvelleCandidature({
+  // IMPORTANT : on attend la fin de l'envoi avant de répondre. Sur un
+  // environnement serverless (Vercel), le traitement peut être coupé net
+  // dès que la réponse HTTP est envoyée — un appel "en tâche de fond" sans
+  // await n'a alors aucune garantie de se terminer, ce qui rendait l'envoi
+  // aléatoire (parfois reçu, parfois non, sans aucune erreur visible nulle
+  // part, puisque le processus était tué avant même d'avoir pu échouer
+  // proprement). notifierNouvelleCandidature() attrape déjà ses propres
+  // erreurs en interne, donc l'attendre ici ne fait toujours pas échouer la
+  // candidature si l'email a un problème — juste que l'envoi a maintenant
+  // la garantie de réellement se terminer.
+  await notifierNouvelleCandidature({
     nom,
     prenom,
     entreprise: entreprise || null,

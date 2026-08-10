@@ -24,6 +24,9 @@ export default async function ProjetsPage() {
           <Link href="/dashboard/demandes/importer">
             <Button variant="ghost">Importer un message</Button>
           </Link>
+          <Link href="/dashboard/demandes/importer-capture">
+            <Button variant="ghost">Importer des captures d&apos;écran</Button>
+          </Link>
           <Link href="/dashboard/demandes/nouvelle">
             <Button>+ Nouveau projet</Button>
           </Link>

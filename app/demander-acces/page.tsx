@@ -213,6 +213,18 @@ function DemanderAccesForm() {
 
             {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
+            <p className="text-xs text-ink/50 -mt-1">
+              En envoyant ce formulaire, vous acceptez nos{" "}
+              <Link href="/cgu" className="underline hover:text-ink/80">
+                CGU
+              </Link>{" "}
+              et notre{" "}
+              <Link href="/politique-de-confidentialite" className="underline hover:text-ink/80">
+                politique de confidentialité
+              </Link>
+              .
+            </p>
+
             <Button type="submit" disabled={envoi} className="self-start">
               {envoi ? "Envoi en cours…" : "Envoyer ma candidature"}
             </Button>

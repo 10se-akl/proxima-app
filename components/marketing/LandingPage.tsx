@@ -471,8 +471,7 @@ function BetaPrivee() {
 }
 
 // ============================================================
-// Pied de page — sobre, sans lien mort. Les pages mentions légales et
-// confidentialité seront ajoutées ici dès qu'elles existeront (en cours).
+// Pied de page — sobre, sans lien mort.
 // ============================================================
 function Footer() {
   return (
@@ -482,12 +481,23 @@ function Footer() {
           <CompyoMark variante="blanc" taille={26} />
           <span className="text-sm text-paper/70">Compyo — bêta privée</span>
         </div>
-        <a
-          href="mailto:proxima.saas@gmail.com"
-          className="font-mono text-xs text-paper/40 hover:text-paper/70 transition-colors"
-        >
-          proxima.saas@gmail.com
-        </a>
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-paper/50">
+          <Link href="/mentions-legales" className="hover:text-paper/80 transition-colors">
+            Mentions légales
+          </Link>
+          <Link href="/politique-de-confidentialite" className="hover:text-paper/80 transition-colors">
+            Confidentialité
+          </Link>
+          <Link href="/cgu" className="hover:text-paper/80 transition-colors">
+            CGU
+          </Link>
+          <a
+            href="mailto:proxima.saas@gmail.com"
+            className="font-mono text-paper/40 hover:text-paper/70 transition-colors"
+          >
+            proxima.saas@gmail.com
+          </a>
+        </nav>
       </div>
     </footer>
   );

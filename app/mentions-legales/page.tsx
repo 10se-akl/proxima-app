@@ -30,9 +30,15 @@ export default function MentionsLegalesPage() {
           </li>
         </ul>
         <p>
-          Adresse : 20 rue de l&apos;Orme, 91460.
+          Domicile (département) : Essonne (91).
           <br />
           Contact : <a href="mailto:thfoinaxel@gmail.com">thfoinaxel@gmail.com</a>
+        </p>
+        <p className="text-sm text-ink/50">
+          Conformément à l&apos;article 6-III de la loi n° 2004-575 du 21 juin 2004 (LCEN), les
+          éditeurs non-professionnels peuvent ne pas rendre publique leur adresse complète, à
+          condition de l&apos;avoir communiquée à leur hébergeur. L&apos;adresse complète peut être
+          transmise sur demande légitime en écrivant à l&apos;email ci-dessus.
         </p>
         <p>
           Compyo n&apos;est, à la date de mise à jour de cette page, exploité par aucune personne

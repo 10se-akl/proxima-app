@@ -187,7 +187,7 @@ export default function ParametresPage() {
                 <img
                   src={logoUrl}
                   alt="Logo de l'entreprise"
-                  className="w-16 h-16 object-contain border border-ink/10 bg-white"
+                  className="w-16 h-16 object-contain border border-ink/10 bg-surface"
                 />
               ) : (
                 <div className="w-16 h-16 grid place-items-center border border-dashed border-ink/15 text-[10px] text-ink/30 text-center">

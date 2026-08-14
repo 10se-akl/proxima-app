@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site";
 
 // L'espace privé (/dashboard, /admin) ne doit jamais être indexé — seule
 // la vitrine publique a vocation à apparaître dans les résultats de
@@ -10,6 +11,6 @@ export default function robots(): MetadataRoute.Robots {
       allow: "/",
       disallow: ["/dashboard", "/admin"],
     },
-    sitemap: "https://compyo.vercel.app/sitemap.xml",
+    sitemap: `${SITE_URL}/sitemap.xml`,
   };
 }

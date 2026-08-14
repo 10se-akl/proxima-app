@@ -30,7 +30,7 @@ export function ModeNuitToggle({ className }: { className?: string }) {
   if (!pret) return null;
 
   return (
-    <button onClick={basculer} className={className ?? "text-xs text-paper/60 hover:text-paper underline"}>
+    <button onClick={basculer} className={className ?? "text-xs text-white/60 hover:text-white underline"}>
       {actif ? "☀️ Désactiver l'atténuation" : "🌙 Atténuer la luminosité"}
     </button>
   );

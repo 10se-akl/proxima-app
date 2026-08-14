@@ -59,10 +59,14 @@ export async function POST(request: NextRequest) {
     { data: profil },
     { data: parametresBrutes },
   ] = await Promise.all([
+    // Filtre artisan_id explicite en plus de la RLS : défense en profondeur,
+    // pour ne pas dépendre uniquement d'une policy qui pourrait être
+    // modifiée par erreur plus tard (relevé lors de l'audit du 12/08).
     supabase
       .from("demandes")
       .select("nom_client, description, informations_disponibles, notes, type_chantier, questions_manquantes")
       .eq("id", demandeId)
+      .eq("artisan_id", user.id)
       .single(),
     // Mêmes sources que l'analyse IA (voir /api/ai/analyser-demande) : sans
     // ça, une note vocale dictée après une visite ou en fin de chantier ne

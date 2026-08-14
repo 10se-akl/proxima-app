@@ -2,6 +2,38 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Valeurs des tokens de couleur, en triplets RGB (sans la fonction rgb())
+   pour que Tailwind puisse y appliquer une opacité via <alpha-value> —
+   voir tailwind.config.ts. Le mode sombre ne redéfinit QUE ces variables :
+   aucune classe utilitaire (bg-paper, text-ink...) n'a besoin de changer
+   dans les composants, elle se met à jour automatiquement selon que
+   <html> porte la classe .dark ou non (voir ThemeToggle.tsx). "signal" et
+   ses variantes restent volontairement identiques dans les deux modes :
+   c'est la couleur de marque, elle ne doit pas changer d'identité selon
+   le thème (comme sur la plupart des sites qui gardent leur couleur
+   d'accent stable en mode sombre). */
+:root {
+  --c-paper: 250 248 245; /* blanc cassé */
+  --c-paper-warm: 243 237 230;
+  --c-ink: 31 41 55; /* anthracite, texte principal en mode clair */
+  --c-steel: 92 112 128;
+  --c-gris-clair: 232 232 232;
+  --c-signal: 201 107 74; /* terracotta */
+  --c-signal-clair: 232 197 182;
+  --c-signal-fonce: 168 86 58;
+  --c-anthracite: 31 41 55; /* fixe, ne s'inverse jamais avec le mode */
+  --c-surface: 255 255 255; /* blanc pur, cartes/panneaux élevés */
+}
+
+.dark {
+  --c-paper: 21 23 26; /* fond de page sombre, pas noir pur */
+  --c-paper-warm: 28 31 36;
+  --c-ink: 245 245 244; /* texte principal clair en mode sombre */
+  --c-steel: 148 160 173;
+  --c-gris-clair: 42 46 53;
+  --c-surface: 30 33 38; /* légèrement plus clair que le fond, relief inversé */
+}
+
 /* Animations discrètes pour la landing page — implémentées en CSS pur
    plutôt qu'avec Framer Motion : le bac à sable de développement n'a pas
    accès au registre npm pour installer une nouvelle dépendance de façon
@@ -19,6 +51,21 @@
     opacity: 1;
     transform: translateY(0);
   }
+
+  /* Scroll fluide pour les liens d'ancrage du menu (#parcours, #solutions,
+     #beta) — un saut brutal fait "cassé" sur ce genre de site vitrine.
+     Volontairement gardé sous prefers-reduced-motion, comme .reveal. */
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Compense le header sticky (h-16 = 64px) pour que le titre d'une section
+   ciblée par une ancre n'arrive pas caché derrière lui. */
+#solutions,
+#parcours,
+#beta {
+  scroll-margin-top: 4.5rem;
 }
 
 /* "Atténuer la luminosité" — pas un vrai mode sombre (ça demanderait de

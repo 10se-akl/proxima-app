@@ -6,6 +6,8 @@ import { DemandeCard } from "@/components/dashboard/DemandeCard";
 import { AConfirmer } from "@/components/dashboard/AConfirmer";
 import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureProjet";
 import { ResumeJournee } from "@/components/dashboard/ResumeJournee";
+import { ConseilsCompagnon } from "@/components/dashboard/ConseilsCompagnon";
+import { MiniApercu } from "@/components/dashboard/MiniApercu";
 import type { Projet } from "@/types";
 
 const SEUIL_RELANCE_JOURS = 7;
@@ -255,28 +257,40 @@ export default async function DashboardHome() {
 
   if (listeProjets.length === 0) {
     return (
-      <div className="p-8 max-w-2xl">
-        <h1 className="font-display text-2xl font-semibold">
-          Bonjour {premierPrenom} 👋
-        </h1>
-        <Card className="mt-8 p-8 text-center">
-          <p className="font-display text-lg font-semibold">Bienvenue sur Compyo.</p>
-          <p className="mt-2 text-sm text-ink/60 max-w-sm mx-auto">
-            Tout commence par un projet. Créez le premier dès qu&apos;un client vous
-            contacte — trente secondes suffisent, le reste se complète plus tard.
-          </p>
-          <div className="mt-6 flex items-center justify-center gap-3">
-            <Link href="/dashboard/demandes/nouvelle">
-              <Button>+ Créer mon premier projet</Button>
-            </Link>
-          </div>
-        </Card>
+      // Mise en page à deux colonnes sur grand écran : le contenu principal
+      // reste étroit (max-w-2xl, plus lisible qu'une pleine largeur), et le
+      // panneau de conseils comble l'espace qui restait vide à droite sur
+      // un écran large (relevé directement par l'artisan qui teste l'app).
+      // Colonne masquée sous lg : sur mobile/tablette, pas de vide à combler.
+      <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
+        <div className="max-w-2xl flex-1 min-w-0">
+          <h1 className="font-display text-2xl font-semibold">
+            Bonjour {premierPrenom} 👋
+          </h1>
+          <Card className="mt-8 p-8 text-center">
+            <p className="font-display text-lg font-semibold">Bienvenue sur Compyo.</p>
+            <p className="mt-2 text-sm text-ink/60 max-w-sm mx-auto">
+              Tout commence par un projet. Créez le premier dès qu&apos;un client vous
+              contacte — trente secondes suffisent, le reste se complète plus tard.
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <Link href="/dashboard/demandes/nouvelle">
+                <Button>+ Créer mon premier projet</Button>
+              </Link>
+            </div>
+          </Card>
+        </div>
+        <aside className="hidden lg:block w-72 shrink-0">
+          <ConseilsCompagnon />
+          <MiniApercu />
+        </aside>
       </div>
     );
   }
 
   return (
-    <div className="p-8 max-w-2xl">
+    <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
+      <div className="max-w-2xl flex-1 min-w-0">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-2xl font-semibold">
           Bonjour {premierPrenom} 👋
@@ -432,6 +446,11 @@ export default async function DashboardHome() {
       )}
 
       <ResumeJournee />
+      </div>
+      <aside className="hidden lg:block w-72 shrink-0">
+        <ConseilsCompagnon />
+        <MiniApercu />
+      </aside>
     </div>
   );
 }
@@ -553,13 +572,13 @@ function determinerProchaineAction(listes: {
 function ProchaineAction({ action }: { action: ActionSuggestion | null }) {
   if (!action) {
     return (
-      <div className="mt-6 p-4 border border-ink/10 bg-paper-warm text-sm text-ink/50">
+      <div className="mt-6 p-4 rounded-2xl border border-ink/10 bg-paper-warm text-sm text-ink/50">
         Rien d&apos;urgent pour l&apos;instant. 👍
       </div>
     );
   }
   const contenu = (
-    <div className="mt-6 p-4 border border-ink bg-ink text-paper flex items-center gap-3 hover:bg-ink/90 transition-colors">
+    <div className="mt-6 p-4 rounded-2xl border border-ink bg-ink text-paper flex items-center gap-3 transition-all duration-200 hover:bg-ink/90 hover:-translate-y-0.5 hover:shadow-lg">
       <span className="text-lg">{action.emoji}</span>
       <div>
         <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-paper/50">
@@ -597,8 +616,12 @@ function LigneCliquable({
   children: React.ReactNode;
 }) {
   const contenu = (
+    // hover:border-signal/30 + léger décalage vers le haut : ces lignes
+    // mènent toutes vers la fiche d'un projet, mais rien ne le signalait
+    // visuellement avant (relevé : l'accueil "ne ressemble pas à des
+    // boutons"). Cohérent avec l'effet déjà utilisé sur la landing page.
     <Card
-      className={`p-3.5 flex items-center gap-3 ${
+      className={`p-3.5 flex items-center gap-3 transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06] ${
         accent ? "border-signal/30 bg-signal/5" : ""
       }`}
     >

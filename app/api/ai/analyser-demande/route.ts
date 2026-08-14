@@ -49,6 +49,9 @@ export async function POST(request: NextRequest) {
         "description, informations_disponibles, notes, questions_manquantes, derniere_modification_le, derniere_analyse_le"
       )
       .eq("id", demandeId)
+      // Filtre artisan_id explicite en plus de la RLS : défense en
+      // profondeur (relevé lors de l'audit du 12/08).
+      .eq("artisan_id", user.id)
       .single(),
     supabase
       .from("notes_vocales")
@@ -125,7 +128,8 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVoca
         statut: "analyse",
         derniere_analyse_le: new Date().toISOString(),
       })
-      .eq("id", demandeId);
+      .eq("id", demandeId)
+      .eq("artisan_id", user.id);
 
     if (updateError) {
       await enregistrerLog(supabase, {

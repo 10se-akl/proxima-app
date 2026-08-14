@@ -126,7 +126,7 @@ function BlocEvenement({
         <>
           {/* Fond transparent pour fermer le menu au clic ailleurs */}
           <div className="fixed inset-0 z-20" onClick={() => setMenuOuvert(false)} />
-          <div className="relative z-30 mt-1 bg-white border border-ink/15 shadow-lg text-xs w-44">
+          <div className="relative z-30 mt-1 bg-surface border border-ink/15 shadow-lg text-xs w-44">
             {evenement.demande_id && (
               <button
                 onClick={() => router.push(`/dashboard/demandes/${evenement.demande_id}`)}
@@ -192,7 +192,7 @@ export function GrilleAgenda({
   );
 
   return (
-    <div className="border border-ink/10 bg-white overflow-x-auto">
+    <div className="border border-ink/10 bg-surface overflow-x-auto">
       <div className="min-w-[700px]">
         <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-ink/10">
           <div />

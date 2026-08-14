@@ -13,6 +13,16 @@ function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 }
 
+// Même garde-fou que pour quantité/prix unitaire (voir modifierLigne) :
+// un déplacement, une marge ou une TVA négative passerait le contrôle
+// final "total_ttc <= 0" tant que le total reste positif, réduisant
+// silencieusement le montant réellement envoyé au client sans aucun
+// avertissement — on refuse donc la saisie négative dès la source.
+function valeurPositive(valeur: string): number {
+  const nombre = Number(valeur);
+  return !Number.isFinite(nombre) || nombre < 0 ? 0 : nombre;
+}
+
 // Étape intermédiaire entre "l'IA + le moteur métier ont préparé un
 // brouillon" et "le PDF part au client". L'artisan relit, ajuste
 // chaque ligne si besoin, et valide explicitement — jamais d'export
@@ -216,22 +226,25 @@ export function ValiderDevis({
           label="Déplacement (€)"
           type="number"
           step="0.01"
+          min={0}
           value={deplacement}
-          onChange={(e) => setDeplacement(Number(e.target.value) || 0)}
+          onChange={(e) => setDeplacement(valeurPositive(e.target.value))}
         />
         <Field
           label="Marge (%)"
           type="number"
           step="0.01"
+          min={0}
           value={margePct}
-          onChange={(e) => setMargePct(Number(e.target.value) || 0)}
+          onChange={(e) => setMargePct(valeurPositive(e.target.value))}
         />
         <Field
           label="TVA (%)"
           type="number"
           step="0.01"
+          min={0}
           value={tvaPct}
-          onChange={(e) => setTvaPct(Number(e.target.value) || 0)}
+          onChange={(e) => setTvaPct(valeurPositive(e.target.value))}
         />
       </div>
 

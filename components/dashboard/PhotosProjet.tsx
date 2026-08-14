@@ -161,7 +161,7 @@ export function PhotosProjet({
               )}
               <button
                 onClick={() => supprimerPhoto(chemin)}
-                className="absolute top-1 right-1 w-6 h-6 bg-ink/70 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 w-6 h-6 bg-black/70 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                 title="Supprimer"
               >
                 ✕

@@ -31,10 +31,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  // Filtre artisan_id explicite en plus de la RLS : défense en profondeur
+  // (relevé lors de l'audit du 12/08).
   const { data: projet, error: fetchError } = await supabase
     .from("demandes")
     .select("nom_client, description, informations_disponibles, questions_manquantes")
     .eq("id", demandeId)
+    .eq("artisan_id", user.id)
     .single();
 
   if (fetchError || !projet) {

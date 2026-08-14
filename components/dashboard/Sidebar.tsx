@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ModeNuitToggle } from "@/components/dashboard/ModeNuitToggle";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const LIENS = [
   { href: "/dashboard", label: "Accueil" },
@@ -28,22 +29,28 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
 
   return (
     <>
-      {/* Barre mobile : logo + bouton menu, remplace la sidebar sur petit écran */}
-      <div className="sm:hidden flex items-center justify-between bg-ink text-paper px-4 h-14">
+      {/* Barre mobile : logo + bouton menu, remplace la sidebar sur petit écran.
+          bg-anthracite (fixe) plutôt que bg-ink : la sidebar/barre de nav est
+          un élément de chrome permanent, comme le pied de page du site
+          vitrine — elle reste sombre dans les deux modes plutôt que de
+          s'inverser en une barre claire en mode sombre. Le texte utilise
+          donc du blanc fixe (text-white/...), pas text-paper qui, lui,
+          deviendrait sombre en mode sombre et disparaîtrait. */}
+      <div className="sm:hidden flex items-center justify-between bg-anthracite text-white px-4 h-14">
         <p className="font-display font-semibold">Compyo</p>
         <button
           onClick={() => setMenuOuvert(!menuOuvert)}
           className="p-2 -mr-2"
           aria-label="Menu"
         >
-          <span className="block w-5 h-px bg-paper mb-1.5" />
-          <span className="block w-5 h-px bg-paper mb-1.5" />
-          <span className="block w-5 h-px bg-paper" />
+          <span className="block w-5 h-px bg-white mb-1.5" />
+          <span className="block w-5 h-px bg-white mb-1.5" />
+          <span className="block w-5 h-px bg-white" />
         </button>
       </div>
 
       {menuOuvert && (
-        <div className="sm:hidden bg-ink text-paper px-3 pb-4">
+        <div className="sm:hidden bg-anthracite text-white px-3 pb-4">
           <nav className="flex flex-col gap-1">
             {LIENS.map((lien) => {
               const actif = pathname === lien.href;
@@ -55,7 +62,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
                   className={`px-3 py-2.5 text-sm transition-colors ${
                     actif
                       ? "bg-white/10 text-white font-medium"
-                      : "text-paper/60 hover:text-paper hover:bg-white/5"
+                      : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   {lien.label}
@@ -64,11 +71,14 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
             })}
           </nav>
           <div className="mt-3 pt-3 border-t border-white/10 px-3 flex flex-col gap-2 items-start">
-            <p className="text-xs text-paper/50 font-mono truncate">{nomArtisan}</p>
-            <ModeNuitToggle />
+            <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
+            <div className="flex items-center gap-3">
+              <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
+              <ModeNuitToggle className="text-xs text-white/60 hover:text-white underline" />
+            </div>
             <button
               onClick={handleLogout}
-              className="text-xs text-paper/60 hover:text-paper underline"
+              className="text-xs text-white/60 hover:text-white underline"
             >
               Se déconnecter
             </button>
@@ -77,7 +87,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
       )}
 
       {/* Sidebar classique, visible uniquement à partir de la taille tablette */}
-      <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-ink text-paper min-h-screen flex-col justify-between">
+      <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-anthracite text-white min-h-screen flex-col justify-between">
         <div>
           <div className="px-6 py-6 border-b border-white/10">
             <p className="font-display font-semibold">Compyo</p>
@@ -92,7 +102,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
                   className={`px-3 py-2.5 text-sm rounded-none transition-colors ${
                     actif
                       ? "bg-white/10 text-white font-medium"
-                      : "text-paper/60 hover:text-paper hover:bg-white/5"
+                      : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
                 >
                   {lien.label}
@@ -103,11 +113,14 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
         </div>
 
         <div className="px-6 py-6 border-t border-white/10 flex flex-col gap-2 items-start">
-          <p className="text-xs text-paper/50 font-mono truncate">{nomArtisan}</p>
-          <ModeNuitToggle />
+          <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
+          <div className="flex items-center gap-3">
+            <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
+            <ModeNuitToggle className="text-xs text-white/60 hover:text-white underline" />
+          </div>
           <button
             onClick={handleLogout}
-            className="text-xs text-paper/60 hover:text-paper underline"
+            className="text-xs text-white/60 hover:text-white underline"
           >
             Se déconnecter
           </button>

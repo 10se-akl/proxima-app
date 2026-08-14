@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
 
 // Bouton discret, jamais affiché tout seul comme un rapport imposé : c'est
 // l'artisan qui décide de le consulter, en fin de journée. Purement factuel
@@ -31,18 +32,24 @@ export function ResumeJournee() {
 
   if (!ouvert) {
     return (
-      <div className="mt-6">
-        <button
-          onClick={ouvrirResume}
-          className="text-xs text-ink/50 hover:text-ink underline underline-offset-2"
-        >
-          📋 Voir ce qui mérite mon attention avant de partir
-        </button>
-        <p className="mt-1 text-[11px] text-ink/35">
+      // Auparavant un simple lien texte souligné faisant office de bouton —
+      // trop discret pour être reconnu comme cliquable, et le texte du
+      // lien ("Voir ce qui mérite mon attention avant de partir") ne
+      // ressemblait pas à un libellé d'action (relevé directement par
+      // l'artisan qui teste l'app). Séparation claire maintenant : la
+      // carte explique CE QUE C'EST (texte, non cliquable), un vrai
+      // bouton avec un verbe d'action ("Faire l'analyse") déclenche
+      // l'action — deux rôles, deux éléments visuels distincts.
+      <Card className="mt-6 p-5">
+        <p className="text-sm font-medium text-ink">📋 À vérifier avant de partir</p>
+        <p className="mt-1 text-[11px] text-ink/45">
           Nouveaux contacts, devis en attente, dossiers urgents sans rendez-vous — un
           contrôle en 20 secondes, rien de plus.
         </p>
-      </div>
+        <Button onClick={ouvrirResume} variant="secondary" className="mt-3 text-xs px-4 py-2">
+          Faire l&apos;analyse
+        </Button>
+      </Card>
     );
   }
 

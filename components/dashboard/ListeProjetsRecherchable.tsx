@@ -43,7 +43,7 @@ export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
           placeholder="Rechercher un nom, un téléphone, une adresse…"
-          className="flex-1 min-w-[200px] border border-ink/15 bg-white px-3 py-2.5 text-sm focus:outline-none focus:border-ink"
+          className="flex-1 min-w-[200px] border border-ink/15 bg-surface px-3 py-2.5 text-sm focus:outline-none focus:border-ink"
         />
         {projetsTermines.length > 0 && (
           <button

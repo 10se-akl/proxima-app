@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { useParallaxSouris } from "@/components/useParallaxSouris";
 
 export function LandingPage() {
   return (
@@ -110,12 +112,13 @@ function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
+          <ThemeToggle className="text-base leading-none hover:scale-110 transition-transform" />
           <Link href="/login" className="hidden sm:block text-sm text-ink/70 hover:text-ink">
             Se connecter
           </Link>
           <Link
             href="/demander-acces"
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all"
           >
             Rejoindre la bêta privée
           </Link>
@@ -158,13 +161,13 @@ function Hero() {
           <div className="mt-9 flex flex-wrap items-center gap-4">
             <Link
               href="/demander-acces"
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce transition-colors shadow-sm shadow-signal/20"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce hover:scale-[1.03] active:scale-[0.97] transition-all shadow-sm shadow-signal/20"
             >
               Rejoindre la bêta privée
             </Link>
             <a
               href="#parcours"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-ink/15 text-ink font-medium px-7 py-3.5 hover:border-ink/30 hover:bg-white transition-colors"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-ink/15 text-ink font-medium px-7 py-3.5 hover:border-ink/30 hover:bg-surface hover:scale-[1.03] active:scale-[0.97] transition-all"
             >
               Découvrir Compyo
             </a>
@@ -186,13 +189,18 @@ function Hero() {
 // l'app réelle (voir app/dashboard/page.tsx), simplement figée pour la
 // démonstration.
 function MockupProduit() {
+  const ref = useParallaxSouris<HTMLDivElement>(6, "section");
+
   return (
-    <div className="relative">
+    <div
+      ref={ref}
+      className="relative transition-transform duration-200 ease-out will-change-transform [transform-style:preserve-3d]"
+    >
       <div
         aria-hidden
         className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-ink/5"
       />
-      <div className="relative rounded-2xl border border-ink/10 bg-white shadow-xl shadow-ink/[0.06] overflow-hidden">
+      <div className="relative rounded-2xl border border-ink/10 bg-surface shadow-xl shadow-ink/[0.06] overflow-hidden">
         <div className="flex items-center gap-2 px-5 py-3.5 border-b border-ink/10 bg-paper/60">
           <span className="w-2.5 h-2.5 rounded-full bg-ink/15" />
           <span className="w-2.5 h-2.5 rounded-full bg-ink/15" />
@@ -258,7 +266,7 @@ function BandeauConfiance() {
   ];
 
   return (
-    <section className="bg-white border-y border-ink/10">
+    <section className="bg-surface border-y border-ink/10">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
         {items.map((item) => (
           <span
@@ -301,7 +309,7 @@ function Problemes() {
         <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {items.map((item, i) => (
             <Reveal key={item.titre} delay={i * 60}>
-              <div className="h-full rounded-2xl border border-ink/10 bg-white p-6">
+              <div className="h-full rounded-2xl border border-ink/10 bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-ink/[0.06]">
                 <h3 className="font-semibold text-sm">{item.titre}</h3>
                 <p className="mt-2 text-sm text-ink/60 leading-relaxed">{item.texte}</p>
               </div>
@@ -329,7 +337,7 @@ function Solutions() {
   ];
 
   return (
-    <section id="solutions" className="bg-white border-y border-ink/10">
+    <section id="solutions" className="bg-surface border-y border-ink/10">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
         <Reveal>
           <SectionLabel>Ce que Compyo change</SectionLabel>
@@ -341,7 +349,7 @@ function Solutions() {
         <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {items.map((item, i) => (
             <Reveal key={item.titre} delay={i * 50}>
-              <div className="h-full rounded-2xl border border-ink/10 bg-paper p-6 hover:border-signal/30 hover:bg-white transition-colors">
+              <div className="h-full rounded-2xl border border-ink/10 bg-paper p-6 hover:border-signal/30 hover:bg-surface transition-colors">
                 <h3 className="font-semibold text-sm">{item.titre}</h3>
                 <p className="mt-2 text-sm text-ink/60 leading-relaxed">{item.texte}</p>
               </div>
@@ -383,7 +391,7 @@ function Parcours() {
             <Reveal key={e.n} delay={i * 40}>
               <div className="flex gap-5">
                 <div className="flex flex-col items-center">
-                  <span className="shrink-0 grid place-items-center w-9 h-9 rounded-full border border-ink/15 font-mono text-xs text-steel bg-white">
+                  <span className="shrink-0 grid place-items-center w-9 h-9 rounded-full border border-ink/15 font-mono text-xs text-steel bg-surface">
                     {e.n}
                   </span>
                   {i < etapes.length - 1 && <span className="w-px flex-1 bg-ink/10 my-1" />}
@@ -414,13 +422,18 @@ function Resultats() {
   ];
 
   return (
-    <section className="bg-ink">
+    // bg-anthracite (fixe) et non bg-ink (qui s'inverse avec le mode) :
+    // cette section doit rester un bloc sombre constant dans les DEUX
+    // modes — voir tailwind.config.ts pour l'explication du token. Le
+    // texte utilise donc du blanc fixe (text-white/...), pas text-paper
+    // (qui deviendrait sombre, donc invisible, en mode sombre).
+    <section className="bg-anthracite">
       <div className="max-w-4xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
         <Reveal>
-          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-paper/50 mb-5">
+          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-5">
             Pourquoi Compyo
           </p>
-          <p className="font-display text-2xl sm:text-4xl text-paper font-semibold leading-snug max-w-2xl mx-auto">
+          <p className="font-display text-2xl sm:text-4xl text-white font-semibold leading-snug max-w-2xl mx-auto">
             L&apos;IA ne remplace jamais l&apos;artisan. Vous gardez toujours le contrôle.
           </p>
         </Reveal>
@@ -428,7 +441,7 @@ function Resultats() {
         <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
           {items.map((texte, i) => (
             <Reveal key={texte} delay={i * 70} className="inline-flex">
-              <span className="inline-flex rounded-full border border-white/15 text-paper/85 text-sm px-5 py-2.5">
+              <span className="inline-flex rounded-full border border-white/15 text-white/85 text-sm px-5 py-2.5">
                 {texte}
               </span>
             </Reveal>
@@ -444,7 +457,7 @@ function Resultats() {
 // ============================================================
 function BetaPrivee() {
   return (
-    <section id="beta" className="bg-white border-y border-ink/10">
+    <section id="beta" className="bg-surface border-y border-ink/10">
       <div className="max-w-3xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
         <Reveal>
           <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">
@@ -475,25 +488,27 @@ function BetaPrivee() {
 // ============================================================
 function Footer() {
   return (
-    <footer className="bg-ink">
+    // Même raison qu'au-dessus (Resultats) : bg-anthracite fixe + texte
+    // blanc fixe, pas ink/paper qui s'inverseraient avec le mode.
+    <footer className="bg-anthracite">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-2.5">
           <CompyoMark variante="blanc" taille={26} />
-          <span className="text-sm text-paper/70">Compyo — bêta privée</span>
+          <span className="text-sm text-white/70">Compyo — bêta privée</span>
         </div>
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-paper/50">
-          <Link href="/mentions-legales" className="hover:text-paper/80 transition-colors">
+        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/50">
+          <Link href="/mentions-legales" className="hover:text-white/80 transition-colors">
             Mentions légales
           </Link>
-          <Link href="/politique-de-confidentialite" className="hover:text-paper/80 transition-colors">
+          <Link href="/politique-de-confidentialite" className="hover:text-white/80 transition-colors">
             Confidentialité
           </Link>
-          <Link href="/cgu" className="hover:text-paper/80 transition-colors">
+          <Link href="/cgu" className="hover:text-white/80 transition-colors">
             CGU
           </Link>
           <a
             href="mailto:proxima.saas@gmail.com"
-            className="font-mono text-paper/40 hover:text-paper/70 transition-colors"
+            className="font-mono text-white/40 hover:text-white/70 transition-colors"
           >
             proxima.saas@gmail.com
           </a>

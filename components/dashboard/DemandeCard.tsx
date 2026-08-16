@@ -103,7 +103,7 @@ export function DemandeCard({ demande }: { demande: Projet }) {
 
   return (
     <Link href={`/dashboard/demandes/${demande.id}`}>
-      <Card className="p-5 hover:border-ink/30 transition-colors">
+      <Card className="p-5 transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <span
@@ -112,7 +112,7 @@ export function DemandeCard({ demande }: { demande: Projet }) {
             />
             <p className="font-semibold text-sm">{demande.nom_client}</p>
             {LABEL_TYPE_CHANTIER[demande.type_chantier] && (
-              <span className="text-[10px] text-ink/40 border border-ink/10 px-1.5 py-0.5">
+              <span className="text-[10px] text-ink/40 rounded-full border border-ink/10 px-1.5 py-0.5">
                 {LABEL_TYPE_CHANTIER[demande.type_chantier]}
               </span>
             )}
@@ -134,7 +134,7 @@ export function DemandeCard({ demande }: { demande: Projet }) {
               <button
                 onClick={marquerTermine}
                 disabled={enCours}
-                className="shrink-0 text-[11px] text-ink/50 hover:text-ink underline underline-offset-2 disabled:opacity-50"
+                className="shrink-0 text-[11px] text-ink/50 hover:text-ink underline underline-offset-2 transition-colors disabled:opacity-50"
               >
                 {enCours ? "…" : "✓ Marquer chantier terminé"}
               </button>

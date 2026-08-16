@@ -181,11 +181,11 @@ export default function ImporterCapturePage() {
 
   return (
     <div className="p-8 max-w-3xl">
-      <Link href="/dashboard/demandes" className="text-sm text-ink/60 hover:text-ink">
+      <Link href="/dashboard/demandes" className="text-sm text-ink/60 hover:text-ink transition-colors">
         ← Retour aux projets
       </Link>
 
-      <h1 className="mt-4 font-display text-2xl font-semibold">
+      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">
         Importer des captures d&apos;écran
       </h1>
       <p className="mt-2 text-sm text-ink/60">
@@ -208,7 +208,7 @@ export default function ImporterCapturePage() {
           />
           <label
             htmlFor="captures-input"
-            className="inline-flex items-center gap-2 bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-signal transition-colors cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl bg-ink text-paper text-sm font-medium px-4 py-2.5 transition-all duration-150 hover:bg-signal hover:scale-[1.02] hover:shadow-md cursor-pointer"
           >
             {analyseEnCours ? "Analyse en cours…" : "📷 Choisir des captures d'écran"}
           </label>
@@ -237,7 +237,10 @@ export default function ImporterCapturePage() {
       {lignes.length > 0 && (
         <div className="mt-8 flex flex-col gap-4">
           {lignes.map((l) => (
-            <Card key={l.index} className="p-5">
+            <Card
+              key={l.index}
+              className={`p-5 transition-colors ${l.erreur ? "border-signal/30" : ""}`}
+            >
               {l.erreur ? (
                 <p className="text-sm text-signal">
                   Capture {l.index + 1} : {l.erreur}
@@ -265,7 +268,7 @@ export default function ImporterCapturePage() {
                     <select
                       value={l.destination}
                       onChange={(e) => changerDestination(l.index, e.target.value)}
-                      className="w-full sm:w-auto border border-ink/15 bg-paper px-3 py-2 text-sm focus:outline-none focus:border-ink"
+                      className="w-full sm:w-auto rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                     >
                       <option value="nouveau">Créer un nouveau projet</option>
                       {(l.correspondances ?? []).map((c) => (

@@ -253,10 +253,10 @@ function NouvelEvenementForm() {
             <button
               type="button"
               onClick={() => setType("rendez_vous")}
-              className={`flex-1 px-4 py-2.5 text-sm border transition-colors ${
+              className={`flex-1 rounded-xl px-4 py-2.5 text-sm border transition-all duration-150 ${
                 type === "rendez_vous"
                   ? "bg-ink text-paper border-ink"
-                  : "border-ink/15 text-ink/60"
+                  : "border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink"
               }`}
             >
               Rendez-vous
@@ -264,8 +264,10 @@ function NouvelEvenementForm() {
             <button
               type="button"
               onClick={() => setType("tache")}
-              className={`flex-1 px-4 py-2.5 text-sm border transition-colors ${
-                type === "tache" ? "bg-ink text-paper border-ink" : "border-ink/15 text-ink/60"
+              className={`flex-1 rounded-xl px-4 py-2.5 text-sm border transition-all duration-150 ${
+                type === "tache"
+                  ? "bg-ink text-paper border-ink"
+                  : "border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink"
               }`}
             >
               Tâche
@@ -302,7 +304,7 @@ function NouvelEvenementForm() {
             </Button>
 
             {selecteurOuvert && (
-              <div className="mt-2 border border-ink/10 max-h-52 overflow-y-auto">
+              <div className="mt-2 rounded-xl border border-ink/10 max-h-52 overflow-y-auto overflow-hidden">
                 {projets.length === 0 && (
                   <p className="p-3 text-xs text-ink/40">Aucun projet actif.</p>
                 )}
@@ -311,7 +313,7 @@ function NouvelEvenementForm() {
                     key={p.id}
                     type="button"
                     onClick={() => choisirProjet(p)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left hover:bg-paper border-b border-ink/5 last:border-b-0"
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors hover:bg-paper border-b border-ink/5 last:border-b-0"
                   >
                     <span
                       className={`w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_PRIORITE[p.priorite]}`}

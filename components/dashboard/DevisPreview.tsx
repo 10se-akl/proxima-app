@@ -23,7 +23,7 @@ export function DevisPreview({
 
   return (
     <div>
-      <div id="devis-imprimable" className="border border-ink/10">
+      <div id="devis-imprimable" className="rounded-2xl border border-ink/10 overflow-hidden">
         <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-ink/10">
           <div className="flex items-start gap-3">
             {logoUrl && (

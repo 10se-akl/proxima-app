@@ -32,7 +32,10 @@ export default async function AdminCandidaturesPage() {
       </p>
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-semibold">Candidatures bêta privée</h1>
-        <a href="/admin/logs" className="text-sm text-ink/60 hover:text-ink underline">
+        <a
+          href="/admin/logs"
+          className="text-sm text-ink/60 underline decoration-ink/30 underline-offset-2 transition-colors hover:text-ink hover:decoration-ink/50"
+        >
           Voir les logs →
         </a>
       </div>
@@ -65,7 +68,7 @@ export default async function AdminCandidaturesPage() {
 
 function CandidatureCard({ candidature }: { candidature: Candidature }) {
   return (
-    <Card className="p-5">
+    <Card className="p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06] hover:border-signal/20">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="font-semibold text-sm">

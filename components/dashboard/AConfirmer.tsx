@@ -187,7 +187,7 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
                       type="date"
                       value={nouvelleDate}
                       onChange={(ev) => setNouvelleDate(ev.target.value)}
-                      className="border border-ink/15 bg-paper px-2 py-1.5 text-sm"
+                      className="rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                     />
                   </div>
                   <div>
@@ -196,7 +196,7 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
                       type="time"
                       value={nouvelleHeure}
                       onChange={(ev) => setNouvelleHeure(ev.target.value)}
-                      className="border border-ink/15 bg-paper px-2 py-1.5 text-sm"
+                      className="rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                     />
                   </div>
                   <Button onClick={() => confirmerReplanifie(e.id)}>Replanifier</Button>

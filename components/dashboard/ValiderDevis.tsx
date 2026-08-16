@@ -161,18 +161,21 @@ export function ValiderDevis({
 
       <div className="flex flex-col gap-3">
         {lignes.map((ligne, i) => (
-          <div key={i} className="border border-ink/10 p-3">
+          <div
+            key={i}
+            className="rounded-xl border border-ink/10 p-3 transition-colors hover:border-ink/20"
+          >
             <div className="flex items-start gap-2">
               <input
                 value={ligne.description}
                 onChange={(e) => modifierLigne(i, "description", e.target.value)}
                 placeholder="Description du poste"
-                className="flex-1 border border-ink/15 bg-paper px-2.5 py-1.5 text-sm focus:outline-none focus:border-ink"
+                className="flex-1 rounded-xl border border-ink/15 bg-paper px-2.5 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
               />
               <button
                 type="button"
                 onClick={() => supprimerLigne(i)}
-                className="shrink-0 w-8 h-8 grid place-items-center text-ink/40 hover:text-signal border border-ink/10"
+                className="shrink-0 w-8 h-8 grid place-items-center rounded-xl text-ink/40 border border-ink/10 transition-colors hover:text-signal hover:border-signal/30"
                 title="Supprimer cette ligne"
               >
                 ✕
@@ -186,7 +189,7 @@ export function ValiderDevis({
                   step="0.01"
                   value={ligne.quantite}
                   onChange={(e) => modifierLigne(i, "quantite", e.target.value)}
-                  className="w-full border border-ink/15 bg-paper px-2 py-1.5 text-sm focus:outline-none focus:border-ink"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 />
               </div>
               <div>
@@ -194,7 +197,7 @@ export function ValiderDevis({
                 <input
                   value={ligne.unite}
                   onChange={(e) => modifierLigne(i, "unite", e.target.value)}
-                  className="w-full border border-ink/15 bg-paper px-2 py-1.5 text-sm focus:outline-none focus:border-ink"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 />
               </div>
               <div>
@@ -204,7 +207,7 @@ export function ValiderDevis({
                   step="0.01"
                   value={ligne.prix_unitaire}
                   onChange={(e) => modifierLigne(i, "prix_unitaire", e.target.value)}
-                  className="w-full border border-ink/15 bg-paper px-2 py-1.5 text-sm focus:outline-none focus:border-ink"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 />
               </div>
             </div>
@@ -216,7 +219,7 @@ export function ValiderDevis({
       <button
         type="button"
         onClick={ajouterLigne}
-        className="mt-3 text-xs text-ink/50 hover:text-ink underline"
+        className="mt-3 text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 transition-colors hover:text-signal hover:decoration-signal/40"
       >
         + Ajouter une ligne
       </button>

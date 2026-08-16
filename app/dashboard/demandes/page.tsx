@@ -19,8 +19,8 @@ export default async function ProjetsPage() {
   return (
     <div className="p-8 max-w-4xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-2xl font-semibold">Projets</h1>
-        <div className="flex gap-3">
+        <h1 className="font-display text-2xl font-semibold text-ink">Projets</h1>
+        <div className="flex flex-wrap gap-3">
           <Link href="/dashboard/demandes/importer">
             <Button variant="ghost">Importer un message</Button>
           </Link>

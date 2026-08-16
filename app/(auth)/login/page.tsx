@@ -40,7 +40,7 @@ export default function LoginPage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-5">
       <div className="w-full max-w-sm mb-4">
-        <Link href="/" className="text-sm text-ink/60 hover:text-ink">
+        <Link href="/" className="text-sm text-ink/60 transition-colors hover:text-ink">
           ← Retour à l&apos;accueil
         </Link>
       </div>
@@ -75,7 +75,10 @@ export default function LoginPage() {
 
         <p className="mt-6 text-sm text-ink/60 text-center">
           Pas encore de compte ?{" "}
-          <Link href="/demander-acces" className="text-ink font-medium underline">
+          <Link
+            href="/demander-acces"
+            className="text-ink font-medium underline decoration-ink/30 underline-offset-2 transition-colors hover:text-signal hover:decoration-signal/50"
+          >
             Demander l&apos;accès à la bêta
           </Link>
         </p>

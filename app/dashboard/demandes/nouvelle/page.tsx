@@ -168,7 +168,7 @@ export default function NouveauProjetPage() {
 
   return (
     <div className="p-8 max-w-lg">
-      <h1 className="font-display text-2xl font-semibold">Nouveau projet</h1>
+      <h1 className="font-display text-2xl font-semibold text-ink">Nouveau projet</h1>
       <p className="mt-2 text-sm text-ink/60">
         Juste l&apos;essentiel — le reste (adresse, type de chantier, email...) se
         complète plus tard, directement depuis le projet.
@@ -186,7 +186,7 @@ export default function NouveauProjetPage() {
               onBlur={verifierClientExistant}
             />
             {anciensProjets.length > 0 && (
-              <div className="mt-2 border border-ink/10 bg-paper-warm p-3">
+              <div className="mt-2 rounded-xl border border-ink/10 bg-paper-warm p-3">
                 <p className="text-xs text-ink/50">
                   {anciensProjets.length === 1
                     ? "Un projet existe déjà pour ce nom :"
@@ -199,7 +199,7 @@ export default function NouveauProjetPage() {
                       href={`/dashboard/demandes/${p.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-ink/70 hover:text-ink underline underline-offset-2"
+                      className="text-xs text-ink/70 hover:text-ink underline underline-offset-2 transition-colors"
                     >
                       {LABEL_TYPE_CHANTIER[p.type_chantier] || "Chantier"} —{" "}
                       {LABEL_STATUT[p.statut as keyof typeof LABEL_STATUT] ?? p.statut} (
@@ -230,7 +230,7 @@ export default function NouveauProjetPage() {
                 <button
                   type="button"
                   onClick={dicter}
-                  className="text-xs text-ink/50 hover:text-ink underline"
+                  className="text-xs text-ink/50 hover:text-ink underline transition-colors"
                 >
                   🎙 Dicter plutôt que taper
                 </button>
@@ -250,7 +250,7 @@ export default function NouveauProjetPage() {
               placeholder="Ex : veut refaire sa salle de bain, douche à l'italienne"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full border border-ink/15 bg-paper px-3 py-2.5 text-sm focus:outline-none focus:border-ink resize-none"
+              className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
             />
           </div>
 

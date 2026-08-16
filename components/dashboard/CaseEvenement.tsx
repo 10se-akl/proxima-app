@@ -25,7 +25,7 @@ export function CaseEvenement({ evenement }: { evenement: EvenementPlanning }) {
     <button
       onClick={basculer}
       disabled={enCours}
-      className={`w-5 h-5 border shrink-0 flex items-center justify-center transition-colors ${
+      className={`w-5 h-5 rounded-md border shrink-0 flex items-center justify-center transition-all duration-150 hover:scale-105 ${
         evenement.statut === "termine"
           ? "bg-ink border-ink text-paper"
           : "border-ink/25 hover:border-ink"

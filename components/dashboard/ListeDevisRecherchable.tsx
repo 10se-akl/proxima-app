@@ -80,7 +80,7 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
           value={recherche}
           onChange={(e) => setRecherche(e.target.value)}
           placeholder="Rechercher un client, un numéro de devis…"
-          className="flex-1 min-w-[200px] border border-ink/15 bg-surface px-3 py-2.5 text-sm focus:outline-none focus:border-ink"
+          className="flex-1 min-w-[200px] rounded-xl border border-ink/15 bg-surface px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
         />
       </div>
 
@@ -89,10 +89,10 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
           <button
             key={f.cle}
             onClick={() => setFiltre(f.cle)}
-            className={`px-2.5 py-1 text-xs border transition-colors ${
+            className={`rounded-lg px-2.5 py-1 text-xs border transition-colors ${
               filtre === f.cle
                 ? "bg-ink text-paper border-ink"
-                : "border-ink/15 text-ink/50 hover:border-ink/40"
+                : "border-ink/15 text-ink/50 hover:border-ink/40 hover:text-ink/70"
             }`}
           >
             {f.label}
@@ -112,9 +112,9 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
             const { texte, classe } = statutAffiche(d);
             return (
               <Link key={d.id} href={`/dashboard/demandes/${d.demande_id}`}>
-                <Card className="p-3.5 flex items-center justify-between gap-3 flex-wrap hover:border-ink/30 transition-colors">
+                <Card className="p-3.5 flex items-center justify-between gap-3 flex-wrap transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06]">
                   <div className="flex items-center gap-3">
-                    <span className={`px-2 py-0.5 text-[11px] font-medium ${classe}`}>
+                    <span className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${classe}`}>
                       {texte}
                     </span>
                     <div>

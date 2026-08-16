@@ -531,7 +531,7 @@ export default function DetailDemandePage({
       {demande.statut !== "termine" && (
         <button
           onClick={marquerTermine}
-          className="mt-2 text-xs text-ink/40 hover:text-ink underline"
+          className="mt-2 text-xs text-ink/40 hover:text-ink underline transition-colors"
         >
           Marquer directement ce projet comme terminé
         </button>
@@ -543,7 +543,7 @@ export default function DetailDemandePage({
           <button
             key={p}
             onClick={() => changerPriorite(p)}
-            className={`px-2.5 py-1 text-xs border transition-colors ${
+            className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
               (demande.priorite ?? "normal") === p
                 ? "bg-ink text-paper border-ink"
                 : "border-ink/15 text-ink/50 hover:border-ink/40"
@@ -568,7 +568,7 @@ export default function DetailDemandePage({
             {demande.telephone_client && (
               <a
                 href={`tel:${demande.telephone_client.replace(/\s/g, "")}`}
-                className="text-ink/70 hover:text-ink underline underline-offset-2"
+                className="text-ink/70 hover:text-ink underline underline-offset-2 transition-colors"
               >
                 📞 {demande.telephone_client}
               </a>
@@ -580,7 +580,7 @@ export default function DetailDemandePage({
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-ink/70 hover:text-ink underline underline-offset-2"
+                className="text-ink/70 hover:text-ink underline underline-offset-2 transition-colors"
               >
                 📍 {demande.adresse_client}
               </a>
@@ -597,13 +597,13 @@ export default function DetailDemandePage({
         <div className="mt-4">
           <button
             onClick={() => setInfosOuvertes(!infosOuvertes)}
-            className="text-xs text-ink/50 hover:text-ink underline"
+            className="text-xs text-ink/50 hover:text-ink underline transition-colors"
           >
             {infosOuvertes ? "Masquer" : "+ Compléter les informations (adresse, téléphone, type de chantier…)"}
           </button>
 
           {infosOuvertes && (
-            <div className="mt-3 grid sm:grid-cols-2 gap-4 border border-ink/10 p-4">
+            <div className="mt-3 grid sm:grid-cols-2 gap-4 rounded-xl border border-ink/10 p-4">
               <Field
                 label="Téléphone du client"
                 type="tel"
@@ -624,7 +624,7 @@ export default function DetailDemandePage({
                 <select
                   value={infos.type_chantier}
                   onChange={(e) => setInfos({ ...infos, type_chantier: e.target.value })}
-                  className="w-full border border-ink/15 bg-paper px-3 py-2.5 text-sm focus:outline-none focus:border-ink"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 >
                   {TYPES_CHANTIER.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -689,7 +689,7 @@ export default function DetailDemandePage({
           onBlur={enregistrerNotes}
           rows={3}
           placeholder="Ajoutez ici tout ce qui est utile : mesures prises sur place, contraintes, remarques après la visite…"
-          className="w-full text-sm text-ink/80 leading-relaxed border border-ink/10 bg-paper p-3 focus:outline-none focus:border-ink resize-none"
+          className="w-full text-sm text-ink/80 leading-relaxed rounded-xl border border-ink/10 bg-paper p-3 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
         />
       </FicheSection>
 
@@ -755,7 +755,7 @@ export default function DetailDemandePage({
                         <input
                           type="checkbox"
                           defaultChecked={dejaCoche}
-                          className="accent-ink"
+                          className="accent-signal"
                         />
                         <span className={dejaCoche ? "line-through text-ink/40" : ""}>
                           {info}
@@ -920,7 +920,7 @@ export default function DetailDemandePage({
                 value={brouillonReponse}
                 onChange={(e) => setBrouillonReponse(e.target.value)}
                 rows={6}
-                className="w-full text-sm text-ink/80 leading-relaxed border border-ink/10 bg-paper p-3 focus:outline-none focus:border-ink resize-none"
+                className="w-full text-sm text-ink/80 leading-relaxed rounded-xl border border-ink/10 bg-paper p-3 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
               />
               <Button variant="ghost" onClick={copierReponse} className="mt-3">
                 {copie ? "✓ Copié" : "Copier le texte"}
@@ -1021,7 +1021,7 @@ function ChecklistMetier({ typeChantier }: { typeChantier: string }) {
     <div className="mt-6">
       <button
         onClick={() => setOuverte((v) => !v)}
-        className="text-xs text-ink/50 hover:text-ink underline underline-offset-2"
+        className="text-xs text-ink/50 hover:text-ink underline underline-offset-2 transition-colors"
       >
         📋 {ouverte ? "Masquer" : "Voir"} la checklist avant devis
       </button>
@@ -1033,7 +1033,7 @@ function ChecklistMetier({ typeChantier }: { typeChantier: string }) {
           <div className="flex flex-col gap-1.5">
             {points.map((point) => (
               <label key={point} className="flex items-center gap-2 text-sm text-ink/70">
-                <input type="checkbox" className="accent-ink" />
+                <input type="checkbox" className="accent-signal" />
                 <span>{point}</span>
               </label>
             ))}

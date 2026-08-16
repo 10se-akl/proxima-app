@@ -163,7 +163,7 @@ export default function ImporterMessagePage() {
 
     return (
       <div className="p-8 max-w-lg">
-        <h1 className="font-display text-2xl font-semibold">Projet créé</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink">Projet créé</h1>
         <Card className="mt-6 p-6">
           <p className="text-sm text-ink/80">
             {propositionEnCours.nomClient} propose un rendez-vous le{" "}
@@ -185,7 +185,7 @@ export default function ImporterMessagePage() {
         </Card>
         <Link
           href={`/dashboard/demandes/${propositionEnCours.projetId}`}
-          className="mt-4 inline-block text-sm text-ink/50 hover:text-ink"
+          className="mt-4 inline-block text-sm text-ink/50 hover:text-ink transition-colors"
         >
           Voir le projet sans planifier maintenant →
         </Link>
@@ -195,11 +195,11 @@ export default function ImporterMessagePage() {
 
   return (
     <div className="p-8 max-w-2xl">
-      <Link href="/dashboard/demandes" className="text-sm text-ink/60 hover:text-ink">
+      <Link href="/dashboard/demandes" className="text-sm text-ink/60 hover:text-ink transition-colors">
         ← Retour aux projets
       </Link>
 
-      <h1 className="mt-4 font-display text-2xl font-semibold">
+      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">
         Créer un projet à partir d&apos;un message
       </h1>
       <p className="mt-2 text-sm text-ink/60">
@@ -216,7 +216,7 @@ export default function ImporterMessagePage() {
             placeholder={`Exemple :\n\nBonjour, je me présente M. Dupont. J'aimerais refaire ma salle de bain. Vous seriez dispo mardi vers 14h pour passer voir ? Mon numéro : 06 12 34 56 78`}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
-            className="w-full border border-ink/15 bg-paper px-3 py-2.5 text-sm focus:outline-none focus:border-ink resize-none"
+            className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
           />
 
           {erreur && <p className="text-sm text-signal">{erreur}</p>}

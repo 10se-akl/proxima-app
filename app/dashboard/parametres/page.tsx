@@ -152,10 +152,10 @@ export default function ParametresPage() {
           <button
             key={o}
             onClick={() => setOnglet(o)}
-            className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors ${
+            className={`px-3 py-2 text-sm border-b-2 -mb-px transition-colors duration-200 ${
               onglet === o
-                ? "border-ink text-ink font-medium"
-                : "border-transparent text-ink/50 hover:text-ink"
+                ? "border-signal text-ink font-medium"
+                : "border-transparent text-ink/50 hover:text-ink hover:border-ink/20"
             }`}
           >
             {o === "entreprise" ? "Mon entreprise" : "Mon compte"}
@@ -187,10 +187,10 @@ export default function ParametresPage() {
                 <img
                   src={logoUrl}
                   alt="Logo de l'entreprise"
-                  className="w-16 h-16 object-contain border border-ink/10 bg-surface"
+                  className="w-16 h-16 rounded-xl object-contain border border-ink/10 bg-surface"
                 />
               ) : (
-                <div className="w-16 h-16 grid place-items-center border border-dashed border-ink/15 text-[10px] text-ink/30 text-center">
+                <div className="w-16 h-16 rounded-xl grid place-items-center border border-dashed border-ink/15 text-[10px] text-ink/30 text-center">
                   Aucun logo
                 </div>
               )}
@@ -205,7 +205,7 @@ export default function ParametresPage() {
                 />
                 <label
                   htmlFor="logo-input"
-                  className="inline-flex items-center gap-2 border border-ink/15 text-sm px-4 py-2 hover:border-ink cursor-pointer"
+                  className="inline-flex items-center gap-2 rounded-xl border border-ink/15 text-sm px-4 py-2 transition-colors duration-200 hover:border-signal/30 hover:bg-ink/5 cursor-pointer"
                 >
                   {envoiLogo ? "Envoi…" : logoUrl ? "Changer le logo" : "Ajouter un logo"}
                 </label>

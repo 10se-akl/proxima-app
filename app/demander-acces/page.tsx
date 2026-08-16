@@ -136,7 +136,7 @@ function DemanderAccesForm() {
                   required
                   value={form.metier}
                   onChange={update("metier")}
-                  className="w-full border border-ink/15 bg-paper px-3 py-2.5 text-sm focus:outline-none focus:border-ink"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 >
                   <option value="">Sélectionner…</option>
                   {METIERS.map((m) => (
@@ -169,7 +169,7 @@ function DemanderAccesForm() {
                 <select
                   value={form.nbEmployes}
                   onChange={update("nbEmployes")}
-                  className="w-full border border-ink/15 bg-paper px-3 py-2.5 text-sm focus:outline-none focus:border-ink"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 >
                   <option value="">Sélectionner…</option>
                   <option>Seul (aucun salarié)</option>
@@ -186,7 +186,7 @@ function DemanderAccesForm() {
                 <select
                   value={form.devisParSemaine}
                   onChange={update("devisParSemaine")}
-                  className="w-full border border-ink/15 bg-paper px-3 py-2.5 text-sm focus:outline-none focus:border-ink"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                 >
                   <option value="">Sélectionner…</option>
                   <option>Moins de 5</option>

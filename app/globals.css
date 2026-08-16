@@ -107,6 +107,22 @@
     left: 0;
     width: 100%;
     border: none !important;
+    /* Un devis imprimé/exporté en PDF doit toujours ressembler à un vrai
+       document papier — blanc, texte sombre — peu importe si l'artisan
+       a le mode sombre activé au moment d'imprimer (le navigateur ne
+       retire pas la classe .dark de <html> pendant l'impression). Comme
+       ces variables sont héritées en CSS, les redéfinir ici les force
+       en valeurs "mode clair" pour tout ce sous-arbre, quoi qu'il arrive
+       au reste de la page — sans toucher à la structure du composant.
+       Repéré lors du polish visuel de la zone devis (voir DevisPreview). */
+    --c-paper: 250 248 245;
+    --c-paper-warm: 243 237 230;
+    --c-ink: 31 41 55;
+    --c-steel: 92 112 128;
+    --c-gris-clair: 232 232 232;
+    --c-surface: 255 255 255;
+    background: #fff !important;
+    color: #1f2937 !important;
   }
   #devis-imprimable img {
     print-color-adjust: exact;

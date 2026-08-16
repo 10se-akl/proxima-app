@@ -111,7 +111,7 @@ function BlocEvenement({
           setMenuOuvert(!menuOuvert);
         }}
         style={{ height: hauteur }}
-        className={`w-full text-left px-2 py-1 border-l-4 text-white text-[11px] leading-tight overflow-hidden rounded-sm ${couleur} ${
+        className={`w-full text-left px-2 py-1 border-l-4 text-white text-[11px] leading-tight overflow-hidden rounded-md transition-all duration-150 hover:brightness-110 hover:shadow-sm ${couleur} ${
           termine ? "opacity-40 line-through" : ""
         }`}
         title={evenement.titre}
@@ -126,32 +126,32 @@ function BlocEvenement({
         <>
           {/* Fond transparent pour fermer le menu au clic ailleurs */}
           <div className="fixed inset-0 z-20" onClick={() => setMenuOuvert(false)} />
-          <div className="relative z-30 mt-1 bg-surface border border-ink/15 shadow-lg text-xs w-44">
+          <div className="relative z-30 mt-1 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-xs w-44">
             {evenement.demande_id && (
               <button
                 onClick={() => router.push(`/dashboard/demandes/${evenement.demande_id}`)}
-                className="w-full text-left px-3 py-2 hover:bg-paper text-ink/80 border-b border-ink/5"
+                className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
               >
                 → Ouvrir le projet
               </button>
             )}
             <button
               onClick={() => router.push(`/dashboard/planning/nouveau?eventId=${evenement.id}`)}
-              className="w-full text-left px-3 py-2 hover:bg-paper text-ink/80 border-b border-ink/5"
+              className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
             >
               ✏️ Modifier
             </button>
             <button
               onClick={basculerTermine}
               disabled={enCours}
-              className="w-full text-left px-3 py-2 hover:bg-paper text-ink/80 border-b border-ink/5"
+              className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
             >
               {termine ? "Marquer à faire" : "✓ Marquer terminé"}
             </button>
             <button
               onClick={supprimer}
               disabled={enCours}
-              className="w-full text-left px-3 py-2 hover:bg-signal/10 text-signal"
+              className="w-full text-left px-3 py-2 transition-colors hover:bg-signal/10 text-signal"
             >
               🗑 Supprimer
             </button>
@@ -192,7 +192,7 @@ export function GrilleAgenda({
   );
 
   return (
-    <div className="border border-ink/10 bg-surface overflow-x-auto">
+    <div className="rounded-2xl border border-ink/10 bg-surface overflow-x-auto">
       <div className="min-w-[700px]">
         <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-ink/10">
           <div />

@@ -46,7 +46,10 @@ export default async function AdminLogsPage() {
         <h1 className="font-display text-2xl font-semibold">
           Logs (100 derniers événements)
         </h1>
-        <a href="/admin/candidatures" className="text-sm text-ink/60 hover:text-ink underline">
+        <a
+          href="/admin/candidatures"
+          className="text-sm text-ink/60 underline decoration-ink/30 underline-offset-2 transition-colors hover:text-ink hover:decoration-ink/50"
+        >
           ← Candidatures
         </a>
       </div>
@@ -56,7 +59,10 @@ export default async function AdminLogsPage() {
           <p className="text-sm text-ink/40">Aucun événement pour le moment.</p>
         )}
         {logs?.map((log) => (
-          <Card key={log.id} className="p-4">
+          <Card
+            key={log.id}
+            className="p-4 transition-colors duration-200 hover:border-ink/20"
+          >
             <div className="flex items-center justify-between">
               <span
                 className={`font-mono text-[10px] uppercase tracking-wider ${

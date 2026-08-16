@@ -136,7 +136,7 @@ export function PhotosProjet({
       />
       <label
         htmlFor={`photos-input-${demandeId}`}
-        className="inline-flex items-center gap-2 bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal transition-colors cursor-pointer"
+        className="inline-flex items-center gap-2 rounded-xl bg-ink text-paper text-sm font-medium px-4 py-2 transition-all duration-150 hover:bg-signal hover:scale-[1.02] hover:shadow-md active:scale-[0.98] cursor-pointer"
       >
         {envoi ? "Envoi en cours…" : "📷 Ajouter des photos"}
       </label>
@@ -146,7 +146,10 @@ export function PhotosProjet({
       {chemins.length > 0 && (
         <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2">
           {chemins.map((chemin) => (
-            <div key={chemin} className="relative group aspect-square bg-paper border border-ink/10">
+            <div
+              key={chemin}
+              className="relative group aspect-square rounded-xl overflow-hidden bg-paper border border-ink/10 transition-shadow duration-200 hover:shadow-md hover:shadow-ink/[0.06]"
+            >
               {urls[chemin] ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img

@@ -61,7 +61,7 @@ export default async function PlanningPage({
   return (
     <div className="p-8 max-w-5xl">
       {searchParams.rdvCree === "1" && (
-        <div className="mb-4 bg-[#2F8F5B]/10 border border-[#2F8F5B]/30 px-4 py-3 text-sm text-ink/80">
+        <div className="mb-4 rounded-xl bg-[#2F8F5B]/10 border border-[#2F8F5B]/30 px-4 py-3 text-sm text-ink/80">
           ✓ Un rendez-vous a été ajouté automatiquement au planning à partir du message du
           client.
         </div>

@@ -135,7 +135,7 @@ export function NotesVocales({
         {!enregistrement && !editionManuelle && (
           <button
             onClick={ecrireManuel}
-            className="text-xs text-ink/50 hover:text-ink underline"
+            className="text-xs text-ink/50 hover:text-ink underline transition-colors"
           >
             ✍️ Écrire à la place
           </button>
@@ -160,7 +160,7 @@ export function NotesVocales({
             onChange={(e) => setTranscription(e.target.value)}
             rows={3}
             placeholder={editionManuelle ? "Ex : deux chevrons à remplacer, client veut refaire l'isolation…" : undefined}
-            className="w-full text-sm text-ink/80 leading-relaxed border border-ink/10 bg-paper p-3 focus:outline-none focus:border-ink resize-none"
+            className="w-full text-sm text-ink/80 leading-relaxed rounded-xl border border-ink/10 bg-paper p-3 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
           />
           <Button
             onClick={enregistrerNote}
@@ -202,7 +202,7 @@ function NoteVocaleItem({ note }: { note: NoteVocale }) {
       {estLongue && (
         <button
           onClick={() => setEtendue(!etendue)}
-          className="mt-1 text-xs text-ink/50 hover:text-ink underline"
+          className="mt-1 text-xs text-ink/50 hover:text-ink underline transition-colors"
         >
           {etendue ? "Afficher moins" : "Afficher plus"}
         </button>

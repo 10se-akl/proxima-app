@@ -7,6 +7,7 @@ import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Input";
+import { Avatar } from "@/components/ui/Avatar";
 import { DevisPreview } from "@/components/dashboard/DevisPreview";
 import { ValiderDevis } from "@/components/dashboard/ValiderDevis";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
@@ -511,9 +512,12 @@ export default function DetailDemandePage({
         Projet
       </p>
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <h1 className="font-display text-2xl font-semibold">
-          {demande.nom_client}
-        </h1>
+        <div className="flex items-center gap-3">
+          <Avatar nom={demande.nom_client || "?"} taille={40} />
+          <h1 className="font-display text-2xl font-semibold">
+            {demande.nom_client}
+          </h1>
+        </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={marquerVisite}>
             {demande.visite_le ? "✓ Visite effectuée" : "Marquer visite effectuée"}

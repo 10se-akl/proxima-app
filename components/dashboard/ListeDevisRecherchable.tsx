@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
+import { IconeDocument } from "@/components/ui/Icones";
 
 type DevisAvecClient = {
   id: string;
@@ -102,11 +104,16 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
 
       <div className="mt-4 flex flex-col gap-2">
         {filtres.length === 0 ? (
-          <p className="text-sm text-ink/50">
-            {devisList.length === 0
-              ? "Aucun devis pour le moment. Générez-en un depuis un projet."
-              : "Aucun devis pour ce filtre."}
-          </p>
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
+              <IconeDocument taille={20} className="text-signal" />
+            </span>
+            <p className="text-sm text-ink/50">
+              {devisList.length === 0
+                ? "Aucun devis pour le moment. Générez-en un depuis un projet."
+                : "Aucun devis pour ce filtre."}
+            </p>
+          </div>
         ) : (
           filtres.map((d) => {
             const { texte, classe } = statutAffiche(d);
@@ -114,6 +121,7 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
               <Link key={d.id} href={`/dashboard/demandes/${d.demande_id}`}>
                 <Card className="p-3.5 flex items-center justify-between gap-3 flex-wrap transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06]">
                   <div className="flex items-center gap-3">
+                    <Avatar nom={d.demandes?.nom_client ?? "?"} taille={32} />
                     <span className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${classe}`}>
                       {texte}
                     </span>

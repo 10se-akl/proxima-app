@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
 
 type Extrait = {
   nom_client: string;
@@ -248,16 +249,19 @@ export default function ImporterCapturePage() {
               ) : (
                 <>
                   <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <p className="text-sm font-semibold text-ink/80">{l.extrait!.nom_client}</p>
-                      <p className="mt-1 text-sm text-ink/60">{l.extrait!.description_resumee}</p>
-                      {l.extrait!.rdv_date && (
-                        <p className="mt-1 text-xs text-steel">
-                          Rendez-vous proposé le {l.extrait!.rdv_date}
-                          {l.extrait!.rdv_heure ? ` à ${l.extrait!.rdv_heure}` : ""} — à planifier
-                          vous-même après import.
-                        </p>
-                      )}
+                    <div className="flex items-start gap-2.5">
+                      <Avatar nom={l.extrait!.nom_client || "?"} taille={28} className="mt-0.5" />
+                      <div>
+                        <p className="text-sm font-semibold text-ink/80">{l.extrait!.nom_client}</p>
+                        <p className="mt-1 text-sm text-ink/60">{l.extrait!.description_resumee}</p>
+                        {l.extrait!.rdv_date && (
+                          <p className="mt-1 text-xs text-steel">
+                            Rendez-vous proposé le {l.extrait!.rdv_date}
+                            {l.extrait!.rdv_heure ? ` à ${l.extrait!.rdv_heure}` : ""} — à planifier
+                            vous-même après import.
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </div>
 

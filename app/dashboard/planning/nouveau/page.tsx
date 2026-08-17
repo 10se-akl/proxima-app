@@ -8,6 +8,7 @@ import { enregistrerEvenement } from "@/lib/timeline";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
 import type { TypeEvenement, Priorite } from "@/types";
 
 const COULEUR_PRIORITE: Record<Priorite, string> = {
@@ -284,6 +285,7 @@ function NouvelEvenementForm() {
                 <span
                   className={`w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_PRIORITE[projetSelectionne.priorite]}`}
                 />
+                <Avatar nom={projetSelectionne.nom_client || "?"} taille={22} />
                 <span className="text-sm text-ink/80">{projetSelectionne.nom_client}</span>
                 <button
                   type="button"
@@ -318,6 +320,7 @@ function NouvelEvenementForm() {
                     <span
                       className={`w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_PRIORITE[p.priorite]}`}
                     />
+                    <Avatar nom={p.nom_client || "?"} taille={22} />
                     {p.nom_client}
                   </button>
                 ))}

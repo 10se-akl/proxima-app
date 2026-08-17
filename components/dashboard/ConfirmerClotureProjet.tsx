@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Avatar } from "@/components/ui/Avatar";
 
 type ProjetAConfirmer = { id: string; nom_client: string };
 
@@ -110,7 +111,8 @@ export function ConfirmerClotureProjet({ projets }: { projets: ProjetAConfirmer[
         {restants.map((p) =>
           proposerPlanification.has(p.id) ? (
             <Card key={p.id} className="p-4">
-              <p className="text-sm text-ink/80">
+              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
+                <Avatar nom={p.nom_client || "?"} taille={22} />
                 D&apos;accord. Voulez-vous planifier le prochain rendez-vous pour{" "}
                 <span className="font-semibold">{p.nom_client}</span> ?
               </p>
@@ -125,7 +127,8 @@ export function ConfirmerClotureProjet({ projets }: { projets: ProjetAConfirmer[
             </Card>
           ) : (
             <Card key={p.id} className="p-4">
-              <p className="text-sm text-ink/80">
+              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
+                <Avatar nom={p.nom_client || "?"} taille={22} />
                 Le chantier <span className="font-semibold">{p.nom_client}</span> est-il
                 terminé ? Aucun autre rendez-vous n&apos;est prévu pour ce projet.
               </p>

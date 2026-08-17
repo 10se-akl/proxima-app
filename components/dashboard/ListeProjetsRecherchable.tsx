@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { DemandeCard } from "@/components/dashboard/DemandeCard";
+import { IconeDossier } from "@/components/ui/Icones";
 import type { Projet } from "@/types";
 
 export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
@@ -59,11 +60,16 @@ export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
 
       <div className="mt-4 flex flex-col gap-3">
         {filtres.length === 0 ? (
-          <p className="text-sm text-ink/50">
-            {projets.length === 0
-              ? "Aucun projet pour le moment. Créez-en un pour tester l'assistant IA."
-              : "Aucun résultat pour cette recherche."}
-          </p>
+          <div className="flex flex-col items-center gap-3 py-6 text-center">
+            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
+              <IconeDossier taille={20} className="text-signal" />
+            </span>
+            <p className="text-sm text-ink/50">
+              {projets.length === 0
+                ? "Aucun projet pour le moment. Créez-en un pour tester l'assistant IA."
+                : "Aucun résultat pour cette recherche."}
+            </p>
+          </div>
         ) : (
           filtres.map((p) => <DemandeCard key={p.id} demande={p} />)
         )}

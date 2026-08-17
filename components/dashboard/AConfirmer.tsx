@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Avatar } from "@/components/ui/Avatar";
 
 type EvenementAConfirmer = {
   id: string;
@@ -118,7 +119,10 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
         {restants.map((e) =>
           proposerPlanification.has(e.id) ? (
             <Card key={e.id} className="p-4">
-              <p className="text-sm text-ink/80">
+              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
+                {e.demandes?.nom_client && (
+                  <Avatar nom={e.demandes.nom_client} taille={22} />
+                )}
                 D&apos;accord. Voulez-vous planifier le prochain rendez-vous pour{" "}
                 <span className="font-semibold">
                   {e.demandes?.nom_client ?? "ce projet"}
@@ -141,7 +145,10 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
             </Card>
           ) : proposerCloture.has(e.id) ? (
             <Card key={e.id} className="p-4">
-              <p className="text-sm text-ink/80">
+              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
+                {e.demandes?.nom_client && (
+                  <Avatar nom={e.demandes.nom_client} taille={22} />
+                )}
                 Le chantier{" "}
                 <span className="font-semibold">
                   {e.demandes?.nom_client ?? "concerné"}
@@ -167,7 +174,10 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
             </Card>
           ) : (
             <Card key={e.id} className="p-4">
-              <p className="text-sm text-ink/80">
+              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
+                {e.demandes?.nom_client && (
+                  <Avatar nom={e.demandes.nom_client} taille={22} />
+                )}
                 Avez-vous fait <span className="font-semibold">{e.titre}</span>
                 {e.demandes?.nom_client && ` (${e.demandes.nom_client})`} — prévu le{" "}
                 {new Date(e.date_heure).toLocaleDateString("fr-FR", {

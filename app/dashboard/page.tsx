@@ -8,6 +8,8 @@ import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureP
 import { ResumeJournee } from "@/components/dashboard/ResumeJournee";
 import { ConseilsCompagnon } from "@/components/dashboard/ConseilsCompagnon";
 import { MiniApercu } from "@/components/dashboard/MiniApercu";
+import { Avatar } from "@/components/ui/Avatar";
+import { IconeCoeur, IconeDossier } from "@/components/ui/Icones";
 import type { Projet } from "@/types";
 
 const SEUIL_RELANCE_JOURS = 7;
@@ -268,6 +270,9 @@ export default async function DashboardHome() {
             Bonjour {premierPrenom} 👋
           </h1>
           <Card className="mt-8 p-8 text-center">
+            <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-signal/10 mb-4">
+              <IconeCoeur taille={24} className="text-signal" />
+            </span>
             <p className="font-display text-lg font-semibold">Bienvenue sur Compyo.</p>
             <p className="mt-2 text-sm text-ink/60 max-w-sm mx-auto">
               Tout commence par un projet. Créez le premier dès qu&apos;un client vous
@@ -310,6 +315,7 @@ export default async function DashboardHome() {
         <Section titre="Nouveaux projets à cadrer">
           {projetsNouveaux.map((p) => (
             <LigneCliquable key={p.id} demandeId={p.id}>
+              <Avatar nom={p.nom_client || "?"} taille={32} />
               <span className="text-sm text-ink/80">
                 🆕 {p.nom_client}{" "}
                 <span className="text-ink/40">— pas encore analysé</span>
@@ -325,7 +331,12 @@ export default async function DashboardHome() {
             Rien de prévu aujourd&apos;hui. Vos projets les plus prioritaires :
           </p>
           {projetsPrioritaires.length === 0 ? (
-            <p className="text-sm text-ink/40">Aucun projet actif pour le moment.</p>
+            <div className="flex flex-col items-center gap-3 py-6 text-center">
+              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
+                <IconeDossier taille={20} className="text-signal" />
+              </span>
+              <p className="text-sm text-ink/40">Aucun projet actif pour le moment.</p>
+            </div>
           ) : (
             <div className="flex flex-col gap-3">
               {projetsPrioritaires.map((p) => (
@@ -352,6 +363,7 @@ export default async function DashboardHome() {
                   minute: "2-digit",
                 })}
               </span>
+              {nomClientDe(e) && <Avatar nom={nomClientDe(e) as string} taille={32} />}
               <span className="text-sm text-ink/80">
                 {e.titre}
                 {nomClientDe(e) && (
@@ -370,6 +382,7 @@ export default async function DashboardHome() {
         <Section titre="Rappels aujourd'hui">
           {rappelsDuJour.map((r) => (
             <LigneCliquable key={r.id} demandeId={r.demande_id}>
+              {nomClientDe(r) && <Avatar nom={nomClientDe(r) as string} taille={32} />}
               <span className="text-sm text-ink/80">
                 📞 {r.titre}
                 {nomClientDe(r) && (
@@ -390,6 +403,7 @@ export default async function DashboardHome() {
         <Section titre="Devis à terminer">
           {projetsSansDevis.map((p) => (
             <LigneCliquable key={p.id} demandeId={p.id}>
+              <Avatar nom={p.nom_client || "?"} taille={32} />
               <span className="text-sm text-ink/80">
                 📄 {p.nom_client}{" "}
                 <span className="text-ink/40">— devis pas encore généré</span>
@@ -398,6 +412,7 @@ export default async function DashboardHome() {
           ))}
           {devisAValider.map((d) => (
             <LigneCliquable key={d.id} demandeId={d.demande_id}>
+              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
               <span className="text-sm text-ink/80">
                 📄{" "}
                 {nomClientDe(d) ?? d.numero}{" "}
@@ -407,6 +422,7 @@ export default async function DashboardHome() {
           ))}
           {devisPretsAEnvoyer.map((d) => (
             <LigneCliquable key={d.id} demandeId={d.demande_id}>
+              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
               <span className="text-sm text-ink/80">
                 📄{" "}
                 {nomClientDe(d) ?? d.numero}{" "}
@@ -421,6 +437,7 @@ export default async function DashboardHome() {
         <Section titre="Devis refusés">
           {devisRefuses.map((d) => (
             <LigneCliquable key={d.id} demandeId={d.demande_id} accent>
+              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
               <span className="text-sm text-ink/80">
                 ✕{" "}
                 {nomClientDe(d) ?? d.numero}{" "}
@@ -435,6 +452,7 @@ export default async function DashboardHome() {
         <Section titre="Devis en attente de réponse">
           {relances.map((d) => (
             <LigneCliquable key={d.id} demandeId={d.demande_id} accent>
+              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
               <span className="text-sm text-ink/80">
                 ⚠️{" "}
                 {nomClientDe(d) ?? d.numero}{" "}

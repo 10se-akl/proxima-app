@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
 import type { Projet } from "@/types";
 
 export const LABEL_STATUT: Record<Projet["statut"], string> = {
@@ -110,6 +111,7 @@ export function DemandeCard({ demande }: { demande: Projet }) {
               className={`w-2 h-2 rounded-full shrink-0 ${COULEUR_PRIORITE[demande.priorite ?? "normal"]}`}
               title={demande.priorite}
             />
+            <Avatar nom={demande.nom_client || "?"} taille={24} />
             <p className="font-semibold text-sm">{demande.nom_client}</p>
             {LABEL_TYPE_CHANTIER[demande.type_chantier] && (
               <span className="text-[10px] text-ink/40 rounded-full border border-ink/10 px-1.5 py-0.5">

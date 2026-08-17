@@ -6,13 +6,21 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ModeNuitToggle } from "@/components/dashboard/ModeNuitToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { CompyoMark } from "@/components/marketing/CompyoMark";
+import {
+  IconeAccueil,
+  IconeDossier,
+  IconeDocument,
+  IconeCalendrier,
+  IconeParametres,
+} from "@/components/ui/Icones";
 
 const LIENS = [
-  { href: "/dashboard", label: "Accueil" },
-  { href: "/dashboard/demandes", label: "Projets" },
-  { href: "/dashboard/devis", label: "Devis" },
-  { href: "/dashboard/planning", label: "Planning" },
-  { href: "/dashboard/parametres", label: "Paramètres" },
+  { href: "/dashboard", label: "Accueil", Icone: IconeAccueil },
+  { href: "/dashboard/demandes", label: "Projets", Icone: IconeDossier },
+  { href: "/dashboard/devis", label: "Devis", Icone: IconeDocument },
+  { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
+  { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
 ];
 
 export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
@@ -37,7 +45,10 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
           donc du blanc fixe (text-white/...), pas text-paper qui, lui,
           deviendrait sombre en mode sombre et disparaîtrait. */}
       <div className="sm:hidden flex items-center justify-between bg-anthracite text-white px-4 h-14">
-        <p className="font-display font-semibold">Compyo</p>
+        <span className="flex items-center gap-2">
+          <CompyoMark variante="blanc" taille={24} />
+          <p className="font-display font-semibold">Compyo</p>
+        </span>
         <button
           onClick={() => setMenuOuvert(!menuOuvert)}
           className="p-2 -mr-2"
@@ -59,12 +70,13 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
                   key={lien.href}
                   href={lien.href}
                   onClick={() => setMenuOuvert(false)}
-                  className={`px-3 py-2.5 text-sm transition-colors ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-xl transition-colors ${
                     actif
                       ? "bg-white/10 text-white font-medium"
                       : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
                 >
+                  <lien.Icone taille={17} />
                   {lien.label}
                 </Link>
               );
@@ -89,7 +101,8 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
       {/* Sidebar classique, visible uniquement à partir de la taille tablette */}
       <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-anthracite text-white min-h-screen flex-col justify-between">
         <div>
-          <div className="px-6 py-6 border-b border-white/10">
+          <div className="px-6 py-6 border-b border-white/10 flex items-center gap-2.5">
+            <CompyoMark variante="blanc" taille={26} />
             <p className="font-display font-semibold">Compyo</p>
           </div>
           <nav className="mt-4 flex flex-col gap-1 px-3">
@@ -99,12 +112,13 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
                 <Link
                   key={lien.href}
                   href={lien.href}
-                  className={`px-3 py-2.5 text-sm rounded-none transition-colors ${
+                  className={`flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-xl transition-colors ${
                     actif
                       ? "bg-white/10 text-white font-medium"
                       : "text-white/60 hover:text-white hover:bg-white/5"
                   }`}
                 >
+                  <lien.Icone taille={17} />
                   {lien.label}
                 </Link>
               );

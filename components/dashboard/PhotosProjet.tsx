@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { getOrganisationId } from "@/lib/organisation";
 
 export function PhotosProjet({
   demandeId,
@@ -88,15 +89,19 @@ export function PhotosProjet({
       setErreur("Photos envoyées mais non enregistrées sur le projet. Réessayez.");
     } else {
       onChemins(cheminsMisAJour);
-      await enregistrerEvenement(supabase, {
-        demandeId,
-        artisanId: user.id,
-        type: "photo_ajoutee",
-        titre:
-          nouveauxChemins.length > 1
-            ? `${nouveauxChemins.length} photos ajoutées`
-            : "Photo ajoutée",
-      });
+      const organisationId = await getOrganisationId(supabase, user.id);
+      if (organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId,
+          artisanId: user.id,
+          organisationId,
+          type: "photo_ajoutee",
+          titre:
+            nouveauxChemins.length > 1
+              ? `${nouveauxChemins.length} photos ajoutées`
+              : "Photo ajoutée",
+        });
+      }
     }
 
     if (inputRef.current) inputRef.current.value = "";

@@ -26,12 +26,20 @@
 }
 
 .dark {
-  --c-paper: 21 23 26; /* fond de page sombre, pas noir pur */
-  --c-paper-warm: 28 31 36;
-  --c-ink: 245 245 244; /* texte principal clair en mode sombre */
-  --c-steel: 148 160 173;
-  --c-gris-clair: 42 46 53;
-  --c-surface: 30 33 38; /* légèrement plus clair que le fond, relief inversé */
+  /* Les valeurs précédentes (21 23 26, 28 31 36...) étaient neutres avec une
+     légère dominante bleue — correct techniquement, mais visuellement froid
+     et un peu "morne" comparé au reste de l'identité Compyo (terracotta
+     chaud). On réchauffe légèrement chaque teinte de fond vers le brun/
+     terracotta (R > G > B au lieu de gris neutre), pour que le mode sombre
+     ressemble à un mode sombre "café/atelier" plutôt qu'un gris-bleu de
+     dashboard générique — sans toucher à --c-signal, qui reste la même
+     couleur de marque dans les deux modes. */
+  --c-paper: 24 20 18; /* fond de page sombre, chaud plutôt que gris-bleu */
+  --c-paper-warm: 33 27 23;
+  --c-ink: 245 243 240; /* texte principal clair en mode sombre, légèrement chaud */
+  --c-steel: 168 156 145;
+  --c-gris-clair: 50 42 36;
+  --c-surface: 36 30 26; /* légèrement plus clair que le fond, relief inversé */
 }
 
 /* Animations discrètes pour la landing page — implémentées en CSS pur
@@ -41,6 +49,39 @@
    produit le même résultat visuel (un léger fondu + glissement au
    défilement) sans ajouter de poids ni de risque de build. Voir le hook
    useRevealOnScroll dans components/marketing/LandingPage.tsx. */
+/* Animation d'entrée de la landing page (voir IntroAnimation.tsx) : l'arc
+   se dessine comme un trait de stylo (via pathLength=100, un dashoffset
+   qui va de 100 à 0 est indépendant de la longueur réelle du tracé SVG),
+   puis le cœur apparaît en fondu + léger zoom une fois l'arc terminé. */
+@media (prefers-reduced-motion: no-preference) {
+  .intro-trace-arc {
+    stroke-dasharray: 100;
+    stroke-dashoffset: 100;
+    animation: intro-dessiner-arc 0.9s ease-out forwards;
+  }
+  .intro-trace-coeur {
+    opacity: 0;
+    transform-box: fill-box;
+    transform-origin: center;
+    animation: intro-apparaitre-coeur 0.5s ease-out 0.8s forwards;
+  }
+  @keyframes intro-dessiner-arc {
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  @keyframes intro-apparaitre-coeur {
+    from {
+      opacity: 0;
+      transform: scale(0.4);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .reveal {
     opacity: 0;

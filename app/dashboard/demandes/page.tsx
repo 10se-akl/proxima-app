@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { getOrganisationId } from "@/lib/organisation";
 import { Button } from "@/components/ui/Button";
 import { ListeProjetsRecherchable } from "@/components/dashboard/ListeProjetsRecherchable";
 import type { Projet } from "@/types";
@@ -10,11 +11,15 @@ export default async function ProjetsPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: projets } = await supabase
-    .from("demandes")
-    .select("*")
-    .eq("artisan_id", user?.id)
-    .order("created_at", { ascending: false });
+  const organisationId = user ? await getOrganisationId(supabase, user.id) : null;
+
+  const { data: projets } = organisationId
+    ? await supabase
+        .from("demandes")
+        .select("*")
+        .eq("organisation_id", organisationId)
+        .order("created_at", { ascending: false })
+    : { data: [] as Projet[] | null };
 
   return (
     <div className="p-8 max-w-4xl">

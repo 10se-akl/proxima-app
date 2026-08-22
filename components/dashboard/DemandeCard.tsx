@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { getOrganisationId } from "@/lib/organisation";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import type { Projet } from "@/types";
@@ -82,12 +83,16 @@ export function DemandeCard({ demande }: { demande: Projet }) {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      await enregistrerEvenement(supabase, {
-        demandeId: demande.id,
-        artisanId: user.id,
-        type: "chantier_termine",
-        titre: "Chantier terminé",
-      });
+      const organisationId = await getOrganisationId(supabase, user.id);
+      if (organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: demande.id,
+          artisanId: user.id,
+          organisationId,
+          type: "chantier_termine",
+          titre: "Chantier terminé",
+        });
+      }
     }
     setEnCours(false);
     setFait(true);

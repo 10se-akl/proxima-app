@@ -35,6 +35,7 @@ export type TypeChantier =
 export type Projet = {
   id: string;
   artisan_id: string;
+  organisation_id: string;
   nom_client: string;
   telephone_client: string | null;
   email_client: string | null;
@@ -67,6 +68,7 @@ export type AnalyseIA = {
 export type ParametresEntreprise = {
   id: string;
   artisan_id: string;
+  organisation_id: string;
   nom_entreprise: string | null;
   adresse: string | null;
   telephone: string | null;
@@ -126,6 +128,7 @@ export type StatutEvenement = "a_faire" | "termine" | "annule";
 export type EvenementPlanning = {
   id: string;
   artisan_id: string;
+  organisation_id: string;
   demande_id: string | null;
   titre: string;
   type: TypeEvenement;
@@ -140,6 +143,7 @@ export type NoteVocale = {
   id: string;
   demande_id: string;
   artisan_id: string;
+  organisation_id: string;
   transcription: string;
   created_at: string;
 };
@@ -172,6 +176,7 @@ export type EvenementProjet = {
   id: string;
   demande_id: string;
   artisan_id: string;
+  organisation_id: string;
   type: TypeEvenementProjet;
   titre: string;
   detail: string | null;
@@ -201,6 +206,7 @@ export type Devis = {
   id: string;
   demande_id: string; // référence au projet (nom de colonne historique conservé en base)
   artisan_id: string;
+  organisation_id: string;
   numero: string;
   lignes: LigneDevisCalculee[];
   sous_total_ht: number;

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { ListeDevisRecherchable } from "@/components/dashboard/ListeDevisRecherchable";
+import { getOrganisationId } from "@/lib/organisation";
 
 export default async function DevisPage() {
   const supabase = createClient();
@@ -7,12 +8,14 @@ export default async function DevisPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const organisationId = await getOrganisationId(supabase, user?.id ?? "");
+
   const { data: devisListBrut } = await supabase
     .from("devis")
     .select(
       "id, demande_id, numero, statut, total_estime, envoye_le, created_at, demandes(nom_client, statut)"
     )
-    .eq("artisan_id", user?.id)
+    .eq("organisation_id", organisationId)
     .order("created_at", { ascending: false });
 
   // Supabase renvoie "demandes" comme un tableau au niveau du type (relation

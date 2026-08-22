@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { getOrganisationId } from "@/lib/organisation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
@@ -76,12 +77,16 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        await enregistrerEvenement(supabase, {
-          demandeId: e.demande_id,
-          artisanId: user.id,
-          type: "chantier_termine",
-          titre: "Chantier terminé",
-        });
+        const organisationId = await getOrganisationId(supabase, user.id);
+        if (organisationId) {
+          await enregistrerEvenement(supabase, {
+            demandeId: e.demande_id,
+            artisanId: user.id,
+            organisationId,
+            type: "chantier_termine",
+            titre: "Chantier terminé",
+          });
+        }
       }
       setClotureEnCours(null);
       setTraites((s) => new Set(s).add(e.id));

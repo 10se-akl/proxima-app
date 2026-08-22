@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -47,6 +48,7 @@ export default function DetailDemandePage({
   const [notesVocales, setNotesVocales] = useState<NoteVocale[]>([]);
   const [evenementsProjet, setEvenementsProjet] = useState<EvenementProjet[]>([]);
   const [artisanId, setArtisanId] = useState<string | null>(null);
+  const [organisationId, setOrganisationId] = useState<string | null>(null);
   const [parametres, setParametres] = useState<ParametresEntreprise | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [infosOuvertes, setInfosOuvertes] = useState(false);
@@ -93,16 +95,20 @@ export default function DetailDemandePage({
 
     if (user) {
       setArtisanId(user.id);
+      const orgId = await getOrganisationId(supabase, user.id);
+      setOrganisationId(orgId);
 
       // Ces deux-là dépendent de l'utilisateur (donc après le lot
       // ci-dessus), mais restent indépendantes l'une de l'autre.
       const [{ data: profil }, { data: parametresData }] = await Promise.all([
         supabase.from("profils").select("nom").eq("id", user.id).single(),
-        supabase
-          .from("parametres_entreprise")
-          .select("*")
-          .eq("artisan_id", user.id)
-          .maybeSingle(),
+        orgId
+          ? supabase
+              .from("parametres_entreprise")
+              .select("*")
+              .eq("organisation_id", orgId)
+              .maybeSingle()
+          : Promise.resolve({ data: null }),
       ]);
       setNomArtisan(profil?.nom ?? "");
       setParametres((parametresData as ParametresEntreprise) ?? null);
@@ -147,10 +153,11 @@ export default function DetailDemandePage({
       setErreur(data?.error ?? "L'analyse a échoué. Réessayez.");
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: params.id,
         artisanId,
+        organisationId,
         type: "analyse_ia",
         titre: demande?.questions_manquantes ? "Résumé mis à jour par l'IA" : "Projet analysé avec l'IA",
       });
@@ -191,10 +198,11 @@ export default function DetailDemandePage({
       setErreur("La génération du devis a échoué. Réessayez.");
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: params.id,
         artisanId,
+        organisationId,
         type: "devis_genere",
         titre: devisExistaitDeja ? "Devis mis à jour" : "Devis généré",
       });
@@ -239,11 +247,12 @@ export default function DetailDemandePage({
     if (error) {
       setDemande((d) => (d ? { ...d, priorite: ancienneValeur } : d));
       setErreur("Impossible d'enregistrer la priorité.");
-    } else if (artisanId && priorite !== ancienneValeur) {
+    } else if (artisanId && organisationId && priorite !== ancienneValeur) {
       const labels = { urgent: "Urgent", important: "Important", normal: "Normal" };
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
         artisanId,
+        organisationId,
         type: "priorite_changee",
         titre: `Priorité changée : ${labels[priorite]}`,
       });
@@ -274,10 +283,11 @@ export default function DetailDemandePage({
       await chargerDonnees();
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
         artisanId,
+        organisationId,
         type: "devis_envoye",
         titre: "Devis envoyé au client",
       });
@@ -296,10 +306,11 @@ export default function DetailDemandePage({
       setErreur("Impossible d'enregistrer l'acceptation du devis. Réessayez.");
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
         artisanId,
+        organisationId,
         type: "devis_accepte",
         titre: "Devis accepté par le client",
       });
@@ -318,10 +329,11 @@ export default function DetailDemandePage({
       setErreur("Impossible d'enregistrer le refus du devis. Réessayez.");
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
         artisanId,
+        organisationId,
         type: "devis_refuse",
         titre: "Devis refusé par le client",
       });
@@ -340,10 +352,11 @@ export default function DetailDemandePage({
       setErreur("Impossible de démarrer le chantier. Réessayez.");
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
         artisanId,
+        organisationId,
         type: "chantier_demarre",
         titre: "Chantier démarré",
       });
@@ -362,10 +375,11 @@ export default function DetailDemandePage({
       setErreur("Impossible de marquer le chantier terminé. Réessayez.");
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
         artisanId,
+        organisationId,
         type: "chantier_termine",
         titre: "Chantier terminé",
       });
@@ -384,10 +398,11 @@ export default function DetailDemandePage({
       setErreur("Impossible d'enregistrer la visite. Réessayez.");
       return;
     }
-    if (artisanId) {
+    if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
         artisanId,
+        organisationId,
         type: "visite_effectuee",
         titre: "Visite chantier effectuée",
       });
@@ -415,10 +430,11 @@ export default function DetailDemandePage({
     if (!error) {
       setNotesEnregistrees(true);
       setTimeout(() => setNotesEnregistrees(false), 1500);
-      if (artisanId && notesLocales.trim()) {
+      if (artisanId && organisationId && notesLocales.trim()) {
         await enregistrerEvenement(supabase, {
           demandeId: demande.id,
           artisanId,
+          organisationId,
           type: "note_ajoutee",
           titre: "Note ajoutée",
           detail: notesLocales.slice(0, 80) + (notesLocales.length > 80 ? "…" : ""),
@@ -460,10 +476,11 @@ export default function DetailDemandePage({
     if (!error) {
       setInfosEnregistrees(true);
       setTimeout(() => setInfosEnregistrees(false), 1500);
-      if (artisanId) {
+      if (artisanId && organisationId) {
         await enregistrerEvenement(supabase, {
           demandeId: demande.id,
           artisanId,
+          organisationId,
           type: "infos_completees",
           titre: "Informations complétées",
         });

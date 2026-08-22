@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { getOrganisationId } from "@/lib/organisation";
 import type { TypeChantier } from "@/types";
 
 // Même garde-fou que dans confirmer-import-captures : "type_chantier" est
@@ -71,6 +72,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (!organisationId) {
+    return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
   try {
     const dateDuJour = new Date().toLocaleDateString("fr-FR", {
       weekday: "long",
@@ -95,6 +101,7 @@ export async function POST(request: NextRequest) {
       .from("demandes")
       .insert({
         artisan_id: user.id,
+        organisation_id: organisationId,
         nom_client: extrait.nom_client,
         telephone_client: extrait.telephone_client,
         email_client: extrait.email_client,
@@ -116,6 +123,7 @@ export async function POST(request: NextRequest) {
     await enregistrerEvenement(supabase, {
       demandeId: projet.id,
       artisanId: user.id,
+      organisationId,
       type: "message_importe",
       titre: "Premier contact — message importé",
       detail: extrait.description_resumee,
@@ -134,6 +142,7 @@ export async function POST(request: NextRequest) {
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "analyse_ia",
       contexte: projet.id,
       details: { etape: "import_message", rdv_propose: Boolean(rdvPropose) },
@@ -148,6 +157,7 @@ export async function POST(request: NextRequest) {
     console.error(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "erreur_ia",
       contexte: undefined,
       details: { etape: "import_message", erreur: String(err) },

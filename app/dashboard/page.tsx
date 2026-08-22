@@ -11,6 +11,7 @@ import { MiniApercu } from "@/components/dashboard/MiniApercu";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconeCoeur, IconeDossier } from "@/components/ui/Icones";
 import type { Projet } from "@/types";
+import { getOrganisationId } from "@/lib/organisation";
 
 const SEUIL_RELANCE_JOURS = 7;
 
@@ -27,6 +28,8 @@ export default async function DashboardHome() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
+
+  const organisationId = await getOrganisationId(supabase, user?.id ?? "");
 
   const debutAujourdhui = new Date();
   debutAujourdhui.setHours(0, 0, 0, 0);
@@ -48,15 +51,15 @@ export default async function DashboardHome() {
     { data: evenementsFutursBrut },
   ] = await Promise.all([
     supabase.from("profils").select("nom").eq("id", user?.id).single(),
-    supabase.from("demandes").select("*").eq("artisan_id", user?.id),
+    supabase.from("demandes").select("*").eq("organisation_id", organisationId),
     supabase
       .from("devis")
       .select("id, statut, numero, envoye_le, demande_id, demandes(nom_client)")
-      .eq("artisan_id", user?.id),
+      .eq("organisation_id", organisationId),
     supabase
       .from("evenements_planning")
       .select("id, type, statut, titre, demande_id, date_heure, demandes(nom_client)")
-      .eq("artisan_id", user?.id)
+      .eq("organisation_id", organisationId)
       .gte("date_heure", debutAujourdhui.toISOString())
       .lte("date_heure", finAujourdhui.toISOString())
       .neq("statut", "annule")
@@ -72,7 +75,7 @@ export default async function DashboardHome() {
     supabase
       .from("evenements_planning")
       .select("id, type, titre, demande_id, date_heure, duree_minutes, demandes(nom_client)")
-      .eq("artisan_id", user?.id)
+      .eq("organisation_id", organisationId)
       .eq("statut", "a_faire")
       .lt("date_heure", maintenant.toISOString())
       .order("date_heure", { ascending: false }),
@@ -83,13 +86,13 @@ export default async function DashboardHome() {
     supabase
       .from("evenements_planning")
       .select("demande_id")
-      .eq("artisan_id", user?.id)
+      .eq("organisation_id", organisationId)
       .eq("type", "rendez_vous")
       .eq("statut", "termine"),
     supabase
       .from("evenements_planning")
       .select("demande_id")
-      .eq("artisan_id", user?.id)
+      .eq("organisation_id", organisationId)
       .neq("statut", "annule")
       .gte("date_heure", maintenant.toISOString()),
   ]);

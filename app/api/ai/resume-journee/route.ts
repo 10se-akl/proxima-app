@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { enregistrerLog } from "@/lib/logs";
+import { getOrganisationId } from "@/lib/organisation";
 
 // Pas d'appel IA ici, volontairement : le contenu de ce résumé est
 // entièrement factuel (qui a contacté, quel devis attend, quel projet
@@ -33,6 +34,11 @@ export async function POST() {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (!organisationId) {
+    return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
   try {
     const debutAujourdhui = new Date();
     debutAujourdhui.setHours(0, 0, 0, 0);
@@ -52,15 +58,15 @@ export async function POST() {
         supabase
           .from("demandes")
           .select("id, nom_client, statut, priorite, created_at")
-          .eq("artisan_id", user.id),
+          .eq("organisation_id", organisationId),
         supabase
           .from("devis")
           .select("id, demande_id, statut, envoye_le, demandes(nom_client)")
-          .eq("artisan_id", user.id),
+          .eq("organisation_id", organisationId),
         supabase
           .from("evenements_planning")
           .select("demande_id, date_heure")
-          .eq("artisan_id", user.id)
+          .eq("organisation_id", organisationId)
           .eq("type", "rendez_vous")
           .neq("statut", "annule"),
       ]);
@@ -155,6 +161,7 @@ export async function POST() {
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "resume_journee",
       contexte: undefined,
     });

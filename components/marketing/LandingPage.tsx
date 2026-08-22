@@ -3,12 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
+import { IntroAnimation } from "./IntroAnimation";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useParallaxSouris } from "@/components/useParallaxSouris";
 
 export function LandingPage() {
   return (
     <div>
+      <IntroAnimation />
       <Header />
       <Hero />
       <BandeauConfiance />

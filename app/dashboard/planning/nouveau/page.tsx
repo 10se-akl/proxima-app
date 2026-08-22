@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { getOrganisationId } from "@/lib/organisation";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -57,10 +58,11 @@ function NouvelEvenementForm() {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) return;
+      const organisationId = await getOrganisationId(supabase, user.id);
       const { data } = await supabase
         .from("demandes")
         .select("id, nom_client, priorite")
-        .eq("artisan_id", user.id)
+        .eq("organisation_id", organisationId)
         .neq("statut", "termine")
         .order("created_at", { ascending: false });
       setProjets((data as ProjetLeger[]) ?? []);
@@ -137,6 +139,13 @@ function NouvelEvenementForm() {
       return;
     }
 
+    const organisationId = await getOrganisationId(supabase, user.id);
+    if (!organisationId) {
+      setErreur("Impossible de déterminer votre organisation. Réessayez ou contactez le support.");
+      setChargement(false);
+      return;
+    }
+
     const debut = new Date(`${date}T${heure}`);
     const fin = new Date(debut.getTime() + (type === "rendez_vous" ? dureeMinutes : 15) * 60000);
 
@@ -161,7 +170,7 @@ function NouvelEvenementForm() {
       const { data: evenementsJour } = await supabase
         .from("evenements_planning")
         .select("id, titre, date_heure, duree_minutes")
-        .eq("artisan_id", user.id)
+        .eq("organisation_id", organisationId)
         .eq("type", "rendez_vous")
         .neq("statut", "annule")
         .gte("date_heure", debutJour.toISOString())
@@ -202,7 +211,7 @@ function NouvelEvenementForm() {
       ? await supabase.from("evenements_planning").update(donnees).eq("id", eventId)
       : await supabase
           .from("evenements_planning")
-          .insert({ ...donnees, artisan_id: user.id });
+          .insert({ ...donnees, artisan_id: user.id, organisation_id: organisationId });
 
     setChargement(false);
 
@@ -218,6 +227,7 @@ function NouvelEvenementForm() {
       await enregistrerEvenement(supabase, {
         demandeId,
         artisanId: user.id,
+        organisationId,
         type: "rdv_planifie",
         titre: enModeEdition ? "Rendez-vous modifié" : "Rendez-vous planifié",
         detail: `${titre} — ${new Date(dateHeure).toLocaleDateString("fr-FR", {

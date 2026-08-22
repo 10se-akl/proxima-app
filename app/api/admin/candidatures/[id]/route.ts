@@ -91,6 +91,11 @@ export async function PATCH(
           email: candidature.email,
         });
         if (!profilError) {
+          await creerOrganisationProprietaire(
+            admin,
+            utilisateurExistant.id,
+            candidature.entreprise ?? `${candidature.prenom} ${candidature.nom}`
+          );
           await admin.from("candidatures").update({ statut: "accepted" }).eq("id", params.id);
           return NextResponse.json({
             ok: true,
@@ -121,7 +126,49 @@ export async function PATCH(
     );
   }
 
+  const orgError = await creerOrganisationProprietaire(
+    admin,
+    invite.user.id,
+    candidature.entreprise ?? `${candidature.prenom} ${candidature.nom}`
+  );
+  if (orgError) {
+    console.error(orgError);
+    return NextResponse.json(
+      { error: "Compte créé mais organisation non enregistrée" },
+      { status: 500 }
+    );
+  }
+
   await admin.from("candidatures").update({ statut: "accepted" }).eq("id", params.id);
 
   return NextResponse.json({ ok: true });
+}
+
+// Chaque nouveau compte artisan (accepté depuis une candidature) devient
+// automatiquement propriétaire de sa propre organisation — voir Module 14
+// dans supabase/schema.sql. C'est ce qui lui permettra ensuite d'inviter
+// un employé ou un conjoint sur SA même organisation plutôt que de créer
+// un deuxième compte totalement cloisonné. Factorisé ici car utilisé à
+// deux endroits de cette route (acceptation normale + réparation d'un
+// compte auth existant sans profil).
+async function creerOrganisationProprietaire(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string,
+  nomOrganisation: string
+) {
+  const { data: org, error: orgError } = await admin
+    .from("organisations")
+    .insert({ nom: nomOrganisation, cree_par: userId })
+    .select("id")
+    .single();
+
+  if (orgError || !org) {
+    return orgError ?? new Error("Organisation non créée");
+  }
+
+  const { error: membershipError } = await admin
+    .from("memberships")
+    .insert({ organisation_id: org.id, user_id: userId, role: "proprietaire" });
+
+  return membershipError ?? null;
 }

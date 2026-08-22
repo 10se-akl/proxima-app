@@ -12,6 +12,7 @@ export async function enregistrerEvenement(
   params: {
     demandeId: string;
     artisanId: string;
+    organisationId: string;
     type: TypeEvenementProjet;
     titre: string;
     detail?: string;
@@ -22,6 +23,7 @@ export async function enregistrerEvenement(
     await supabase.from("evenements_projet").insert({
       demande_id: params.demandeId,
       artisan_id: params.artisanId,
+      organisation_id: params.organisationId,
       type: params.type,
       titre: params.titre,
       detail: params.detail ?? null,

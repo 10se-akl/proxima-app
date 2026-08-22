@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import {
   obtenirClasseReconnaissance,
@@ -94,9 +95,17 @@ export function NotesVocales({
       return;
     }
 
+    const organisationId = await getOrganisationId(supabase, user.id);
+    if (!organisationId) {
+      setErreur("Aucune organisation associée à ce compte, reconnectez-vous.");
+      setSauvegarde(false);
+      return;
+    }
+
     const { error } = await supabase.from("notes_vocales").insert({
       demande_id: demandeId,
       artisan_id: user.id,
+      organisation_id: organisationId,
       transcription: transcription.trim(),
     });
 
@@ -110,6 +119,7 @@ export function NotesVocales({
     await enregistrerEvenement(supabase, {
       demandeId,
       artisanId: user.id,
+      organisationId,
       type: "note_vocale_ajoutee",
       titre: "Note vocale ajoutée",
       detail: transcription.trim().slice(0, 80) + (transcription.trim().length > 80 ? "…" : ""),

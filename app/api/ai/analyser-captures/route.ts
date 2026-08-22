@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { appelerClaudeAvecImage, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
+import { getOrganisationId } from "@/lib/organisation";
 
 // Cette route ne fait QUE lire les captures d'écran et proposer des
 // informations — elle n'écrit jamais rien en base. C'est
@@ -67,15 +68,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  // Projets actifs de l'artisan (jamais les projets terminés — inutile de
-  // proposer de rattacher un nouveau message à un chantier déjà clos).
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (!organisationId) {
+    return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
+  // Projets actifs de l'organisation (jamais les projets terminés — inutile
+  // de proposer de rattacher un nouveau message à un chantier déjà clos).
   // Le rapprochement avec les captures se fait ensuite par une comparaison
   // de texte simple, PAS par l'IA : plus prévisible, moins cher, et
   // l'artisan garde la décision finale de toute façon.
   const { data: projetsActifs } = await supabase
     .from("demandes")
     .select("id, nom_client, telephone_client")
-    .eq("artisan_id", user.id)
+    .eq("organisation_id", organisationId)
     .neq("statut", "termine");
 
   const dateDuJour = new Date().toLocaleDateString("fr-FR", {
@@ -132,6 +138,7 @@ export async function POST(request: NextRequest) {
 
   await enregistrerLog(supabase, {
     artisanId: user.id,
+    organisationId,
     type: "analyse_ia",
     contexte: undefined,
     details: { etape: "analyser_captures", nb_captures: images.length },

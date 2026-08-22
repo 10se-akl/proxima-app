@@ -13,6 +13,7 @@ export async function enregistrerLog(
   supabase: SupabaseClient,
   params: {
     artisanId: string;
+    organisationId: string | null;
     type: TypeLog;
     contexte?: string;
     details?: Record<string, unknown>;
@@ -21,6 +22,7 @@ export async function enregistrerLog(
   try {
     await supabase.from("logs").insert({
       artisan_id: params.artisanId,
+      organisation_id: params.organisationId,
       type: params.type,
       contexte: params.contexte ?? null,
       details: params.details ?? null,

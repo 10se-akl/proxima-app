@@ -165,7 +165,7 @@ function arrondir(n: number): number {
 // Paramètres par défaut utilisés UNIQUEMENT si l'artisan n'a pas encore
 // configuré son entreprise, pour ne jamais bloquer la génération d'un
 // devis — mais l'interface doit toujours l'inviter à les personnaliser.
-export const PARAMETRES_PAR_DEFAUT: Omit<ParametresEntreprise, "id" | "artisan_id"> = {
+export const PARAMETRES_PAR_DEFAUT: Omit<ParametresEntreprise, "id" | "artisan_id" | "organisation_id"> = {
   nom_entreprise: null,
   adresse: null,
   telephone: null,

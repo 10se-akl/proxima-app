@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { getOrganisationId } from "@/lib/organisation";
 import type { TypeChantier } from "@/types";
 
 // La colonne "type_chantier" est un simple texte en base, sans contrainte
@@ -63,6 +64,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (!organisationId) {
+    return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
   const resultats: { ok: boolean; projetId?: string; erreur?: string }[] = [];
 
   // Écritures indépendantes les unes des autres — une capture illisible
@@ -76,7 +82,7 @@ export async function POST(request: NextRequest) {
         .from("demandes")
         .select("notes")
         .eq("id", ligne.destination)
-        .eq("artisan_id", user.id)
+        .eq("organisation_id", organisationId)
         .single();
 
       if (fetchError || !projetExistant) {
@@ -103,6 +109,7 @@ export async function POST(request: NextRequest) {
       await enregistrerEvenement(supabase, {
         demandeId: ligne.destination,
         artisanId: user.id,
+        organisationId,
         type: "message_importe",
         titre: "Message importé (capture d'écran)",
         detail: ligne.descriptionResumee,
@@ -116,6 +123,7 @@ export async function POST(request: NextRequest) {
       .from("demandes")
       .insert({
         artisan_id: user.id,
+        organisation_id: organisationId,
         nom_client: ligne.nomClient,
         telephone_client: ligne.telephoneClient,
         type_chantier: typeChantierValide(ligne.typeChantier),
@@ -133,6 +141,7 @@ export async function POST(request: NextRequest) {
     await enregistrerEvenement(supabase, {
       demandeId: nouveauProjet.id,
       artisanId: user.id,
+      organisationId,
       type: "message_importe",
       titre: "Premier contact — capture d'écran importée",
       detail: ligne.descriptionResumee,

@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { getOrganisationId } from "@/lib/organisation";
 import { recalculerDevis } from "@/lib/moteur-metier/calculerDevis";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -138,13 +139,17 @@ export function ValiderDevis({
       return;
     }
 
-    await enregistrerEvenement(supabase, {
-      demandeId,
-      artisanId,
-      type: "devis_valide",
-      titre: "Devis validé",
-      detail: `${formatEuros(totaux.total_ttc)} TTC`,
-    });
+    const organisationId = await getOrganisationId(supabase, artisanId);
+    if (organisationId) {
+      await enregistrerEvenement(supabase, {
+        demandeId,
+        artisanId,
+        organisationId,
+        type: "devis_valide",
+        titre: "Devis validé",
+        detail: `${formatEuros(totaux.total_ttc)} TTC`,
+      });
+    }
 
     onValide();
   }

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { GrilleAgenda } from "@/components/planning/GrilleAgenda";
+import { getOrganisationId } from "@/lib/organisation";
 
 function lundiDeLaSemaine(offsetSemaines: number): Date {
   const aujourdhui = new Date();
@@ -35,10 +36,12 @@ export default async function PlanningPage({
     data: { user },
   } = await supabase.auth.getUser();
 
+  const organisationId = await getOrganisationId(supabase, user?.id ?? "");
+
   const { data: evenementsBrut } = await supabase
     .from("evenements_planning")
     .select("*, demandes(nom_client, priorite)")
-    .eq("artisan_id", user?.id)
+    .eq("organisation_id", organisationId)
     .gte("date_heure", lundi.toISOString())
     .lte("date_heure", dimanche.toISOString())
     .neq("statut", "annule")

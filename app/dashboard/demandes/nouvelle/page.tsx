@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import {
   obtenirClasseReconnaissance,
@@ -69,10 +70,13 @@ export default function NouveauProjetPage() {
     } = await supabase.auth.getUser();
     if (!user) return;
 
+    const organisationId = await getOrganisationId(supabase, user.id);
+    if (!organisationId) return;
+
     const { data } = await supabase
       .from("demandes")
       .select("id, type_chantier, statut, created_at")
-      .eq("artisan_id", user.id)
+      .eq("organisation_id", organisationId)
       .ilike("nom_client", `%${nomClient.trim()}%`)
       .order("created_at", { ascending: false })
       .limit(5);
@@ -136,10 +140,18 @@ export default function NouveauProjetPage() {
       return;
     }
 
+    const organisationId = await getOrganisationId(supabase, user.id);
+    if (!organisationId) {
+      setErreur("Aucune organisation associée à ce compte, reconnectez-vous.");
+      setChargement(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("demandes")
       .insert({
         artisan_id: user.id,
+        organisation_id: organisationId,
         nom_client: nomClient,
         telephone_client: telephoneClient || null,
         description,
@@ -158,6 +170,7 @@ export default function NouveauProjetPage() {
     await enregistrerEvenement(supabase, {
       demandeId: data.id,
       artisanId: user.id,
+      organisationId,
       type: "projet_cree",
       titre: "Premier contact",
       detail: description,

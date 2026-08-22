@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { appelerClaude } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
+import { getOrganisationId } from "@/lib/organisation";
 
 // Important : cette route ne fait QUE proposer un texte. Rien n'est jamais
 // envoyé au client automatiquement — l'artisan copie, ajuste, et envoie
@@ -31,13 +32,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  // Filtre artisan_id explicite en plus de la RLS : défense en profondeur
-  // (relevé lors de l'audit du 12/08).
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (!organisationId) {
+    return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
+  // Filtre organisation_id explicite en plus de la RLS : défense en
+  // profondeur (relevé lors de l'audit du 12/08).
   const { data: projet, error: fetchError } = await supabase
     .from("demandes")
     .select("nom_client, description, informations_disponibles, questions_manquantes")
     .eq("id", demandeId)
-    .eq("artisan_id", user.id)
+    .eq("organisation_id", organisationId)
     .single();
 
   if (fetchError || !projet) {
@@ -59,6 +65,7 @@ ${contexteSupplementaire ? `Contexte supplémentaire donné par l'artisan : "${c
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "reponse_generee",
       contexte: demandeId,
     });
@@ -68,6 +75,7 @@ ${contexteSupplementaire ? `Contexte supplémentaire donné par l'artisan : "${c
     console.error(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "erreur_ia",
       contexte: demandeId,
       details: { etape: "reponse_client", erreur: String(err) },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
+import { getOrganisationId } from "@/lib/organisation";
 import type { AnalyseIA } from "@/types";
 
 const SYSTEM_PROMPT = `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment (maçons, plombiers, électriciens, chauffagistes, couvreurs).
@@ -38,8 +39,16 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  // Voir Module 14 (supabase/schema.sql) : accès désormais scopé par
+  // organisation, pas par artisan exact — un coéquipier doit pouvoir
+  // analyser un projet créé par un autre membre de son équipe.
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (!organisationId) {
+    return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
   // RLS s'applique aussi côté serveur avec le client Supabase authentifié :
-  // impossible de récupérer le projet d'un autre artisan ici.
+  // impossible de récupérer le projet d'une autre organisation ici.
   // Les deux requêtes sont indépendantes (aucune ne dépend de l'autre) :
   // lancées en parallèle plutôt qu'en chaîne.
   const [{ data: projet, error: fetchError }, { data: notesVocales }] = await Promise.all([
@@ -49,9 +58,9 @@ export async function POST(request: NextRequest) {
         "description, informations_disponibles, notes, questions_manquantes, derniere_modification_le, derniere_analyse_le"
       )
       .eq("id", demandeId)
-      // Filtre artisan_id explicite en plus de la RLS : défense en
+      // Filtre organisation_id explicite en plus de la RLS : défense en
       // profondeur (relevé lors de l'audit du 12/08).
-      .eq("artisan_id", user.id)
+      .eq("organisation_id", organisationId)
       .single(),
     supabase
       .from("notes_vocales")
@@ -129,11 +138,12 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVoca
         derniere_analyse_le: new Date().toISOString(),
       })
       .eq("id", demandeId)
-      .eq("artisan_id", user.id);
+      .eq("organisation_id", organisationId);
 
     if (updateError) {
       await enregistrerLog(supabase, {
         artisanId: user.id,
+        organisationId,
         type: "erreur_ia",
         contexte: demandeId,
         details: { etape: "analyse", erreur: "echec_enregistrement" },
@@ -146,6 +156,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVoca
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "analyse_ia",
       contexte: demandeId,
       details: {
@@ -159,6 +170,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVoca
     console.error(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "erreur_ia",
       contexte: demandeId,
       details: { etape: "analyse", erreur: String(err) },

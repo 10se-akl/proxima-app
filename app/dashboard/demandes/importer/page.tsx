@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
+import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -75,6 +76,13 @@ export default function ImporterMessagePage() {
       return;
     }
 
+    const organisationId = await getOrganisationId(supabase, user.id);
+    if (!organisationId) {
+      setTraitementRdv(false);
+      setErreur("Aucune organisation associée à ce compte, reconnectez-vous.");
+      return;
+    }
+
     const dateHeure = new Date(
       `${propositionEnCours.rdv.date}T${propositionEnCours.rdv.heure}`
     );
@@ -90,7 +98,7 @@ export default function ImporterMessagePage() {
     const { data: evenementsJour } = await supabase
       .from("evenements_planning")
       .select("id, titre, date_heure, duree_minutes")
-      .eq("artisan_id", user.id)
+      .eq("organisation_id", organisationId)
       .eq("type", "rendez_vous")
       .neq("statut", "annule")
       .gte("date_heure", debutJour.toISOString())
@@ -115,6 +123,7 @@ export default function ImporterMessagePage() {
 
     const { error } = await supabase.from("evenements_planning").insert({
       artisan_id: user.id,
+      organisation_id: organisationId,
       demande_id: propositionEnCours.projetId,
       titre: `Rendez-vous ${propositionEnCours.nomClient}`,
       type: "rendez_vous",
@@ -131,6 +140,7 @@ export default function ImporterMessagePage() {
     await enregistrerEvenement(supabase, {
       demandeId: propositionEnCours.projetId,
       artisanId: user.id,
+      organisationId,
       type: "rdv_planifie",
       titre: "Rendez-vous planifié",
       detail: dateHeure.toLocaleDateString("fr-FR", {

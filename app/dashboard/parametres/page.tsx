@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
 import { MonCompte } from "@/components/dashboard/MonCompte";
+import { EquipeSection } from "@/components/dashboard/EquipeSection";
 
 type FormState = typeof PARAMETRES_PAR_DEFAUT;
-type Onglet = "entreprise" | "compte";
+type Onglet = "entreprise" | "equipe" | "compte";
 
 export default function ParametresPage() {
   const supabase = createClient();
@@ -23,6 +24,11 @@ export default function ParametresPage() {
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [envoiLogo, setEnvoiLogo] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  // Les paramètres d'entreprise sont partagés par toute l'équipe (une seule
+  // ligne par organisation, pas par personne) — voir Module 14 dans
+  // supabase/schema.sql. On résout donc l'organisation_id une fois ici,
+  // plutôt que de filtrer par artisan_id comme avant.
+  const [organisationId, setOrganisationId] = useState<string | null>(null);
 
   useEffect(() => {
     async function charger() {
@@ -31,10 +37,22 @@ export default function ParametresPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
+      const { data: membership } = await supabase
+        .from("memberships")
+        .select("organisation_id")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (!membership) {
+        setChargement(false);
+        return;
+      }
+      setOrganisationId(membership.organisation_id);
+
       const { data } = await supabase
         .from("parametres_entreprise")
         .select("*")
-        .eq("artisan_id", user.id)
+        .eq("organisation_id", membership.organisation_id)
         .maybeSingle();
 
       if (data) {
@@ -116,7 +134,7 @@ export default function ParametresPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user || !organisationId) {
       setErreur("Session expirée, reconnectez-vous.");
       setEnregistrement(false);
       return;
@@ -124,7 +142,10 @@ export default function ParametresPage() {
 
     const { error } = await supabase
       .from("parametres_entreprise")
-      .upsert({ artisan_id: user.id, ...form }, { onConflict: "artisan_id" });
+      .upsert(
+        { organisation_id: organisationId, artisan_id: user.id, ...form },
+        { onConflict: "organisation_id" }
+      );
 
     setEnregistrement(false);
 
@@ -148,7 +169,7 @@ export default function ParametresPage() {
       <h1 className="font-display text-2xl font-semibold">Paramètres</h1>
 
       <div className="mt-5 flex gap-2 border-b border-ink/10">
-        {(["entreprise", "compte"] as Onglet[]).map((o) => (
+        {(["entreprise", "equipe", "compte"] as Onglet[]).map((o) => (
           <button
             key={o}
             onClick={() => setOnglet(o)}
@@ -158,7 +179,7 @@ export default function ParametresPage() {
                 : "border-transparent text-ink/50 hover:text-ink hover:border-ink/20"
             }`}
           >
-            {o === "entreprise" ? "Mon entreprise" : "Mon compte"}
+            {o === "entreprise" ? "Mon entreprise" : o === "equipe" ? "Mon équipe" : "Mon compte"}
           </button>
         ))}
       </div>
@@ -166,6 +187,10 @@ export default function ParametresPage() {
       {onglet === "compte" ? (
         <div className="mt-6">
           <MonCompte />
+        </div>
+      ) : onglet === "equipe" ? (
+        <div className="mt-6">
+          <EquipeSection />
         </div>
       ) : (
         <>

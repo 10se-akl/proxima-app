@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { calculerDevis, PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
 import { enregistrerLog } from "@/lib/logs";
+import { getOrganisationId } from "@/lib/organisation";
 import type { PosteTravailIA, ParametresEntreprise } from "@/types";
 
 // L'IA ne produit QUE des postes de travaux, jamais de prix. Le calcul
@@ -49,6 +50,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
+  // Toute donnée métier (projet, devis, paramètres) appartient désormais à
+  // une organisation, pas à un artisan précis — un coéquipier doit pouvoir
+  // générer un devis sur un projet créé par un autre membre de la même
+  // équipe. Voir Module 14 dans supabase/schema.sql.
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (!organisationId) {
+    return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
   // Les 4 requêtes ci-dessous sont indépendantes (aucune ne dépend du
   // résultat d'une autre) : on les lance en parallèle plutôt qu'en chaîne
   // pour ne pas payer 4 allers-retours réseau séquentiels à chaque
@@ -59,14 +69,14 @@ export async function POST(request: NextRequest) {
     { data: profil },
     { data: parametresBrutes },
   ] = await Promise.all([
-    // Filtre artisan_id explicite en plus de la RLS : défense en profondeur,
-    // pour ne pas dépendre uniquement d'une policy qui pourrait être
-    // modifiée par erreur plus tard (relevé lors de l'audit du 12/08).
+    // Filtre organisation_id explicite en plus de la RLS : défense en
+    // profondeur, pour ne pas dépendre uniquement d'une policy qui pourrait
+    // être modifiée par erreur plus tard (relevé lors de l'audit du 12/08).
     supabase
       .from("demandes")
       .select("nom_client, description, informations_disponibles, notes, type_chantier, questions_manquantes")
       .eq("id", demandeId)
-      .eq("artisan_id", user.id)
+      .eq("organisation_id", organisationId)
       .single(),
     // Mêmes sources que l'analyse IA (voir /api/ai/analyser-demande) : sans
     // ça, une note vocale dictée après une visite ou en fin de chantier ne
@@ -80,8 +90,9 @@ export async function POST(request: NextRequest) {
     supabase.from("profils").select("metier").eq("id", user.id).single(),
     // Paramètres entreprise : s'ils n'existent pas encore, on utilise des
     // valeurs par défaut plutôt que de bloquer — mais le devis généré
-    // porte une mention invitant l'artisan à les configurer.
-    supabase.from("parametres_entreprise").select("*").eq("artisan_id", user.id).maybeSingle(),
+    // porte une mention invitant l'artisan à les configurer. Partagés par
+    // toute l'équipe (une ligne par organisation, pas par personne).
+    supabase.from("parametres_entreprise").select("*").eq("organisation_id", organisationId).maybeSingle(),
   ]);
 
   if (fetchError || !projet) {
@@ -95,7 +106,7 @@ export async function POST(request: NextRequest) {
   const parametresConfigures = Boolean(parametresBrutes);
   const parametres: ParametresEntreprise = parametresBrutes
     ? (parametresBrutes as ParametresEntreprise)
-    : { id: "defaut", artisan_id: user.id, ...PARAMETRES_PAR_DEFAUT };
+    : { id: "defaut", artisan_id: user.id, organisation_id: organisationId, ...PARAMETRES_PAR_DEFAUT };
 
   const messageUtilisateur = `Métier de l'artisan : ${profil?.metier ?? "non précisé"}
 Type de chantier : ${projet.type_chantier ?? "non précisé"}
@@ -147,33 +158,35 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // Calcul entièrement déterministe, aucun appel IA à partir d'ici.
     const devisCalcule = calculerDevis(postes, parametres);
 
-    // Numéro séquentiel par artisan et par année (ex : 2026-014) plutôt
+    // Numéro séquentiel par ORGANISATION et par année (ex : 2026-014) plutôt
     // qu'un identifiant aléatoire — un devis envoyé à un client doit
     // ressembler à un vrai document professionnel dès le premier essai,
     // pas à un ticket généré au hasard. On compte les devis déjà émis
-    // cette année et on incrémente.
+    // cette année et on incrémente. Par organisation (et non plus par
+    // artisan individuel) : la numérotation légale doit être continue pour
+    // l'ENTREPRISE entière, pas recommencer à zéro pour chaque employé.
     //
     // Deux requêtes concurrentes (double clic, deux onglets, un retry
-    // réseau) pourraient en théorie compter le même total et tenter
-    // d'insérer le même numéro — la base le refuse grâce à une
-    // contrainte unique (artisan_id, numero). Un seul artisan à la fois
-    // sur son propre compte ne produit jamais plus de 2-3 requêtes
-    // simultanées en pratique (pas une équipe qui clique en même temps) :
-    // une boucle de quelques tentatives, en recomptant à chaque fois,
-    // couvre largement ce cas réel sans construire un compteur atomique
-    // en base, disproportionné à cette échelle.
+    // réseau — ou désormais deux membres de la même équipe qui génèrent un
+    // devis au même moment) pourraient en théorie compter le même total et
+    // tenter d'insérer le même numéro — la base le refuse grâce à une
+    // contrainte unique (organisation_id, numero). Une boucle de quelques
+    // tentatives, en recomptant à chaque fois, couvre largement ce cas
+    // réel sans construire un compteur atomique en base, disproportionné à
+    // cette échelle.
     const anneeCourante = new Date().getFullYear();
     const MAX_TENTATIVES_NUMERO = 5;
     // TypeScript ne garde pas le narrowing de "user non-null" (vérifié plus
     // haut) à l'intérieur d'une fonction imbriquée définie plus loin — on
-    // capture l'id dans une constante juste avant, une seule fois.
+    // capture les ids dans des constantes juste avant, une seule fois.
     const artisanId = user.id;
+    const orgId = organisationId;
 
     async function inserer() {
       const { count: nbDevisCetteAnnee } = await supabase
         .from("devis")
         .select("id", { count: "exact", head: true })
-        .eq("artisan_id", artisanId)
+        .eq("organisation_id", orgId)
         .gte("created_at", `${anneeCourante}-01-01`)
         .lt("created_at", `${anneeCourante + 1}-01-01`);
 
@@ -184,6 +197,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
         .insert({
           demande_id: demandeId,
           artisan_id: artisanId,
+          organisation_id: orgId,
           numero,
           lignes: devisCalcule.lignes,
           sous_total_ht: devisCalcule.sous_total_ht,
@@ -211,6 +225,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     if (insertError || !devis) {
       await enregistrerLog(supabase, {
         artisanId: user.id,
+        organisationId,
         type: "erreur_ia",
         contexte: demandeId,
         details: { etape: "devis", erreur: "echec_enregistrement" },
@@ -224,10 +239,12 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     await supabase
       .from("demandes")
       .update({ statut: "devis_genere" })
-      .eq("id", demandeId);
+      .eq("id", demandeId)
+      .eq("organisation_id", organisationId);
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "devis_genere",
       contexte: demandeId,
       details: {
@@ -242,6 +259,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     console.error(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
+      organisationId,
       type: "erreur_ia",
       contexte: demandeId,
       details: { etape: "devis", erreur: String(err) },

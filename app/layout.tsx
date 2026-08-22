@@ -43,6 +43,48 @@ export const metadata: Metadata = {
   },
 };
 
+// Données structurées (schema.org, format JSON-LD) — pas pour les
+// visiteurs humains, mais pour les moteurs de recherche ET les moteurs
+// génératifs (ChatGPT, Perplexity, AI Overviews...) qui s'en servent pour
+// comprendre sans ambiguïté ce qu'est Compyo, avant même de lire le texte
+// de la page. Deux types combinés : "Organization" (l'éditeur) et
+// "SoftwareApplication" (le produit) — description volontairement neutre
+// et factuelle (bêta privée, pas de faux chiffres, pas de note inventée).
+const DONNEES_STRUCTUREES = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Organization",
+      "@id": `${URL_SITE}/#organisation`,
+      name: "Compyo",
+      url: URL_SITE,
+      logo: `${URL_SITE}/icon`,
+      email: "proxima.saas@gmail.com",
+      sameAs: [],
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${URL_SITE}/#logiciel`,
+      name: "Compyo",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      description: DESCRIPTION,
+      url: URL_SITE,
+      inLanguage: "fr-FR",
+      audience: {
+        "@type": "Audience",
+        audienceType: "Artisans du bâtiment",
+      },
+      publisher: { "@id": `${URL_SITE}/#organisation` },
+      // Pas de champ "offers"/"aggregateRating" : le produit est en bêta
+      // privée sur candidature, sans tarif public ni avis clients réels —
+      // en inventer ferait du contenu structuré trompeur, contre-productif
+      // pour le SEO comme pour le GEO (les moteurs pénalisent les données
+      // structurées qui ne correspondent pas à la page réelle).
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -51,6 +93,10 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(DONNEES_STRUCTUREES) }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"

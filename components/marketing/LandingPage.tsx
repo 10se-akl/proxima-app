@@ -5,21 +5,39 @@ import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
 import { IntroAnimation } from "./IntroAnimation";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { useParallaxSouris } from "@/components/useParallaxSouris";
+
+// ============================================================
+// Refonte complète de l'architecture du site (demande d'Axel) : fini la
+// longue page unique qui expliquait tout. L'accueil est maintenant
+// volontairement très court — juste de quoi donner envie d'explorer —
+// et chaque sujet vit sur sa propre page dédiée :
+//   /fonctionnalites        (détail des 4 fonctionnalités + sécurité)
+//   /comment-ca-fonctionne  (timeline complète du parcours d'un chantier)
+//   /pourquoi-compyo        (philosophie : on ne remplace pas l'artisan)
+//   /beta                   (pourquoi une bêta privée, comment la rejoindre)
+//   /a-propos               (présentation honnête du projet)
+//   /contact                (email + FAQ)
+// Toutes réutilisent Header/Footer/Reveal/SectionLabel exportés d'ici.
+// ============================================================
 
 export function LandingPage() {
   return (
     <div>
       <IntroAnimation />
-      <Header />
-      <Hero />
-      <BandeauConfiance />
-      <Problemes />
-      <Solutions />
-      <Parcours />
-      <Resultats />
-      <BetaPrivee />
-      <Footer />
+      {/* id="compyo-site" : tout le reste du site, dans un conteneur unique
+          que IntroAnimation.tsx peut cacher (flou + fondu) pendant qu'elle
+          joue, puis révéler progressivement pendant sa phase de transition
+          finale — sans jamais toucher directement au JSX ci-dessous. Voir
+          la classe .intro-masque dans globals.css : elle n'est ajoutée que
+          par JavaScript, et seulement si l'animation va réellement jouer,
+          donc sans elle (JS désactivé, ou animation déjà vue) le site
+          reste visible immédiatement, par défaut. */}
+      <div id="compyo-site">
+        <Header />
+        <Hero />
+        <CartesApercu />
+        <Footer />
+      </div>
     </div>
   );
 }
@@ -58,7 +76,7 @@ function useRevealOnScroll<T extends HTMLElement>() {
 // plus simple à typer correctement en TypeScript strict, et un div en
 // display inline-flex (voir Resultats plus bas) rend visuellement
 // identique à un <span>.
-function Reveal({
+export function Reveal({
   delay,
   className = "",
   children,
@@ -81,7 +99,7 @@ function Reveal({
   );
 }
 
-function SectionLabel({ children }: { children: React.ReactNode }) {
+export function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
     <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">
       {children}
@@ -90,396 +108,237 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ============================================================
-// En-tête
+// En-tête — refonte "site à plusieurs pages" : 7 pages dans la nav
+// (Accueil, Fonctionnalités, Comment ça fonctionne, Pourquoi Compyo,
+// Bêta, À propos, Contact) plutôt que des ancres vers des sections d'une
+// page unique. Tous les liens sont en chemin absolu (/xxx), ce Header
+// étant maintenant rendu sur toutes les pages du site, pas seulement
+// l'accueil.
+//
+// 7 liens + logo + Connexion + CTA ne tiennent pas sur une largeur
+// raisonnable avant le breakpoint xl (1280px) — plutôt que de les
+// compresser illisiblement sur desktop moyen/tablette, la nav complète
+// n'apparaît qu'à partir de xl, et un menu mobile (panneau déroulant,
+// pur React state + CSS, aucune dépendance) prend le relais en dessous.
+// L'ancien Header n'avait AUCUN menu mobile (nav simplement invisible
+// sous md) — corrigé ici.
 // ============================================================
-function Header() {
+const LIENS_NAV = [
+  { href: "/", label: "Accueil" },
+  { href: "/fonctionnalites", label: "Fonctionnalités" },
+  { href: "/comment-ca-fonctionne", label: "Comment ça fonctionne" },
+  { href: "/pourquoi-compyo", label: "Pourquoi Compyo" },
+  { href: "/beta", label: "Bêta" },
+  { href: "/a-propos", label: "À propos" },
+  { href: "/contact", label: "Contact" },
+];
+
+export function Header() {
+  const [menuOuvert, setMenuOuvert] = useState(false);
+
   return (
     <header className="sticky top-0 z-40 bg-paper/90 backdrop-blur-md border-b border-ink/10">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2.5">
+        {/* id ciblé par IntroAnimation.tsx : au terme de l'animation d'entrée,
+            le logo de l'overlay se réduit et se déplace exactement jusqu'à
+            cet endroit (mesuré via getBoundingClientRect), pour donner
+            l'impression qu'il "devient" ce logo-ci plutôt que de simplement
+            disparaître pendant qu'un autre apparaît. */}
+        <Link id="ancre-logo-entete" href="/" className="flex items-center gap-2.5 shrink-0">
           <CompyoMark taille={30} />
           <span className="font-display font-semibold tracking-tight">Compyo</span>
         </Link>
 
-        <nav className="hidden md:flex items-center gap-8">
-          <a href="#parcours" className="text-sm text-ink/70 hover:text-ink transition-colors">
-            Comment ça marche
-          </a>
-          <a href="#solutions" className="text-sm text-ink/70 hover:text-ink transition-colors">
-            Fonctionnalités
-          </a>
-          <a href="#beta" className="text-sm text-ink/70 hover:text-ink transition-colors">
-            Bêta privée
-          </a>
+        <nav className="hidden xl:flex items-center gap-6">
+          {LIENS_NAV.map((lien) => (
+            <Link
+              key={lien.href}
+              href={lien.href}
+              className="text-[13px] font-medium text-ink/70 hover:text-ink transition-colors whitespace-nowrap"
+            >
+              {lien.label}
+            </Link>
+          ))}
         </nav>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle className="text-base leading-none hover:scale-110 transition-transform" />
-          <Link href="/login" className="hidden sm:block text-sm text-ink/70 hover:text-ink">
-            Se connecter
+          <ThemeToggle className="hidden sm:inline-block text-base leading-none hover:scale-110 transition-transform" />
+          <Link href="/login" className="hidden xl:block text-sm text-ink/70 hover:text-ink whitespace-nowrap">
+            Connexion
           </Link>
           <Link
             href="/demander-acces"
-            className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all"
+            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
           >
-            Rejoindre la bêta privée
+            Rejoindre la bêta
           </Link>
+
+          {/* Bouton hamburger — visible seulement en dessous de xl, là où
+              la nav complète est cachée. */}
+          <button
+            type="button"
+            onClick={() => setMenuOuvert((v) => !v)}
+            aria-expanded={menuOuvert}
+            aria-label={menuOuvert ? "Fermer le menu" : "Ouvrir le menu"}
+            className="xl:hidden grid place-items-center w-9 h-9 rounded-full border border-ink/15 text-ink hover:border-ink/30 transition-colors shrink-0"
+          >
+            <span className="relative w-4 h-3 block">
+              <span
+                className={`absolute left-0 top-0 w-4 h-px bg-ink transition-transform duration-200 ${menuOuvert ? "translate-y-[5px] rotate-45" : ""}`}
+              />
+              <span
+                className={`absolute left-0 bottom-0 w-4 h-px bg-ink transition-transform duration-200 ${menuOuvert ? "-translate-y-[5px] -rotate-45" : ""}`}
+              />
+            </span>
+          </button>
         </div>
       </div>
+
+      {/* Panneau mobile : rendu conditionnellement (pas juste caché en
+          opacity) pour ne jamais intercepter de clics quand il est fermé. */}
+      {menuOuvert && (
+        <div className="xl:hidden border-t border-ink/10 bg-paper">
+          <nav className="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex flex-col gap-1">
+            {LIENS_NAV.map((lien) => (
+              <Link
+                key={lien.href}
+                href={lien.href}
+                onClick={() => setMenuOuvert(false)}
+                className="py-2.5 text-sm font-medium text-ink/80 hover:text-ink transition-colors"
+              >
+                {lien.label}
+              </Link>
+            ))}
+            <div className="mt-2 pt-3 border-t border-ink/10 flex flex-col gap-3">
+              <Link
+                href="/login"
+                onClick={() => setMenuOuvert(false)}
+                className="py-1 text-sm text-ink/70 hover:text-ink"
+              >
+                Connexion
+              </Link>
+              <Link
+                href="/demander-acces"
+                onClick={() => setMenuOuvert(false)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-signal transition-colors"
+              >
+                Rejoindre la bêta privée
+              </Link>
+            </div>
+          </nav>
+        </div>
+      )}
     </header>
   );
 }
 
 // ============================================================
-// Hero — le titre doit se comprendre en moins de 10 secondes, avec une
-// vraie maquette produit à droite, pas une illustration décorative.
+// Hero — extrêmement épuré, à la demande d'Axel : l'accueil ne doit
+// "PAS tout expliquer", juste donner envie d'explorer le reste du site.
+// Pas de maquette produit ici (elle a sa place sur /fonctionnalites, qui,
+// elle, doit vraiment convaincre) — juste le titre, un court paragraphe,
+// deux boutons. Beaucoup de vide, centré, comme les sites de référence
+// cités (Linear, Raycast, Stripe).
 // ============================================================
 function Hero() {
   return (
     <section className="relative overflow-hidden bg-paper">
-      {/* Halo décoratif très discret, purement CSS — donne de la profondeur
-          sans ajouter de poids ni distraire du texte. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-32 -right-32 w-[36rem] h-[36rem] rounded-full bg-signal/[0.07] blur-3xl"
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 w-[42rem] h-[42rem] rounded-full bg-signal/[0.07] blur-3xl"
       />
 
-      <div className="relative max-w-6xl mx-auto px-5 sm:px-8 pt-20 pb-20 sm:pt-28 sm:pb-28 grid lg:grid-cols-2 gap-16 items-center">
-        <div>
+      <div className="relative max-w-2xl mx-auto px-5 sm:px-8 pt-28 pb-24 sm:pt-36 sm:pb-32 text-center">
+        <Reveal>
           <SectionLabel>Le copilote administratif des artisans</SectionLabel>
-          <h1 className="font-display text-[2.4rem] leading-[1.08] sm:text-6xl sm:leading-[1.04] font-semibold tracking-tight text-balance">
+          <h1 className="font-display text-[2.5rem] leading-[1.08] sm:text-6xl sm:leading-[1.05] font-semibold tracking-tight text-balance">
             Passez plus de temps
             <br />
             sur vos chantiers.
             <br />
             <span className="text-signal">Compyo s&apos;occupe du reste.</span>
           </h1>
-          <p className="mt-7 text-lg text-ink/70 max-w-md leading-relaxed">
-            L&apos;assistant conçu pour les artisans du bâtiment. Il centralise vos clients, vos
-            chantiers, vos photos, vos notes vocales, vos rendez-vous — et vous aide à préparer
-            vos devis.
+          <p className="mt-6 text-lg text-ink/70 max-w-md mx-auto leading-relaxed">
+            L&apos;assistant conçu pour les artisans du bâtiment : vos clients, vos chantiers et
+            vos devis, réunis au même endroit.
           </p>
 
-          <div className="mt-9 flex flex-wrap items-center gap-4">
+          <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
+            <Link
+              href="/fonctionnalites"
+              className="inline-flex items-center justify-center gap-2 rounded-full border border-ink/15 text-ink font-medium px-7 py-3.5 hover:border-ink/30 hover:bg-surface hover:scale-[1.03] active:scale-[0.97] transition-all"
+            >
+              Découvrir Compyo
+            </Link>
             <Link
               href="/demander-acces"
               className="inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce hover:scale-[1.03] active:scale-[0.97] transition-all shadow-sm shadow-signal/20"
             >
-              Rejoindre la bêta privée
+              Demander un accès
             </Link>
-            <a
-              href="#parcours"
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-ink/15 text-ink font-medium px-7 py-3.5 hover:border-ink/30 hover:bg-surface hover:scale-[1.03] active:scale-[0.97] transition-all"
-            >
-              Découvrir Compyo
-            </a>
           </div>
 
           <p className="mt-6 text-xs text-ink/40 font-mono tracking-wide">
             Bêta privée — sur candidature, réponse sous 48h.
           </p>
-        </div>
-
-        <MockupProduit />
+        </Reveal>
       </div>
     </section>
   );
 }
 
-// Une maquette réaliste du vrai tableau de bord, pas une image générique
-// achetée sur une banque d'images — mêmes libellés, même logique que
-// l'app réelle (voir app/dashboard/page.tsx), simplement figée pour la
-// démonstration.
-function MockupProduit() {
-  const ref = useParallaxSouris<HTMLDivElement>(6, "section");
-
-  return (
-    <div
-      ref={ref}
-      className="relative transition-transform duration-200 ease-out will-change-transform [transform-style:preserve-3d]"
-    >
-      <div
-        aria-hidden
-        className="absolute inset-0 translate-x-3 translate-y-3 rounded-2xl bg-ink/5"
-      />
-      <div className="relative rounded-2xl border border-ink/10 bg-surface shadow-xl shadow-ink/[0.06] overflow-hidden">
-        <div className="flex items-center gap-2 px-5 py-3.5 border-b border-ink/10 bg-paper/60">
-          <span className="w-2.5 h-2.5 rounded-full bg-ink/15" />
-          <span className="w-2.5 h-2.5 rounded-full bg-ink/15" />
-          <span className="w-2.5 h-2.5 rounded-full bg-ink/15" />
-          <span className="ml-3 font-mono text-[11px] text-ink/50">Compyo — aujourd&apos;hui</span>
-        </div>
-        <div className="p-6">
-          <div className="flex items-center justify-between">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-steel">
-              À faire aujourd&apos;hui
-            </p>
-            <span className="font-mono text-[10px] text-ink/30">3 chantiers actifs</span>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-2.5">
-            <div className="flex items-center justify-between rounded-xl border border-ink/10 px-4 py-3 text-sm">
-              <span className="flex items-center gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-signal shrink-0" />
-                Sophie Martin — Salle de bain
-              </span>
-              <span className="font-mono text-[10px] text-steel">Devis à envoyer</span>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-ink/10 px-4 py-3 text-sm">
-              <span className="flex items-center gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-[#D9861A] shrink-0" />
-                Julien Roche — Chaudière
-              </span>
-              <span className="font-mono text-[10px] text-steel">RDV 14h</span>
-            </div>
-            <div className="flex items-center justify-between rounded-xl border border-ink/10 px-4 py-3 text-sm opacity-60">
-              <span className="flex items-center gap-2.5">
-                <span className="w-2 h-2 rounded-full bg-[#2F8F5B] shrink-0" />
-                Amandine Roy — Tableau électrique
-              </span>
-              <span className="font-mono text-[10px] text-steel">Photos ajoutées</span>
-            </div>
-          </div>
-
-          <div className="mt-5 rounded-xl bg-paper p-4">
-            <p className="font-mono text-[10px] uppercase tracking-wider text-steel mb-2">
-              Résumé de l&apos;IA — chantier Martin
-            </p>
-            <p className="text-xs text-ink/70 leading-relaxed">
-              Douche italienne, 4m². Accès facile. Mesures prises, il manque encore le choix de
-              la robinetterie avant de finaliser le devis.
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 // ============================================================
-// Bandeau de confiance
+// Les 4 grandes cartes de l'accueil — un aperçu, jamais une explication.
+// Chacune ouvre la page /fonctionnalites, directement sur la bonne
+// section (ancre déjà en place, voir app/fonctionnalites/page.tsx).
+// Volontairement peu de texte par carte : le rôle de l'accueil s'arrête
+// ici, le détail vit ailleurs.
 // ============================================================
-function BandeauConfiance() {
-  const items = [
-    "Pensé avec des artisans",
-    "Bêta privée",
-    "Développé en France",
-    "Sécurité des données",
+function CartesApercu() {
+  const cartes = [
+    {
+      ancre: "import",
+      titre: "Organisation",
+      texte: "Clients, chantiers, photos, messages — tout au même endroit, sans ressaisie.",
+    },
+    {
+      ancre: "planning",
+      titre: "Planning",
+      texte: "Rendez-vous et tâches réunis, sans double réservation possible.",
+    },
+    {
+      ancre: "devis",
+      titre: "Devis",
+      texte: "L'IA propose, un moteur de calcul fixe les prix — vous validez toujours.",
+    },
+    {
+      ancre: "notes-vocales",
+      titre: "Assistant IA",
+      texte: "Dictez sur la route, Compyo transcrit, range, et résume votre journée.",
+    },
   ];
 
   return (
     <section className="bg-surface border-y border-ink/10">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
-        {items.map((item) => (
-          <span
-            key={item}
-            className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-ink/45"
-          >
-            <span className="w-1 h-1 rounded-full bg-signal/60" />
-            {item}
-          </span>
-        ))}
-      </div>
-    </section>
-  );
-}
-
-// ============================================================
-// Les problèmes — nommer précisément les frustrations avant de proposer
-// la solution, pour que l'artisan se reconnaisse immédiatement.
-// ============================================================
-function Problemes() {
-  const items = [
-    { titre: "Les appels qui coupent le chantier", texte: "Un client au téléphone, et c'est le fil du travail qui se casse." },
-    { titre: "Les devis qui prennent des heures", texte: "Le soir, à froid, pour reconstituer ce qui a été vu le matin." },
-    { titre: "Les photos perdues", texte: "Éparpillées entre la galerie du téléphone et trois conversations." },
-    { titre: "Les informations dispersées", texte: "SMS, WhatsApp, mail, papier — jamais au même endroit." },
-    { titre: "Les rappels oubliés", texte: "Le client qui attend une réponse depuis trois jours, sans que personne s'en rende compte." },
-    { titre: "Le planning compliqué", texte: "Un agenda papier, un carnet, une mémoire — et un double rendez-vous de temps en temps." },
-  ];
-
-  return (
-    <section className="bg-paper">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
-        <Reveal>
-          <SectionLabel>Ce que vous vivez déjà</SectionLabel>
-          <h2 className="font-display text-2xl sm:text-4xl font-semibold tracking-tight max-w-xl">
-            L&apos;administratif ne devrait pas être le plus dur de votre journée.
-          </h2>
-        </Reveal>
-
-        <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {items.map((item, i) => (
-            <Reveal key={item.titre} delay={i * 60}>
-              <div className="h-full rounded-2xl border border-ink/10 bg-surface p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg hover:shadow-ink/[0.06]">
-                <h3 className="font-semibold text-sm">{item.titre}</h3>
-                <p className="mt-2 text-sm text-ink/60 leading-relaxed">{item.texte}</p>
-              </div>
+      <div className="max-w-5xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
+        <div className="grid sm:grid-cols-2 gap-5">
+          {cartes.map((carte, i) => (
+            <Reveal key={carte.ancre} delay={i * 70}>
+              <Link
+                href={`/fonctionnalites#${carte.ancre}`}
+                className="group h-full flex flex-col rounded-2xl border border-ink/10 bg-paper p-8 sm:p-10 transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-lg hover:shadow-ink/[0.06]"
+              >
+                <h2 className="font-display text-xl sm:text-2xl font-semibold tracking-tight">
+                  {carte.titre}
+                </h2>
+                <p className="mt-3 text-sm text-ink/60 leading-relaxed flex-1">{carte.texte}</p>
+                <span className="mt-6 text-xs font-medium text-signal opacity-0 -translate-x-1 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0">
+                  En savoir plus →
+                </span>
+              </Link>
             </Reveal>
           ))}
         </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================
-// Les solutions — chaque fonctionnalité dans une carte, sobre et concrète.
-// ============================================================
-function Solutions() {
-  const items = [
-    { titre: "Gestion des clients", texte: "Chaque client, son historique complet, retrouvé en un clic." },
-    { titre: "Planning", texte: "Rendez-vous et tâches, sans double réservation possible." },
-    { titre: "Photos", texte: "Rattachées automatiquement au bon chantier, jamais perdues." },
-    { titre: "Notes vocales", texte: "Dictez sur la route, Compyo transcrit et range." },
-    { titre: "Analyse IA", texte: "Elle résume le besoin et repère ce qu'il manque encore." },
-    { titre: "Préparation des devis", texte: "L'IA propose les postes, un moteur de calcul fixe les prix." },
-    { titre: "Historique complet", texte: "Du premier appel à la fin des travaux, tout est tracé." },
-    { titre: "Organisation automatique", texte: "Rien à classer vous-même — Compyo range en continu." },
-  ];
-
-  return (
-    <section id="solutions" className="bg-surface border-y border-ink/10">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
-        <Reveal>
-          <SectionLabel>Ce que Compyo change</SectionLabel>
-          <h2 className="font-display text-2xl sm:text-4xl font-semibold tracking-tight max-w-xl">
-            Un outil, pensé pour le rythme réel d&apos;un chantier.
-          </h2>
-        </Reveal>
-
-        <div className="mt-14 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {items.map((item, i) => (
-            <Reveal key={item.titre} delay={i * 50}>
-              <div className="h-full rounded-2xl border border-ink/10 bg-paper p-6 hover:border-signal/30 hover:bg-surface transition-colors">
-                <h3 className="font-semibold text-sm">{item.titre}</h3>
-                <p className="mt-2 text-sm text-ink/60 leading-relaxed">{item.texte}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================
-// Démonstration — la timeline d'un chantier réel, du premier appel à la
-// fin des travaux.
-// ============================================================
-function Parcours() {
-  const etapes = [
-    { n: "01", titre: "Le client appelle", texte: "Par téléphone, SMS ou message — comme d'habitude." },
-    { n: "02", titre: "Le projet est créé", texte: "Collez le message ou dictez une note — prêt en quelques secondes." },
-    { n: "03", titre: "L'artisan ajoute des photos", texte: "Rattachées automatiquement au bon chantier." },
-    { n: "04", titre: "Il dicte une note", texte: "Sur la route, en sortant du rendez-vous — l'essentiel, à chaud." },
-    { n: "05", titre: "Compyo résume tout", texte: "L'IA fait la synthèse et repère ce qu'il manque encore." },
-    { n: "06", titre: "Le devis est préparé", texte: "L'IA propose les postes, un moteur de calcul fixe les prix — jamais l'inverse." },
-    { n: "07", titre: "Le chantier est planifié", texte: "Rendez-vous et tâches liés au projet, visibles d'un coup d'œil." },
-  ];
-
-  return (
-    <section id="parcours" className="bg-paper">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-20 sm:py-28">
-        <Reveal>
-          <SectionLabel>Comment ça marche</SectionLabel>
-          <h2 className="font-display text-2xl sm:text-4xl font-semibold tracking-tight max-w-lg">
-            Le vrai parcours d&apos;un chantier, du premier appel à la fin des travaux.
-          </h2>
-        </Reveal>
-
-        <div className="mt-14 max-w-2xl">
-          {etapes.map((e, i) => (
-            <Reveal key={e.n} delay={i * 40}>
-              <div className="flex gap-5">
-                <div className="flex flex-col items-center">
-                  <span className="shrink-0 grid place-items-center w-9 h-9 rounded-full border border-ink/15 font-mono text-xs text-steel bg-surface">
-                    {e.n}
-                  </span>
-                  {i < etapes.length - 1 && <span className="w-px flex-1 bg-ink/10 my-1" />}
-                </div>
-                <div className="pb-9">
-                  <h3 className="font-semibold text-sm">{e.titre}</h3>
-                  <p className="mt-1.5 text-sm text-ink/60 leading-relaxed">{e.texte}</p>
-                </div>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================
-// Pourquoi Compyo — uniquement le résultat, jamais la technologie.
-// ============================================================
-function Resultats() {
-  const items = [
-    "Moins d'appels ratés",
-    "Moins d'oublis",
-    "Moins d'administratif le soir",
-    "Plus de temps sur le terrain",
-    "Plus d'organisation",
-  ];
-
-  return (
-    // bg-anthracite (fixe) et non bg-ink (qui s'inverse avec le mode) :
-    // cette section doit rester un bloc sombre constant dans les DEUX
-    // modes — voir tailwind.config.ts pour l'explication du token. Le
-    // texte utilise donc du blanc fixe (text-white/...), pas text-paper
-    // (qui deviendrait sombre, donc invisible, en mode sombre).
-    <section className="bg-anthracite">
-      <div className="max-w-4xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
-        <Reveal>
-          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-5">
-            Pourquoi Compyo
-          </p>
-          <p className="font-display text-2xl sm:text-4xl text-white font-semibold leading-snug max-w-2xl mx-auto">
-            L&apos;IA ne remplace jamais l&apos;artisan. Vous gardez toujours le contrôle.
-          </p>
-        </Reveal>
-
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-3">
-          {items.map((texte, i) => (
-            <Reveal key={texte} delay={i * 70} className="inline-flex">
-              <span className="inline-flex rounded-full border border-white/15 text-white/85 text-sm px-5 py-2.5">
-                {texte}
-              </span>
-            </Reveal>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// ============================================================
-// Bêta privée
-// ============================================================
-function BetaPrivee() {
-  return (
-    <section id="beta" className="bg-surface border-y border-ink/10">
-      <div className="max-w-3xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
-        <Reveal>
-          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">
-            Bêta privée
-          </p>
-          <h2 className="font-display text-2xl sm:text-4xl font-semibold max-w-xl mx-auto leading-snug tracking-tight">
-            Nous construisons Compyo avec quelques artisans, pas seuls dans notre coin.
-          </h2>
-          <p className="mt-5 text-base text-ink/60 max-w-lg mx-auto leading-relaxed">
-            L&apos;accès est volontairement limité : chaque retour compte, et fait évoluer
-            Compyo directement. Chaque candidature est lue et examinée individuellement — pas
-            de réponse automatique.
-          </p>
-          <Link
-            href="/demander-acces"
-            className="mt-9 inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce transition-colors shadow-sm shadow-signal/20"
-          >
-            Demander un accès
-          </Link>
-        </Reveal>
       </div>
     </section>
   );
@@ -488,33 +347,61 @@ function BetaPrivee() {
 // ============================================================
 // Pied de page — sobre, sans lien mort.
 // ============================================================
-function Footer() {
+export function Footer() {
   return (
-    // Même raison qu'au-dessus (Resultats) : bg-anthracite fixe + texte
+    // Même raison qu'ailleurs sur le site : bg-anthracite fixe + texte
     // blanc fixe, pas ink/paper qui s'inverseraient avec le mode.
     <footer className="bg-anthracite">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div className="flex items-center gap-2.5">
-          <CompyoMark variante="blanc" taille={26} />
-          <span className="text-sm text-white/70">Compyo — bêta privée</span>
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col gap-6">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2.5">
+            <CompyoMark variante="blanc" taille={26} />
+            <span className="text-sm text-white/70">Compyo — bêta privée</span>
+          </div>
+          {/* Second niveau de navigation : le site étant maintenant réparti
+              sur plusieurs pages, le pied de page redonne un accès complet
+              à toutes, pas seulement aux pages légales. */}
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/60">
+            <Link href="/fonctionnalites" className="hover:text-white transition-colors">
+              Fonctionnalités
+            </Link>
+            <Link href="/comment-ca-fonctionne" className="hover:text-white transition-colors">
+              Comment ça fonctionne
+            </Link>
+            <Link href="/pourquoi-compyo" className="hover:text-white transition-colors">
+              Pourquoi Compyo
+            </Link>
+            <Link href="/beta" className="hover:text-white transition-colors">
+              Bêta
+            </Link>
+            <Link href="/a-propos" className="hover:text-white transition-colors">
+              À propos
+            </Link>
+            <Link href="/contact" className="hover:text-white transition-colors">
+              Contact
+            </Link>
+          </nav>
         </div>
-        <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/50">
-          <Link href="/mentions-legales" className="hover:text-white/80 transition-colors">
-            Mentions légales
-          </Link>
-          <Link href="/politique-de-confidentialite" className="hover:text-white/80 transition-colors">
-            Confidentialité
-          </Link>
-          <Link href="/cgu" className="hover:text-white/80 transition-colors">
-            CGU
-          </Link>
+
+        <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/50">
+            <Link href="/mentions-legales" className="hover:text-white/80 transition-colors">
+              Mentions légales
+            </Link>
+            <Link href="/politique-de-confidentialite" className="hover:text-white/80 transition-colors">
+              Confidentialité
+            </Link>
+            <Link href="/cgu" className="hover:text-white/80 transition-colors">
+              CGU
+            </Link>
+          </nav>
           <a
             href="mailto:proxima.saas@gmail.com"
-            className="font-mono text-white/40 hover:text-white/70 transition-colors"
+            className="font-mono text-xs text-white/40 hover:text-white/70 transition-colors"
           >
             proxima.saas@gmail.com
           </a>
-        </nav>
+        </div>
       </div>
     </footer>
   );

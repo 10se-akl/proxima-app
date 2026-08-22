@@ -50,15 +50,25 @@ export function IntroAnimation() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-paper transition-opacity duration-500 ease-out ${
+      className={`fixed inset-0 z-[100] flex items-center justify-center gap-4 overflow-hidden bg-anthracite transition-opacity duration-500 ease-out ${
         etat === "jouee" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >
+      {/* Fond "plan technique" : grille discrète + un accent diagonal dans
+          la couleur de marque (terracotta) — inspiré du fond utilisé par le
+          studio créatif montré par Axel (grille + accent bleu), adapté à
+          l'identité Compyo plutôt que copié tel quel. Fixe et sombre
+          volontairement (bg-anthracite, comme le Footer/la Sidebar) : ce
+          fond ne dépend pas du mode clair/sombre choisi par le visiteur,
+          c'est un moment de marque à part, pas un écran normal de l'app. */}
+      <div className="intro-grille" />
+      <div className="intro-accent" />
+
       {/* "perspective" sur le parent + "preserve-3d" sur l'élément animé :
           c'est ce qui donne une vraie profondeur à la rotation (le symbole
           se voit de trois-quarts pendant qu'il tourne) plutôt qu'un simple
           aplatissement, avec seulement du CSS — pas besoin de Three.js. */}
-      <div className="intro-perspective">
+      <div className="intro-perspective relative">
         <svg
           viewBox="0 0 100 100"
           width={96}
@@ -80,7 +90,9 @@ export function IntroAnimation() {
           </g>
         </svg>
       </div>
-      <p className="font-display font-semibold text-2xl tracking-tight text-ink intro-nom">
+      {/* Le nom apparaît À CÔTÉ du symbole (pas en dessous) — comme sur la
+          référence montrée par Axel. */}
+      <p className="relative font-display font-semibold text-4xl tracking-tight text-white intro-nom">
         Compyo
       </p>
     </div>

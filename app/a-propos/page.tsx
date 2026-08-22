@@ -5,18 +5,20 @@ import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Lan
 export const metadata: Metadata = {
   title: "À propos — Compyo",
   description:
-    "Compyo est développé par un développeur indépendant, en bêta privée, avec de vrais retours d'artisans du bâtiment. Pas de storytelling, juste un outil construit sérieusement.",
+    "Compyo est développé par Axel Thfoin, 15 ans, développeur indépendant, en bêta privée avec de vrais retours d'artisans du bâtiment. Pas de storytelling inventé, juste un outil construit sérieusement.",
 };
 
 // Page "À propos", séparée de l'accueil — même logique que /fonctionnalites
 // et /pourquoi-compyo : l'accueil reste court, et c'est ici que quelqu'un
 // qui se demande "c'est qui, derrière Compyo ?" trouve une réponse honnête.
 //
-// Contrainte explicite d'Axel : rester strictement factuel. Pas de faux
-// storytelling, pas d'anecdote fondatrice inventée, pas d'âge ni de
-// parcours biographique précis (on ne les connaît pas), et aucune image —
-// seulement les mêmes éléments graphiques abstraits (halos CSS, bordures)
-// déjà utilisés ailleurs sur le site.
+// Mise à jour : à la demande d'Axel, la page se présente maintenant
+// nommément (prénom/nom, âge, développeur solo) plutôt que de rester
+// volontairement vague — ce sont des informations qu'il a explicitement
+// données et souhaite publier, donc plus une invention de ma part. Le
+// reste de la contrainte d'origine tient toujours : aucune anecdote
+// enjolivée au-delà de ce qu'il a décrit, aucune image (juste les mêmes
+// halos CSS abstraits qu'ailleurs sur le site).
 export default function AProposPage() {
   return (
     <div>
@@ -33,8 +35,9 @@ export default function AProposPage() {
 }
 
 // ============================================================
-// Poser le ton : un projet indépendant, construit avec sérieux — pas une
-// startup financée avec une équipe et un board.
+// Présentation nommée : prénom, nom, âge, développeur solo — informations
+// données explicitement par Axel pour cette page. Le ton reste sobre,
+// pas de mise en scène ni de photo.
 // ============================================================
 function Intro() {
   return (
@@ -47,12 +50,12 @@ function Intro() {
         <Reveal>
           <SectionLabel>À propos</SectionLabel>
           <h1 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-balance">
-            Un projet indépendant, construit sérieusement.
+            Bonjour, je m&apos;appelle Axel Thfoin.
           </h1>
           <p className="mt-7 text-lg text-ink/70 max-w-xl mx-auto leading-relaxed">
-            Compyo est développé par un développeur indépendant. Pas de levée de fonds, pas
-            d&apos;équipe commerciale, pas de storytelling — un outil pensé et construit pour
-            résoudre un vrai problème.
+            J&apos;ai 15 ans et je développe Compyo seul, en indépendant. Pas de levée de fonds,
+            pas d&apos;équipe commerciale, pas de storytelling enjolivé — un outil pensé et
+            construit sérieusement pour résoudre un vrai problème.
           </p>
         </Reveal>
       </div>
@@ -61,8 +64,9 @@ function Intro() {
 }
 
 // ============================================================
-// Le constat de départ — déjà présent ailleurs sur le site (Problemes() sur
-// l'accueil), repris ici sans inventer d'anecdote personnelle précise.
+// Le déclencheur personnel + le constat plus large qu'il a confirmé par
+// des recherches — repris fidèlement à ce qu'Axel a décrit, sans en
+// rajouter (pas d'anecdote enjolivée au-delà de ce qu'il a donné).
 // ============================================================
 function Constat() {
   return (
@@ -74,15 +78,18 @@ function Constat() {
             Le constat, avant l&apos;outil.
           </h2>
           <p className="mt-6 text-base text-ink/70 leading-relaxed">
-            Les artisans du bâtiment passent une part importante de leur temps sur des tâches
-            qui n&apos;ont rien à voir avec leur métier : des appels qui coupent le chantier, des
-            devis refaits le soir à froid, des photos et des informations éparpillées entre la
-            galerie du téléphone et trois conversations différentes.
+            J&apos;ai toujours voulu construire quelque chose d&apos;utile. L&apos;idée de Compyo
+            est partie d&apos;une discussion avec un ami, qui m&apos;a parlé d&apos;un problème
+            qu&apos;il rencontrait dans son métier d&apos;artisan. En creusant le sujet, j&apos;ai
+            réalisé que ce n&apos;était pas un cas isolé : les artisans du bâtiment passent une
+            part importante de leur temps sur des tâches qui n&apos;ont rien à voir avec leur
+            métier — des appels qui coupent le chantier, des devis refaits le soir à froid, des
+            photos et des informations éparpillées entre la galerie du téléphone et trois
+            conversations différentes.
           </p>
           <p className="mt-4 text-base text-ink/70 leading-relaxed">
-            Compyo part de ce constat, largement partagé, et d&apos;une décision simple :
-            construire un outil qui règle vraiment ce problème, sans blabla ni fonctionnalités
-            superflues.
+            Compyo part de ce constat, et d&apos;une décision simple : construire un outil qui
+            règle vraiment ce problème, sans blabla ni fonctionnalités superflues.
           </p>
         </Reveal>
       </div>

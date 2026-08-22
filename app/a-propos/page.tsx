@@ -24,6 +24,7 @@ export default function AProposPage() {
     <div>
       <Header />
 
+      <Devise />
       <Intro />
       <Constat />
       <Construction />
@@ -35,27 +36,50 @@ export default function AProposPage() {
 }
 
 // ============================================================
+// La devise du produit, remise en grand plan tout en haut de la page — à
+// la demande d'Axel. Même traitement visuel que IntroPhilosophie() sur
+// /pourquoi-compyo (bloc bg-anthracite, grande citation centrée), pour
+// que ce soit immédiatement reconnaissable comme LA phrase qui résume
+// Compyo, avant même de parler de qui l'a construit.
+// ============================================================
+function Devise() {
+  return (
+    <section className="bg-anthracite">
+      <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-20 pb-16 sm:pt-28 sm:pb-20 text-center">
+        <Reveal>
+          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-6">
+            À propos
+          </p>
+          <p className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
+            Nous ne voulons pas remplacer les artisans.
+            <br />
+            Nous voulons supprimer les tâches répétitives.
+          </p>
+          <p className="mt-8 text-lg sm:text-xl text-white/70 leading-relaxed">
+            Compyo travaille avec eux. Pas à leur place.
+          </p>
+        </Reveal>
+      </div>
+    </section>
+  );
+}
+
+// ============================================================
 // Présentation nommée : prénom, nom, âge, développeur solo — informations
-// données explicitement par Axel pour cette page. Le ton reste sobre,
-// pas de mise en scène ni de photo.
+// données explicitement par Axel pour cette page. Volontairement discrète
+// maintenant (bloc simple, plus petit, pas de H1) : la devise ci-dessus
+// est ce que la page doit mettre en avant en premier, pas l'histoire
+// personnelle.
 // ============================================================
 function Intro() {
   return (
-    <section className="relative overflow-hidden bg-paper">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -left-24 w-[30rem] h-[30rem] rounded-full bg-signal/[0.07] blur-3xl"
-      />
-      <div className="relative max-w-3xl mx-auto px-5 sm:px-8 pt-20 pb-16 sm:pt-28 sm:pb-20 text-center">
+    <section className="bg-paper">
+      <div className="max-w-2xl mx-auto px-5 sm:px-8 pt-14 pb-14 sm:pt-16 sm:pb-16 text-center">
         <Reveal>
-          <SectionLabel>À propos</SectionLabel>
-          <h1 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-balance">
-            Bonjour, je m&apos;appelle Axel Thfoin.
-          </h1>
-          <p className="mt-7 text-lg text-ink/70 max-w-xl mx-auto leading-relaxed">
-            J&apos;ai 15 ans et je développe Compyo seul, en indépendant. Pas de levée de fonds,
-            pas d&apos;équipe commerciale, pas de storytelling enjolivé — un outil pensé et
-            construit sérieusement pour résoudre un vrai problème.
+          <p className="text-base text-ink/70 leading-relaxed">
+            Compyo est développé par <span className="font-semibold text-ink">Axel Thfoin</span>,
+            15 ans, seul, en indépendant. Pas de levée de fonds, pas d&apos;équipe commerciale,
+            pas de storytelling enjolivé.
           </p>
         </Reveal>
       </div>

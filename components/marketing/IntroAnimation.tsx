@@ -38,10 +38,10 @@ export function IntroAnimation() {
     setEtat("attente");
     sessionStorage.setItem(CLE_SESSION, "1");
 
-    // Durée totale de la séquence (dessin de l'arc + apparition du cœur)
-    // avant de lancer le fondu de sortie, qui dure lui-même 500ms de plus
-    // (voir la transition CSS sur le conteneur).
-    const timer = setTimeout(() => setEtat("jouee"), 1500);
+    // Durée totale de la séquence (dessin de l'arc → cœur → rotation 3D du
+    // symbole → apparition du nom) avant de lancer le fondu de sortie, qui
+    // dure lui-même 500ms de plus (voir la transition CSS sur le conteneur).
+    const timer = setTimeout(() => setEtat("jouee"), 2600);
     return () => clearTimeout(timer);
   }, []);
 
@@ -50,24 +50,39 @@ export function IntroAnimation() {
   return (
     <div
       aria-hidden
-      className={`fixed inset-0 z-[100] flex items-center justify-center bg-paper transition-opacity duration-500 ease-out ${
+      className={`fixed inset-0 z-[100] flex flex-col items-center justify-center gap-4 bg-paper transition-opacity duration-500 ease-out ${
         etat === "jouee" ? "opacity-0 pointer-events-none" : "opacity-100"
       }`}
     >
-      <svg viewBox="0 0 100 100" width={96} height={96} role="presentation">
-        <path
-          d="M 74.04 74.04 A 34 34 0 1 1 74.04 25.96"
-          fill="none"
-          stroke="#C96B4A"
-          strokeWidth={16}
-          strokeLinecap="round"
-          pathLength={100}
-          className="intro-trace-arc"
-        />
-        <g transform="translate(71.6,35.39) scale(1.2)" className="intro-trace-coeur">
-          <path d={TRACE_COEUR} fill="#E8C5B6" />
-        </g>
-      </svg>
+      {/* "perspective" sur le parent + "preserve-3d" sur l'élément animé :
+          c'est ce qui donne une vraie profondeur à la rotation (le symbole
+          se voit de trois-quarts pendant qu'il tourne) plutôt qu'un simple
+          aplatissement, avec seulement du CSS — pas besoin de Three.js. */}
+      <div className="intro-perspective">
+        <svg
+          viewBox="0 0 100 100"
+          width={96}
+          height={96}
+          role="presentation"
+          className="intro-mark-3d"
+        >
+          <path
+            d="M 74.04 74.04 A 34 34 0 1 1 74.04 25.96"
+            fill="none"
+            stroke="#C96B4A"
+            strokeWidth={16}
+            strokeLinecap="round"
+            pathLength={100}
+            className="intro-trace-arc"
+          />
+          <g transform="translate(71.6,35.39) scale(1.2)" className="intro-trace-coeur">
+            <path d={TRACE_COEUR} fill="#E8C5B6" />
+          </g>
+        </svg>
+      </div>
+      <p className="font-display font-semibold text-2xl tracking-tight text-ink intro-nom">
+        Compyo
+      </p>
     </div>
   );
 }

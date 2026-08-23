@@ -653,3 +653,100 @@ create policy "un membre de l'organisation gère le logo de l'équipe"
     bucket_id = 'logos'
     and (storage.foldername(name))[1] = auth.uid()::text
   );
+
+-- ============================================================
+-- Module 15 — Retours produit ("la carte des problèmes")
+--
+-- Idée : donner aux artisans un moyen de signaler ce qui leur pose
+-- vraiment problème dans Compyo, noter à quel point ça compte pour eux
+-- (1 à 10), et voir les problèmes déjà remontés par d'autres — pour
+-- identifier rapidement ce qui revient le plus souvent et à quel point
+-- c'est urgent, plutôt que de deviner depuis quelques retours épars par
+-- email.
+--
+-- Deux tables : "problemes_produits" (un problème, décrit une seule fois
+-- — ex. "Les devis prennent trop de temps à corriger") et
+-- "retours_produits" (un artisan qui signale ce problème, avec sa note
+-- d'importance — soit en créant un nouveau problème, soit en "votant" sur
+-- un problème déjà existant). Le rapprochement entre un nouveau texte
+-- libre et un problème déjà existant se fait par IA (voir la route
+-- app/api/retours/route.ts) : ce fichier ne contient que la structure et
+-- les règles d'accès, pas la logique de rapprochement.
+--
+-- Point de sécurité important, voulu explicitement par Axel après
+-- discussion : les autres artisans doivent voir QUE des problèmes existent
+-- et COMBIEN de personnes les remontent, jamais QUI les a remontés. Seul
+-- l'admin (Axel) doit voir le détail nominatif. Plutôt que de tenter un
+-- masquage de colonne via une vue Postgres (fragile à faire fonctionner
+-- correctement avec RLS sans pouvoir le tester en direct dans cet
+-- environnement), la lecture agrégée passe entièrement par une route
+-- serveur qui utilise createAdminClient() pour lire, agrège en TypeScript,
+-- et ne renvoie jamais user_id ni aucun champ identifiant au navigateur
+-- pour un artisan non-admin — voir app/api/retours/route.ts (lecture) vs
+-- app/api/admin/retours/route.ts (lecture nominative, réservée à
+-- process.env.ADMIN_EMAIL). Ici, en base, "retours_produits" n'a donc
+-- volontairement AUCUNE policy de lecture large pour "authenticated" :
+-- seule une lecture de sa propre ligne est permise directement depuis le
+-- navigateur (pour qu'un artisan puisse voir/modifier son propre vote),
+-- tout le reste passe par le service_role côté serveur.
+-- ============================================================
+
+create table if not exists problemes_produits (
+  id uuid primary key default gen_random_uuid(),
+  titre text not null,
+  description text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists retours_produits (
+  id uuid primary key default gen_random_uuid(),
+  probleme_id uuid not null references problemes_produits(id) on delete cascade,
+  organisation_id uuid not null references organisations(id) on delete cascade,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  importance smallint not null,
+  commentaire text,
+  created_at timestamptz not null default now(),
+  -- Un artisan qui revote sur le même problème met à jour sa note plutôt
+  -- que de créer une deuxième ligne (upsert côté route, voir
+  -- app/api/retours/route.ts) : un problème = au plus un avis par personne.
+  unique (probleme_id, user_id)
+);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'retours_produits_importance_valide'
+  ) then
+    alter table retours_produits
+      add constraint retours_produits_importance_valide check (importance between 1 and 10);
+  end if;
+end $$;
+
+alter table problemes_produits enable row level security;
+alter table retours_produits enable row level security;
+
+-- Les titres/descriptions de problèmes ne contiennent aucune donnée
+-- personnelle (le texte est reformulé de façon neutre par l'IA au moment
+-- de la création, voir la route) : lecture ouverte à tout artisan connecté.
+drop policy if exists "un artisan connecté lit les problèmes signalés" on problemes_produits;
+create policy "un artisan connecté lit les problèmes signalés"
+  on problemes_produits for select
+  to authenticated
+  using (true);
+
+-- Pas de policy d'insert pour "authenticated" ici, volontairement : la
+-- création d'un nouveau problème passe toujours par la route serveur
+-- (app/api/retours/route.ts), qui appelle d'abord l'IA pour vérifier qu'il
+-- ne s'agit pas déjà d'un problème existant avant d'en créer un nouveau —
+-- même logique de sécurité que "organisations"/"memberships" plus haut.
+
+-- Un artisan ne peut lire/modifier QUE sa propre ligne de retour — jamais
+-- celle d'un autre. C'est ce qui empêche techniquement un artisan de lire
+-- le détail nominatif des autres, même en interrogeant la table
+-- directement depuis le navigateur plutôt que via l'app.
+drop policy if exists "un artisan gère son propre retour" on retours_produits;
+create policy "un artisan gère son propre retour"
+  on retours_produits for all
+  to authenticated
+  using (user_id = auth.uid())
+  with check (user_id = auth.uid() and organisation_id in (select mes_organisations()));

@@ -13,6 +13,7 @@ import {
   IconeDocument,
   IconeCalendrier,
   IconeParametres,
+  IconeRetours,
 } from "@/components/ui/Icones";
 
 const LIENS = [
@@ -20,6 +21,7 @@ const LIENS = [
   { href: "/dashboard/demandes", label: "Projets", Icone: IconeDossier },
   { href: "/dashboard/devis", label: "Devis", Icone: IconeDocument },
   { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
+  { href: "/dashboard/retours", label: "Retours", Icone: IconeRetours },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
 ];
 

@@ -19,12 +19,14 @@ const ETAPES = [
   {
     heure: "8h30",
     emoji: "📞",
-    texte: "Un client appelle pendant que vous êtes sur un chantier. Compyo prend le relais en arrière-plan.",
+    texte:
+      "Un client appelle. Vous répondez comme d'habitude — puis, en une note dictée ou un message collé, le projet est déjà créé.",
   },
   {
     heure: "11h40",
     emoji: "📸",
-    texte: "Vous prenez 3 photos. Elles se rangent seules, au bon endroit, sans que vous y pensiez.",
+    texte:
+      "Vous prenez 3 photos sur le chantier. Un instant plus tard, vous les ajoutez au bon projet dans Compyo — plus besoin de les retrouver ce soir dans la galerie.",
   },
   {
     heure: "11h42",

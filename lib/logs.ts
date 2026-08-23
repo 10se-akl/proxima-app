@@ -5,7 +5,8 @@ export type TypeLog =
   | "devis_genere"
   | "reponse_generee"
   | "erreur_ia"
-  | "resume_journee";
+  | "resume_journee"
+  | "retour_produit";
 
 // Ne doit jamais faire planter l'action principale : un échec d'écriture
 // de log est avalé silencieusement (juste tracé en console serveur).

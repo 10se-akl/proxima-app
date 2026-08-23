@@ -69,3 +69,14 @@ export function IconeCoeur({ className, taille = 18 }: Props) {
     </svg>
   );
 }
+
+export function IconeRetours({ className, taille = 18 }: Props) {
+  // Bulle de dialogue avec point d'exclamation : "signaler / donner son avis".
+  return (
+    <svg {...base(taille)} className={className}>
+      <path d="M4 5.5a1.5 1.5 0 0 1 1.5-1.5h13A1.5 1.5 0 0 1 20 5.5v10a1.5 1.5 0 0 1-1.5 1.5H9l-4.2 3.3a.5.5 0 0 1-.8-.4V17h-.5A1.5 1.5 0 0 1 2 15.5v-10a1.5 1.5 0 0 1 1.5-1.5H4Z" />
+      <path d="M12 8v4.2" />
+      <circle cx="12" cy="14.6" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}

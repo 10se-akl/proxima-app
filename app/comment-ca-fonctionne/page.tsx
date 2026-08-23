@@ -72,7 +72,7 @@ function Parcours() {
       n: "03",
       titre: "Ajout de photos",
       texte:
-        "Les photos prises sur le chantier — de la pièce, du dégât, du compteur — se rattachent automatiquement au bon projet, sans avoir à les trier ni à les renvoyer par message plus tard.",
+        "Vous ajoutez les photos prises sur le chantier — de la pièce, du dégât, du compteur — directement au bon projet dans Compyo, en un instant. Plus besoin de les retrouver ce soir dans la galerie.",
     },
     {
       n: "04",

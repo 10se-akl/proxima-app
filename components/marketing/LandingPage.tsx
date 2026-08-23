@@ -8,6 +8,7 @@ import { DemoInteractif } from "./DemoInteractif";
 import { JourneeAvecCompyo } from "./JourneeAvecCompyo";
 import { SectionDemoVideo } from "./SectionDemoVideo";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { createClient } from "@/lib/supabase/client";
 
 // ============================================================
 // Refonte complète de l'architecture du site (demande d'Axel) : fini la
@@ -134,6 +135,7 @@ const LIENS_NAV = [
   { href: "/fonctionnalites", label: "Fonctionnalités" },
   { href: "/comment-ca-fonctionne", label: "Comment ça fonctionne" },
   { href: "/pourquoi-compyo", label: "Pourquoi Compyo" },
+  { href: "/carte-mentale", label: "Carte mentale" },
   { href: "/beta", label: "Bêta" },
   { href: "/a-propos", label: "À propos" },
   { href: "/contact", label: "Contact" },
@@ -141,6 +143,18 @@ const LIENS_NAV = [
 
 export function Header() {
   const [menuOuvert, setMenuOuvert] = useState(false);
+  // Refonte navigation (Module 16) : le site vitrine et l'app forment un
+  // seul produit, plus jamais de déconnexion forcée pour naviguer entre
+  // les deux. On détecte simplement si une session existe pour afficher
+  // "Dashboard" plutôt que "Connexion"/"Rejoindre la bêta" — null tant
+  // qu'on ne sait pas encore, pour éviter un flash incorrect au premier
+  // rendu (voir plus bas, connecte === null n'affiche ni l'un ni l'autre).
+  const [connecte, setConnecte] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => setConnecte(Boolean(data.user)));
+  }, []);
 
   return (
     <header className="sticky top-0 z-40 bg-paper/90 backdrop-blur-md border-b border-ink/10">
@@ -169,15 +183,26 @@ export function Header() {
 
         <div className="flex items-center gap-3">
           <ThemeToggle className="hidden sm:inline-block text-base leading-none hover:scale-110 transition-transform" />
-          <Link href="/login" className="hidden xl:block text-sm text-ink/70 hover:text-ink whitespace-nowrap">
-            Connexion
-          </Link>
-          <Link
-            href="/demander-acces"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
-          >
-            Rejoindre la bêta
-          </Link>
+          {connecte ? (
+            <Link
+              href="/dashboard"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
+            >
+              Dashboard
+            </Link>
+          ) : (
+            <>
+              <Link href="/login" className="hidden xl:block text-sm text-ink/70 hover:text-ink whitespace-nowrap">
+                Connexion
+              </Link>
+              <Link
+                href="/demander-acces"
+                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
+              >
+                Rejoindre la bêta
+              </Link>
+            </>
+          )}
 
           {/* Bouton hamburger — visible seulement en dessous de xl, là où
               la nav complète est cachée. */}
@@ -216,20 +241,32 @@ export function Header() {
               </Link>
             ))}
             <div className="mt-2 pt-3 border-t border-ink/10 flex flex-col gap-3">
-              <Link
-                href="/login"
-                onClick={() => setMenuOuvert(false)}
-                className="py-1 text-sm text-ink/70 hover:text-ink"
-              >
-                Connexion
-              </Link>
-              <Link
-                href="/demander-acces"
-                onClick={() => setMenuOuvert(false)}
-                className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-signal transition-colors"
-              >
-                Rejoindre la bêta privée
-              </Link>
+              {connecte ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOuvert(false)}
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-signal transition-colors"
+                >
+                  Dashboard
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOuvert(false)}
+                    className="py-1 text-sm text-ink/70 hover:text-ink"
+                  >
+                    Connexion
+                  </Link>
+                  <Link
+                    href="/demander-acces"
+                    onClick={() => setMenuOuvert(false)}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-signal transition-colors"
+                  >
+                    Rejoindre la bêta privée
+                  </Link>
+                </>
+              )}
             </div>
           </nav>
         </div>

@@ -1,18 +1,15 @@
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
 import { LandingPage } from "@/components/marketing/LandingPage";
 
-export default async function HomePage() {
-  const supabase = createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+// ============================================================
+// Refonte navigation (Module 16, voir supabase/schema.sql) : Axel veut que
+// le site vitrine et l'app fonctionnent comme un seul produit, sans jamais
+// avoir besoin de se déconnecter pour naviguer de l'un à l'autre. On ne
+// redirige donc plus un artisan connecté vers /dashboard ici — le Header
+// (voir components/marketing/LandingPage.tsx) détecte simplement la
+// session et affiche "Dashboard" à la place de "Connexion"/"Rejoindre la
+// bêta", pour qu'il puisse revenir sur l'accueil marketing librement.
+// ============================================================
 
-  // Un artisan déjà connecté qui revient sur le lien du site n'a plus besoin
-  // de revoir la page marketing : il est envoyé directement sur son espace.
-  if (user) {
-    redirect("/dashboard");
-  }
-
+export default function HomePage() {
   return <LandingPage />;
 }

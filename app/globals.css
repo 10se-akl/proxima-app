@@ -342,3 +342,73 @@
     display: none;
   }
 }
+
+/* ============================================================
+   Carte mentale (Module 16, voir supabase/schema.sql) — la page la plus
+   travaillée visuellement du site, demande explicite d'Axel ("je préfère
+   passer deux jours sur cette seule page"). Bulles flottantes + respirantes
+   + particules discrètes, en pur CSS (pas de librairie de physique/graphe,
+   même contrainte que IntroAnimation.tsx : le registre npm n'est pas
+   accessible dans cet environnement). Chaque bulle applique ces classes
+   avec un délai/une durée légèrement différents via des variables CSS
+   inline (--delai, --duree) posées depuis CarteMentale.tsx, pour qu'aucune
+   bulle ne bouge exactement en phase avec sa voisine — sensation
+   "organique" plutôt qu'un motif mécanique répété. Le parallax souris,
+   lui, ne passe pas par ces keyframes : CarteMentale.tsx pose directement
+   --parallax-x/--parallax-y sur le conteneur (hérité par tous les
+   enfants), mis à jour via un simple mousemove sans re-render React. ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  .cm-bulle-flotte {
+    animation: cm-flotter var(--duree, 7s) ease-in-out infinite;
+    animation-delay: var(--delai, 0s);
+  }
+  @keyframes cm-flotter {
+    0%, 100% { transform: translate(0, 0); }
+    50% { transform: translate(var(--flotte-x, 4px), var(--flotte-y, -6px)); }
+  }
+
+  .cm-bulle-respire {
+    animation: cm-respirer var(--duree-resp, 5s) ease-in-out infinite;
+    animation-delay: var(--delai, 0s);
+  }
+  @keyframes cm-respirer {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.03); }
+  }
+
+  .cm-particule {
+    animation: cm-deriver var(--duree, 14s) linear infinite;
+    animation-delay: var(--delai, 0s);
+  }
+  @keyframes cm-deriver {
+    0% { transform: translate(0, 0); opacity: 0; }
+    10% { opacity: 0.5; }
+    90% { opacity: 0.5; }
+    100% { transform: translate(var(--flotte-x, 0), var(--flotte-y, -40px)); opacity: 0; }
+  }
+
+  .cm-ligne {
+    animation: cm-pulser 4.5s ease-in-out infinite;
+    animation-delay: var(--delai, 0s);
+  }
+  @keyframes cm-pulser {
+    0%, 100% { opacity: 0.14; }
+    50% { opacity: 0.3; }
+  }
+
+  .cm-panneau-entree {
+    animation: cm-panneau 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes cm-panneau {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+.cm-champ {
+  --parallax-x: 0px;
+  --parallax-y: 0px;
+}
+.cm-bulle-parallax {
+  transform: translate(calc(var(--parallax-x) * var(--profondeur, 1)), calc(var(--parallax-y) * var(--profondeur, 1)));
+}

@@ -21,8 +21,16 @@ const LIENS = [
   { href: "/dashboard/demandes", label: "Projets", Icone: IconeDossier },
   { href: "/dashboard/devis", label: "Devis", Icone: IconeDocument },
   { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
-  { href: "/dashboard/retours", label: "Retours", Icone: IconeRetours },
+  { href: "/carte-mentale", label: "Carte mentale", Icone: IconeRetours },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
+];
+
+// Navigation Module 16 : le site vitrine reste accessible sans jamais se
+// déconnecter (voir app/page.tsx) — ce petit bloc secondaire permet d'y
+// revenir directement depuis l'app.
+const LIENS_SITE = [
+  { href: "/", label: "Site vitrine" },
+  { href: "/contact", label: "Contact" },
 ];
 
 export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
@@ -85,6 +93,18 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
             })}
           </nav>
           <div className="mt-3 pt-3 border-t border-white/10 px-3 flex flex-col gap-2 items-start">
+            <div className="flex items-center gap-3">
+              {LIENS_SITE.map((lien) => (
+                <Link
+                  key={lien.href}
+                  href={lien.href}
+                  onClick={() => setMenuOuvert(false)}
+                  className="text-xs text-white/60 hover:text-white underline"
+                >
+                  {lien.label}
+                </Link>
+              ))}
+            </div>
             <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
             <div className="flex items-center gap-3">
               <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
@@ -129,6 +149,17 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
         </div>
 
         <div className="px-6 py-6 border-t border-white/10 flex flex-col gap-2 items-start">
+          <div className="flex items-center gap-3">
+            {LIENS_SITE.map((lien) => (
+              <Link
+                key={lien.href}
+                href={lien.href}
+                className="text-xs text-white/60 hover:text-white underline"
+              >
+                {lien.label}
+              </Link>
+            ))}
+          </div>
           <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
           <div className="flex items-center gap-3">
             <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />

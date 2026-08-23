@@ -750,3 +750,69 @@ create policy "un artisan gère son propre retour"
   to authenticated
   using (user_id = auth.uid())
   with check (user_id = auth.uid() and organisation_id in (select mes_organisations()));
+
+-- ============================================================
+-- Module 16 — Refonte "Retours produit" → carte mentale.
+--
+-- Axel a testé la V1 (Module 15) et veut une vraie fonctionnalité produit,
+-- pas un simple formulaire : un bouton "Faire un retour" toujours
+-- accessible dans l'app (texte + type + importance + pièce jointe
+-- optionnelle), une IA qui nettoie/résume/regroupe automatiquement, et une
+-- page publique "carte mentale" (visualisation en bulles) plutôt qu'une
+-- simple liste. Ce module ajoute les colonnes nécessaires sans casser le
+-- Module 15 (mêmes tables, mêmes policies de base, uniquement des ajouts).
+--
+-- - retours_produits.type : catégorise CE retour précis (problème / idée /
+--   amélioration / bug) — un même "problème" (thème) peut recevoir des
+--   retours de types différents.
+-- - retours_produits.texte_original / texte_nettoye : on garde le texte
+--   brut tel que tapé par l'artisan (utile à l'admin) ET une version
+--   nettoyée par l'IA (fautes/hésitations retirées) utilisée pour
+--   l'affichage — "commentaire" (Module 15) reste en place pour ne pas
+--   casser l'existant, mais devient un alias du texte nettoyé côté route.
+-- - retours_produits.piece_jointe_chemin : chemin dans le bucket storage
+--   "retours" (capture d'écran / photo jointe), nullable.
+-- - problemes_produits.resume_ia : synthèse courte régénérée par l'IA à
+--   chaque nouveau retour rattaché à ce problème (thème) — évite à Axel de
+--   lire tous les messages un par un pour comprendre le sujet.
+-- - problemes_produits.propositions_ia : pistes d'amélioration générées à
+--   la demande par l'IA (bouton dédié côté admin), mises en cache ici
+--   plutôt que régénérées à chaque affichage.
+-- ============================================================
+
+alter table retours_produits
+  add column if not exists type text not null default 'probleme',
+  add column if not exists texte_original text,
+  add column if not exists texte_nettoye text,
+  add column if not exists piece_jointe_chemin text;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'retours_produits_type_valide'
+  ) then
+    alter table retours_produits
+      add constraint retours_produits_type_valide
+      check (type in ('probleme', 'idee', 'amelioration', 'bug'));
+  end if;
+end $$;
+
+alter table problemes_produits
+  add column if not exists resume_ia text,
+  add column if not exists propositions_ia text;
+
+-- Bucket privé pour les pièces jointes (capture d'écran / photo) : même
+-- schéma de sécurité que "photos"/"logos" plus haut — un fichier est rangé
+-- sous {user_id}/{...}, et seul ce user_id peut y accéder directement.
+-- L'admin y accède via createAdminClient() (service_role, bypass RLS) pour
+-- générer une URL signée côté route API, jamais en donnant l'accès direct
+-- au bucket à "authenticated".
+insert into storage.buckets (id, name, public)
+values ('retours', 'retours', false)
+on conflict (id) do nothing;
+
+drop policy if exists "un artisan gère ses propres pièces jointes de retour" on storage.objects;
+create policy "un artisan gère ses propres pièces jointes de retour"
+  on storage.objects for all
+  using (bucket_id = 'retours' and (storage.foldername(name))[1] = auth.uid()::text)
+  with check (bucket_id = 'retours' and (storage.foldername(name))[1] = auth.uid()::text);

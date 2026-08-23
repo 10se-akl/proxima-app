@@ -10,6 +10,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${base}/fonctionnalites`, changeFrequency: "monthly", priority: 0.9 },
     { url: `${base}/comment-ca-fonctionne`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/pourquoi-compyo`, changeFrequency: "monthly", priority: 0.6 },
+    { url: `${base}/carte-mentale`, changeFrequency: "weekly", priority: 0.6 },
     { url: `${base}/beta`, changeFrequency: "monthly", priority: 0.7 },
     { url: `${base}/a-propos`, changeFrequency: "monthly", priority: 0.5 },
     { url: `${base}/contact`, changeFrequency: "monthly", priority: 0.5 },

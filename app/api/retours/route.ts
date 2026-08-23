@@ -6,42 +6,51 @@ import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 
 // ============================================================
-// La "carte des problèmes" (voir Module 15, supabase/schema.sql) : les
-// artisans connectés signalent ce qui leur pose problème dans Compyo,
-// notent l'importance (1-10), et voient les problèmes déjà remontés par
-// d'autres — sans jamais voir QUI les a remontés (voir plus bas, GET).
+// La "carte mentale" (voir Module 15 + Module 16, supabase/schema.sql) :
+// les artisans signalent problèmes/idées/améliorations/bugs depuis le
+// bouton "Faire un retour" toujours accessible dans l'app, notent
+// l'importance (1-10), et l'IA regroupe automatiquement en grands thèmes.
 //
-// GET  : liste agrégée (comptage + moyenne d'importance), zéro donnée
-//        nominative, calculée ici en TypeScript plutôt que par une vue
-//        SQL — plus simple à vérifier correcte sans pouvoir tester une
-//        policy RLS-sur-vue en direct dans mon environnement.
-// POST : un artisan vote sur un problème existant (probleme_id) OU décrit
-//        un nouveau problème en texte libre (texte) — dans ce second cas,
-//        l'IA compare d'abord ce texte à la liste des problèmes déjà
-//        connus pour éviter de créer un doublon à chaque reformulation
-//        légèrement différente du même problème.
+// GET  : liste agrégée par thème (comptage, importance moyenne, résumé IA),
+//        ZÉRO donnée nominative. Volontairement PUBLIC (pas d'auth requise)
+//        depuis la refonte Module 16 : /carte-mentale est une page
+//        vitrine à part entière, visible sans connexion — seule
+//        l'écriture (POST) exige d'être connecté. "monAvis" est simplement
+//        null pour un visiteur non connecté.
+// POST : un artisan connecté vote sur un thème existant (probleme_id, en un
+//        clic, sans texte) OU décrit un nouveau retour en texte libre
+//        (texte + type) — dans ce second cas, l'IA nettoie le texte, écrit
+//        un résumé du thème à jour, et vérifie d'abord s'il s'agit déjà
+//        d'un thème connu avant d'en créer un nouveau.
 // ============================================================
 
-const SYSTEM_PROMPT_RAPPROCHEMENT = `Tu aides à organiser les retours d'artisans sur un logiciel appelé Compyo.
+const TYPES_VALIDES = ["probleme", "idee", "amelioration", "bug"] as const;
+type TypeRetour = (typeof TYPES_VALIDES)[number];
 
-On te donne une liste de problèmes déjà connus (chacun avec un id, un titre court, et parfois une description), et un nouveau témoignage écrit par un artisan.
+const SYSTEM_PROMPT_RAPPROCHEMENT = `Tu aides à organiser les retours d'artisans sur un logiciel appelé Compyo, pour construire une "carte mentale" des grands thèmes qui reviennent (ex: Planning, Devis, Appels, Photos, Mobile, IA, Import, Performance, Notifications...).
 
-Ta tâche : décider si ce témoignage parle du MÊME problème de fond qu'un des problèmes déjà listés (même si les mots sont différents), ou s'il s'agit d'un problème réellement nouveau.
+On te donne une liste de thèmes déjà connus (id, titre court, description, résumé actuel), et un nouveau témoignage écrit par un artisan (avec son type : probleme / idee / amelioration / bug).
 
-Sois raisonnablement strict : ne rapproche que si c'est vraiment le même problème sous-jacent, pas juste le même thème général (ex: "les devis prennent du temps à préparer" et "je ne peux pas dupliquer un ancien devis" sont deux problèmes différents, même si les deux parlent de devis).
+Ta tâche, en un seul passage :
+1. Décide si ce témoignage parle du MÊME thème de fond qu'un thème déjà listé (même si les mots sont différents), ou s'il s'agit d'un thème réellement nouveau. Sois raisonnablement strict : ne rapproche que si c'est vraiment le même sujet sous-jacent, pas juste le même thème général (ex: "les devis prennent du temps à préparer" et "je ne peux pas dupliquer un ancien devis" sont deux sujets différents).
+2. Nettoie le texte du témoignage : corrige les fautes évidentes et les hésitations de dictée, sans changer le sens, sans l'enjoliver, à la première personne comme l'a écrit l'artisan.
+3. Rédige un résumé de thème à jour (2-3 phrases, neutre, troisième personne, jamais avec les mots exacts d'une personne énervée) qui tient compte de CE nouveau témoignage ET, si un thème existant correspond, de son résumé actuel — le résumé doit rester cohérent pour quelqu'un qui n'a lu ni les messages individuels ni l'ancien résumé.
 
 Réponds UNIQUEMENT en JSON valide, sans texte autour :
 {
-  "correspond_a_id": "<id exact d'un problème existant>" | null,
-  "titre_propose": "<titre court et neutre du problème, 4 à 10 mots, à la troisième personne, ex: \\"Les devis sont longs à corriger\\">"
+  "correspond_a_id": "<id exact d'un thème existant>" | null,
+  "titre_propose": "<titre court et neutre du thème, 2 à 5 mots, ex: \\"Devis longs à corriger\\", ex: \\"Performance\\">",
+  "texte_nettoye": "<texte du témoignage nettoyé>",
+  "resume_ia": "<résumé de thème à jour, 2-3 phrases>"
 }
 
-"titre_propose" est toujours requis, même si "correspond_a_id" n'est pas null (il sera simplement ignoré dans ce cas). Reformule toujours le titre de façon neutre et factuelle, jamais avec les mots exacts d'une personne énervée — ce titre sera visible par d'autres artisans.`;
+"titre_propose" est toujours requis. S'il correspond à un thème existant, garde de préférence son titre actuel (ne le change que si le nouveau texte révèle qu'il était mal nommé).`;
 
 type ProblemeAgrege = {
   id: string;
   titre: string;
   description: string | null;
+  resumeIa: string | null;
   nombreAvis: number;
   importanceMoyenne: number;
   monAvis: number | null;
@@ -53,23 +62,16 @@ export async function GET() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
-  }
-
   // Client admin nécessaire ici : on doit lire TOUS les avis (toutes
-  // organisations confondues, c'est volontairement transversal, voir le
-  // commentaire du Module 15) pour les compter, alors que la policy RLS
-  // sur "retours_produits" limite un artisan à sa propre ligne. Aucune
-  // donnée nominative n'est renvoyée plus bas : seuls id/titre/
-  // description/compte/moyenne quittent cette route.
+  // organisations confondues, volontairement transversal) pour les
+  // compter, sans jamais renvoyer de donnée nominative plus bas.
   const admin = createAdminClient();
 
   const [{ data: problemes, error: erreurProblemes }, { data: avis, error: erreurAvis }] =
     await Promise.all([
       admin
         .from("problemes_produits")
-        .select("id, titre, description, created_at")
+        .select("id, titre, description, resume_ia, created_at")
         .order("created_at", { ascending: true }),
       admin.from("retours_produits").select("probleme_id, user_id, importance"),
     ]);
@@ -86,21 +88,20 @@ export async function GET() {
       nombreAvis > 0
         ? avisDuProbleme.reduce((somme, a) => somme + a.importance, 0) / nombreAvis
         : 0;
-    const monAvisTrouve = avisDuProbleme.find((a) => a.user_id === user.id);
+    const monAvisTrouve = user ? avisDuProbleme.find((a) => a.user_id === user.id) : undefined;
 
     return {
       id: p.id,
       titre: p.titre,
       description: p.description,
+      resumeIa: p.resume_ia ?? null,
       nombreAvis,
       importanceMoyenne: Math.round(importanceMoyenne * 10) / 10,
       monAvis: monAvisTrouve ? monAvisTrouve.importance : null,
     };
   });
 
-  // Trié par "score" (popularité × gravité perçue) décroissant : ce qui
-  // revient le plus souvent ET compte le plus pour les gens remonte en
-  // premier — plus utile pour prioriser qu'un simple tri par date.
+  // Trié par "score" (popularité × gravité perçue) décroissant.
   resultats.sort((a, b) => b.nombreAvis * b.importanceMoyenne - a.nombreAvis * a.importanceMoyenne);
 
   return NextResponse.json({ problemes: resultats });
@@ -111,13 +112,18 @@ export async function POST(request: NextRequest) {
   const importance = Number(body.importance);
   const problemeId: string | undefined = body.probleme_id || undefined;
   const texte: string | undefined = body.texte?.trim() || undefined;
+  const pieceJointeChemin: string | undefined = body.piece_jointe_chemin || undefined;
+  const typeDemande = (body.type as string) || "probleme";
+  const type: TypeRetour = TYPES_VALIDES.includes(typeDemande as TypeRetour)
+    ? (typeDemande as TypeRetour)
+    : "probleme";
 
   if (!Number.isInteger(importance) || importance < 1 || importance > 10) {
     return NextResponse.json({ error: "L'importance doit être un nombre entier entre 1 et 10" }, { status: 400 });
   }
   if (!problemeId && !texte) {
     return NextResponse.json(
-      { error: "Précisez soit un problème existant (probleme_id), soit un nouveau texte (texte)" },
+      { error: "Précisez soit un thème existant (probleme_id), soit un nouveau texte (texte)" },
       { status: 400 }
     );
   }
@@ -138,7 +144,7 @@ export async function POST(request: NextRequest) {
 
   const admin = createAdminClient();
 
-  // --- Cas A : vote sur un problème déjà existant, pas d'appel IA. ---
+  // --- Cas A : vote en un clic sur un thème déjà existant, pas d'appel IA. ---
   if (problemeId) {
     const { data: probleme } = await admin
       .from("problemes_produits")
@@ -147,7 +153,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (!probleme) {
-      return NextResponse.json({ error: "Ce problème n'existe pas ou plus" }, { status: 404 });
+      return NextResponse.json({ error: "Ce thème n'existe pas ou plus" }, { status: 404 });
     }
 
     const { error: erreurUpsert } = await admin.from("retours_produits").upsert(
@@ -156,6 +162,8 @@ export async function POST(request: NextRequest) {
         organisation_id: organisationId,
         user_id: user.id,
         importance,
+        type,
+        piece_jointe_chemin: pieceJointeChemin ?? null,
       },
       { onConflict: "probleme_id,user_id" }
     );
@@ -176,27 +184,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ probleme_id: problemeId });
   }
 
-  // --- Cas B : nouveau texte libre — l'IA vérifie d'abord s'il s'agit
-  //     déjà d'un problème connu avant d'en créer un nouveau. ---
+  // --- Cas B : nouveau texte libre — l'IA nettoie, résume et vérifie
+  //     d'abord s'il s'agit déjà d'un thème connu avant d'en créer un. ---
   const { data: problemesExistants } = await admin
     .from("problemes_produits")
-    .select("id, titre, description");
+    .select("id, titre, description, resume_ia");
 
   const listeExistants =
     (problemesExistants ?? [])
-      .map((p) => `- id: ${p.id} | titre: "${p.titre}"${p.description ? ` | description: "${p.description}"` : ""}`)
-      .join("\n") || "(aucun problème connu pour l'instant)";
+      .map(
+        (p) =>
+          `- id: ${p.id} | titre: "${p.titre}"${p.description ? ` | description: "${p.description}"` : ""}${p.resume_ia ? ` | résumé actuel: "${p.resume_ia}"` : ""}`
+      )
+      .join("\n") || "(aucun thème connu pour l'instant)";
 
   let probleteIdFinal: string;
+  let texteNettoye = texte!;
 
   try {
     const reponseTexte = await appelerClaude(
       SYSTEM_PROMPT_RAPPROCHEMENT,
-      `Problèmes déjà connus :\n${listeExistants}\n\nNouveau témoignage d'un artisan :\n"${texte}"`
+      `Type de retour : ${type}\n\nThèmes déjà connus :\n${listeExistants}\n\nNouveau témoignage d'un artisan :\n"${texte}"`
     );
-    const decision = parserReponseJSON<{ correspond_a_id: string | null; titre_propose: string }>(
-      reponseTexte
-    );
+    const decision = parserReponseJSON<{
+      correspond_a_id: string | null;
+      titre_propose: string;
+      texte_nettoye: string;
+      resume_ia: string;
+    }>(reponseTexte);
+
+    texteNettoye = decision.texte_nettoye?.trim() || texte!;
 
     const correspondanceValide =
       decision.correspond_a_id &&
@@ -204,18 +221,23 @@ export async function POST(request: NextRequest) {
 
     if (correspondanceValide && decision.correspond_a_id) {
       probleteIdFinal = decision.correspond_a_id;
+      await admin
+        .from("problemes_produits")
+        .update({ resume_ia: decision.resume_ia?.trim() || null })
+        .eq("id", probleteIdFinal);
     } else {
       const { data: nouveauProbleme, error: erreurCreation } = await admin
         .from("problemes_produits")
         .insert({
           titre: decision.titre_propose?.slice(0, 140) || texte!.slice(0, 80),
           description: texte,
+          resume_ia: decision.resume_ia?.trim() || null,
         })
         .select("id")
         .single();
 
       if (erreurCreation || !nouveauProbleme) {
-        throw new Error(erreurCreation?.message ?? "Échec de création du problème");
+        throw new Error(erreurCreation?.message ?? "Échec de création du thème");
       }
       probleteIdFinal = nouveauProbleme.id;
     }
@@ -240,7 +262,11 @@ export async function POST(request: NextRequest) {
       organisation_id: organisationId,
       user_id: user.id,
       importance,
-      commentaire: texte,
+      type,
+      commentaire: texteNettoye,
+      texte_original: texte,
+      texte_nettoye: texteNettoye,
+      piece_jointe_chemin: pieceJointeChemin ?? null,
     },
     { onConflict: "probleme_id,user_id" }
   );
@@ -255,7 +281,7 @@ export async function POST(request: NextRequest) {
     organisationId,
     type: "retour_produit",
     contexte: probleteIdFinal,
-    details: { action: "nouveau_texte", importance },
+    details: { action: "nouveau_texte", importance, type_retour: type },
   });
 
   return NextResponse.json({ probleme_id: probleteIdFinal });

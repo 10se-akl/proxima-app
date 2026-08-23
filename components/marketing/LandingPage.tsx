@@ -4,6 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
 import { IntroAnimation } from "./IntroAnimation";
+import { DemoInteractif } from "./DemoInteractif";
+import { JourneeAvecCompyo } from "./JourneeAvecCompyo";
+import { SectionDemoVideo } from "./SectionDemoVideo";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 // ============================================================
@@ -35,7 +38,10 @@ export function LandingPage() {
       <div id="compyo-site">
         <Header />
         <Hero />
+        <BandeauConfiance />
+        <JourneeAvecCompyo />
         <CartesApercu />
+        <SectionDemoVideo />
         <Footer />
       </div>
     </div>
@@ -283,6 +289,43 @@ function Hero() {
           </p>
         </Reveal>
       </div>
+
+      {/* Le mockup interactif : la pièce demandée par Axel pour qu'on
+          comprenne Compyo "sans lire une seule ligne de texte". Cliquer
+          sur un onglet change le contenu du cadre — voir DemoInteractif.tsx. */}
+      <Reveal delay={120} className="relative px-5 sm:px-8 pb-24 sm:pb-32">
+        <DemoInteractif />
+      </Reveal>
+    </section>
+  );
+}
+
+// ============================================================
+// Bandeau de confiance — honnête, sans aucune statistique inventée.
+// Remis sur l'accueil à la demande d'Axel, avec exactement les 4
+// affirmations qu'il a validées (rien de plus).
+// ============================================================
+function BandeauConfiance() {
+  const items = [
+    "Développé en France",
+    "Vos données restent privées",
+    "Bêta privée limitée",
+    "Pensé avec des artisans",
+  ];
+
+  return (
+    <section className="bg-surface border-y border-ink/10">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-3">
+        {items.map((item) => (
+          <span
+            key={item}
+            className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-ink/45"
+          >
+            <span className="w-1 h-1 rounded-full bg-signal/60" />
+            {item}
+          </span>
+        ))}
+      </div>
     </section>
   );
 }
@@ -294,27 +337,76 @@ function Hero() {
 // Volontairement peu de texte par carte : le rôle de l'accueil s'arrête
 // ici, le détail vit ailleurs.
 // ============================================================
+// Icônes minimalistes, traits fins (stroke, pas fill) — cohérentes avec
+// l'esprit "premium discret" du site, jamais des pictos colorés façon
+// app store. Chacune s'anime légèrement au survol de sa carte (via
+// group-hover, voir plus bas), jamais un "wow", juste un signe de vie.
+function IconeOrganisation() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:scale-105">
+      <rect x="3" y="4" width="18" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="3" y="11" width="18" height="5" rx="1.5" stroke="currentColor" strokeWidth="1.6" />
+      <rect x="3" y="18" width="10" height="2" rx="1" fill="currentColor" />
+    </svg>
+  );
+}
+function IconePlanning() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="transition-transform duration-300 group-hover:rotate-[8deg]">
+      <rect x="3.5" y="5" width="17" height="15" rx="2" stroke="currentColor" strokeWidth="1.6" />
+      <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+      <circle cx="8.2" cy="13.5" r="1.1" fill="currentColor" />
+      <circle cx="12" cy="13.5" r="1.1" fill="currentColor" />
+    </svg>
+  );
+}
+function IconeDevis() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="transition-transform duration-300 group-hover:-translate-y-0.5">
+      <path d="M6 3h9l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M9 12h6M9 15.5h6M9 8.5h3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+function IconeAssistantIA() {
+  return (
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" className="transition-transform duration-300 group-hover:rotate-12 group-hover:scale-110">
+      <path
+        d="M12 3.5l1.4 3.8 3.8 1.4-3.8 1.4L12 14l-1.4-3.9-3.8-1.4 3.8-1.4L12 3.5Z"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+      <path d="M18.5 15.5l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8.8-2Z" fill="currentColor" />
+    </svg>
+  );
+}
+
 function CartesApercu() {
   const cartes = [
     {
       ancre: "import",
       titre: "Organisation",
       texte: "Clients, chantiers, photos, messages — tout au même endroit, sans ressaisie.",
+      Icone: IconeOrganisation,
     },
     {
       ancre: "planning",
       titre: "Planning",
       texte: "Rendez-vous et tâches réunis, sans double réservation possible.",
+      Icone: IconePlanning,
     },
     {
       ancre: "devis",
       titre: "Devis",
       texte: "L'IA propose, un moteur de calcul fixe les prix — vous validez toujours.",
+      Icone: IconeDevis,
     },
     {
       ancre: "notes-vocales",
       titre: "Assistant IA",
       texte: "Dictez sur la route, Compyo transcrit, range, et résume votre journée.",
+      Icone: IconeAssistantIA,
     },
   ];
 
@@ -328,7 +420,10 @@ function CartesApercu() {
                 href={`/fonctionnalites#${carte.ancre}`}
                 className="group h-full flex flex-col rounded-2xl border border-ink/10 bg-paper p-8 sm:p-10 transition-all duration-300 hover:-translate-y-1 hover:border-signal/30 hover:shadow-lg hover:shadow-ink/[0.06]"
               >
-                <h2 className="font-display text-xl sm:text-2xl font-semibold tracking-tight">
+                <span className="text-signal">
+                  <carte.Icone />
+                </span>
+                <h2 className="mt-4 font-display text-xl sm:text-2xl font-semibold tracking-tight">
                   {carte.titre}
                 </h2>
                 <p className="mt-3 text-sm text-ink/60 leading-relaxed flex-1">{carte.texte}</p>
@@ -353,10 +448,15 @@ export function Footer() {
     // blanc fixe, pas ink/paper qui s'inverseraient avec le mode.
     <footer className="bg-anthracite">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <CompyoMark variante="blanc" taille={26} />
-            <span className="text-sm text-white/70">Compyo — bêta privée</span>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex flex-col items-center sm:items-start gap-1.5">
+            <div className="flex items-center gap-2.5">
+              <CompyoMark variante="blanc" taille={26} />
+              <span className="text-sm font-medium text-white/85">Compyo</span>
+            </div>
+            <p className="text-xs text-white/45 max-w-[220px] text-center sm:text-left leading-relaxed">
+              Le copilote administratif des artisans du bâtiment.
+            </p>
           </div>
           {/* Second niveau de navigation : le site étant maintenant réparti
               sur plusieurs pages, le pied de page redonne un accès complet

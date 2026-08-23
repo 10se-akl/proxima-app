@@ -216,6 +216,25 @@
   html {
     scroll-behavior: smooth;
   }
+
+  /* Animation du contenu du mockup interactif de l'accueil (voir
+     DemoInteractif.tsx) — se déclenche à chaque changement d'onglet grâce
+     au `key={actif}` sur le conteneur React, qui force un remontage donc
+     un rejeu de cette animation. Léger fondu + glissement, jamais un
+     "wow" — cohérent avec la consigne d'Axel sur les micro-interactions. */
+  .anim-contenu-demo {
+    animation: contenu-demo-apparait 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  @keyframes contenu-demo-apparait {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
 }
 
 /* Cache/révèle le reste du site pendant l'animation d'entrée (voir

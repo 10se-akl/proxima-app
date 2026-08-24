@@ -142,15 +142,6 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
       const y = (e.clientY - rect.top) / rect.height - 0.5;
       noeud.style.setProperty("--parallax-x", `${(x * 14).toFixed(1)}px`);
       noeud.style.setProperty("--parallax-y", `${(y * 14).toFixed(1)}px`);
-      // Même parallax que les bulles (ci-dessus), mais en pourcentage plutôt
-      // qu'en pixels : les lignes de liaison sont en SVG (coordonnées du
-      // viewBox 0-100), où un "px" en transform CSS se lit comme une unité
-      // du viewBox et non un vrai pixel écran — un "%" en revanche se
-      // résout bien contre le viewport SVG, donc reste proportionnellement
-      // identique au déplacement réel de la bulle. Retour d'Axel : les
-      // bulles bougeaient (survol souris) sans que leur ligne ne suive.
-      noeud.style.setProperty("--parallax-x-pct", `${(x * 1.8).toFixed(2)}%`);
-      noeud.style.setProperty("--parallax-y-pct", `${(y * 1.8).toFixed(2)}%`);
     }
     noeud.addEventListener("mousemove", onMove);
     return () => noeud.removeEventListener("mousemove", onMove);
@@ -204,6 +195,15 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
         dureeResp: `${(4 + pseudoAlea(i + 4) * 3).toFixed(2)}s`,
         flotteX: `${(pseudoAlea(i + 5) * 10 - 5).toFixed(1)}px`,
         flotteY: `${(pseudoAlea(i + 6) * 12 - 6).toFixed(1)}px`,
+        // Même graine (i+5, i+6) que flotteX/flotteY ci-dessus : la ligne
+        // dérive dans le même sens relatif que sa bulle, au même rythme
+        // (--delai/--duree partagés), sans jamais suivre la souris — juste
+        // un mouvement organique déterministe, pas identique au pixel près
+        // à celui de la bulle (unités différentes, div en px vs SVG en %),
+        // mais suffisant pour ne plus paraître figée à côté d'une bulle
+        // qui flotte.
+        flotteXPct: `${(pseudoAlea(i + 5) * 1.6 - 0.8).toFixed(2)}%`,
+        flotteYPct: `${(pseudoAlea(i + 6) * 2 - 1).toFixed(2)}%`,
       };
     });
   }, [problemes]);
@@ -276,12 +276,9 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
                   style={
                     {
                       "--delai": `${i * 0.15}s`,
-                      // Même parallax que la bulle qu'elle relie (voir
-                      // useEffect ci-dessus) — en pourcentage, qui se
-                      // résout correctement contre le viewBox SVG,
-                      // contrairement à un "px" qui serait lu comme une
-                      // unité du viewBox et bougerait disproportionnellement.
-                      transform: `translate(calc(var(--parallax-x-pct, 0%) * ${d.profondeur}), calc(var(--parallax-y-pct, 0%) * ${d.profondeur}))`,
+                      "--duree": d.duree,
+                      "--flotte-x": d.flotteXPct,
+                      "--flotte-y": d.flotteYPct,
                     } as React.CSSProperties
                   }
                   d={`M 50 41 Q ${d.courbeX} ${d.courbeY} ${d.x} ${d.y * 0.82}`}

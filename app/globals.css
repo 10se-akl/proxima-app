@@ -388,8 +388,18 @@
   }
 
   .cm-ligne {
-    animation: cm-pulser 4.5s ease-in-out infinite;
-    animation-delay: var(--delai, 0s);
+    /* Retour d'Axel : les lignes ne devaient ni suivre la souris (retiré),
+       ni rester parfaitement figées pendant que leur bulle flotte — un
+       léger mouvement "aléatoire" (déterministe par ligne, même graine
+       que la bulle qu'elle relie) suffit, combiné au pulse d'opacité déjà
+       en place. translate() sur un <path> déplace toute la courbe, y
+       compris l'extrémité côté COMPYO — l'amplitude (--flotte-x/y, posée
+       en % depuis CarteMentale.tsx) reste volontairement petite pour que
+       ce bout ne s'écarte pas visiblement du centre fixe. */
+    animation:
+      cm-pulser 4.5s ease-in-out infinite,
+      cm-flotter var(--duree, 7s) ease-in-out infinite;
+    animation-delay: var(--delai, 0s), var(--delai, 0s);
   }
   @keyframes cm-pulser {
     0%, 100% { opacity: 0.14; }

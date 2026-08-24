@@ -52,6 +52,21 @@ export default function DetailDemandePage({
   const [parametres, setParametres] = useState<ParametresEntreprise | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [infosOuvertes, setInfosOuvertes] = useState(false);
+  // Audit Cycle 2 (Agent Destructeur) : les boutons "Marquer comme
+  // envoyé/accepté/refusé/démarré/terminé" n'avaient aucun état
+  // "disabled" pendant l'appel réseau — un double-clic (ou un clic répété
+  // par frustration sur un réseau lent de chantier) déclenchait plusieurs
+  // mutations + plusieurs entrées de timeline en double. Un seul drapeau
+  // partagé suffit : ces actions sont mutuellement exclusives dans le
+  // temps (on ne clique jamais deux boutons d'action à la fois).
+  const [actionEnCours, setActionEnCours] = useState(false);
+  // Audit Cycle 2 (Agent Destructeur) : un lien cassé, un projet supprimé,
+  // ou un ID d'une autre organisation (RLS le bloque) faisait rester la
+  // page indéfiniment sur "Chargement…" — .single() lève une erreur jamais
+  // vérifiée, et demandeData restait "undefined" sans jamais mettre à jour
+  // demande. .maybeSingle() + ce drapeau distinguent maintenant "encore en
+  // train de charger" de "vraiment introuvable".
+  const [introuvable, setIntrouvable] = useState(false);
 
   async function chargerDonnees() {
     // Ces cinq appels sont indépendants les uns des autres (aucun ne dépend
@@ -67,7 +82,7 @@ export default function DetailDemandePage({
         data: { user },
       },
     ] = await Promise.all([
-      supabase.from("demandes").select("*").eq("id", params.id).single(),
+      supabase.from("demandes").select("*").eq("id", params.id).maybeSingle(),
       supabase
         .from("devis")
         .select("*")
@@ -88,6 +103,10 @@ export default function DetailDemandePage({
       supabase.auth.getUser(),
     ]);
 
+    if (!demandeData) {
+      setIntrouvable(true);
+      return;
+    }
     setDemande(demandeData as Projet);
     setDevis(devisData as Devis | null);
     setNotesVocales((notesData as NoteVocale[]) ?? []);
@@ -210,6 +229,32 @@ export default function DetailDemandePage({
     await chargerDonnees();
   }
 
+  async function dupliquerDevis() {
+    if (!devis) return;
+    setErreur(null);
+    setChargementDevis(true);
+    const res = await fetch("/api/devis/dupliquer", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ devisId: devis.id }),
+    });
+    setChargementDevis(false);
+    if (!res.ok) {
+      setErreur("Impossible de dupliquer ce devis. Réessayez.");
+      return;
+    }
+    if (artisanId && organisationId) {
+      await enregistrerEvenement(supabase, {
+        demandeId: params.id,
+        artisanId,
+        organisationId,
+        type: "devis_genere",
+        titre: "Devis dupliqué",
+      });
+    }
+    await chargerDonnees();
+  }
+
   async function genererReponse() {
     setErreur(null);
     setChargementReponse(true);
@@ -261,134 +306,161 @@ export default function DetailDemandePage({
   }
 
   async function marquerDevisEnvoye() {
-    if (!devis || !demande) return;
-    const { data: d1, error: err1 } = await supabase
-      .from("devis")
-      .update({ statut: "envoye", envoye_le: new Date().toISOString() })
-      .eq("id", devis.id)
-      .select("id");
-    if (err1 || !d1 || d1.length === 0) {
-      setErreur("Impossible de marquer le devis comme envoyé. Réessayez.");
-      return;
-    }
-    const { data: d2, error: err2 } = await supabase
-      .from("demandes")
-      .update({ statut: "devis_envoye" })
-      .eq("id", demande.id)
-      .select("id");
-    if (err2 || !d2 || d2.length === 0) {
-      setErreur(
-        "Le devis est marqué envoyé, mais le statut du projet n'a pas pu être mis à jour. Rechargez la page."
-      );
+    if (!devis || !demande || actionEnCours) return;
+    setActionEnCours(true);
+    try {
+      const { data: d1, error: err1 } = await supabase
+        .from("devis")
+        .update({ statut: "envoye", envoye_le: new Date().toISOString() })
+        .eq("id", devis.id)
+        .select("id");
+      if (err1 || !d1 || d1.length === 0) {
+        setErreur("Impossible de marquer le devis comme envoyé. Réessayez.");
+        return;
+      }
+      const { data: d2, error: err2 } = await supabase
+        .from("demandes")
+        .update({ statut: "devis_envoye" })
+        .eq("id", demande.id)
+        .select("id");
+      if (err2 || !d2 || d2.length === 0) {
+        setErreur(
+          "Le devis est marqué envoyé, mais le statut du projet n'a pas pu être mis à jour. Rechargez la page."
+        );
+        await chargerDonnees();
+        return;
+      }
+      if (artisanId && organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: demande.id,
+          artisanId,
+          organisationId,
+          type: "devis_envoye",
+          titre: "Devis envoyé au client",
+        });
+      }
       await chargerDonnees();
-      return;
+    } finally {
+      setActionEnCours(false);
     }
-    if (artisanId && organisationId) {
-      await enregistrerEvenement(supabase, {
-        demandeId: demande.id,
-        artisanId,
-        organisationId,
-        type: "devis_envoye",
-        titre: "Devis envoyé au client",
-      });
-    }
-    await chargerDonnees();
   }
 
   async function marquerAccepte() {
-    if (!demande) return;
-    const { data, error } = await supabase
-      .from("demandes")
-      .update({ statut: "accepte", accepte_le: new Date().toISOString() })
-      .eq("id", demande.id)
-      .select("id");
-    if (error || !data || data.length === 0) {
-      setErreur("Impossible d'enregistrer l'acceptation du devis. Réessayez.");
-      return;
+    if (!demande || actionEnCours) return;
+    setActionEnCours(true);
+    try {
+      const { data, error } = await supabase
+        .from("demandes")
+        .update({ statut: "accepte", accepte_le: new Date().toISOString() })
+        .eq("id", demande.id)
+        .select("id");
+      if (error || !data || data.length === 0) {
+        setErreur("Impossible d'enregistrer l'acceptation du devis. Réessayez.");
+        return;
+      }
+      if (artisanId && organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: demande.id,
+          artisanId,
+          organisationId,
+          type: "devis_accepte",
+          titre: "Devis accepté par le client",
+        });
+      }
+      await chargerDonnees();
+    } finally {
+      setActionEnCours(false);
     }
-    if (artisanId && organisationId) {
-      await enregistrerEvenement(supabase, {
-        demandeId: demande.id,
-        artisanId,
-        organisationId,
-        type: "devis_accepte",
-        titre: "Devis accepté par le client",
-      });
-    }
-    await chargerDonnees();
   }
 
   async function marquerDevisRefuse() {
-    if (!devis || !demande) return;
-    const { data, error } = await supabase
-      .from("devis")
-      .update({ statut: "refuse" })
-      .eq("id", devis.id)
-      .select("id");
-    if (error || !data || data.length === 0) {
-      setErreur("Impossible d'enregistrer le refus du devis. Réessayez.");
-      return;
+    if (!devis || !demande || actionEnCours) return;
+    setActionEnCours(true);
+    try {
+      const { data, error } = await supabase
+        .from("devis")
+        .update({ statut: "refuse" })
+        .eq("id", devis.id)
+        .select("id");
+      if (error || !data || data.length === 0) {
+        setErreur("Impossible d'enregistrer le refus du devis. Réessayez.");
+        return;
+      }
+      if (artisanId && organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: demande.id,
+          artisanId,
+          organisationId,
+          type: "devis_refuse",
+          titre: "Devis refusé par le client",
+        });
+      }
+      await chargerDonnees();
+    } finally {
+      setActionEnCours(false);
     }
-    if (artisanId && organisationId) {
-      await enregistrerEvenement(supabase, {
-        demandeId: demande.id,
-        artisanId,
-        organisationId,
-        type: "devis_refuse",
-        titre: "Devis refusé par le client",
-      });
-    }
-    await chargerDonnees();
   }
 
   async function marquerEnCours() {
-    if (!demande) return;
-    const { data, error } = await supabase
-      .from("demandes")
-      .update({ statut: "en_cours", demarre_le: new Date().toISOString() })
-      .eq("id", demande.id)
-      .select("id");
-    if (error || !data || data.length === 0) {
-      setErreur("Impossible de démarrer le chantier. Réessayez.");
-      return;
+    if (!demande || actionEnCours) return;
+    setActionEnCours(true);
+    try {
+      const { data, error } = await supabase
+        .from("demandes")
+        .update({ statut: "en_cours", demarre_le: new Date().toISOString() })
+        .eq("id", demande.id)
+        .select("id");
+      if (error || !data || data.length === 0) {
+        setErreur("Impossible de démarrer le chantier. Réessayez.");
+        return;
+      }
+      if (artisanId && organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: demande.id,
+          artisanId,
+          organisationId,
+          type: "chantier_demarre",
+          titre: "Chantier démarré",
+        });
+      }
+      await chargerDonnees();
+    } finally {
+      setActionEnCours(false);
     }
-    if (artisanId && organisationId) {
-      await enregistrerEvenement(supabase, {
-        demandeId: demande.id,
-        artisanId,
-        organisationId,
-        type: "chantier_demarre",
-        titre: "Chantier démarré",
-      });
-    }
-    await chargerDonnees();
   }
 
   async function marquerTermine() {
-    if (!demande) return;
-    const { data, error } = await supabase
-      .from("demandes")
-      .update({ statut: "termine", termine_le: new Date().toISOString() })
-      .eq("id", demande.id)
-      .select("id");
-    if (error || !data || data.length === 0) {
-      setErreur("Impossible de marquer le chantier terminé. Réessayez.");
-      return;
+    if (!demande || actionEnCours) return;
+    setActionEnCours(true);
+    try {
+      const { data, error } = await supabase
+        .from("demandes")
+        .update({ statut: "termine", termine_le: new Date().toISOString() })
+        .eq("id", demande.id)
+        .select("id");
+      if (error || !data || data.length === 0) {
+        setErreur("Impossible de marquer le chantier terminé. Réessayez.");
+        return;
+      }
+      if (artisanId && organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: demande.id,
+          artisanId,
+          organisationId,
+          type: "chantier_termine",
+          titre: "Chantier terminé",
+        });
+      }
+      await chargerDonnees();
+    } finally {
+      setActionEnCours(false);
     }
-    if (artisanId && organisationId) {
-      await enregistrerEvenement(supabase, {
-        demandeId: demande.id,
-        artisanId,
-        organisationId,
-        type: "chantier_termine",
-        titre: "Chantier terminé",
-      });
-    }
-    await chargerDonnees();
   }
 
   async function marquerVisite() {
-    if (!demande) return;
+    if (!demande || actionEnCours) return;
+    setActionEnCours(true);
+    try {
     const { data, error } = await supabase
       .from("demandes")
       .update({ visite_le: new Date().toISOString() })
@@ -408,6 +480,9 @@ export default function DetailDemandePage({
       });
     }
     await chargerDonnees();
+    } finally {
+      setActionEnCours(false);
+    }
   }
 
   const [notesLocales, setNotesLocales] = useState("");
@@ -489,6 +564,24 @@ export default function DetailDemandePage({
     }
   }
 
+  if (introuvable) {
+    return (
+      <div className="p-8 max-w-lg">
+        <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-2">Projet</p>
+        <h1 className="font-display text-xl font-semibold">Projet introuvable</h1>
+        <p className="mt-2 text-sm text-ink/60">
+          Ce projet n&apos;existe pas, a été supprimé, ou n&apos;appartient pas à votre organisation.
+        </p>
+        <Link
+          href="/dashboard/demandes"
+          className="mt-4 inline-flex text-sm text-signal underline underline-offset-2 hover:text-signal-fonce"
+        >
+          ← Retour à la liste des projets
+        </Link>
+      </div>
+    );
+  }
+
   if (!demande) {
     return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
   }
@@ -536,7 +629,7 @@ export default function DetailDemandePage({
           </h1>
         </div>
         <div className="flex gap-2">
-          <Button variant="ghost" onClick={marquerVisite}>
+          <Button variant="ghost" onClick={marquerVisite} disabled={actionEnCours}>
             {demande.visite_le ? "✓ Visite effectuée" : "Marquer visite effectuée"}
           </Button>
           <Link href={`/dashboard/planning/nouveau?projetId=${demande.id}`}>
@@ -552,7 +645,8 @@ export default function DetailDemandePage({
       {demande.statut !== "termine" && (
         <button
           onClick={marquerTermine}
-          className="mt-2 text-xs text-ink/40 hover:text-ink underline transition-colors"
+          disabled={actionEnCours}
+          className="mt-2 text-xs text-ink/40 hover:text-ink underline transition-colors disabled:opacity-40"
         >
           Marquer directement ce projet comme terminé
         </button>
@@ -825,8 +919,17 @@ export default function DetailDemandePage({
             <Card className="mt-4 p-4 border-signal/30 bg-signal/5">
               <p className="text-sm text-ink/80">
                 Ce devis a été marqué comme refusé par le client. Générez-en un nouveau
-                lorsque vous êtes prêt.
+                lorsque vous êtes prêt, ou repartez de celui-ci si le client a juste changé
+                d&apos;avis sur le prix.
               </p>
+              <Button
+                variant="ghost"
+                onClick={dupliquerDevis}
+                disabled={chargementDevis}
+                className="mt-3"
+              >
+                {chargementDevis ? "Duplication…" : "Dupliquer ce devis pour le modifier"}
+              </Button>
             </Card>
           )}
 
@@ -871,16 +974,19 @@ export default function DetailDemandePage({
               )}
               <div className="mt-3 flex gap-3">
                 {devis.statut === "a_valider" && (
-                  <Button variant="ghost" onClick={marquerDevisEnvoye}>
+                  <Button variant="ghost" onClick={marquerDevisEnvoye} disabled={actionEnCours}>
                     Marquer comme envoyé au client
                   </Button>
                 )}
                 {devis.statut === "envoye" && demande.statut !== "accepte" && (
                   <>
-                    <Button variant="ghost" onClick={marquerAccepte}>
+                    <Button variant="ghost" onClick={marquerAccepte} disabled={actionEnCours}>
                       Marquer comme accepté par le client
                     </Button>
-                    <Button variant="ghost" onClick={marquerDevisRefuse}>
+                    <Button variant="ghost" onClick={dupliquerDevis} disabled={chargementDevis}>
+                      {chargementDevis ? "Duplication…" : "Dupliquer pour ajuster le prix"}
+                    </Button>
+                    <Button variant="danger" onClick={marquerDevisRefuse} disabled={actionEnCours}>
                       Marquer comme refusé
                     </Button>
                   </>
@@ -893,14 +999,14 @@ export default function DetailDemandePage({
               </div>
 
               {demande.statut === "accepte" && (
-                <Button variant="ghost" onClick={marquerEnCours} className="mt-3">
+                <Button variant="ghost" onClick={marquerEnCours} disabled={actionEnCours} className="mt-3">
                   Marquer le chantier comme démarré
                 </Button>
               )}
               {demande.statut === "en_cours" && (
                 <div className="mt-3 flex items-center gap-3">
                   <span className="text-sm text-steel">🔨 Chantier en cours</span>
-                  <Button variant="ghost" onClick={marquerTermine}>
+                  <Button variant="ghost" onClick={marquerTermine} disabled={actionEnCours}>
                     Marquer comme terminé
                   </Button>
                 </div>

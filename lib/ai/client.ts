@@ -73,6 +73,56 @@ export async function appelerClaudeAvecImage(
   return bloc?.text ?? "";
 }
 
+// Variante multi-images : plusieurs captures d'écran analysées en UN SEUL
+// appel plutôt qu'un appel par image (voir app/api/ai/analyser-captures/
+// route.ts). Audit Cycle 2 (Agent Performance) : faire un appel par image
+// répétait le prompt système complet à chaque fois — jusqu'à 20x le coût
+// pour un import de 20 captures, alors que Claude sait très bien lire
+// plusieurs images dans un seul message.
+export async function appelerClaudeAvecImages(
+  systemPrompt: string,
+  userMessage: string,
+  images: { base64: string; mediaType: string }[]
+) {
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-api-key": process.env.ANTHROPIC_API_KEY!,
+      "anthropic-version": "2023-06-01",
+    },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-6",
+      // Jusqu'à 20 images (voir app/api/ai/analyser-captures/route.ts) ×
+      // ~150-200 tokens de réponse JSON chacune : 4096 laisse une marge
+      // confortable sans jamais tronquer la réponse en plein milieu.
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [
+        {
+          role: "user",
+          content: [
+            ...images.map((image) => ({
+              type: "image",
+              source: { type: "base64", media_type: image.mediaType, data: image.base64 },
+            })),
+            { type: "text", text: userMessage },
+          ],
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(`Erreur API Claude (${response.status}) : ${detail}`);
+  }
+
+  const data = await response.json();
+  const bloc = data.content?.find((b: { type: string }) => b.type === "text");
+  return bloc?.text ?? "";
+}
+
 // L'IA est instruite de répondre en JSON strict. On isole ici le parsing
 // et la gestion d'erreur pour ne pas dupliquer cette logique dans chaque route.
 export function parserReponseJSON<T>(texte: string): T {

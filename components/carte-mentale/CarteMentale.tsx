@@ -373,7 +373,17 @@ function PanneauDetail({
           </button>
         </div>
 
-        {probleme.resumeIa && <p className="mt-3 text-sm text-white/70 leading-relaxed">{probleme.resumeIa}</p>}
+        {/* Jamais de nom, jamais de détail nominatif ici — juste une
+            grandeur relative, pour donner à l'artisan la sensation d'être
+            entendu sans jamais exposer les autres (voir la vue admin,
+            plus bas, seule à afficher le détail nominatif). */}
+        <p className="mt-3 text-sm text-white/60">
+          {probleme.nombreAvis <= 1
+            ? "Vous êtes le premier à remonter ce sujet."
+            : `${probleme.nombreAvis} artisans ont également signalé ce problème.`}
+        </p>
+
+        {probleme.resumeIa && <p className="mt-2 text-sm text-white/70 leading-relaxed">{probleme.resumeIa}</p>}
 
         <div className="mt-5">
           <VoteRapide probleteId={probleme.id} monAvis={probleme.monAvis} connecte={connecte} onEnvoye={onVoteEnvoye} />
@@ -477,7 +487,7 @@ function PropositionsIA({
       ) : (
         <p className="text-xs text-white/40">Pas encore de propositions générées pour ce thème.</p>
       )}
-      {erreur && <p className="mt-2 text-xs text-red-300">{erreur}</p>}
+      {erreur && <p className="mt-2 text-xs text-signal">{erreur}</p>}
       <button
         onClick={generer}
         disabled={chargement}
@@ -558,7 +568,7 @@ function VoteRapide({
         onChange={(e) => setImportance(Number(e.target.value))}
         className="w-full accent-signal"
       />
-      {erreur && <p className="mt-2 text-xs text-red-300">{erreur}</p>}
+      {erreur && <p className="mt-2 text-xs text-signal">{erreur}</p>}
       <Button onClick={envoyer} disabled={envoi} className="mt-3 !px-4 !py-2 text-xs">
         {envoi ? "Enregistrement…" : "Moi aussi"}
       </Button>

@@ -4,6 +4,7 @@ import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
+import { verifierLimiteIA } from "@/lib/limiteIA";
 import type { TypeChantier } from "@/types";
 
 // Même garde-fou que dans confirmer-import-captures : "type_chantier" est
@@ -75,6 +76,11 @@ export async function POST(request: NextRequest) {
   const organisationId = await getOrganisationId(supabase, user.id);
   if (!organisationId) {
     return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
+  const limite = await verifierLimiteIA(supabase, organisationId);
+  if (!limite.autorise) {
+    return NextResponse.json({ error: limite.message }, { status: 429 });
   }
 
   try {

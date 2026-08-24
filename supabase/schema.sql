@@ -816,3 +816,101 @@ create policy "un artisan gère ses propres pièces jointes de retour"
   on storage.objects for all
   using (bucket_id = 'retours' and (storage.foldername(name))[1] = auth.uid()::text)
   with check (bucket_id = 'retours' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- ============================================================
+-- Module 17 — Index de performance (Audit Cycle 2, Agent Scalabilité).
+--
+-- Constat de l'audit : un seul index existait dans tout le schéma
+-- (evenements_projet_demande_id_idx). Or presque toutes les requêtes de
+-- l'app filtrent par organisation_id (dashboard, projets, planning,
+-- devis, retours) — sans index, Postgres doit parcourir la table entière
+-- (seq scan) dès qu'elle dépasse quelques dizaines de milliers de lignes,
+-- aggravé par le filtre RLS (mes_organisations()) qui s'applique en plus.
+--
+-- Sans risque : "create index if not exists" est idempotent, et en
+-- production sur une table déjà peuplée on écrirait plutôt
+-- "create index concurrently" pour ne pas verrouiller la table pendant la
+-- construction — non utilisé ici pour rester dans un unique script
+-- ré-exécutable simplement (cohérent avec le choix déjà fait pour tout
+-- schema.sql), la table est encore petite en bêta privée.
+-- ============================================================
+
+create index if not exists demandes_organisation_id_created_at_idx
+  on demandes (organisation_id, created_at desc);
+
+create index if not exists devis_organisation_id_statut_idx
+  on devis (organisation_id, statut);
+
+create index if not exists devis_demande_id_idx
+  on devis (demande_id, created_at desc);
+
+create index if not exists evenements_planning_organisation_id_date_idx
+  on evenements_planning (organisation_id, date_heure);
+
+create index if not exists notes_vocales_demande_id_idx
+  on notes_vocales (demande_id, created_at desc);
+
+create index if not exists retours_produits_probleme_id_idx
+  on retours_produits (probleme_id);
+
+create index if not exists memberships_organisation_id_idx
+  on memberships (organisation_id);
+
+-- app/api/retours/route.ts (GET, public) chargeait TOUTE la table
+-- retours_produits en mémoire côté serveur pour agréger en JavaScript
+-- (comptage + moyenne par thème) — O(thèmes × avis), et c'est la route la
+-- plus exposée du produit (accessible sans connexion). Cette fonction
+-- déplace l'agrégation dans Postgres, qui sait le faire en un seul
+-- balayage indexé (voir retours_produits_probleme_id_idx ci-dessus) quel
+-- que soit le volume de retours.
+create or replace function retours_agreges()
+returns table (probleme_id uuid, nombre_avis bigint, importance_moyenne numeric)
+language sql
+stable
+as $$
+  select probleme_id, count(*) as nombre_avis, avg(importance) as importance_moyenne
+  from retours_produits
+  group by probleme_id
+$$;
+
+-- Module 18 — Garde-fou anti-régénération devis (Audit Cycle 2, Agent
+-- Performance). analyser-demande bloquait déjà un appel IA si rien n'a
+-- changé depuis la dernière analyse (derniere_modification_le <=
+-- derniere_analyse_le) ; generer-devis n'avait rien d'équivalent, alors que
+-- c'est l'appel IA le plus coûteux du produit. Même logique, appliquée ici.
+alter table demandes add column if not exists dernier_devis_genere_le timestamptz;
+
+-- Module 19 — Garde-fou de fréquence sur les routes IA (Audit Cycle 2,
+-- Agents Sécurité + Scalabilité). Rien n'empêchait un compte compromis (ou
+-- un script mal intentionné) d'appeler les routes /api/ai/* en boucle —
+-- chaque appel a un coût réel (API Claude). lib/limiteIA.ts compte, par
+-- organisation, les appels déjà tracés dans "logs" (succès et échecs
+-- confondus, un échec consomme quand même l'appel) sur la dernière heure
+-- et les dernières 24h. Cet index rend cette lecture rapide même quand la
+-- table logs grossit, plutôt qu'un balayage complet à chaque appel IA.
+create index if not exists logs_organisation_id_type_created_at_idx
+  on logs (organisation_id, type, created_at desc);
+
+-- Module 20 — Retours produit : catégories fixes, garde-fou anti-IA
+-- systématique (refonte du parcours "Faire un retour", voir
+-- lib/retours/taxonomie.ts et app/api/retours/route.ts).
+--
+-- Avant : quasiment CHAQUE retour passait par un appel Claude (nettoyage +
+-- rapprochement de thème), même pour un signalement trivial ("je n'arrive
+-- pas à déplacer un rendez-vous"). Désormais, une catégorie + sous-catégorie
+-- choisies dans une liste fixe suffisent à rattacher le retour à une bulle
+-- de la carte mentale SANS appel IA — l'index unique ci-dessous permet un
+-- upsert déterministe sur (categorie, sous_categorie). L'IA ne reste
+-- déclenchée que pour "Autre", "Nouvelle idée", ou un texte libre assez
+-- long pour mériter un vrai résumé — dans ce cas la bulle créée/rapprochée
+-- garde categorie/sous_categorie à NULL (thème "libre", pas rattaché à une
+-- case fixe), ce qui ne rentre jamais en conflit avec l'index unique
+-- (Postgres traite chaque paire de NULL comme distincte).
+alter table retours_produits add column if not exists categorie text;
+alter table retours_produits add column if not exists sous_categorie text;
+
+alter table problemes_produits add column if not exists categorie text;
+alter table problemes_produits add column if not exists sous_categorie text;
+
+create unique index if not exists problemes_produits_categorie_sous_categorie_key
+  on problemes_produits (categorie, sous_categorie);

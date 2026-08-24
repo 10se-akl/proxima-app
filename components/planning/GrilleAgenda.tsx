@@ -67,6 +67,11 @@ function BlocEvenement({
     : COULEUR_TACHE_SANS_PROJET;
 
   const termine = evenement.statut === "termine";
+  // Audit Cycle 2 (Agent Artisan terrain) : le statut "annule" existe dans
+  // le schéma et est déjà filtré partout (dashboard, résumé IA), mais rien
+  // ne permettait de le poser depuis l'interface — seul "Supprimer" (perte
+  // de trace) ou "Modifier" (confond report et annulation) existaient.
+  const annule = evenement.statut === "annule";
 
   async function basculerTermine() {
     setEnCours(true);
@@ -74,6 +79,23 @@ function BlocEvenement({
     const { data, error } = await supabase
       .from("evenements_planning")
       .update({ statut: termine ? "a_faire" : "termine" })
+      .eq("id", evenement.id)
+      .select("id");
+    setEnCours(false);
+    if (error || !data || data.length === 0) {
+      setErreur(true);
+      return;
+    }
+    setMenuOuvert(false);
+    router.refresh();
+  }
+
+  async function annuler() {
+    setEnCours(true);
+    setErreur(false);
+    const { data, error } = await supabase
+      .from("evenements_planning")
+      .update({ statut: "annule" })
       .eq("id", evenement.id)
       .select("id");
     setEnCours(false);
@@ -113,7 +135,7 @@ function BlocEvenement({
         style={{ height: hauteur }}
         className={`w-full text-left px-2 py-1 border-l-4 text-white text-[11px] leading-tight overflow-hidden rounded-md transition-all duration-150 hover:brightness-110 hover:shadow-sm ${couleur} ${
           termine ? "opacity-40 line-through" : ""
-        }`}
+        } ${annule ? "opacity-35 line-through italic" : ""}`}
         title={evenement.titre}
       >
         <span className="font-mono opacity-80">
@@ -143,11 +165,20 @@ function BlocEvenement({
             </button>
             <button
               onClick={basculerTermine}
-              disabled={enCours}
-              className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+              disabled={enCours || annule}
+              className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5 disabled:opacity-40"
             >
               {termine ? "Marquer à faire" : "✓ Marquer terminé"}
             </button>
+            {!annule && (
+              <button
+                onClick={annuler}
+                disabled={enCours}
+                className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+              >
+                ✕ Annuler ce rendez-vous
+              </button>
+            )}
             <button
               onClick={supprimer}
               disabled={enCours}

@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { appelerClaude } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
+import { verifierLimiteIA } from "@/lib/limiteIA";
 
 // Important : cette route ne fait QUE proposer un texte. Rien n'est jamais
 // envoyé au client automatiquement — l'artisan copie, ajuste, et envoie
@@ -35,6 +36,11 @@ export async function POST(request: NextRequest) {
   const organisationId = await getOrganisationId(supabase, user.id);
   if (!organisationId) {
     return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
+  const limite = await verifierLimiteIA(supabase, organisationId);
+  if (!limite.autorise) {
+    return NextResponse.json({ error: limite.message }, { status: 429 });
   }
 
   // Filtre organisation_id explicite en plus de la RLS : défense en

@@ -35,14 +35,24 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
   // retour inutile vers le planning.
   const [proposerPlanification, setProposerPlanification] = useState<Set<string>>(new Set());
   const [erreurId, setErreurId] = useState<string | null>(null);
+  // Audit Cycle 2 (Agent Destructeur) : "✓ Oui, c'est fait" n'avait aucune
+  // protection anti double-clic (contrairement à cloturerProjet, juste en
+  // dessous, qui utilise déjà clotureEnCours) — un clic répété sur réseau
+  // de chantier lent pouvait déclencher deux updates + deux refresh qui se
+  // chevauchent.
+  const [traitementId, setTraitementId] = useState<string | null>(null);
 
   async function confirmerFait(e: EvenementAConfirmer) {
+    if (traitementId === e.id) return;
+    setTraitementId(e.id);
     setErreurId(null);
     const { data, error } = await supabase
       .from("evenements_planning")
       .update({ statut: "termine" })
       .eq("id", e.id)
       .select("id");
+
+    setTraitementId(null);
 
     if (error || !data || data.length === 0) {
       setErreurId(e.id);
@@ -99,12 +109,14 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
   }
 
   async function confirmerReplanifie(id: string) {
-    if (!nouvelleDate || !nouvelleHeure) return;
+    if (!nouvelleDate || !nouvelleHeure || traitementId === id) return;
+    setTraitementId(id);
     const dateHeure = new Date(`${nouvelleDate}T${nouvelleHeure}`).toISOString();
     await supabase
       .from("evenements_planning")
       .update({ date_heure: dateHeure })
       .eq("id", id);
+    setTraitementId(null);
     setTraites((s) => new Set(s).add(id));
     setReplanification(null);
     setNouvelleDate("");
@@ -214,14 +226,18 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
                       className="rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                     />
                   </div>
-                  <Button onClick={() => confirmerReplanifie(e.id)}>Replanifier</Button>
+                  <Button onClick={() => confirmerReplanifie(e.id)} disabled={traitementId === e.id}>
+                    {traitementId === e.id ? "…" : "Replanifier"}
+                  </Button>
                   <Button variant="ghost" onClick={() => setReplanification(null)}>
                     Annuler
                   </Button>
                 </div>
               ) : (
                 <div className="mt-3 flex gap-2">
-                  <Button onClick={() => confirmerFait(e)}>✓ Oui, c&apos;est fait</Button>
+                  <Button onClick={() => confirmerFait(e)} disabled={traitementId === e.id}>
+                    {traitementId === e.id ? "…" : "✓ Oui, c'est fait"}
+                  </Button>
                   <Button variant="ghost" onClick={() => setReplanification(e.id)}>
                     Non, replanifier
                   </Button>

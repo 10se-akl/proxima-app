@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { appelerClaudeAvecImage, parserReponseJSON } from "@/lib/ai/client";
+import { appelerClaudeAvecImages, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
+import { verifierLimiteIA } from "@/lib/limiteIA";
 
 // Cette route ne fait QUE lire les captures d'écran et proposer des
 // informations — elle n'écrit jamais rien en base. C'est
@@ -10,22 +11,32 @@ import { getOrganisationId } from "@/lib/organisation";
 // ajoute des notes, seulement après relecture de l'artisan. Même
 // philosophie que l'import d'un message collé : l'IA propose, elle
 // n'ajoute jamais seule.
-function construirePrompt(dateDuJour: string) {
+//
+// Audit Cycle 2 (Agent Performance) : cette route faisait UN appel Claude
+// PAR image (jusqu'à 20 pour un import groupé), répétant le prompt
+// système complet à chaque fois. Un seul appel avec toutes les images,
+// demandant un tableau JSON dans le même ordre, revient au même résultat
+// pour une fraction du coût.
+function construirePrompt(dateDuJour: string, nbImages: number) {
   return `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment.
 
 Nous sommes le ${dateDuJour}.
 
-Voici une capture d'écran d'une conversation reçue par un artisan (WhatsApp, SMS, ou une autre messagerie). Lis le texte visible sur l'image et extrais-en les informations suivantes, UNIQUEMENT si elles sont explicitement présentes — n'invente jamais une information absente. S'il y a plusieurs messages sur la capture, concentre-toi sur ce qui concerne une demande de travaux.
+Tu vas recevoir ${nbImages} capture(s) d'écran de conversations reçues par un artisan (WhatsApp, SMS, ou une autre messagerie), dans cet ordre précis. Pour CHAQUE capture, lis le texte visible et extrais-en les informations suivantes, UNIQUEMENT si elles sont explicitement présentes — n'invente jamais une information absente. S'il y a plusieurs messages sur une capture, concentre-toi sur ce qui concerne une demande de travaux.
 
-Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exacte :
+Réponds UNIQUEMENT en JSON valide, sans texte autour, avec un tableau contenant EXACTEMENT ${nbImages} élément(s), un par capture, dans le même ordre :
 {
-  "nom_client": "nom trouvé (dans les messages ou le nom du contact affiché en haut de la conversation), ou \\"Client à identifier\\" si absent",
-  "telephone_client": "numéro trouvé ou null",
-  "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | renovation_complete | autre",
-  "description_resumee": "résumé en une ou deux phrases de ce que veut le client, à partir des messages visibles",
-  "rdv_date": "date au format AAAA-MM-JJ UNIQUEMENT si un jour de rendez-vous est explicitement proposé ou confirmé, sinon null",
-  "rdv_heure": "heure au format HH:MM UNIQUEMENT si explicitement mentionnée, sinon null",
-  "capture_illisible": true UNIQUEMENT si l'image ne contient aucun texte exploitable, sinon false
+  "resultats": [
+    {
+      "nom_client": "nom trouvé (dans les messages ou le nom du contact affiché en haut de la conversation), ou \\"Client à identifier\\" si absent",
+      "telephone_client": "numéro trouvé ou null",
+      "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | renovation_complete | autre",
+      "description_resumee": "résumé en une ou deux phrases de ce que veut le client, à partir des messages visibles",
+      "rdv_date": "date au format AAAA-MM-JJ UNIQUEMENT si un jour de rendez-vous est explicitement proposé ou confirmé, sinon null",
+      "rdv_heure": "heure au format HH:MM UNIQUEMENT si explicitement mentionnée, sinon null",
+      "capture_illisible": true UNIQUEMENT si l'image ne contient aucun texte exploitable, sinon false
+    }
+  ]
 }`;
 }
 
@@ -73,6 +84,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
   }
 
+  const limite = await verifierLimiteIA(supabase, organisationId);
+  if (!limite.autorise) {
+    return NextResponse.json({ error: limite.message }, { status: 429 });
+  }
+
   // Projets actifs de l'organisation (jamais les projets terminés — inutile
   // de proposer de rattacher un nouveau message à un chantier déjà clos).
   // Le rapprochement avec les captures se fait ensuite par une comparaison
@@ -91,50 +107,68 @@ export async function POST(request: NextRequest) {
     day: "numeric",
   });
 
-  const resultats = await Promise.all(
-    images.map(async (image, index) => {
-      try {
-        const reponseTexte = await appelerClaudeAvecImage(
-          construirePrompt(dateDuJour),
-          "Voici la capture d'écran à analyser.",
-          image
-        );
-        const extrait = parserReponseJSON<Extrait>(reponseTexte);
+  function rapprocher(extrait: Extrait) {
+    // Rapprochement déterministe : correspondance sur le nom (sans tenir
+    // compte de la casse) ou sur le téléphone si les deux le mentionnent.
+    // Plusieurs correspondances possibles → toutes proposées, l'artisan
+    // choisit.
+    const nomNormalise = extrait.nom_client.trim().toLowerCase();
+    const telNormalise = extrait.telephone_client?.replace(/\s+/g, "");
+    return (projetsActifs ?? []).filter((p) => {
+      const memeNom =
+        nomNormalise.length > 2 && p.nom_client.toLowerCase().includes(nomNormalise);
+      const memeTel =
+        telNormalise &&
+        p.telephone_client &&
+        p.telephone_client.replace(/\s+/g, "") === telNormalise;
+      return memeNom || memeTel;
+    });
+  }
 
-        if (extrait.capture_illisible) {
-          return {
-            index,
-            erreur: "Aucun texte lisible trouvé sur cette capture.",
-          };
-        }
+  let resultats: Array<
+    | { index: number; erreur: string }
+    | { index: number; extrait: Extrait; correspondances: { id: string; nomClient: string }[] }
+  >;
 
-        // Rapprochement déterministe : correspondance sur le nom (sans
-        // tenir compte de la casse) ou sur le téléphone si les deux le
-        // mentionnent. Plusieurs correspondances possibles → toutes
-        // proposées, l'artisan choisit.
-        const nomNormalise = extrait.nom_client.trim().toLowerCase();
-        const telNormalise = extrait.telephone_client?.replace(/\s+/g, "");
-        const correspondances = (projetsActifs ?? []).filter((p) => {
-          const memeNom =
-            nomNormalise.length > 2 && p.nom_client.toLowerCase().includes(nomNormalise);
-          const memeTel =
-            telNormalise &&
-            p.telephone_client &&
-            p.telephone_client.replace(/\s+/g, "") === telNormalise;
-          return memeNom || memeTel;
-        });
+  try {
+    const reponseTexte = await appelerClaudeAvecImages(
+      construirePrompt(dateDuJour, images.length),
+      `Voici les ${images.length} capture(s) d'écran à analyser, dans l'ordre.`,
+      images
+    );
+    const { resultats: extraits } = parserReponseJSON<{ resultats: Extrait[] }>(reponseTexte);
 
-        return {
-          index,
-          extrait,
-          correspondances: correspondances.map((c) => ({ id: c.id, nomClient: c.nom_client })),
-        };
-      } catch (err) {
-        console.error(err);
-        return { index, erreur: "L'IA n'a pas pu lire cette capture." };
+    if (!Array.isArray(extraits) || extraits.length !== images.length) {
+      throw new Error(
+        `Réponse IA incohérente : ${extraits?.length ?? 0} résultat(s) pour ${images.length} image(s)`
+      );
+    }
+
+    resultats = extraits.map((extrait, index) => {
+      if (extrait.capture_illisible) {
+        return { index, erreur: "Aucun texte lisible trouvé sur cette capture." };
       }
-    })
-  );
+      const correspondances = rapprocher(extrait);
+      return {
+        index,
+        extrait,
+        correspondances: correspondances.map((c) => ({ id: c.id, nomClient: c.nom_client })),
+      };
+    });
+  } catch (err) {
+    console.error(err);
+    await enregistrerLog(supabase, {
+      artisanId: user.id,
+      organisationId,
+      type: "erreur_ia",
+      contexte: undefined,
+      details: { etape: "analyser_captures", erreur: String(err) },
+    });
+    return NextResponse.json(
+      { error: "L'IA n'a pas pu analyser ces captures. Réessayez." },
+      { status: 502 }
+    );
+  }
 
   await enregistrerLog(supabase, {
     artisanId: user.id,

@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { ModeNuitToggle } from "@/components/dashboard/ModeNuitToggle";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
 import {
@@ -108,7 +107,6 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
             <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
             <div className="flex items-center gap-3">
               <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
-              <ModeNuitToggle className="text-xs text-white/60 hover:text-white underline" />
             </div>
             <button
               onClick={handleLogout}
@@ -163,7 +161,6 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
           <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
           <div className="flex items-center gap-3">
             <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
-            <ModeNuitToggle className="text-xs text-white/60 hover:text-white underline" />
           </div>
           <button
             onClick={handleLogout}

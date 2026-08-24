@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
+import { verifierLimiteIA } from "@/lib/limiteIA";
 import type { AnalyseIA } from "@/types";
 
 const SYSTEM_PROMPT = `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment (maçons, plombiers, électriciens, chauffagistes, couvreurs).
@@ -45,6 +46,11 @@ export async function POST(request: NextRequest) {
   const organisationId = await getOrganisationId(supabase, user.id);
   if (!organisationId) {
     return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
+  }
+
+  const limite = await verifierLimiteIA(supabase, organisationId);
+  if (!limite.autorise) {
+    return NextResponse.json({ error: limite.message }, { status: 429 });
   }
 
   // RLS s'applique aussi côté serveur avec le client Supabase authentifié :

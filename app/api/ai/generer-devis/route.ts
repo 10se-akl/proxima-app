@@ -4,6 +4,7 @@ import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
 import { calculerDevis, PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
+import { verifierLimiteIA } from "@/lib/limiteIA";
 import type { PosteTravailIA, ParametresEntreprise } from "@/types";
 
 // L'IA ne produit QUE des postes de travaux, jamais de prix. Le calcul
@@ -59,6 +60,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
   }
 
+  const limite = await verifierLimiteIA(supabase, organisationId);
+  if (!limite.autorise) {
+    return NextResponse.json({ error: limite.message }, { status: 429 });
+  }
+
   // Les 4 requêtes ci-dessous sont indépendantes (aucune ne dépend du
   // résultat d'une autre) : on les lance en parallèle plutôt qu'en chaîne
   // pour ne pas payer 4 allers-retours réseau séquentiels à chaque
@@ -74,7 +80,9 @@ export async function POST(request: NextRequest) {
     // être modifiée par erreur plus tard (relevé lors de l'audit du 12/08).
     supabase
       .from("demandes")
-      .select("nom_client, description, informations_disponibles, notes, type_chantier, questions_manquantes")
+      .select(
+        "nom_client, description, informations_disponibles, notes, type_chantier, questions_manquantes, derniere_modification_le, dernier_devis_genere_le"
+      )
       .eq("id", demandeId)
       .eq("organisation_id", organisationId)
       .single(),
@@ -97,6 +105,27 @@ export async function POST(request: NextRequest) {
 
   if (fetchError || !projet) {
     return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
+  }
+
+  // Un devis a déjà été généré pour ce projet et rien n'a changé depuis
+  // (aucune note, aucune modification) : relancer l'IA reproduirait
+  // exactement le même résultat pour un appel gaspillé. Même logique que le
+  // garde-fou déjà en place dans /api/ai/analyser-demande. L'artisan qui
+  // veut vraiment repartir de zéro peut toujours dupliquer un devis existant
+  // (/api/devis/dupliquer) et l'ajuster à la main — cette route reste
+  // dédiée à la première génération après un changement réel.
+  if (
+    projet.dernier_devis_genere_le &&
+    (!projet.derniere_modification_le ||
+      new Date(projet.derniere_modification_le) <= new Date(projet.dernier_devis_genere_le))
+  ) {
+    return NextResponse.json(
+      {
+        error:
+          "Rien de nouveau depuis le dernier devis généré — ajoutez une note ou dupliquez le devis existant pour l'ajuster.",
+      },
+      { status: 400 }
+    );
   }
 
   const blocNotesVocales = (notesVocales ?? [])
@@ -236,9 +265,12 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
       );
     }
 
+    // Horodate cette génération pour pouvoir détecter, la prochaine fois,
+    // qu'aucune modification n'a eu lieu depuis (garde-fou ci-dessus, même
+    // principe que derniere_analyse_le pour l'analyse IA).
     await supabase
       .from("demandes")
-      .update({ statut: "devis_genere" })
+      .update({ statut: "devis_genere", dernier_devis_genere_le: new Date().toISOString() })
       .eq("id", demandeId)
       .eq("organisation_id", organisationId);
 

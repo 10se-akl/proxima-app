@@ -12,6 +12,35 @@ import { EquipeSection } from "@/components/dashboard/EquipeSection";
 type FormState = typeof PARAMETRES_PAR_DEFAUT;
 type Onglet = "entreprise" | "equipe" | "compte";
 
+// Audit Cycle 2 (Agent Destructeur) : aucune de ces valeurs n'était bornée,
+// ni côté client ni côté serveur — une faute de frappe (TVA négative, coût
+// horaire à 1e8...) contaminait silencieusement tous les devis générés
+// ensuite. Bornes larges mais réalistes pour un artisan du bâtiment.
+const BORNES: Partial<Record<keyof FormState, { min: number; max: number; label: string }>> = {
+  tva_pct: { min: 0, max: 100, label: "TVA" },
+  cout_horaire: { min: 0, max: 1000, label: "Coût horaire" },
+  cout_journalier: { min: 0, max: 5000, label: "Coût journalier" },
+  marge_defaut_pct: { min: 0, max: 500, label: "Marge par défaut" },
+  heures_min_facturables: { min: 0, max: 24, label: "Heures minimum facturables" },
+  forfait_deplacement: { min: 0, max: 2000, label: "Forfait déplacement" },
+  prix_km: { min: 0, max: 20, label: "Prix au km" },
+  rayon_max_km: { min: 0, max: 500, label: "Rayon d'intervention max" },
+};
+
+function validerForm(form: FormState): string | null {
+  for (const [champ, bornes] of Object.entries(BORNES)) {
+    const valeur = form[champ as keyof FormState];
+    if (valeur === null || valeur === undefined) continue;
+    if (typeof valeur !== "number" || !Number.isFinite(valeur)) {
+      return `${bornes.label} : valeur invalide.`;
+    }
+    if (valeur < bornes.min || valeur > bornes.max) {
+      return `${bornes.label} doit être compris entre ${bornes.min} et ${bornes.max}.`;
+    }
+  }
+  return null;
+}
+
 export default function ParametresPage() {
   const supabase = createClient();
 
@@ -136,6 +165,13 @@ export default function ParametresPage() {
 
     if (!user || !organisationId) {
       setErreur("Session expirée, reconnectez-vous.");
+      setEnregistrement(false);
+      return;
+    }
+
+    const erreurValidation = validerForm(form);
+    if (erreurValidation) {
+      setErreur(erreurValidation);
       setEnregistrement(false);
       return;
     }
@@ -277,6 +313,8 @@ export default function ParametresPage() {
                 label="TVA (%)"
                 type="number"
                 step="0.01"
+                min={BORNES.tva_pct!.min}
+                max={BORNES.tva_pct!.max}
                 required
                 value={form.tva_pct}
                 onChange={update("tva_pct")}
@@ -285,6 +323,8 @@ export default function ParametresPage() {
                 label="Coût horaire (€)"
                 type="number"
                 step="0.01"
+                min={BORNES.cout_horaire!.min}
+                max={BORNES.cout_horaire!.max}
                 required
                 value={form.cout_horaire}
                 onChange={update("cout_horaire")}
@@ -293,6 +333,8 @@ export default function ParametresPage() {
                 label="Coût journalier (€)"
                 type="number"
                 step="0.01"
+                min={BORNES.cout_journalier!.min}
+                max={BORNES.cout_journalier!.max}
                 value={form.cout_journalier ?? ""}
                 onChange={update("cout_journalier")}
               />
@@ -300,6 +342,8 @@ export default function ParametresPage() {
                 label="Marge par défaut (%)"
                 type="number"
                 step="0.01"
+                min={BORNES.marge_defaut_pct!.min}
+                max={BORNES.marge_defaut_pct!.max}
                 required
                 value={form.marge_defaut_pct}
                 onChange={update("marge_defaut_pct")}
@@ -308,6 +352,8 @@ export default function ParametresPage() {
                 label="Heures minimum facturables"
                 type="number"
                 step="0.5"
+                min={BORNES.heures_min_facturables!.min}
+                max={BORNES.heures_min_facturables!.max}
                 required
                 value={form.heures_min_facturables}
                 onChange={update("heures_min_facturables")}
@@ -322,6 +368,8 @@ export default function ParametresPage() {
                 label="Forfait déplacement (€)"
                 type="number"
                 step="0.01"
+                min={BORNES.forfait_deplacement!.min}
+                max={BORNES.forfait_deplacement!.max}
                 value={form.forfait_deplacement}
                 onChange={update("forfait_deplacement")}
               />
@@ -329,6 +377,8 @@ export default function ParametresPage() {
                 label="Prix au km (€)"
                 type="number"
                 step="0.01"
+                min={BORNES.prix_km!.min}
+                max={BORNES.prix_km!.max}
                 value={form.prix_km}
                 onChange={update("prix_km")}
               />
@@ -336,6 +386,8 @@ export default function ParametresPage() {
                 label="Rayon d'intervention max (km)"
                 type="number"
                 step="1"
+                min={BORNES.rayon_max_km!.min}
+                max={BORNES.rayon_max_km!.max}
                 value={form.rayon_max_km ?? ""}
                 onChange={update("rayon_max_km")}
               />

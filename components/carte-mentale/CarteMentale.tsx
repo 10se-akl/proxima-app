@@ -71,8 +71,14 @@ function couleurUrgence(importance: number) {
   return `rgb(${r} ${g} ${b})`;
 }
 
+// Retour d'Axel après premier test réel : avec la formule précédente
+// (30 + 3.5 par avis), une bulle à UN SEUL avis faisait déjà 60px de
+// diamètre — aussi grosse visuellement qu'un thème réellement établi.
+// Courbe de saturation : petite au premier avis, grossit nettement autour
+// de 5 avis (le seuil "ça commence à compter" mentionné), puis continue de
+// grossir plus doucement au-delà plutôt que de plafonner brutalement.
 function rayonBulle(nombreAvis: number) {
-  return Math.min(30 + nombreAvis * 3.5, 78);
+  return Math.min(12 + 46 * (1 - Math.exp(-nombreAvis / 6)), 60);
 }
 
 // Petit générateur déterministe (pas de vrai hasard) à partir de l'index :
@@ -136,6 +142,15 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
       const y = (e.clientY - rect.top) / rect.height - 0.5;
       noeud.style.setProperty("--parallax-x", `${(x * 14).toFixed(1)}px`);
       noeud.style.setProperty("--parallax-y", `${(y * 14).toFixed(1)}px`);
+      // Même parallax que les bulles (ci-dessus), mais en pourcentage plutôt
+      // qu'en pixels : les lignes de liaison sont en SVG (coordonnées du
+      // viewBox 0-100), où un "px" en transform CSS se lit comme une unité
+      // du viewBox et non un vrai pixel écran — un "%" en revanche se
+      // résout bien contre le viewport SVG, donc reste proportionnellement
+      // identique au déplacement réel de la bulle. Retour d'Axel : les
+      // bulles bougeaient (survol souris) sans que leur ligne ne suive.
+      noeud.style.setProperty("--parallax-x-pct", `${(x * 1.8).toFixed(2)}%`);
+      noeud.style.setProperty("--parallax-y-pct", `${(y * 1.8).toFixed(2)}%`);
     }
     noeud.addEventListener("mousemove", onMove);
     return () => noeud.removeEventListener("mousemove", onMove);
@@ -151,10 +166,38 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
       // parfait — jamais un graphe mécanique.
       const rayonVariation = 30 + pseudoAlea(i + 1) * 12;
       const profondeur = 0.6 + pseudoAlea(i + 7) * 0.8;
+      const x = 50 + rayonVariation * Math.cos(angle);
+      const y = 50 + rayonVariation * Math.sin(angle) * 0.82;
+
+      // Retour d'Axel : les lignes de liaison étaient parfaitement
+      // droites, ce qui accentuait le décalage visuel avec les bulles qui
+      // flottent légèrement. Un point de contrôle décalé perpendiculairement
+      // au milieu du segment donne une courbe douce et organique — même
+      // esprit que la disposition en cercle légèrement désaligné ci-dessus,
+      // jamais un graphe mécanique. Décalage déterministe (pseudoAlea), pas
+      // animé : suffisant pour casser l'effet "droite" sans reproduire tout
+      // le mouvement de flottement d'une bulle dans une ligne SVG. Calculé
+      // dans le même espace que le rendu SVG réel (x2={d.x}, y2={d.y*0.82},
+      // centre à 50,41) pour que la courbe touche vraiment le centre et la
+      // bulle, pas un point approximatif.
+      const yRendu = y * 0.82;
+      const centreX = 50;
+      const centreY = 41;
+      const milieuX = (centreX + x) / 2;
+      const milieuY = (centreY + yRendu) / 2;
+      const segX = x - centreX;
+      const segY = yRendu - centreY;
+      const longueur = Math.max(Math.hypot(segX, segY), 0.001);
+      const perpX = -segY / longueur;
+      const perpY = segX / longueur;
+      const decalage = (pseudoAlea(i + 40) * 2 - 1) * (4 + pseudoAlea(i + 41) * 5);
+
       return {
         id: p.id,
-        x: 50 + rayonVariation * Math.cos(angle),
-        y: 50 + rayonVariation * Math.sin(angle) * 0.82,
+        x,
+        y,
+        courbeX: milieuX + perpX * decalage,
+        courbeY: milieuY + perpY * decalage,
         profondeur,
         delai: `${(pseudoAlea(i + 2) * 3).toFixed(2)}s`,
         duree: `${(6 + pseudoAlea(i + 3) * 4).toFixed(2)}s`,
@@ -227,14 +270,22 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
             {dispositions.map((d, i) => {
               const estLiee = survolId === null || survolId === d.id;
               return (
-                <line
+                <path
                   key={d.id}
                   className="cm-ligne"
-                  style={{ "--delai": `${i * 0.15}s` } as React.CSSProperties}
-                  x1={50}
-                  y1={41}
-                  x2={d.x}
-                  y2={d.y * 0.82}
+                  style={
+                    {
+                      "--delai": `${i * 0.15}s`,
+                      // Même parallax que la bulle qu'elle relie (voir
+                      // useEffect ci-dessus) — en pourcentage, qui se
+                      // résout correctement contre le viewBox SVG,
+                      // contrairement à un "px" qui serait lu comme une
+                      // unité du viewBox et bougerait disproportionnellement.
+                      transform: `translate(calc(var(--parallax-x-pct, 0%) * ${d.profondeur}), calc(var(--parallax-y-pct, 0%) * ${d.profondeur}))`,
+                    } as React.CSSProperties
+                  }
+                  d={`M 50 41 Q ${d.courbeX} ${d.courbeY} ${d.x} ${d.y * 0.82}`}
+                  fill="none"
                   stroke={survolId === d.id ? "#E8A487" : "rgba(255,255,255,0.5)"}
                   strokeWidth={survolId === d.id ? 0.35 : 0.15}
                   opacity={estLiee ? undefined : 0.05}

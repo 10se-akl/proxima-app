@@ -40,6 +40,7 @@ type ProblemeDetaille = {
   description: string | null;
   resumeIa: string | null;
   propositionsIa: string | null;
+  categorie: string | null;
   createdAt: string;
   nombreAvis: number;
   importanceMoyenne: number;
@@ -74,7 +75,7 @@ export async function GET() {
   ] = await Promise.all([
     admin
       .from("problemes_produits")
-      .select("id, titre, description, resume_ia, propositions_ia, created_at")
+      .select("id, titre, description, resume_ia, propositions_ia, categorie, created_at")
       .order("created_at", { ascending: true }),
     admin
       .from("retours_produits")
@@ -133,6 +134,7 @@ export async function GET() {
       description: p.description,
       resumeIa: p.resume_ia ?? null,
       propositionsIa: p.propositions_ia ?? null,
+      categorie: p.categorie ?? null,
       createdAt: p.created_at,
       nombreAvis,
       importanceMoyenne: Math.round(importanceMoyenne * 10) / 10,

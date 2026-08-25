@@ -70,6 +70,7 @@ type ProblemeAgrege = {
   titre: string;
   description: string | null;
   resumeIa: string | null;
+  categorie: string | null;
   nombreAvis: number;
   importanceMoyenne: number;
   monAvis: number | null;
@@ -95,7 +96,7 @@ export async function GET() {
   ] = await Promise.all([
     admin
       .from("problemes_produits")
-      .select("id, titre, description, resume_ia, created_at")
+      .select("id, titre, description, resume_ia, categorie, created_at")
       .order("created_at", { ascending: true }),
     admin.rpc("retours_agreges"),
     // Bornée au nombre de thèmes (pas à la table entière) : uniquement les
@@ -127,6 +128,7 @@ export async function GET() {
       titre: p.titre,
       description: p.description,
       resumeIa: p.resume_ia ?? null,
+      categorie: p.categorie ?? null,
       nombreAvis,
       importanceMoyenne: Math.round(importanceMoyenne * 10) / 10,
       monAvis: monAvisParProbleme.get(p.id) ?? null,

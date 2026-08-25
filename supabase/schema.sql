@@ -914,3 +914,38 @@ alter table problemes_produits add column if not exists sous_categorie text;
 
 create unique index if not exists problemes_produits_categorie_sous_categorie_key
   on problemes_produits (categorie, sous_categorie);
+
+-- Module 21 — Refonte visuelle de la carte mentale ("le cerveau de
+-- Compyo") : chaque planète représente désormais une CATÉGORIE entière
+-- (Planning, Devis, Appels...), pas un sous-thème isolé — les
+-- catégories/sous-catégories déjà en place (Module 20) suffisent pour ça
+-- côté lecture, aucune nouvelle colonne de rattachement nécessaire.
+--
+-- Seul ajout : une table très simple pour le bouton "Créer une tâche" du
+-- panneau admin — convertir un thème remonté par les artisans en note de
+-- travail actionnable, sans quitter la page. Accès exclusivement via le
+-- client admin (service role, RLS activée mais sans policy : personne côté
+-- client/anon n'y accède, même en connaissant l'URL).
+create table if not exists ameliorations_produit (
+  id uuid primary key default gen_random_uuid(),
+  categorie text not null,
+  titre text not null,
+  statut text not null default 'a_faire',
+  created_at timestamptz not null default now()
+);
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint where conname = 'ameliorations_produit_statut_valide'
+  ) then
+    alter table ameliorations_produit
+      add constraint ameliorations_produit_statut_valide
+      check (statut in ('a_faire', 'en_cours', 'fait'));
+  end if;
+end $$;
+
+alter table ameliorations_produit enable row level security;
+
+create index if not exists ameliorations_produit_categorie_idx
+  on ameliorations_produit (categorie, created_at desc);

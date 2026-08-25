@@ -344,83 +344,35 @@
 }
 
 /* ============================================================
-   Carte mentale (Module 16, voir supabase/schema.sql) — la page la plus
-   travaillée visuellement du site, demande explicite d'Axel ("je préfère
-   passer deux jours sur cette seule page"). Bulles flottantes + respirantes
-   + particules discrètes, en pur CSS (pas de librairie de physique/graphe,
-   même contrainte que IntroAnimation.tsx : le registre npm n'est pas
-   accessible dans cet environnement). Chaque bulle applique ces classes
-   avec un délai/une durée légèrement différents via des variables CSS
-   inline (--delai, --duree) posées depuis CarteMentale.tsx, pour qu'aucune
-   bulle ne bouge exactement en phase avec sa voisine — sensation
-   "organique" plutôt qu'un motif mécanique répété. Le parallax souris,
-   lui, ne passe pas par ces keyframes : CarteMentale.tsx pose directement
-   --parallax-x/--parallax-y sur le conteneur (hérité par tous les
-   enfants), mis à jour via un simple mousemove sans re-render React. ============================================================ */
+   Carte mentale ("le cerveau de Compyo", Module 20/21, voir
+   supabase/schema.sql) — v2 : le rendu vivant (cœur qui respire, planètes,
+   connexions qui ondulent, particules de flux/ambiantes, dérive
+   indépendante) est entièrement porté par le <canvas> de
+   components/carte-mentale/CarteMentale.tsx, pas par des animations CSS
+   sur des éléments DOM comme dans la première version. Il ne reste ici que
+   la transition d'entrée du panneau de détail, qui glisse depuis la droite
+   sur desktop (panneau ancré à droite) et depuis le bas sur mobile (feuille
+   qui remonte) — géré en CSS car c'est une vraie transition de composant
+   React, pas une boucle d'animation continue.
+   ============================================================ */
 @media (prefers-reduced-motion: no-preference) {
-  .cm-bulle-flotte {
-    animation: cm-flotter var(--duree, 7s) ease-in-out infinite;
-    animation-delay: var(--delai, 0s);
+  .cm-panneau-glisse {
+    animation: cm-glisser-bas 0.32s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  @keyframes cm-flotter {
-    0%, 100% { transform: translate(0, 0); }
-    50% { transform: translate(var(--flotte-x, 4px), var(--flotte-y, -6px)); }
-  }
-
-  .cm-bulle-respire {
-    animation: cm-respirer var(--duree-resp, 5s) ease-in-out infinite;
-    animation-delay: var(--delai, 0s);
-  }
-  @keyframes cm-respirer {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.03); }
+  @keyframes cm-glisser-bas {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  .cm-particule {
-    animation: cm-deriver var(--duree, 14s) linear infinite;
-    animation-delay: var(--delai, 0s);
+  @media (min-width: 640px) {
+    .cm-panneau-glisse {
+      animation-name: cm-glisser-droite;
+    }
+    @keyframes cm-glisser-droite {
+      from { opacity: 0; transform: translateX(24px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
   }
-  @keyframes cm-deriver {
-    0% { transform: translate(0, 0); opacity: 0; }
-    10% { opacity: 0.5; }
-    90% { opacity: 0.5; }
-    100% { transform: translate(var(--flotte-x, 0), var(--flotte-y, -40px)); opacity: 0; }
-  }
-
-  .cm-ligne {
-    /* Retour d'Axel : les lignes ne devaient ni suivre la souris (retiré),
-       ni rester parfaitement figées pendant que leur bulle flotte — un
-       léger mouvement "aléatoire" (déterministe par ligne, même graine
-       que la bulle qu'elle relie) suffit, combiné au pulse d'opacité déjà
-       en place. translate() sur un <path> déplace toute la courbe, y
-       compris l'extrémité côté COMPYO — l'amplitude (--flotte-x/y, posée
-       en % depuis CarteMentale.tsx) reste volontairement petite pour que
-       ce bout ne s'écarte pas visiblement du centre fixe. */
-    animation:
-      cm-pulser 4.5s ease-in-out infinite,
-      cm-flotter var(--duree, 7s) ease-in-out infinite;
-    animation-delay: var(--delai, 0s), var(--delai, 0s);
-  }
-  @keyframes cm-pulser {
-    0%, 100% { opacity: 0.14; }
-    50% { opacity: 0.3; }
-  }
-
-  .cm-panneau-entree {
-    animation: cm-panneau 0.32s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  @keyframes cm-panneau {
-    from { opacity: 0; transform: translateY(10px) scale(0.98); }
-    to { opacity: 1; transform: translateY(0) scale(1); }
-  }
-}
-
-.cm-champ {
-  --parallax-x: 0px;
-  --parallax-y: 0px;
-}
-.cm-bulle-parallax {
-  transform: translate(calc(var(--parallax-x) * var(--profondeur, 1)), calc(var(--parallax-y) * var(--profondeur, 1)));
 }
 
 /* ============================================================

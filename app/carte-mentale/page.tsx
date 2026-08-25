@@ -54,7 +54,7 @@ export default async function CarteMentalePage() {
       </div>
 
       <section className="bg-paper pb-20 sm:pb-28">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8">
+        <div className="max-w-6xl mx-auto px-5 sm:px-8">
           <Reveal delay={100}>
             <CarteMentale estAdmin={estAdmin} />
           </Reveal>

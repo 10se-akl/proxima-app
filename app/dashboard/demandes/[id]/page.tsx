@@ -589,9 +589,29 @@ export default function DetailDemandePage({
   // Le devis a-t-il été généré avant la dernière modification du projet ?
   // Un chantier déjà terminé (souvent déjà payé) n'a plus besoin qu'on lui
   // propose de régénérer son devis — ajouter une photo de fin de chantier
-  // pour le portfolio ne doit pas rouvrir la question du prix.
+  // pour le portfolio ne doit pas rouvrir la question du prix. Idem une
+  // fois le devis accepté par le client ou le chantier démarré : "Mettre à
+  // jour le devis" insère un NOUVEAU devis brouillon et écrase le statut de
+  // la demande (voir /api/ai/generer-devis) — proposer ça en un clic sur un
+  // projet déjà accepté ferait disparaître le devis accepté de l'écran et
+  // repasserait silencieusement le projet à "devis à valider" (bug trouvé
+  // à l'audit du 25/08). Pour ces deux statuts, on affiche plus bas une
+  // proposition distincte, plus explicite : dupliquer le devis existant
+  // (voir dupliquerDevis) plutôt que le remplacer.
   const devisPerime =
     demande.statut !== "termine" &&
+    demande.statut !== "accepte" &&
+    demande.statut !== "en_cours" &&
+    devis &&
+    demande.derniere_modification_le &&
+    new Date(demande.derniere_modification_le) > new Date(devis.created_at);
+
+  // Même détection que ci-dessus, mais pour un projet déjà accepté/en
+  // cours : on ne propose jamais de régénérer en un clic (ça écraserait le
+  // devis accepté), seulement de le dupliquer pour ajuster manuellement —
+  // même chemin déjà utilisé pour un devis refusé, aucun appel IA.
+  const devisPerimeProjetEngage =
+    (demande.statut === "accepte" || demande.statut === "en_cours") &&
     devis &&
     demande.derniere_modification_le &&
     new Date(demande.derniere_modification_le) > new Date(devis.created_at);
@@ -622,9 +642,9 @@ export default function DetailDemandePage({
         Projet
       </p>
       <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Avatar nom={demande.nom_client || "?"} taille={40} />
-          <h1 className="font-display text-2xl font-semibold">
+          <h1 className="font-display text-2xl font-semibold truncate">
             {demande.nom_client}
           </h1>
         </div>
@@ -945,6 +965,28 @@ export default function DetailDemandePage({
             </Card>
           )}
 
+          {/* Projet déjà accepté ou en cours : jamais de régénération en un
+              clic (voir le commentaire sur devisPerimeProjetEngage plus
+              haut) — seulement une duplication explicite, qui laisse le
+              devis accepté intact et n'écrase pas le statut du projet. */}
+          {devisPerimeProjetEngage && (
+            <Card className="mt-4 p-4 border-[#D9861A]/40 bg-[#D9861A]/5">
+              <p className="text-sm text-ink/80">
+                Le projet a changé depuis ce devis {demande.statut === "accepte" ? "accepté" : "en cours"}
+                . Le devis d&apos;origine reste inchangé — dupliquez-le si vous devez ajuster le
+                prix ou les prestations.
+              </p>
+              <Button
+                variant="ghost"
+                onClick={dupliquerDevis}
+                disabled={chargementDevis}
+                className="mt-3"
+              >
+                {chargementDevis ? "Duplication…" : "Dupliquer ce devis pour l'ajuster"}
+              </Button>
+            </Card>
+          )}
+
           {/* Un devis fraîchement généré (ou régénéré) doit toujours être relu
               et validé avant d'être imprimable — jamais un export direct
               depuis un brouillon. */}
@@ -962,6 +1004,8 @@ export default function DetailDemandePage({
               <DevisPreview
                 devis={devis}
                 nomClient={demande.nom_client}
+                telephoneClient={demande.telephone_client}
+                adresseClient={demande.adresse_client}
                 nomArtisan={nomArtisan}
                 entreprise={parametres}
                 logoUrl={logoUrl}

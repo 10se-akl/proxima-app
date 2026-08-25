@@ -110,21 +110,21 @@ export function DemandeCard({ demande }: { demande: Projet }) {
   return (
     <Link href={`/dashboard/demandes/${demande.id}`}>
       <Card className="p-5 transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 min-w-0">
             <span
               className={`w-2 h-2 rounded-full shrink-0 ${COULEUR_PRIORITE[demande.priorite ?? "normal"]}`}
               title={demande.priorite}
             />
             <Avatar nom={demande.nom_client || "?"} taille={24} />
-            <p className="font-semibold text-sm">{demande.nom_client}</p>
+            <p className="font-semibold text-sm truncate">{demande.nom_client}</p>
             {LABEL_TYPE_CHANTIER[demande.type_chantier] && (
-              <span className="text-[10px] text-ink/40 rounded-full border border-ink/10 px-1.5 py-0.5">
+              <span className="text-[10px] text-ink/40 rounded-full border border-ink/10 px-1.5 py-0.5 shrink-0">
                 {LABEL_TYPE_CHANTIER[demande.type_chantier]}
               </span>
             )}
           </div>
-          <span className="font-mono text-[10px] uppercase tracking-wider text-steel">
+          <span className="font-mono text-[10px] uppercase tracking-wider text-steel shrink-0">
             {LABEL_STATUT[demande.statut] ?? demande.statut}
           </span>
         </div>

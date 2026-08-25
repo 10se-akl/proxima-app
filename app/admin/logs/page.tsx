@@ -46,12 +46,20 @@ export default async function AdminLogsPage() {
         <h1 className="font-display text-2xl font-semibold">
           Logs (100 derniers événements)
         </h1>
-        <a
-          href="/admin/candidatures"
-          className="text-sm text-ink/60 underline decoration-ink/30 underline-offset-2 transition-colors hover:text-ink hover:decoration-ink/50"
-        >
-          ← Candidatures
-        </a>
+        <div className="flex items-center gap-4">
+          <a
+            href="/admin/candidatures"
+            className="text-sm text-ink/60 underline decoration-ink/30 underline-offset-2 transition-colors hover:text-ink hover:decoration-ink/50"
+          >
+            ← Candidatures
+          </a>
+          <a
+            href="/admin/maintenance"
+            className="text-sm text-ink/60 underline decoration-ink/30 underline-offset-2 transition-colors hover:text-ink hover:decoration-ink/50"
+          >
+            Maintenance
+          </a>
+        </div>
       </div>
 
       <div className="mt-8 flex flex-col gap-2">

@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     supabase
       .from("demandes")
       .select(
-        "nom_client, description, informations_disponibles, notes, type_chantier, questions_manquantes, derniere_modification_le, dernier_devis_genere_le"
+        "statut, nom_client, description, informations_disponibles, notes, type_chantier, questions_manquantes, derniere_modification_le, dernier_devis_genere_le"
       )
       .eq("id", demandeId)
       .eq("organisation_id", organisationId)
@@ -268,9 +268,21 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // Horodate cette génération pour pouvoir détecter, la prochaine fois,
     // qu'aucune modification n'a eu lieu depuis (garde-fou ci-dessus, même
     // principe que derniere_analyse_le pour l'analyse IA).
+    //
+    // Défense en profondeur (bug trouvé à l'audit du 25/08) : un projet déjà
+    // "accepte" ou "en_cours" ne doit JAMAIS être rétrogradé à
+    // "devis_genere" par une régénération — ça ferait perdre silencieusement
+    // l'état d'avancement réel du chantier. L'UI n'appelle plus cette route
+    // dans ce cas (elle propose de dupliquer le devis à la place, voir
+    // app/dashboard/demandes/[id]/page.tsx), mais on protège aussi ici au
+    // cas où la route serait appelée directement.
+    const statutProtege = projet.statut === "accepte" || projet.statut === "en_cours";
     await supabase
       .from("demandes")
-      .update({ statut: "devis_genere", dernier_devis_genere_le: new Date().toISOString() })
+      .update({
+        ...(statutProtege ? {} : { statut: "devis_genere" }),
+        dernier_devis_genere_le: new Date().toISOString(),
+      })
       .eq("id", demandeId)
       .eq("organisation_id", organisationId);
 

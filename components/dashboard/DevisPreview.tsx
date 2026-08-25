@@ -8,12 +8,16 @@ function formatEuros(n: number) {
 export function DevisPreview({
   devis,
   nomClient,
+  telephoneClient,
+  adresseClient,
   nomArtisan,
   entreprise,
   logoUrl,
 }: {
   devis: Devis;
   nomClient: string;
+  telephoneClient?: string | null;
+  adresseClient?: string | null;
   nomArtisan: string;
   entreprise?: ParametresEntreprise | null;
   logoUrl?: string | null;
@@ -47,7 +51,9 @@ export function DevisPreview({
           </div>
           <div className="text-right shrink-0">
             <p className="text-sm text-ink/70">Client : {nomClient}</p>
-            <p className="font-mono text-[11px] text-ink/50">
+            {telephoneClient && <p className="text-xs text-ink/50">{telephoneClient}</p>}
+            {adresseClient && <p className="text-xs text-ink/50 max-w-[220px]">{adresseClient}</p>}
+            <p className="font-mono text-[11px] text-ink/50 mt-0.5">
               {new Date(devis.created_at).toLocaleDateString("fr-FR")}
             </p>
           </div>

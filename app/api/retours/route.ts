@@ -336,21 +336,26 @@ export async function POST(request: NextRequest) {
       // bulle déterministe, donc elle ne doit jamais entrer en collision
       // avec l'index unique (categorie, sous_categorie) des bulles fixes
       // (Postgres ne considère jamais deux NULL comme égaux).
-      const { data: nouveauProbleme, error: erreurCreation } = await admin
-        .from("problemes_produits")
-        .insert({
-          titre: decision.titre_propose?.slice(0, 140) || texteBrut!.slice(0, 80),
-          description: texteBrut,
-          resume_ia: decision.resume_ia?.trim() || null,
-          categorie: categorieSlug,
+      //
+      // Passe par une fonction SQL (Module 22, supabase/schema.sql) plutôt
+      // qu'un insert direct : elle vérifie et insère en une seule opération
+      // atomique côté base, pour fermer (au moins pour un titre identique)
+      // la fenêtre de course entre deux artisans qui remontent le même
+      // sujet à quelques secondes d'écart pendant que l'IA répond.
+      const titreLibre = decision.titre_propose?.slice(0, 140) || texteBrut!.slice(0, 80);
+      const { data: probleme, error: erreurCreation } = await admin
+        .rpc("creer_theme_produit_libre", {
+          p_categorie: categorieSlug,
+          p_titre: titreLibre,
+          p_description: texteBrut,
+          p_resume_ia: decision.resume_ia?.trim() || null,
         })
-        .select("id")
         .single();
 
-      if (erreurCreation || !nouveauProbleme) {
+      if (erreurCreation || !probleme) {
         throw new Error(erreurCreation?.message ?? "Échec de création du thème");
       }
-      probleteIdFinal = nouveauProbleme.id;
+      probleteIdFinal = (probleme as { id: string }).id;
     }
   } catch (err) {
     console.error(err);

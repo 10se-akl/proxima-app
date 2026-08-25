@@ -949,3 +949,115 @@ alter table ameliorations_produit enable row level security;
 
 create index if not exists ameliorations_produit_categorie_idx
   on ameliorations_produit (categorie, created_at desc);
+
+-- Module 22 — Audit pré-beta (25/08) : 3 correctifs de sécurité/intégrité
+-- trouvés par une revue multi-agents, à 2 semaines de l'arrivée des
+-- premiers beta testeurs.
+
+-- 1. La policy "select using (true)" sur problemes_produits (Module 15)
+--    s'applique à TOUTES ses colonnes, y compris propositions_ia — les
+--    pistes d'amélioration internes générées à la demande pour Axel (voir
+--    app/api/admin/retours/propositions/route.ts), censées être réservées
+--    à ADMIN_EMAIL. N'importe quel artisan connecté pouvait la lire
+--    directement via le client Supabase navigateur, en contournant la
+--    vérification admin de la route. On retire juste le droit de lecture
+--    sur cette colonne précise pour les rôles "standards" — le reste de la
+--    table (titre, description, resume_ia, compteurs) reste public comme
+--    prévu, et le service_role (routes admin) n'est jamais concerné par un
+--    revoke de privilèges de rôle.
+revoke select (propositions_ia) on problemes_produits from authenticated, anon;
+
+-- 2. La policy "devis for all" (plus haut dans ce fichier) autorisait tout
+--    membre de l'organisation à modifier n'importe quel devis, quel que
+--    soit son statut — seul l'écran (ValiderDevis, affiché uniquement pour
+--    statut = 'brouillon') empêchait en pratique l'édition d'un devis déjà
+--    envoyé. On remplace ce "for all" par 4 policies séparées : la lecture,
+--    la création et la suppression restent ouvertes à toute l'organisation,
+--    mais la MODIFICATION n'est plus permise que si le devis est encore
+--    "brouillon" au moment de la requête (USING porte sur la ligne
+--    existante) — les transitions légitimes brouillon → envoyé et
+--    brouillon → refusé restent possibles (la ligne est encore "brouillon"
+--    juste avant cette transition précise), mais un devis déjà envoyé ou
+--    refusé ne peut plus jamais être modifié en base, même par un appel
+--    direct qui contournerait l'UI.
+drop policy if exists "un membre gère les devis de son organisation" on devis;
+
+create policy "un membre lit les devis de son organisation"
+  on devis for select
+  using (organisation_id in (select mes_organisations()));
+
+create policy "un membre crée des devis pour son organisation"
+  on devis for insert
+  with check (organisation_id in (select mes_organisations()));
+
+create policy "un membre modifie un devis encore brouillon"
+  on devis for update
+  using (organisation_id in (select mes_organisations()) and statut = 'brouillon')
+  with check (organisation_id in (select mes_organisations()));
+
+create policy "un membre supprime les devis de son organisation"
+  on devis for delete
+  using (organisation_id in (select mes_organisations()));
+
+-- 3. Doublons de thèmes libres sur la carte mentale (cas C, voir
+--    app/api/retours/route.ts) : deux artisans qui remontent le même sujet
+--    à quelques secondes d'écart peuvent chacun déclencher un appel IA qui
+--    lit la liste des thèmes existants AVANT que l'autre n'ait inséré le
+--    sien — les deux décident alors de créer un nouveau thème. Un index
+--    unique partiel + une fonction dédiée ramènent le "vérifier puis
+--    insérer" à une seule opération atomique côté base (au lieu de deux
+--    allers-retours séparés par 1 à 3 secondes d'appel IA) : si le titre
+--    généré par l'IA est strictement identique à un thème déjà créé entre
+--    temps dans la même catégorie, on s'y rattache au lieu d'en recréer un
+--    second. Ça ne couvre que le cas d'un titre identique (le cas le plus
+--    fréquent pour un sujet vraiment identique) — deux formulations
+--    différentes du même problème générées par l'IA en parallèle restent
+--    théoriquement possibles ; un verrou distribué complet serait
+--    disproportionné pour l'échelle d'une beta et peut attendre un futur
+--    cycle si ça s'avère un vrai problème en pratique (fusion manuelle
+--    possible côté admin en attendant).
+create unique index if not exists problemes_produits_categorie_titre_libre_key
+  on problemes_produits (categorie, titre)
+  where sous_categorie is null;
+
+create or replace function creer_theme_produit_libre(
+  p_categorie text,
+  p_titre text,
+  p_description text,
+  p_resume_ia text
+) returns problemes_produits
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_ligne problemes_produits;
+begin
+  insert into problemes_produits (titre, categorie, description, resume_ia)
+  values (p_titre, p_categorie, p_description, p_resume_ia)
+  on conflict (categorie, titre) where sous_categorie is null
+  do update set resume_ia = coalesce(excluded.resume_ia, problemes_produits.resume_ia)
+  returning * into v_ligne;
+
+  return v_ligne;
+end;
+$$;
+
+-- Module 23 — Écran de maintenance. Un seul indicateur global (pas une
+-- table par organisation : c'est Axel, le seul développeur, qui bascule ça
+-- pendant qu'il travaille de nuit, pour tout le monde en même temps). RLS
+-- activée sans policy pour "authenticated"/"anon" : lu uniquement via
+-- lib/supabase/admin.ts (service_role) dans le middleware, jamais
+-- directement depuis le navigateur — un visiteur ne doit pas pouvoir
+-- interroger cette table pour savoir si Axel est en train de déployer.
+create table if not exists parametres_systeme (
+  cle text primary key,
+  valeur boolean not null default false,
+  mis_a_jour_le timestamptz not null default now()
+);
+
+alter table parametres_systeme enable row level security;
+
+insert into parametres_systeme (cle, valeur)
+values ('maintenance_actif', false)
+on conflict (cle) do nothing;

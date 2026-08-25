@@ -97,6 +97,23 @@ function pseudoAlea(graine: number) {
   return x - Math.floor(x);
 }
 
+// Position de base d'une planète autour du cœur — UNE seule formule
+// partagée entre dispositionsBase (positions DOM, hit-testing) et l'état
+// d'animation du canvas, pour qu'elles ne divergent jamais (un bug de la
+// v1 : deux formules légèrement différentes désynchronisaient les boutons
+// cliquables du rendu visuel). Retour d'Axel (v2) : répartition "comme une
+// galaxie", pas un cercle mécanique — angle ET rayon reçoivent chacun un
+// petit écart déterministe.
+function calculerPosition(i: number, total: number) {
+  const angleBase = (2 * Math.PI * i) / Math.max(total, 1) - Math.PI / 2;
+  const angle = angleBase + (pseudoAlea(i + 30) - 0.5) * 0.5;
+  const rayonCercle = 26 + pseudoAlea(i + 1) * 20;
+  return {
+    xPct: 50 + rayonCercle * Math.cos(angle),
+    yPct: 42 + rayonCercle * Math.sin(angle) * 0.78,
+  };
+}
+
 // Retour d'Axel (v1) : une seule planète à 1 avis faisait déjà 60px de
 // diamètre. Courbe de saturation : petite au premier avis, grossit
 // nettement autour de 5, continue plus doucement au-delà.
@@ -104,19 +121,25 @@ function rayonPlanete(nombreAvis: number) {
   return Math.min(16 + 50 * (1 - Math.exp(-nombreAvis / 6)), 68);
 }
 
-// Teinte de la planète : sable clair → terracotta profond selon
-// l'importance moyenne perçue, jamais une couleur hors palette (orange
-// Compyo = seul accent, comme demandé).
-function teinteUrgence(importance: number) {
+// Retour d'Axel (v2) : les planètes étaient "beaucoup trop orange" — cette
+// couleur ne doit plus servir qu'à un fin liseré, un halo léger, quelques
+// particules et la sélection. Le corps de chaque planète reste un verre
+// fumé neutre (gris/brun très discret) ; seule l'INTENSITÉ (pas la teinte)
+// varie légèrement avec l'importance moyenne.
+function teinteNeutre(importance: number) {
   const t = Math.max(0, Math.min(1, importance / 10));
-  const debut = { r: 214, g: 178, b: 158 };
-  const fin = { r: 201, g: 107, b: 74 }; // --c-signal
+  const debut = { r: 54, g: 49, b: 46 };
+  const fin = { r: 76, g: 67, b: 61 };
   return {
     r: Math.round(debut.r + (fin.r - debut.r) * t),
     g: Math.round(debut.g + (fin.g - debut.g) * t),
     b: Math.round(debut.b + (fin.b - debut.b) * t),
   };
 }
+
+// Seul et unique orange de toute la scène — jamais une teinte qui varie,
+// juste une opacité qui varie (bordure, halo, particules, sélection).
+const ACCENT_ORANGE = { r: 201, g: 107, b: 74 };
 
 type EtatPlanete = {
   slug: string;
@@ -141,11 +164,18 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
   const [erreur, setErreur] = useState<string | null>(null);
 
   const champRef = useRef<HTMLDivElement>(null);
+  const sceneRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const survolRef = useRef<string | null>(null);
   const selectionRef = useRef<string | null>(null);
   const etatsRef = useRef<Map<string, EtatPlanete>>(new Map());
   const nombreAvisPrecedent = useRef<Map<string, number>>(new Map());
+  // Caméra (zoom molette, glisser-déplacer, recentrage) — en refs plutôt
+  // qu'en state React : appliquée directement en CSS sur sceneRef à chaque
+  // mouvement, jamais via un re-render (fluidité, voir "60fps" demandé).
+  const cameraRef = useRef({ x: 0, y: 0, echelle: 1 });
+  const glisseRef = useRef({ enCours: false, depX: 0, depY: 0, deplacementTotal: 0 });
+  const declencherRecentrageRef = useRef<() => void>(() => {});
 
   survolRef.current = survolSlug;
   selectionRef.current = selectionSlug;
@@ -230,16 +260,7 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
   // frame (avec la dérive) via la boucle d'animation.
   const dispositionsBase = useMemo(() => {
     const total = planetes.length;
-    return new Map(
-      planetes.map((p, i) => {
-        const angle = (2 * Math.PI * i) / Math.max(total, 1) - Math.PI / 2;
-        const rayonCercle = 30 + pseudoAlea(i + 1) * 12;
-        return [
-          p.slug,
-          { xPct: 50 + rayonCercle * Math.cos(angle), yPct: 42 + rayonCercle * Math.sin(angle) * 0.78 },
-        ] as const;
-      })
-    );
+    return new Map(planetes.map((p, i) => [p.slug, calculerPosition(i, total)] as const));
   }, [planetes]);
 
   // Dispositions déterministes (angle, rayon du cercle, phases d'animation)
@@ -252,23 +273,21 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
 
     planetes.forEach((p, i) => {
       const existant = etatsRef.current.get(p.slug);
-      const angle = (2 * Math.PI * i) / Math.max(total, 1) - Math.PI / 2;
-      const rayonCercle = 30 + pseudoAlea(i + 1) * 12;
+      // Même formule que dispositionsBase (calculerPosition) — voir sa
+      // documentation : centrée sur (50%, 42%), comme le cœur COMPYO
+      // dessiné sur le canvas et le libellé HTML superposé.
+      const { xPct, yPct } = calculerPosition(i, total);
 
       nouveauxEtats.set(p.slug, {
         slug: p.slug,
-        xPct: 50 + rayonCercle * Math.cos(angle),
-        // Centré sur (50%, 42%) — même point que le cœur COMPYO dessiné sur
-        // le canvas (centreY = hauteur * 0.42) et le libellé HTML superposé
-        // juste en dessous, pour que les planètes orbitent vraiment autour
-        // du cœur plutôt qu'autour du centre géométrique du cadre.
-        yPct: 42 + rayonCercle * Math.sin(angle) * 0.78,
+        xPct,
+        yPct,
         rayon: existant?.rayon ?? rayonPlanete(p.nombreAvis),
         phaseDerive: existant?.phaseDerive ?? pseudoAlea(i + 11) * Math.PI * 2,
         vitesseDerive: existant?.vitesseDerive ?? 0.15 + pseudoAlea(i + 12) * 0.15,
         phaseRespire: existant?.phaseRespire ?? pseudoAlea(i + 13) * Math.PI * 2,
         vitesseRespire: existant?.vitesseRespire ?? 0.3 + pseudoAlea(i + 14) * 0.25,
-        couleur: teinteUrgence(p.importanceMoyenne),
+        couleur: teinteNeutre(p.importanceMoyenne),
         courbePhase: existant?.courbePhase ?? pseudoAlea(i + 15) * Math.PI * 2,
         particules: existant?.particules ?? [pseudoAlea(i + 16), pseudoAlea(i + 17)],
       });
@@ -391,69 +410,76 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
         const ctrlX = milieuX + perpX * ondulation;
         const ctrlY = milieuY + perpY * ondulation;
 
+        // Retour d'Axel (v2) : "connexions neuronales", très fines, jamais
+        // l'orange en couleur dominante — un trait presque blanc/gris,
+        // juste une pointe d'accent tout au bout, côté planète.
         ctx.beginPath();
         ctx.moveTo(centreX, centreY);
         ctx.quadraticCurveTo(ctrlX, ctrlY, px, py);
         const degrade = ctx.createLinearGradient(centreX, centreY, px, py);
-        const alphaBase = estAccentuee ? (survol === etat.slug ? 0.55 : 0.16) : 0.04;
-        degrade.addColorStop(0, `rgba(255, 255, 255, ${alphaBase * 0.4})`);
-        degrade.addColorStop(1, `rgba(${etat.couleur.r}, ${etat.couleur.g}, ${etat.couleur.b}, ${alphaBase})`);
+        const alphaBase = estAccentuee ? (survol === etat.slug ? 0.5 : 0.14) : 0.035;
+        degrade.addColorStop(0, `rgba(255, 255, 255, ${alphaBase * 0.5})`);
+        degrade.addColorStop(0.7, `rgba(210, 200, 194, ${alphaBase * 0.8})`);
+        degrade.addColorStop(1, `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, ${alphaBase})`);
         ctx.strokeStyle = degrade;
-        ctx.lineWidth = survol === etat.slug ? 1.6 : 0.9;
+        ctx.lineWidth = survol === etat.slug ? 1.3 : 0.7;
         ctx.stroke();
 
-        // Particules de flux : petits points lumineux qui parcourent la
-        // courbe lentement, boucle infinie — "on a l'impression que des
-        // informations circulent dans un cerveau".
+        // Particules de flux : très peu, très discrètes — "on a
+        // l'impression que des informations circulent dans un cerveau",
+        // pas un feu d'artifice.
         if (!reduitMouvement) {
           for (let i = 0; i < etat.particules.length; i++) {
-            etat.particules[i] += dt * 0.09;
+            etat.particules[i] += dt * 0.07;
             if (etat.particules[i] > 1) etat.particules[i] -= 1;
             const p = etat.particules[i];
             const inv = 1 - p;
             const bx = inv * inv * centreX + 2 * inv * p * ctrlX + p * p * px;
             const by = inv * inv * centreY + 2 * inv * p * ctrlY + p * p * py;
-            const alphaParticule = (estAccentuee ? 0.85 : 0.2) * Math.sin(p * Math.PI);
+            const alphaParticule = (estAccentuee ? 0.55 : 0.12) * Math.sin(p * Math.PI);
             ctx.beginPath();
-            ctx.arc(bx, by, 1.6, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(232, 164, 135, ${Math.max(alphaParticule, 0)})`;
-            ctx.shadowColor = "rgba(232, 164, 135, 0.9)";
-            ctx.shadowBlur = 6;
+            ctx.arc(bx, by, 1.2, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, ${Math.max(alphaParticule, 0)})`;
+            ctx.shadowColor = `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, 0.7)`;
+            ctx.shadowBlur = 4;
             ctx.fill();
             ctx.shadowBlur = 0;
           }
         }
       });
 
-      // --- Cœur COMPYO : lumière douce qui respire très lentement ---
-      const respirationCoeur = reduitMouvement ? 1 : 1 + Math.sin(t * 0.35) * 0.06;
-      const rayonGlow = 70 * respirationCoeur;
+      // --- Cœur COMPYO : une vraie sphère de verre, pas une boule orange.
+      // Respiration très lente, halo chaud à peine perceptible. ---
+      const respirationCoeur = reduitMouvement ? 1 : 1 + Math.sin(t * 0.28) * 0.045;
+      const rayonGlow = 66 * respirationCoeur;
       const glow = ctx.createRadialGradient(centreX, centreY, 0, centreX, centreY, rayonGlow);
-      glow.addColorStop(0, "rgba(232, 164, 135, 0.22)");
-      glow.addColorStop(0.5, "rgba(201, 107, 74, 0.08)");
-      glow.addColorStop(1, "rgba(201, 107, 74, 0)");
+      glow.addColorStop(0, "rgba(255, 244, 236, 0.07)");
+      glow.addColorStop(0.55, `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, 0.035)`);
+      glow.addColorStop(1, `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, 0)`);
       ctx.beginPath();
       ctx.arc(centreX, centreY, rayonGlow, 0, Math.PI * 2);
       ctx.fillStyle = glow;
       ctx.fill();
 
-      const rayonCoeur = 40 * respirationCoeur;
+      const rayonCoeur = 38 * respirationCoeur;
       const coeurDegrade = ctx.createRadialGradient(
-        centreX - rayonCoeur * 0.3,
-        centreY - rayonCoeur * 0.3,
+        centreX - rayonCoeur * 0.35,
+        centreY - rayonCoeur * 0.35,
         0,
         centreX,
         centreY,
         rayonCoeur
       );
-      coeurDegrade.addColorStop(0, "rgba(255, 255, 255, 0.1)");
-      coeurDegrade.addColorStop(1, "rgba(255, 255, 255, 0.03)");
+      coeurDegrade.addColorStop(0, "rgba(255, 255, 255, 0.13)");
+      coeurDegrade.addColorStop(0.7, "rgba(255, 255, 255, 0.045)");
+      coeurDegrade.addColorStop(1, "rgba(255, 255, 255, 0.02)");
       ctx.beginPath();
       ctx.arc(centreX, centreY, rayonCoeur, 0, Math.PI * 2);
       ctx.fillStyle = coeurDegrade;
-      ctx.strokeStyle = "rgba(255,255,255,0.12)";
-      ctx.lineWidth = 1;
       ctx.fill();
+      // Fin liseré, la seule touche d'accent visible sur le cœur.
+      ctx.strokeStyle = `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, 0.18)`;
+      ctx.lineWidth = 1;
       ctx.stroke();
 
       // --- Planètes ---
@@ -471,27 +497,36 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
         const cibleHover = estSurvolee ? 1.05 : 1;
         const r = (etat.rayon || 20) * respiration * cibleHover;
 
-        ctx.save();
-        ctx.shadowColor = `rgba(${etat.couleur.r}, ${etat.couleur.g}, ${etat.couleur.b}, ${estSurvolee ? 0.55 : 0.28})`;
-        ctx.shadowBlur = estSurvolee ? 26 : 14;
+        const estSelectionnee = selection === etat.slug;
+        // "Beaucoup trop orange" (retour d'Axel v2) : le halo reste
+        // discret par défaut, ne se réchauffe qu'au survol/à la sélection —
+        // jamais une boule orange en continu.
+        const intensiteAccent = estSelectionnee ? 0.6 : estSurvolee ? 0.4 : 0.14;
 
-        const degradePlanete = ctx.createRadialGradient(
-          px - r * 0.35,
-          py - r * 0.35,
-          r * 0.1,
-          px,
-          py,
-          r
-        );
+        ctx.save();
+        ctx.shadowColor = `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, ${intensiteAccent * 0.5})`;
+        ctx.shadowBlur = estSurvolee || estSelectionnee ? 22 : 10;
+
+        // Verre fumé : dégradé neutre (gris/brun) très translucide, un
+        // reflet clair en haut à gauche pour la profondeur — le fond sombre
+        // de la scène transparaît légèrement à travers, comme du verre.
+        const degradePlanete = ctx.createRadialGradient(px - r * 0.35, py - r * 0.35, r * 0.08, px, py, r);
         const { r: cr, g: cg, b: cb } = etat.couleur;
-        degradePlanete.addColorStop(0, `rgba(${Math.min(cr + 45, 255)}, ${Math.min(cg + 40, 255)}, ${Math.min(cb + 35, 255)}, ${estAttenuee ? 0.35 : 1})`);
-        degradePlanete.addColorStop(0.6, `rgba(${cr}, ${cg}, ${cb}, ${estAttenuee ? 0.3 : 0.92})`);
-        degradePlanete.addColorStop(1, `rgba(${Math.max(cr - 40, 0)}, ${Math.max(cg - 30, 0)}, ${Math.max(cb - 20, 0)}, ${estAttenuee ? 0.28 : 0.88})`);
+        const opaciteBase = estAttenuee ? 0.4 : 1;
+        degradePlanete.addColorStop(0, `rgba(${Math.min(cr + 70, 255)}, ${Math.min(cg + 65, 255)}, ${Math.min(cb + 60, 255)}, ${0.5 * opaciteBase})`);
+        degradePlanete.addColorStop(0.55, `rgba(${cr}, ${cg}, ${cb}, ${0.62 * opaciteBase})`);
+        degradePlanete.addColorStop(1, `rgba(${Math.max(cr - 18, 0)}, ${Math.max(cg - 16, 0)}, ${Math.max(cb - 14, 0)}, ${0.55 * opaciteBase})`);
 
         ctx.beginPath();
         ctx.arc(px, py, r, 0, Math.PI * 2);
         ctx.fillStyle = degradePlanete;
         ctx.fill();
+
+        // Fin liseré orange — le seul endroit où la couleur de marque
+        // s'affirme un peu, et seulement selon l'importance/le survol.
+        ctx.strokeStyle = `rgba(${ACCENT_ORANGE.r}, ${ACCENT_ORANGE.g}, ${ACCENT_ORANGE.b}, ${Math.min(0.15 + intensiteAccent * 0.55, 0.85)})`;
+        ctx.lineWidth = estSelectionnee ? 1.6 : 1;
+        ctx.stroke();
         ctx.restore();
       });
 
@@ -509,6 +544,122 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Caméra : zoomer à la molette (vers le curseur), glisser-déplacer,
+  // double-clic sur le vide pour recentrer en douceur. Toujours appliquée
+  // directement en style CSS sur sceneRef (jamais via un state React) pour
+  // rester fluide — un simple transform: translate()+scale() sur un
+  // conteneur qui enveloppe le canvas ET les libellés HTML, donc les deux
+  // bougent parfaitement ensemble sans recalcul de coordonnées.
+  useEffect(() => {
+    const champ = champRef.current;
+    const scene = sceneRef.current;
+    if (!champ || !scene) return;
+
+    const ECHELLE_MIN = 0.6;
+    const ECHELLE_MAX = 2.6;
+
+    function appliquer() {
+      if (!scene) return;
+      const { x, y, echelle } = cameraRef.current;
+      scene.style.transform = `translate(${x}px, ${y}px) scale(${echelle})`;
+    }
+
+    function surMolette(e: WheelEvent) {
+      if (!champ) return;
+      e.preventDefault();
+      const rect = champ.getBoundingClientRect();
+      const sourisX = e.clientX - rect.left;
+      const sourisY = e.clientY - rect.top;
+      const { x, y, echelle } = cameraRef.current;
+
+      const facteur = Math.exp(-e.deltaY * 0.0012);
+      const nouvelleEchelle = Math.min(Math.max(echelle * facteur, ECHELLE_MIN), ECHELLE_MAX);
+
+      // Le point sous le curseur reste sous le curseur après le zoom —
+      // sinon zoomer donne l'impression que la carte "fuit" la souris.
+      const mondeX = (sourisX - x) / echelle;
+      const mondeY = (sourisY - y) / echelle;
+      cameraRef.current = {
+        x: sourisX - mondeX * nouvelleEchelle,
+        y: sourisY - mondeY * nouvelleEchelle,
+        echelle: nouvelleEchelle,
+      };
+      appliquer();
+    }
+
+    function surPointerDown(e: PointerEvent) {
+      glisseRef.current = {
+        enCours: true,
+        depX: e.clientX - cameraRef.current.x,
+        depY: e.clientY - cameraRef.current.y,
+        deplacementTotal: 0,
+      };
+    }
+
+    function surPointerMove(e: PointerEvent) {
+      if (!glisseRef.current.enCours) return;
+      const dx = e.clientX - cameraRef.current.x - glisseRef.current.depX;
+      const dy = e.clientY - cameraRef.current.y - glisseRef.current.depY;
+      glisseRef.current.deplacementTotal += Math.abs(dx) + Math.abs(dy);
+      cameraRef.current = {
+        ...cameraRef.current,
+        x: e.clientX - glisseRef.current.depX,
+        y: e.clientY - glisseRef.current.depY,
+      };
+      appliquer();
+    }
+
+    function surPointerUp() {
+      glisseRef.current.enCours = false;
+    }
+
+    // Recentrage doux (double-clic sur le fond, ou bouton flottant) —
+    // interpolation manuelle sur quelques centaines de ms, jamais un saut
+    // brutal ("animation douce, jamais brutale" demandé explicitement).
+    function recentrer() {
+      const depart = { ...cameraRef.current };
+      const arrivee = { x: 0, y: 0, echelle: 1 };
+      const duree = 420;
+      const debut = performance.now();
+
+      function etape(maintenant: number) {
+        const t = Math.min((maintenant - debut) / duree, 1);
+        const facilite = 1 - Math.pow(1 - t, 3); // ease-out cubique
+        cameraRef.current = {
+          x: depart.x + (arrivee.x - depart.x) * facilite,
+          y: depart.y + (arrivee.y - depart.y) * facilite,
+          echelle: depart.echelle + (arrivee.echelle - depart.echelle) * facilite,
+        };
+        appliquer();
+        if (t < 1) requestAnimationFrame(etape);
+      }
+      requestAnimationFrame(etape);
+    }
+    declencherRecentrageRef.current = recentrer;
+
+    function surDoubleClic(e: MouseEvent) {
+      // Uniquement sur le fond (canvas/scène), jamais si on double-clique
+      // une planète — évite d'entrer en conflit avec la sélection.
+      if (e.target === champ || e.target === scene || e.target === canvasRef.current) {
+        recentrer();
+      }
+    }
+
+    champ.addEventListener("wheel", surMolette, { passive: false });
+    champ.addEventListener("pointerdown", surPointerDown);
+    window.addEventListener("pointermove", surPointerMove);
+    window.addEventListener("pointerup", surPointerUp);
+    champ.addEventListener("dblclick", surDoubleClic);
+
+    return () => {
+      champ.removeEventListener("wheel", surMolette);
+      champ.removeEventListener("pointerdown", surPointerDown);
+      window.removeEventListener("pointermove", surPointerMove);
+      window.removeEventListener("pointerup", surPointerUp);
+      champ.removeEventListener("dblclick", surDoubleClic);
+    };
+  }, []);
+
   // Repositionne le rayon "cible" de chaque planète quand les données
   // changent (nouvelle donnée = bulle qui grossit), sans recréer tout
   // l'état d'animation (dérive/respiration continuent sans à-coup).
@@ -517,94 +668,116 @@ export function CarteMentale({ estAdmin }: { estAdmin: boolean }) {
       const etat = etatsRef.current.get(p.slug);
       if (etat) {
         etat.rayon = rayonPlanete(p.nombreAvis);
-        etat.couleur = teinteUrgence(p.importanceMoyenne);
+        etat.couleur = teinteNeutre(p.importanceMoyenne);
       }
     }
   }, [planetes]);
 
   const planeteSelectionnee = planetes.find((p) => p.slug === selectionSlug) ?? null;
-  const planeteSurvolee = planetes.find((p) => p.slug === survolSlug) ?? null;
 
   return (
     <div className="relative">
       <div
         ref={champRef}
-        className="relative w-full aspect-[4/3] sm:aspect-[16/10] rounded-3xl overflow-hidden bg-[radial-gradient(ellipse_at_50%_42%,_#241a15_0%,_#100b09_75%)] border border-white/5"
+        className="relative w-full h-[70vh] sm:h-[78vh] max-h-[820px] rounded-2xl overflow-hidden bg-[radial-gradient(ellipse_at_50%_42%,_#1c1512_0%,_#0c0908_75%)] cursor-grab active:cursor-grabbing touch-none"
+        style={{ touchAction: "none" }}
       >
-        <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" aria-hidden="true" />
+        {/* Tout ce qui doit zoomer/se déplacer ensemble (canvas + libellés)
+            vit ici — un seul transform CSS (voir l'effect caméra) pilote
+            l'ensemble, jamais de recalcul de coordonnées séparé. */}
+        <div ref={sceneRef} className="absolute inset-0" style={{ transformOrigin: "0 0" }}>
+          <canvas ref={canvasRef} className="absolute inset-0 w-full h-full pointer-events-none" aria-hidden="true" />
 
-        <div className="absolute inset-0" style={{ top: "42%", left: "50%", transform: "translate(-50%, -50%)" }}>
-          <span className="font-display text-[13px] font-semibold tracking-[0.15em] text-white/90 whitespace-nowrap">
-            COMPYO
-          </span>
+          <div
+            className="absolute pointer-events-none"
+            style={{ top: "42%", left: "50%", transform: "translate(-50%, -50%)" }}
+          >
+            <span className="font-display text-[12px] font-medium tracking-[0.2em] text-white/70 whitespace-nowrap">
+              COMPYO
+            </span>
+          </div>
+
+          {/* Chaque planète : bouton invisible (accessibilité/clic) qui
+              porte directement son libellé — plus besoin de survoler pour
+              savoir ce qu'on regarde. Positionné sur la position DE BASE
+              (la dérive du canvas est volontairement trop légère pour
+              justifier un suivi en direct). */}
+          {planetes.map((p) => {
+            const position = dispositionsBase.get(p.slug);
+            const xPct = position?.xPct ?? 50;
+            const yPct = position?.yPct ?? 50;
+            const rayon = rayonPlanete(p.nombreAvis);
+            const estSelectionnee = selectionSlug === p.slug;
+            return (
+              <button
+                key={p.slug}
+                type="button"
+                onClick={() => {
+                  // Un clic qui termine un glisser-déplacer ne doit pas
+                  // rouvrir/fermer le panneau par accident.
+                  if (glisseRef.current.deplacementTotal > 6) return;
+                  setSelectionSlug(p.slug);
+                }}
+                onMouseEnter={() => setSurvolSlug(p.slug)}
+                onMouseLeave={() => setSurvolSlug(null)}
+                onFocus={() => setSurvolSlug(p.slug)}
+                onBlur={() => setSurvolSlug(null)}
+                aria-label={`${p.label} — ${p.nombreAvis} retours, importance ${p.importanceMoyenne} sur 10`}
+                className="absolute flex flex-col items-center justify-center gap-0.5 rounded-full text-center focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/40"
+                style={{
+                  left: `${xPct}%`,
+                  top: `${yPct}%`,
+                  width: Math.max(rayon * 2.3, 88),
+                  height: Math.max(rayon * 2.3, 88),
+                  transform: "translate(-50%, -50%)",
+                }}
+              >
+                <span
+                  className={`text-[11px] font-medium whitespace-nowrap drop-shadow-[0_1px_3px_rgba(0,0,0,0.6)] transition-colors ${
+                    estSelectionnee ? "text-white" : "text-white/85"
+                  }`}
+                >
+                  <span aria-hidden="true">{p.icone}</span> {p.label}
+                </span>
+                <span className="text-[10px] font-mono text-white/45">
+                  {p.nombreAvis} retour{p.nombreAvis > 1 ? "s" : ""}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
         {erreur && (
-          <p className="absolute inset-0 grid place-items-center text-sm text-white/50 px-6 text-center">{erreur}</p>
+          <p className="absolute inset-0 grid place-items-center text-sm text-white/50 px-6 text-center pointer-events-none">
+            {erreur}
+          </p>
         )}
 
         {problemes !== null && planetes.length === 0 && !erreur && (
-          <p className="absolute inset-0 grid place-items-center text-sm text-white/50 px-6 text-center">
+          <p className="absolute inset-0 grid place-items-center text-sm text-white/50 px-6 text-center pointer-events-none">
             Aucun retour pour l&apos;instant — soyez le premier à en laisser un depuis l&apos;app.
           </p>
         )}
 
         {problemes === null && !erreur && (
-          <p className="absolute inset-0 grid place-items-center text-sm text-white/40">Chargement…</p>
+          <p className="absolute inset-0 grid place-items-center text-sm text-white/40 pointer-events-none">
+            Chargement…
+          </p>
         )}
 
-        {/* Boutons invisibles superposés — accessibilité + clic, positionnés
-            sur la position DE BASE de chaque planète (la dérive visuelle
-            est trop légère pour justifier un suivi en direct). */}
-        {planetes.map((p) => {
-          const position = dispositionsBase.get(p.slug);
-          const xPct = position?.xPct ?? 50;
-          const yPct = position?.yPct ?? 50;
-          const rayon = rayonPlanete(p.nombreAvis);
-          return (
-            <button
-              key={p.slug}
-              type="button"
-              onClick={() => setSelectionSlug(p.slug)}
-              onMouseEnter={() => setSurvolSlug(p.slug)}
-              onMouseLeave={() => setSurvolSlug(null)}
-              onFocus={() => setSurvolSlug(p.slug)}
-              onBlur={() => setSurvolSlug(null)}
-              aria-label={`${p.label} — ${p.nombreAvis} retours, importance ${p.importanceMoyenne} sur 10`}
-              className="absolute rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
-              style={{
-                left: `${xPct}%`,
-                top: `${yPct}%`,
-                width: rayon * 2.4,
-                height: rayon * 2.4,
-                transform: "translate(-50%, -50%)",
-              }}
-            />
-          );
-        })}
-
-        {planeteSurvolee && !selectionSlug && (
-          <div
-            className="absolute z-10 w-max max-w-[220px] rounded-xl bg-anthracite/95 border border-white/10 px-3 py-2 text-center pointer-events-none transition-opacity duration-200"
-            style={{
-              left: `${dispositionsBase.get(planeteSurvolee.slug)?.xPct ?? 50}%`,
-              top: `${dispositionsBase.get(planeteSurvolee.slug)?.yPct ?? 50}%`,
-              transform: `translate(-50%, calc(-100% - ${rayonPlanete(planeteSurvolee.nombreAvis) + 12}px))`,
-            }}
-          >
-            <p className="text-xs font-semibold text-white">
-              <span aria-hidden="true">{planeteSurvolee.icone}</span> {planeteSurvolee.label}
-            </p>
-            <p className="mt-0.5 text-[11px] text-white/50">
-              {planeteSurvolee.nombreAvis} retour{planeteSurvolee.nombreAvis > 1 ? "s" : ""} ·{" "}
-              {planeteSurvolee.importanceMoyenne}/10
-            </p>
-          </div>
-        )}
+        {/* Interface qui s'efface : un seul bouton flottant, discret,
+            plutôt qu'un cadre ou une barre d'outils. */}
+        <button
+          type="button"
+          onClick={() => declencherRecentrageRef.current()}
+          className="absolute bottom-4 right-4 z-10 rounded-full bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 backdrop-blur-sm text-white/60 hover:text-white/90 text-[11px] px-3 py-1.5 transition-colors"
+        >
+          Recentrer
+        </button>
       </div>
 
       <p className="mt-3 text-center text-xs text-white/40 sm:hidden">
-        Taille = activité · Couleur = importance moyenne
+        Molette pour zoomer · glisser pour déplacer · double-clic pour recentrer
       </p>
 
       {planeteSelectionnee && (

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
+import { appelerClaude, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
@@ -306,10 +306,12 @@ export async function POST(request: NextRequest) {
   let probleteIdFinal: string;
   let texteNettoye = texteBrut!;
 
+  const debutAppel = Date.now();
   try {
     const reponseTexte = await appelerClaude(
       SYSTEM_PROMPT_RAPPROCHEMENT,
-      `Type de retour : ${type}\nCatégorie choisie par l'artisan : ${categorie.label}${sousCategorie ? ` > ${sousCategorie.label}` : ""}\n\nThèmes déjà connus :\n${listeExistants}\n\nNouveau témoignage d'un artisan :\n"${texteBrut}"`
+      `Type de retour : ${type}\nCatégorie choisie par l'artisan : ${categorie.label}${sousCategorie ? ` > ${sousCategorie.label}` : ""}\n\nThèmes déjà connus :\n${listeExistants}\n\nNouveau témoignage d'un artisan :\n"${texteBrut}"`,
+      request.signal
     );
     const decision = parserReponseJSON<{
       correspond_a_id: string | null;
@@ -358,18 +360,25 @@ export async function POST(request: NextRequest) {
       probleteIdFinal = (probleme as { id: string }).id;
     }
   } catch (err) {
+    const dureeMs = Date.now() - debutAppel;
+    if (err instanceof ErreurIA && err.code === "annule") {
+      return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+    }
     console.error(err);
+    const { message, statut } = reponseErreurIA(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
       organisationId,
       type: "erreur_ia",
       contexte: "retour_produit",
-      details: { etape: "rapprochement", erreur: String(err) },
+      details: {
+        etape: "rapprochement",
+        erreur: String(err),
+        code: err instanceof ErreurIA ? err.code : undefined,
+        duree_ms: dureeMs,
+      },
     });
-    return NextResponse.json(
-      { error: "Impossible d'analyser votre retour pour l'instant. Réessayez." },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: message }, { status: statut });
   }
 
   const { error: erreurUpsert } = await admin.from("retours_produits").upsert(

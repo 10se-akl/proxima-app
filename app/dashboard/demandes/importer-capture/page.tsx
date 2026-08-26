@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
@@ -84,11 +84,23 @@ export default function ImporterCapturePage() {
     null
   );
 
+  // Cycle "Release Candidate" 1 (26/08) — même logique d'annulation propre
+  // que sur la fiche projet (voir demandes/[id]/page.tsx) : si l'artisan
+  // quitte cette page pendant l'analyse IA (potentiellement longue avec
+  // plusieurs captures), on annule le fetch au démontage.
+  const controleurIARef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => controleurIARef.current?.abort();
+  }, []);
+
   async function analyserFichiers(fichiers: FileList | null) {
     if (!fichiers || fichiers.length === 0) return;
     setErreurGlobale(null);
     setImportTermine(null);
     setAnalyseEnCours(true);
+
+    const controleur = new AbortController();
+    controleurIARef.current = controleur;
 
     try {
       const images = await Promise.all(Array.from(fichiers).map(compresserImage));
@@ -97,6 +109,7 @@ export default function ImporterCapturePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ images }),
+        signal: controleur.signal,
       });
 
       if (!res.ok) {
@@ -127,10 +140,14 @@ export default function ImporterCapturePage() {
       );
       setLignes(nouvellesLignes);
     } catch (err) {
-      console.error(err);
-      setErreurGlobale(
-        "Une des images n'a pas pu être traitée (fichier corrompu ou format non supporté). Réessayez sans elle."
-      );
+      // AbortError = la page a été quittée pendant l'analyse (cleanup
+      // ci-dessus) : pas d'erreur à afficher, personne ne la lira.
+      if ((err as Error).name !== "AbortError") {
+        console.error(err);
+        setErreurGlobale(
+          "Une des images n'a pas pu être traitée (fichier corrompu ou format non supporté). Réessayez sans elle."
+        );
+      }
     } finally {
       setAnalyseEnCours(false);
       if (inputRef.current) inputRef.current.value = "";

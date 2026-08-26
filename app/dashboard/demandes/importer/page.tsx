@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
@@ -29,16 +29,36 @@ export default function ImporterMessagePage() {
   } | null>(null);
   const [traitementRdv, setTraitementRdv] = useState(false);
 
+  // Cycle "Release Candidate" 1 (26/08) — annulation propre : si l'artisan
+  // quitte cette page pendant que l'IA analyse son message, on annule le
+  // fetch au démontage plutôt que de le laisser tourner pour rien.
+  const controleurIARef = useRef<AbortController | null>(null);
+  useEffect(() => {
+    return () => controleurIARef.current?.abort();
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErreur(null);
     setChargement(true);
 
-    const res = await fetch("/api/ai/importer-message", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messageBrut: message }),
-    });
+    const controleur = new AbortController();
+    controleurIARef.current = controleur;
+    let res: Response;
+    try {
+      res = await fetch("/api/ai/importer-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messageBrut: message }),
+        signal: controleur.signal,
+      });
+    } catch (err) {
+      setChargement(false);
+      if ((err as Error).name !== "AbortError") {
+        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+      }
+      return;
+    }
 
     setChargement(false);
 

@@ -1,101 +1,242 @@
 // Appelle l'API Claude. À importer UNIQUEMENT depuis app/api/* (Route Handlers),
 // jamais depuis un composant "use client" — la clé API ne doit jamais
 // atteindre le navigateur.
-export async function appelerClaude(systemPrompt: string, userMessage: string) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY!,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+//
+// ============================================================
+// Cycle "Release Candidate" 1 (26/08) : robustesse IA avant l'activation de
+// la clé API payante. Avant cette réécriture, un simple ralentissement ou
+// incident ponctuel côté Anthropic (429/5xx, latence anormale, coupure
+// réseau) remontait tel quel jusqu'à la route Next.js, qui pouvait rester
+// bloquée jusqu'au timeout de la plateforme d'hébergement (page blanche/504
+// brute) au lieu du message soigné déjà prévu par chaque route. Ce fichier
+// centralise maintenant : un timeout par appel, un retry automatique sur les
+// erreurs transitoires, une classification des erreurs (ErreurIA.code) que
+// chaque route peut traduire en message français adapté, et le support d'un
+// AbortSignal externe pour annuler proprement l'appel si l'utilisateur
+// quitte la page pendant que Next.js attend encore Claude.
+// ============================================================
+
+const URL_ANTHROPIC = "https://api.anthropic.com/v1/messages";
+const MODELE = "claude-sonnet-4-6";
+const DELAI_MAX_MS = 25_000;
+const TENTATIVES_MAX = 3; // 1 essai + 2 retries
+const DELAIS_ATTENTE_MS = [500, 1500];
+// 429 = quota/rate limit, 500/502/503/529 = indisponibilité ponctuelle
+// Anthropic — tous transitoires, ça vaut le coup de retenter. 401/403 (clé
+// invalide) et 400 (requête malformée, ex : prompt trop long) ne le sont
+// jamais : retenter donnerait exactement la même erreur.
+const STATUTS_RETRYABLES = new Set([429, 500, 502, 503, 529]);
+
+export type CodeErreurIA =
+  | "config_invalide" // clé API absente/invalide (401/403) — ne se résout jamais en réessayant
+  | "quota_depasse" // 429, limite Anthropic atteinte
+  | "indisponible" // 5xx ou erreur réseau, transitoire
+  | "timeout" // Claude n'a pas répondu dans le délai imparti
+  | "annule" // l'appelant (ou l'utilisateur, via navigation) a annulé la requête
+  | "reponse_invalide"; // Claude a répondu, mais le JSON attendu est illisible
+
+export class ErreurIA extends Error {
+  code: CodeErreurIA;
+  constructor(message: string, code: CodeErreurIA) {
+    super(message);
+    this.name = "ErreurIA";
+    this.code = code;
+  }
+}
+
+// Message + statut HTTP prêts à renvoyer au client pour n'importe quelle
+// erreur d'appel IA — évite de dupliquer ce mapping dans chaque route.
+// Les erreurs qui NE SONT PAS des ErreurIA (ex : JSON de réponse mal
+// formé après un parserReponseJSON raté, erreur de validation métier)
+// gardent leur propre message spécifique à chaque route, plus précis.
+export function reponseErreurIA(erreur: unknown): { message: string; statut: number } {
+  if (erreur instanceof ErreurIA) {
+    switch (erreur.code) {
+      case "quota_depasse":
+        return { message: "Le service IA est momentanément très sollicité. Réessayez dans quelques minutes.", statut: 429 };
+      case "timeout":
+        return { message: "Le service IA met trop de temps à répondre. Réessayez.", statut: 504 };
+      case "indisponible":
+        return { message: "Le service IA est temporairement indisponible. Réessayez dans un instant.", statut: 503 };
+      case "config_invalide":
+        return { message: "Le service IA est mal configuré côté serveur. Contactez le support.", statut: 500 };
+      case "annule":
+        return { message: "Requête annulée.", statut: 499 };
+      case "reponse_invalide":
+        return { message: "La réponse de l'IA n'a pas pu être interprétée. Réessayez.", statut: 502 };
+    }
+  }
+  return { message: "Une erreur inattendue est survenue. Réessayez.", statut: 500 };
+}
+
+function attendre(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function texteDepuisReponse(data: { content?: { type: string; text?: string }[] }) {
+  const bloc = data.content?.find((b) => b.type === "text");
+  return bloc?.text ?? "";
+}
+
+// Cœur commun à appelerClaude/appelerClaudeAvecImage(s) : construit le corps
+// de la requête, gère timeout + retry + classification d'erreur. `signal`
+// est optionnel — dans les routes Next.js, on y passe `request.signal` pour
+// que l'annulation navigateur (l'artisan quitte la page) remonte jusqu'ici
+// et coupe l'appel Anthropic en cours, plutôt que de le laisser tourner
+// (et être payé) pour un résultat que personne ne lira jamais.
+async function appelerAnthropic(
+  body: Record<string, unknown>,
+  signalExterne?: AbortSignal
+): Promise<string> {
+  if (!process.env.ANTHROPIC_API_KEY) {
+    // Ne devrait jamais se produire en production correctement configurée,
+    // mais évite un fetch voué à l'échec (401 brut d'Anthropic) si la
+    // variable d'environnement a été oubliée sur Vercel — message clair
+    // dans les logs plutôt qu'une erreur réseau énigmatique.
+    throw new ErreurIA("ANTHROPIC_API_KEY absente côté serveur.", "config_invalide");
+  }
+
+  let derniereErreur: ErreurIA | null = null;
+
+  for (let tentative = 1; tentative <= TENTATIVES_MAX; tentative++) {
+    if (signalExterne?.aborted) {
+      throw new ErreurIA("Requête annulée avant l'appel.", "annule");
+    }
+
+    const controleur = new AbortController();
+    let futTimeout = false;
+    const minuteur = setTimeout(() => {
+      futTimeout = true;
+      controleur.abort();
+    }, DELAI_MAX_MS);
+    const surAnnulationExterne = () => controleur.abort();
+    signalExterne?.addEventListener("abort", surAnnulationExterne);
+
+    try {
+      const response = await fetch(URL_ANTHROPIC, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
+        },
+        body: JSON.stringify(body),
+        signal: controleur.signal,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        return texteDepuisReponse(data);
+      }
+
+      if (response.status === 401 || response.status === 403) {
+        throw new ErreurIA(`Clé API Claude invalide ou non autorisée (${response.status}).`, "config_invalide");
+      }
+
+      if (STATUTS_RETRYABLES.has(response.status) && tentative < TENTATIVES_MAX) {
+        derniereErreur = new ErreurIA(
+          response.status === 429 ? "Limite de requêtes Anthropic atteinte." : `Anthropic temporairement indisponible (${response.status}).`,
+          response.status === 429 ? "quota_depasse" : "indisponible"
+        );
+        await attendre(DELAIS_ATTENTE_MS[tentative - 1] ?? 1500);
+        continue;
+      }
+
+      const detail = await response.text().catch(() => "");
+      throw new ErreurIA(
+        response.status === 429
+          ? "Limite de requêtes Anthropic atteinte."
+          : `Anthropic a renvoyé une erreur (${response.status}) : ${detail.slice(0, 200)}`,
+        response.status === 429 ? "quota_depasse" : "indisponible"
+      );
+    } catch (err) {
+      if (err instanceof ErreurIA) throw err;
+
+      // Le signal externe (request.signal côté route Next.js) a déclenché
+      // l'abort — l'utilisateur a quitté la page, ce n'est pas un vrai
+      // échec IA, pas la peine de retenter ni de le compter comme une
+      // erreur dans les logs.
+      if (signalExterne?.aborted && !futTimeout) {
+        throw new ErreurIA("Requête annulée par le client.", "annule");
+      }
+
+      if (futTimeout) {
+        derniereErreur = new ErreurIA("Délai dépassé en attendant Claude.", "timeout");
+      } else {
+        // Erreur réseau brute (fetch failed, DNS, connexion refusée...).
+        derniereErreur = new ErreurIA("Impossible de contacter Claude (réseau).", "indisponible");
+      }
+
+      if (tentative < TENTATIVES_MAX) {
+        await attendre(DELAIS_ATTENTE_MS[tentative - 1] ?? 1500);
+        continue;
+      }
+      throw derniereErreur;
+    } finally {
+      clearTimeout(minuteur);
+      signalExterne?.removeEventListener("abort", surAnnulationExterne);
+    }
+  }
+
+  throw derniereErreur ?? new ErreurIA("Échec de l'appel à Claude.", "indisponible");
+}
+
+export async function appelerClaude(systemPrompt: string, userMessage: string, signal?: AbortSignal) {
+  return appelerAnthropic(
+    {
+      model: MODELE,
       max_tokens: 1024,
       system: systemPrompt,
       messages: [{ role: "user", content: userMessage }],
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Erreur API Claude (${response.status}) : ${detail}`);
-  }
-
-  const data = await response.json();
-  const bloc = data.content?.find((b: { type: string }) => b.type === "text");
-  return bloc?.text ?? "";
+    },
+    signal
+  );
 }
 
 // Variante avec image (capture d'écran d'un message reçu par l'artisan).
 // Claude sait lire une image directement dans le même appel — pas besoin
-// d'un service d'OCR séparé. Le modèle et la limite de sortie restent les
-// mêmes que appelerClaude ; seul le contenu du message change de forme
-// (texte + image au lieu de texte seul).
+// d'un service d'OCR séparé.
 export async function appelerClaudeAvecImage(
   systemPrompt: string,
   userMessage: string,
-  image: { base64: string; mediaType: string }
+  image: { base64: string; mediaType: string },
+  signal?: AbortSignal
 ) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY!,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
+  return appelerAnthropic(
+    {
+      model: MODELE,
       max_tokens: 1024,
       system: systemPrompt,
       messages: [
         {
           role: "user",
           content: [
-            {
-              type: "image",
-              source: { type: "base64", media_type: image.mediaType, data: image.base64 },
-            },
+            { type: "image", source: { type: "base64", media_type: image.mediaType, data: image.base64 } },
             { type: "text", text: userMessage },
           ],
         },
       ],
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Erreur API Claude (${response.status}) : ${detail}`);
-  }
-
-  const data = await response.json();
-  const bloc = data.content?.find((b: { type: string }) => b.type === "text");
-  return bloc?.text ?? "";
+    },
+    signal
+  );
 }
 
 // Variante multi-images : plusieurs captures d'écran analysées en UN SEUL
 // appel plutôt qu'un appel par image (voir app/api/ai/analyser-captures/
-// route.ts). Audit Cycle 2 (Agent Performance) : faire un appel par image
-// répétait le prompt système complet à chaque fois — jusqu'à 20x le coût
-// pour un import de 20 captures, alors que Claude sait très bien lire
-// plusieurs images dans un seul message.
+// route.ts) — évite de répéter le prompt système jusqu'à 20x pour un import
+// de 20 captures.
 export async function appelerClaudeAvecImages(
   systemPrompt: string,
   userMessage: string,
-  images: { base64: string; mediaType: string }[]
+  images: { base64: string; mediaType: string }[],
+  signal?: AbortSignal
 ) {
-  const response = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY!,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-sonnet-4-6",
-      // Jusqu'à 20 images (voir app/api/ai/analyser-captures/route.ts) ×
-      // ~150-200 tokens de réponse JSON chacune : 4096 laisse une marge
-      // confortable sans jamais tronquer la réponse en plein milieu.
+  return appelerAnthropic(
+    {
+      model: MODELE,
+      // Jusqu'à 20 images × ~150-200 tokens de réponse JSON chacune : 4096
+      // laisse une marge confortable sans jamais tronquer la réponse en
+      // plein milieu.
       max_tokens: 4096,
       system: systemPrompt,
       messages: [
@@ -110,22 +251,51 @@ export async function appelerClaudeAvecImages(
           ],
         },
       ],
-    }),
-  });
-
-  if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Erreur API Claude (${response.status}) : ${detail}`);
-  }
-
-  const data = await response.json();
-  const bloc = data.content?.find((b: { type: string }) => b.type === "text");
-  return bloc?.text ?? "";
+    },
+    signal
+  );
 }
 
-// L'IA est instruite de répondre en JSON strict. On isole ici le parsing
-// et la gestion d'erreur pour ne pas dupliquer cette logique dans chaque route.
+// L'IA est instruite de répondre en JSON strict. On isole ici le parsing et
+// la gestion d'erreur pour ne pas dupliquer cette logique dans chaque route.
+// Tolérance ajoutée (Cycle 1, robustesse IA) : si le texte contient autre
+// chose que le JSON pur (un ```json``` déjà géré, mais aussi une phrase de
+// politesse avant/après que Claude ajoute parfois malgré la consigne), on
+// tente d'extraire le premier bloc {...} ou [...] équilibré avant
+// d'abandonner — mieux vaut une extraction tolérante qu'un échec sur une
+// réponse par ailleurs exploitable.
 export function parserReponseJSON<T>(texte: string): T {
   const nettoye = texte.replace(/```json|```/g, "").trim();
-  return JSON.parse(nettoye) as T;
+  try {
+    return JSON.parse(nettoye) as T;
+  } catch {
+    const bloc = extraireBlocJSON(nettoye);
+    if (bloc) {
+      try {
+        return JSON.parse(bloc) as T;
+      } catch {
+        // tombe dans l'erreur ci-dessous
+      }
+    }
+    throw new ErreurIA("Réponse IA illisible (JSON invalide).", "reponse_invalide");
+  }
+}
+
+// Cherche le premier { ou [ et son crochet/accolade fermante correspondante
+// en comptant la profondeur — plus robuste qu'une regex non-greedy face à
+// du JSON imbriqué (objets/tableaux dans la réponse).
+function extraireBlocJSON(texte: string): string | null {
+  const debut = texte.search(/[[{]/);
+  if (debut === -1) return null;
+  const ouvrant = texte[debut];
+  const fermant = ouvrant === "{" ? "}" : "]";
+  let profondeur = 0;
+  for (let i = debut; i < texte.length; i++) {
+    if (texte[i] === ouvrant) profondeur++;
+    else if (texte[i] === fermant) {
+      profondeur--;
+      if (profondeur === 0) return texte.slice(debut, i + 1);
+    }
+  }
+  return null;
 }

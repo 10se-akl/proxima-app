@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
+import { appelerClaude, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
 import { calculerDevis, PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
@@ -149,8 +149,9 @@ ${
 }
 ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récentes reflètent l'état actuel du chantier, y compris d'éventuels changements) :\n${blocNotesVocales}` : ""}`;
 
+  const debutAppel = Date.now();
   try {
-    const reponseTexte = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur);
+    const reponseTexte = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur, request.signal);
     const { postes } = parserReponseJSON<{ postes: PosteTravailIA[] }>(reponseTexte);
 
     // Un devis sans aucun poste ne doit jamais atteindre l'écran de
@@ -300,17 +301,30 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
 
     return NextResponse.json({ devis, parametresConfigures });
   } catch (err) {
+    const dureeMs = Date.now() - debutAppel;
+    // L'artisan a quitté la page avant la fin de l'appel (navigation,
+    // fermeture d'onglet) — request.signal se propage jusque dans
+    // appelerClaude, qui coupe l'appel Anthropic en cours plutôt que de le
+    // laisser tourner pour rien. Ce n'est pas un vrai échec IA : pas de log
+    // "erreur_ia", juste une réponse (que le client ne recevra de toute
+    // façon jamais).
+    if (err instanceof ErreurIA && err.code === "annule") {
+      return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+    }
     console.error(err);
+    const { message, statut } = reponseErreurIA(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
       organisationId,
       type: "erreur_ia",
       contexte: demandeId,
-      details: { etape: "devis", erreur: String(err) },
+      details: {
+        etape: "devis",
+        erreur: String(err),
+        code: err instanceof ErreurIA ? err.code : undefined,
+        duree_ms: dureeMs,
+      },
     });
-    return NextResponse.json(
-      { error: "L'assistant IA n'a pas pu préparer ce devis. Réessayez." },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: message }, { status: statut });
   }
 }

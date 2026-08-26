@@ -1,6 +1,9 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
+import { InstallPWA } from "@/components/pwa/InstallPWA";
+import { MiseAJourPWA } from "@/components/pwa/MiseAJourPWA";
+import { EnregistrerServiceWorker } from "@/components/pwa/EnregistrerServiceWorker";
 
 const URL_SITE = SITE_URL;
 const TITRE = "Compyo — L'assistant qui s'occupe de l'administratif des artisans";
@@ -41,6 +44,48 @@ export const metadata: Metadata = {
     title: TITRE,
     description: DESCRIPTION,
   },
+  // Icône iOS "écran d'accueil" — le favicon standard reste généré
+  // dynamiquement par app/icon.tsx (convention Next.js déjà en place, non
+  // touchée ici pour éviter deux déclarations concurrentes de <link
+  // rel="icon">). iOS Safari, en revanche, ignore manifest.icons pour son
+  // icône d'écran d'accueil : il lui faut explicitement ce
+  // apple-touch-icon dédié, absent jusqu'ici du produit.
+  icons: {
+    apple: [{ url: "/icons/icon-180.png", sizes: "180x180", type: "image/png" }],
+  },
+  // "Ajouter à l'écran d'accueil" sur iOS ignore aussi manifest.display :
+  // ces trois champs sont l'équivalent Apple de "standalone" + le nom
+  // affiché sous l'icône + l'apparence de la barre de statut ("default"
+  // = texte noir, cohérent avec notre fond crème clair par défaut).
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Compyo",
+  },
+  // Empêche iOS/Android de proposer leur propre traduction automatique de
+  // l'interface (l'app est nativement et exclusivement en français) et
+  // désactive le format-detection qui transforme parfois des numéros de
+  // devis ou des références en liens "appeler" cliquables involontaires.
+  formatDetection: { telephone: false },
+};
+
+// Séparé de `metadata` depuis Next.js 14 (dépréciation de viewport dans
+// l'objet Metadata). viewportFit "cover" est ce qui permet à l'app de
+// dessiner réellement jusque sous l'encoche/la Dynamic Island et la barre
+// home indicator, plutôt que de laisser des bandes noires — à condition
+// que le CSS respecte ensuite les safe-area-inset-* (voir globals.css).
+// theme_color en deux variantes claire/sombre : c'est ce qui teinte la
+// barre de statut Android et le cadre de fenêtre, cohérent avec le mode
+// sombre déjà présent dans l'app plutôt qu'une couleur fixe.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#FAF8F5" },
+    { media: "(prefers-color-scheme: dark)", color: "#1F2937" },
+  ],
 };
 
 // Données structurées (schema.org, format JSON-LD) — pas pour les
@@ -97,7 +142,37 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(DONNEES_STRUCTUREES) }}
         />
+        {/* Splash screens iOS : Safari ne génère jamais d'écran de démarrage
+            tout seul (contrairement à Android) — il faut lui fournir une
+            image par résolution exacte d'appareil, sélectionnée via une
+            media query sur la taille physique de l'écran. Couvre les
+            familles d'iPhone les plus courantes ; un modèle absent de
+            cette liste retombe simplement sur un écran blanc bref plutôt
+            que sur une erreur (dégradation silencieuse, sans risque). */}
+        <link rel="apple-touch-startup-image" href="/splash/splash-1290x2796.png" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/splash-1284x2778.png" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/splash-1179x2556.png" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/splash-1170x2532.png" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" />
+        <link rel="apple-touch-startup-image" href="/splash/splash-750x1334.png" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" />
+        {/* Préconnexion à Supabase (API + Auth) : sur la quasi-totalité des
+            pages de l'app, le premier appel réseau utile est une requête
+            Supabase — établir la connexion TLS en parallèle du reste du
+            chargement, plutôt que d'attendre que le JS s'exécute pour la
+            découvrir, fait gagner l'équivalent d'un aller-retour réseau
+            (notable sur une connexion de chantier). NEXT_PUBLIC_SUPABASE_URL
+            est déjà exposé au client (utilisé par lib/supabase/client.ts),
+            donc sans risque à afficher ici. */}
+        {process.env.NEXT_PUBLIC_SUPABASE_URL && (
+          <link rel="preconnect" href={process.env.NEXT_PUBLIC_SUPABASE_URL} crossOrigin="" />
+        )}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
+        {/* fonts.gstatic.com sert les fichiers de police eux-mêmes (le
+            domaine ci-dessus ne sert que le CSS qui les référence) —
+            manquait jusqu'ici, ce qui retardait silencieusement le
+            chargement des polices d'un aller-retour DNS+TLS supplémentaire
+            à chaque première visite. crossOrigin requis car les polices
+            sont chargées en mode CORS. */}
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
           href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
           rel="stylesheet"
@@ -119,6 +194,16 @@ export default function RootLayout({
       </head>
       <body className="bg-paper text-ink antialiased font-sans">
         {children}
+        {/* Trois briques PWA volontairement indépendantes du reste de
+            l'app (voir components/pwa/) : chacune ne rend rien tant que
+            sa condition n'est pas réunie (SW compatible, prompt
+            disponible, mise à jour détectée), donc strictement neutre
+            pour tout visiteur du site vitrine ou navigateur non
+            compatible — voir le rapport de cycle pour le détail de la
+            stratégie de cache et du parcours d'installation. */}
+        <EnregistrerServiceWorker />
+        <InstallPWA />
+        <MiseAJourPWA />
       </body>
     </html>
   );

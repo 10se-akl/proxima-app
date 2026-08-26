@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { appelerClaude } from "@/lib/ai/client";
+import { appelerClaude, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
@@ -66,8 +66,19 @@ ${
 }
 ${contexteSupplementaire ? `Contexte supplémentaire donné par l'artisan : "${contexteSupplementaire}"` : ""}`;
 
+  const debutAppel = Date.now();
   try {
-    const brouillon = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur);
+    const brouillon = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur, request.signal);
+
+    // Une réponse vide (ou blanche) n'est pas un cas géré ailleurs — sans ce
+    // contrôle, l'artisan verrait un champ de brouillon vide sans le moindre
+    // message d'erreur (relevé à l'audit IA du 25/08).
+    if (!brouillon.trim()) {
+      return NextResponse.json(
+        { error: "L'IA n'a pas pu préparer de réponse. Réessayez." },
+        { status: 502 }
+      );
+    }
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
@@ -78,17 +89,24 @@ ${contexteSupplementaire ? `Contexte supplémentaire donné par l'artisan : "${c
 
     return NextResponse.json({ brouillon: brouillon.trim() });
   } catch (err) {
+    const dureeMs = Date.now() - debutAppel;
+    if (err instanceof ErreurIA && err.code === "annule") {
+      return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+    }
     console.error(err);
+    const { message, statut } = reponseErreurIA(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
       organisationId,
       type: "erreur_ia",
       contexte: demandeId,
-      details: { etape: "reponse_client", erreur: String(err) },
+      details: {
+        etape: "reponse_client",
+        erreur: String(err),
+        code: err instanceof ErreurIA ? err.code : undefined,
+        duree_ms: dureeMs,
+      },
     });
-    return NextResponse.json(
-      { error: "L'assistant IA n'a pas pu préparer de réponse. Réessayez." },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: message }, { status: statut });
   }
 }

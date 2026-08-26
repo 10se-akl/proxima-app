@@ -29,7 +29,11 @@ export function BoutonRetour() {
       <button
         type="button"
         onClick={() => setOuvert(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-anthracite text-white pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-ink hover:scale-[1.03] active:scale-[0.97] transition-all"
+        // [bottom:...] : sur un iPhone à barre d'accueil (home indicator),
+        // "bottom-5" fixe (20px) colle le bouton contre cette zone de
+        // geste système en app installée — on ajoute la marge de sécurité
+        // du téléphone par-dessus les 20px voulus, au lieu de les remplacer.
+        className="fixed right-5 z-40 flex items-center gap-2 rounded-full bg-anthracite text-white pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-ink hover:scale-[1.03] active:scale-[0.97] transition-all [bottom:calc(1.25rem+env(safe-area-inset-bottom))]"
       >
         <span aria-hidden="true">💡</span>
         <span>Faire un retour</span>
@@ -133,7 +137,12 @@ function ModaleRetour({ onFermer }: { onFermer: () => void }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="fr-modale-entree w-full sm:max-w-lg bg-paper rounded-t-3xl sm:rounded-3xl border border-ink/10 shadow-2xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto"
+        // pb calculé séparément du p-6 de base : cette feuille colle au
+        // bord bas de l'écran sur mobile (rounded-t-3xl, pas de rounded en
+        // bas) — sans cette marge, son dernier bouton se retrouverait
+        // juste au-dessus de la barre de geste du téléphone, difficile à
+        // atteindre proprement du pouce.
+        className="fr-modale-entree w-full sm:max-w-lg bg-paper rounded-t-3xl sm:rounded-3xl border border-ink/10 shadow-2xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:[padding-bottom:1.75rem]"
       >
         {confirme ? (
           <div className="py-8 text-center">

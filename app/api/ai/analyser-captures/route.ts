@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { appelerClaudeAvecImages, parserReponseJSON } from "@/lib/ai/client";
+import { appelerClaudeAvecImages, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
@@ -130,11 +130,13 @@ export async function POST(request: NextRequest) {
     | { index: number; extrait: Extrait; correspondances: { id: string; nomClient: string }[] }
   >;
 
+  const debutAppel = Date.now();
   try {
     const reponseTexte = await appelerClaudeAvecImages(
       construirePrompt(dateDuJour, images.length),
       `Voici les ${images.length} capture(s) d'écran à analyser, dans l'ordre.`,
-      images
+      images,
+      request.signal
     );
     const { resultats: extraits } = parserReponseJSON<{ resultats: Extrait[] }>(reponseTexte);
 
@@ -156,18 +158,25 @@ export async function POST(request: NextRequest) {
       };
     });
   } catch (err) {
+    const dureeMs = Date.now() - debutAppel;
+    if (err instanceof ErreurIA && err.code === "annule") {
+      return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+    }
     console.error(err);
+    const { message, statut } = reponseErreurIA(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
       organisationId,
       type: "erreur_ia",
       contexte: undefined,
-      details: { etape: "analyser_captures", erreur: String(err) },
+      details: {
+        etape: "analyser_captures",
+        erreur: String(err),
+        code: err instanceof ErreurIA ? err.code : undefined,
+        duree_ms: dureeMs,
+      },
     });
-    return NextResponse.json(
-      { error: "L'IA n'a pas pu analyser ces captures. Réessayez." },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: message }, { status: statut });
   }
 
   await enregistrerLog(supabase, {

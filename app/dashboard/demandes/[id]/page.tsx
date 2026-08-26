@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
@@ -67,6 +67,23 @@ export default function DetailDemandePage({
   // demande. .maybeSingle() + ce drapeau distinguent maintenant "encore en
   // train de charger" de "vraiment introuvable".
   const [introuvable, setIntrouvable] = useState(false);
+
+  // Cycle "Release Candidate" 1 (26/08) — annulation propre des appels IA :
+  // si l'artisan quitte cette fiche projet (navigation, fermeture d'onglet)
+  // pendant qu'un appel à l'analyse/au devis/à la réponse IA est en cours,
+  // on annule le fetch au démontage plutôt que de le laisser tourner pour
+  // un résultat que personne ne verra jamais. L'annulation remonte jusqu'à
+  // la route Next.js (request.signal) puis jusqu'à l'appel Anthropic
+  // lui-même (voir lib/ai/client.ts) — inutile de payer un appel IA dont le
+  // résultat est certain de ne jamais être affiché.
+  const controleursIARef = useRef<Set<AbortController>>(new Set());
+
+  useEffect(() => {
+    return () => {
+      controleursIARef.current.forEach((c) => c.abort());
+      controleursIARef.current.clear();
+    };
+  }, []);
 
   async function chargerDonnees() {
     // Ces cinq appels sont indépendants les uns des autres (aucun ne dépend
@@ -160,11 +177,27 @@ export default function DetailDemandePage({
   async function analyserDemande() {
     setErreur(null);
     setChargementAnalyse(true);
-    const res = await fetch("/api/ai/analyser-demande", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ demandeId: params.id }),
-    });
+    const controleur = new AbortController();
+    controleursIARef.current.add(controleur);
+    let res: Response;
+    try {
+      res = await fetch("/api/ai/analyser-demande", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demandeId: params.id }),
+        signal: controleur.signal,
+      });
+    } catch (err) {
+      controleursIARef.current.delete(controleur);
+      setChargementAnalyse(false);
+      // AbortError = la page a été quittée entre-temps (cleanup ci-dessus) :
+      // pas d'erreur à afficher, il n'y a plus personne pour la lire.
+      if ((err as Error).name !== "AbortError") {
+        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+      }
+      return;
+    }
+    controleursIARef.current.delete(controleur);
     setChargementAnalyse(false);
 
     if (!res.ok) {
@@ -206,15 +239,30 @@ export default function DetailDemandePage({
     setErreur(null);
     setChargementDevis(true);
     const devisExistaitDeja = Boolean(devis) && devis?.statut !== "refuse";
-    const res = await fetch("/api/ai/generer-devis", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ demandeId: params.id }),
-    });
+    const controleur = new AbortController();
+    controleursIARef.current.add(controleur);
+    let res: Response;
+    try {
+      res = await fetch("/api/ai/generer-devis", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demandeId: params.id }),
+        signal: controleur.signal,
+      });
+    } catch (err) {
+      controleursIARef.current.delete(controleur);
+      setChargementDevis(false);
+      if ((err as Error).name !== "AbortError") {
+        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+      }
+      return;
+    }
+    controleursIARef.current.delete(controleur);
     setChargementDevis(false);
 
     if (!res.ok) {
-      setErreur("La génération du devis a échoué. Réessayez.");
+      const data = await res.json().catch(() => null);
+      setErreur(data?.error ?? "La génération du devis a échoué. Réessayez.");
       return;
     }
     if (artisanId && organisationId) {
@@ -259,15 +307,30 @@ export default function DetailDemandePage({
     setErreur(null);
     setChargementReponse(true);
     setCopie(false);
-    const res = await fetch("/api/ai/generer-reponse", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ demandeId: params.id }),
-    });
+    const controleur = new AbortController();
+    controleursIARef.current.add(controleur);
+    let res: Response;
+    try {
+      res = await fetch("/api/ai/generer-reponse", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demandeId: params.id }),
+        signal: controleur.signal,
+      });
+    } catch (err) {
+      controleursIARef.current.delete(controleur);
+      setChargementReponse(false);
+      if ((err as Error).name !== "AbortError") {
+        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+      }
+      return;
+    }
+    controleursIARef.current.delete(controleur);
     setChargementReponse(false);
 
     if (!res.ok) {
-      setErreur("La préparation de la réponse a échoué. Réessayez.");
+      const data = await res.json().catch(() => null);
+      setErreur(data?.error ?? "La préparation de la réponse a échoué. Réessayez.");
       return;
     }
     const data = await res.json();

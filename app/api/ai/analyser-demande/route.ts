@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
+import { appelerClaude, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
@@ -129,9 +129,20 @@ Informations déjà disponibles : "${projet.informations_disponibles ?? "aucune"
 Notes libres de l'artisan : "${projet.notes ?? "aucune"}"
 ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVocales}` : ""}`;
 
+  const debutAppel = Date.now();
   try {
-    const reponseTexte = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur);
+    const reponseTexte = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur, request.signal);
     const analyse = parserReponseJSON<AnalyseIA>(reponseTexte);
+
+    // Un JSON valide mais avec un résumé vide reste un résultat inexploitable
+    // — l'artisan verrait un résumé blanc sans explication. Traité comme un
+    // échec plutôt qu'enregistré tel quel (relevé à l'audit IA du 25/08).
+    if (!analyse.resume?.trim()) {
+      return NextResponse.json(
+        { error: "L'IA n'a pas pu résumer ce projet. Réessayez." },
+        { status: 502 }
+      );
+    }
 
     // Horodate cette analyse pour pouvoir détecter, la prochaine fois,
     // qu'aucune note n'a été ajoutée depuis — voir peutAnalyser côté
@@ -173,17 +184,24 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVoca
 
     return NextResponse.json({ analyse });
   } catch (err) {
+    const dureeMs = Date.now() - debutAppel;
+    if (err instanceof ErreurIA && err.code === "annule") {
+      return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+    }
     console.error(err);
+    const { message, statut } = reponseErreurIA(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
       organisationId,
       type: "erreur_ia",
       contexte: demandeId,
-      details: { etape: "analyse", erreur: String(err) },
+      details: {
+        etape: "analyse",
+        erreur: String(err),
+        code: err instanceof ErreurIA ? err.code : undefined,
+        duree_ms: dureeMs,
+      },
     });
-    return NextResponse.json(
-      { error: "L'assistant IA n'a pas pu analyser cette demande. Réessayez." },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: message }, { status: statut });
   }
 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { appelerClaude, parserReponseJSON } from "@/lib/ai/client";
+import { appelerClaude, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
@@ -83,6 +83,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: limite.message }, { status: 429 });
   }
 
+  const debutAppel = Date.now();
   try {
     const dateDuJour = new Date().toLocaleDateString("fr-FR", {
       weekday: "long",
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
       day: "numeric",
     });
 
-    const reponseTexte = await appelerClaude(construirePrompt(dateDuJour), messageBrut);
+    const reponseTexte = await appelerClaude(construirePrompt(dateDuJour), messageBrut, request.signal);
     const extrait = parserReponseJSON<{
       nom_client: string;
       telephone_client: string | null;
@@ -102,6 +103,16 @@ export async function POST(request: NextRequest) {
       rdv_date: string | null;
       rdv_heure: string | null;
     }>(reponseTexte);
+
+    // Un nom_client vide ferait échouer l'insert sur une contrainte NOT NULL
+    // avec un message générique peu clair (relevé à l'audit IA du 25/08) —
+    // autant l'anticiper avec un message qui a du sens pour l'artisan.
+    if (!extrait.nom_client?.trim()) {
+      return NextResponse.json(
+        { error: "L'IA n'a pas réussi à identifier le client dans ce message. Réessayez ou créez le projet manuellement." },
+        { status: 502 }
+      );
+    }
 
     const { data: projet, error: insertError } = await supabase
       .from("demandes")
@@ -160,17 +171,24 @@ export async function POST(request: NextRequest) {
       rdvPropose,
     });
   } catch (err) {
+    const dureeMs = Date.now() - debutAppel;
+    if (err instanceof ErreurIA && err.code === "annule") {
+      return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+    }
     console.error(err);
+    const { message, statut } = reponseErreurIA(err);
     await enregistrerLog(supabase, {
       artisanId: user.id,
       organisationId,
       type: "erreur_ia",
       contexte: undefined,
-      details: { etape: "import_message", erreur: String(err) },
+      details: {
+        etape: "import_message",
+        erreur: String(err),
+        code: err instanceof ErreurIA ? err.code : undefined,
+        duree_ms: dureeMs,
+      },
     });
-    return NextResponse.json(
-      { error: "L'IA n'a pas pu extraire les informations. Réessayez." },
-      { status: 502 }
-    );
+    return NextResponse.json({ error: message }, { status: statut });
   }
 }

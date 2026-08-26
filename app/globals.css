@@ -217,6 +217,58 @@
     scroll-behavior: smooth;
   }
 
+  /* ============================================================
+     PWA / mobile-first (cycle "Release Candidate" PWA) — règles globales,
+     pas de bricolage page par page. Chacune corrige un défaut précis
+     identifié en gardant l'app installée sur téléphone au chantier :
+     ============================================================ */
+
+  /* 1. Zoom involontaire au focus d'un champ sur iOS Safari : en dessous
+        de 16px, iOS considère qu'un champ est "trop petit pour être lisible"
+        et zoome automatiquement toute la page au tap — désagréable et
+        cassant sur une app qu'on veut sentir native. Les composants
+        partagés (Input.tsx, Select, Textarea...) utilisent text-sm (14px)
+        pour la cohérence visuelle desktop : on ne les change pas, on relève
+        juste la taille réelle du texte SAISI sur mobile uniquement, où le
+        défaut ne se produit qu'à cette largeur d'écran. */
+  @media (max-width: 640px) {
+    input, select, textarea {
+      font-size: 16px;
+    }
+  }
+
+  /* 2. Zones tactiles minimales (44×44px, recommandation Apple HIG/WCAG) :
+        filet de sécurité global pour tout bouton ou lien qui n'aurait pas
+        déjà une hauteur suffisante par ses propres classes Tailwind — ne
+        change rien pour les gros boutons déjà conformes (min-height ne
+        fait qu'imposer un PLANCHER), corrige silencieusement les petites
+        icônes cliquables qui auraient pu passer entre les mailles. */
+  @media (max-width: 640px) {
+    button, a[role="button"] {
+      min-height: 44px;
+    }
+  }
+
+  /* 3. Retire le flash gris par défaut au tap sur mobile (tap highlight
+        WebKit) : c'est l'un des détails qui trahit le plus visiblement
+        "site web" plutôt que "vraie app" — chaque composant garde ses
+        propres états actifs/hover définis par ailleurs (ex. active:scale
+        sur BoutonRetour), on ne fait ici que supprimer le halo gris du
+        navigateur qui s'ajoutait par-dessus. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 4. Défilement franc en bout de liste (pas de "rebond" qui découvre un
+        fond de navigateur blanc pendant une seconde) et empêche un swipe
+        vertical trop ample sur une liste de gérer accidentellement la
+        navigation "retour" du navigateur — pertinent notamment sur les
+        listes de projets/devis, souvent parcourues vite entre deux
+        chantiers. */
+  html, body {
+    overscroll-behavior-y: none;
+  }
+
   /* Animation du contenu du mockup interactif de l'accueil (voir
      DemoInteractif.tsx) — se déclenche à chaque changement d'onglet grâce
      au `key={actif}` sur le conteneur React, qui force un remontage donc
@@ -431,6 +483,17 @@
 
 .fr-progres-segment {
   transition: background-color 0.3s ease, opacity 0.3s ease;
+}
+
+/* Carte "Installer Compyo" (components/pwa/InstallPWA.tsx) et bandeau de
+   mise à jour (components/pwa/MiseAJourPWA.tsx) : légère montée + fondu,
+   assez discrète pour ne jamais ressembler à une popup intrusive. */
+.pwa-carte-entree {
+  animation: pwa-monter 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes pwa-monter {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 /* Curseur d'importance : piste dégradée (calme → signal), gros pouce

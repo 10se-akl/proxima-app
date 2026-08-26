@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
+import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
 import {
   IconeAccueil,
   IconeDossier,
@@ -53,7 +54,12 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
           s'inverser en une barre claire en mode sombre. Le texte utilise
           donc du blanc fixe (text-white/...), pas text-paper qui, lui,
           deviendrait sombre en mode sombre et disparaîtrait. */}
-      <div className="sm:hidden flex items-center justify-between bg-anthracite text-white px-4 h-14">
+      {/* pt-[env(safe-area-inset-top)] : sur un iPhone à encoche/Dynamic
+          Island, l'app installée (mode "standalone") dessine désormais
+          jusque sous cette zone (viewport-fit=cover, voir app/layout.tsx)
+          — sans cette marge, le logo et le bouton menu se retrouveraient
+          partiellement masqués par l'encoche plutôt que dessous. */}
+      <div className="sm:hidden flex items-center justify-between bg-anthracite text-white px-4 min-h-14 [padding-top:calc(env(safe-area-inset-top)+0.5rem)] [padding-bottom:0.5rem]">
         <span className="flex items-center gap-2">
           <CompyoMark variante="blanc" taille={24} />
           <p className="font-display font-semibold">Compyo</p>
@@ -108,6 +114,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
             <div className="flex items-center gap-3">
               <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
             </div>
+            <BoutonInstallerDiscret />
             <button
               onClick={handleLogout}
               className="text-xs text-white/60 hover:text-white underline"
@@ -162,6 +169,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
           <div className="flex items-center gap-3">
             <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
           </div>
+          <BoutonInstallerDiscret />
           <button
             onClick={handleLogout}
             className="text-xs text-white/60 hover:text-white underline"

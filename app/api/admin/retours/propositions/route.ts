@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { appelerClaude } from "@/lib/ai/client";
+import { appelerClaude, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
+import { getOrganisationId } from "@/lib/organisation";
+import { verifierLimiteIA } from "@/lib/limiteIA";
 
 // ============================================================
 // Génère (à la demande, pas automatiquement) des pistes d'amélioration IA
@@ -39,6 +41,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "probleme_id ou categorie requis" }, { status: 400 });
   }
 
+  // Manquant jusqu'ici (relevé à l'audit IA du 25/08) : c'était la seule
+  // route /api/ai*-like sans garde-fou de fréquence — risque faible vu
+  // qu'elle est réservée à ADMIN_EMAIL, mais autant rester cohérent avec
+  // toutes les autres routes IA du produit plutôt que de faire une
+  // exception non documentée.
+  const organisationId = await getOrganisationId(supabase, user.id);
+  if (organisationId) {
+    const limite = await verifierLimiteIA(supabase, organisationId);
+    if (!limite.autorise) {
+      return NextResponse.json({ error: limite.message }, { status: 429 });
+    }
+  }
+
   const admin = createAdminClient();
 
   if (categorie) {
@@ -72,12 +87,17 @@ export async function POST(request: NextRequest) {
     try {
       const propositions = await appelerClaude(
         SYSTEM_PROMPT,
-        `Catégorie : "${categorie}"\nSous-thèmes de cette catégorie :\n${listeThemes}\n\nTémoignages :\n${echantillon || "(aucun témoignage textuel disponible)"}`
+        `Catégorie : "${categorie}"\nSous-thèmes de cette catégorie :\n${listeThemes}\n\nTémoignages :\n${echantillon || "(aucun témoignage textuel disponible)"}`,
+        request.signal
       );
       return NextResponse.json({ propositions_ia: propositions.trim() });
     } catch (err) {
+      if (err instanceof ErreurIA && err.code === "annule") {
+        return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+      }
       console.error(err);
-      return NextResponse.json({ error: "Impossible de générer les propositions pour l'instant." }, { status: 502 });
+      const { message, statut } = reponseErreurIA(err);
+      return NextResponse.json({ error: message }, { status: statut });
     }
   }
 
@@ -103,7 +123,8 @@ export async function POST(request: NextRequest) {
   try {
     const propositions = await appelerClaude(
       SYSTEM_PROMPT,
-      `Thème : "${probleme.titre}"\nRésumé actuel : "${probleme.resume_ia ?? "aucun"}"\n\nTémoignages :\n${echantillon || "(aucun témoignage textuel disponible)"}`
+      `Thème : "${probleme.titre}"\nRésumé actuel : "${probleme.resume_ia ?? "aucun"}"\n\nTémoignages :\n${echantillon || "(aucun témoignage textuel disponible)"}`,
+      request.signal
     );
 
     await admin
@@ -113,7 +134,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ propositions_ia: propositions.trim() });
   } catch (err) {
+    if (err instanceof ErreurIA && err.code === "annule") {
+      return NextResponse.json({ error: "Requête annulée." }, { status: 499 });
+    }
     console.error(err);
-    return NextResponse.json({ error: "Impossible de générer les propositions pour l'instant." }, { status: 502 });
+    const { message, statut } = reponseErreurIA(err);
+    return NextResponse.json({ error: message }, { status: statut });
   }
 }

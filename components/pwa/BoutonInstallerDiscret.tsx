@@ -22,7 +22,17 @@ import {
 // l'événement arrive, sans qu'il soit nécessaire de recharger la page.
 // ============================================================
 
-export function BoutonInstallerDiscret({ className = "" }: { className?: string }) {
+export function BoutonInstallerDiscret({
+  className = "",
+  // "compact" : icône seule avec title/aria-label, pour s'aligner dans une
+  // rangée d'actions (ThemeToggle, déconnexion...) plutôt qu'un lien texte
+  // séparé — voir Sidebar.tsx. Le lien texte complet reste la variante par
+  // défaut, réutilisable ailleurs si besoin d'un point d'entrée plus explicite.
+  compact = false,
+}: {
+  className?: string;
+  compact?: boolean;
+}) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -39,6 +49,20 @@ export function BoutonInstallerDiscret({ className = "" }: { className?: string 
   }, []);
 
   if (!visible) return null;
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={() => demanderAffichageManuel()}
+        title="Installer l'application"
+        aria-label="Installer l'application"
+        className={className || "text-white/60 hover:text-white transition-colors"}
+      >
+        <span aria-hidden="true">📲</span>
+      </button>
+    );
+  }
 
   return (
     <button

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
+import { Avatar } from "@/components/ui/Avatar";
 import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
 import {
   IconeAccueil,
@@ -32,6 +33,64 @@ const LIENS_SITE = [
   { href: "/", label: "Site vitrine" },
   { href: "/contact", label: "Contact" },
 ];
+
+// Bloc "compte" en bas de la sidebar — un seul composant partagé entre la
+// version mobile (menu déplié) et la version desktop (aside), pour que les
+// deux ne divergent jamais. Refonte (retour d'Axel) : l'ancienne version
+// empilait 4-5 lignes hétérogènes (liens site, nom, thème, déconnexion)
+// sans hiérarchie claire. Nouvelle organisation en trois niveaux, du plus
+// important au moins important : identité (avatar + nom) → actions
+// courantes en une rangée d'icônes compactes → liens secondaires du site
+// vitrine, discrets tout en bas.
+function BlocCompteSidebar({
+  nomArtisan,
+  onNaviguer,
+  onDeconnexion,
+}: {
+  nomArtisan: string;
+  onNaviguer?: () => void;
+  onDeconnexion: () => void;
+}) {
+  return (
+    <div className="px-4 py-5 border-t border-white/10 flex flex-col gap-3">
+      <div className="flex items-center gap-2.5 px-2">
+        <Avatar nom={nomArtisan || "?"} taille={30} />
+        <p className="text-sm text-white/80 font-medium truncate">{nomArtisan}</p>
+      </div>
+
+      <div className="flex items-center gap-1 px-2">
+        <ThemeToggle className="w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors" />
+        <BoutonInstallerDiscret
+          compact
+          className="w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+        />
+        <button
+          onClick={onDeconnexion}
+          title="Se déconnecter"
+          aria-label="Se déconnecter"
+          className="w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+        >
+          <span aria-hidden="true">⏻</span>
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-white/5">
+        {LIENS_SITE.map((lien, i) => (
+          <span key={lien.href} className="flex items-center gap-2.5">
+            {i > 0 && <span className="text-white/20 text-xs" aria-hidden="true">·</span>}
+            <Link
+              href={lien.href}
+              onClick={onNaviguer}
+              className="text-xs text-white/40 hover:text-white/70 transition-colors"
+            >
+              {lien.label}
+            </Link>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
   const pathname = usePathname();
@@ -97,31 +156,11 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
               );
             })}
           </nav>
-          <div className="mt-3 pt-3 border-t border-white/10 px-3 flex flex-col gap-2 items-start">
-            <div className="flex items-center gap-3">
-              {LIENS_SITE.map((lien) => (
-                <Link
-                  key={lien.href}
-                  href={lien.href}
-                  onClick={() => setMenuOuvert(false)}
-                  className="text-xs text-white/60 hover:text-white underline"
-                >
-                  {lien.label}
-                </Link>
-              ))}
-            </div>
-            <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
-            <div className="flex items-center gap-3">
-              <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
-            </div>
-            <BoutonInstallerDiscret />
-            <button
-              onClick={handleLogout}
-              className="text-xs text-white/60 hover:text-white underline"
-            >
-              Se déconnecter
-            </button>
-          </div>
+          <BlocCompteSidebar
+            nomArtisan={nomArtisan}
+            onNaviguer={() => setMenuOuvert(false)}
+            onDeconnexion={handleLogout}
+          />
         </div>
       )}
 
@@ -153,30 +192,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
           </nav>
         </div>
 
-        <div className="px-6 py-6 border-t border-white/10 flex flex-col gap-2 items-start">
-          <div className="flex items-center gap-3">
-            {LIENS_SITE.map((lien) => (
-              <Link
-                key={lien.href}
-                href={lien.href}
-                className="text-xs text-white/60 hover:text-white underline"
-              >
-                {lien.label}
-              </Link>
-            ))}
-          </div>
-          <p className="text-xs text-white/50 font-mono truncate">{nomArtisan}</p>
-          <div className="flex items-center gap-3">
-            <ThemeToggle className="text-sm leading-none hover:scale-110 transition-transform" />
-          </div>
-          <BoutonInstallerDiscret />
-          <button
-            onClick={handleLogout}
-            className="text-xs text-white/60 hover:text-white underline"
-          >
-            Se déconnecter
-          </button>
-        </div>
+        <BlocCompteSidebar nomArtisan={nomArtisan} onDeconnexion={handleLogout} />
       </aside>
     </>
   );

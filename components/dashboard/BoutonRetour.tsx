@@ -35,8 +35,14 @@ export function BoutonRetour() {
         // du téléphone par-dessus les 20px voulus, au lieu de les remplacer.
         className="fixed right-5 z-40 flex items-center gap-2 rounded-full bg-anthracite text-white pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-ink hover:scale-[1.03] active:scale-[0.97] transition-all [bottom:calc(1.25rem+env(safe-area-inset-bottom))]"
       >
+        {/* Retour d'Axel (26/08) : "Faire un retour" seul seul se lisait
+            trop comme "signaler un problème" pour certains artisans, alors
+            que la moitié des catégories du parcours (voir taxonomie.ts)
+            sont des idées/suggestions, pas des soucis. Libellé changé pour
+            couvrir explicitement les deux sans ambiguïté dès le bouton,
+            sans attendre d'avoir ouvert la modale pour le comprendre. */}
         <span aria-hidden="true">💡</span>
-        <span>Faire un retour</span>
+        <span>Avis &amp; idées</span>
       </button>
 
       {ouvert && <ModaleRetour onFermer={() => setOuvert(false)} />}
@@ -162,9 +168,11 @@ function ModaleRetour({ onFermer }: { onFermer: () => void }) {
             <div className="flex items-start justify-between gap-3 mb-5">
               <div className="flex-1">
                 <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-1">
-                  Faire un retour
+                  Avis &amp; idées
                 </p>
-                <h2 className="font-display text-lg font-semibold">Aidez-nous à améliorer Compyo</h2>
+                <h2 className="font-display text-lg font-semibold">
+                  Un souci, une idée ? Dites-nous tout
+                </h2>
               </div>
               <button
                 type="button"

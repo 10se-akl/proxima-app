@@ -13,12 +13,13 @@ export type EvenementInstallation = Event & {
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
 };
 
+import { detecterPlateforme, detecterMoteurRestreint } from "@/lib/pwa/plateforme";
+
 let evenementCapture: EvenementInstallation | null = null;
 let ecouteInitialisee = false;
 
 export function estIOS(): boolean {
-  if (typeof window === "undefined") return false;
-  return /iphone|ipad|ipod/i.test(window.navigator.userAgent);
+  return detecterPlateforme() === "ios";
 }
 
 export function estDejaInstallee(): boolean {
@@ -50,9 +51,13 @@ export function initialiserEcouteInstallation() {
 
 // true dès qu'on peut proposer une installation : soit l'événement
 // Chrome/Edge/Android est arrivé, soit on est sur iOS (où il n'existe
-// jamais, mais "Ajouter à l'écran d'accueil" reste possible manuellement).
+// jamais, mais "Ajouter à l'écran d'accueil" reste possible manuellement),
+// soit on est dans un navigateur restreint (in-app WhatsApp/Instagram,
+// Firefox Android, Samsung Internet) où beforeinstallprompt n'arrivera
+// jamais mais où des instructions manuelles restent utiles (🔴F, Sprint
+// Beta Final 27/08) — mieux vaut guider l'artisan que ne rien proposer.
 export function peutProposerInstallation(): boolean {
-  return estIOS() || evenementCapture !== null;
+  return estIOS() || evenementCapture !== null || detecterMoteurRestreint() !== null;
 }
 
 export async function declencherInstallation(): Promise<
@@ -71,4 +76,19 @@ export async function declencherInstallation(): Promise<
 // InstallPWA.tsx), un geste volontaire n'a jamais besoin d'être filtré.
 export function demanderAffichageManuel() {
   window.dispatchEvent(new CustomEvent("compyo:install-demande-manuelle"));
+}
+
+// Utilisé par l'onboarding premier lancement (voir
+// components/onboarding/PremierLancement.tsx) : son écran 4 propose déjà
+// l'installation une fois — sans ça, la carte automatique de InstallPWA.tsx
+// se déclencherait une seconde fois 30 secondes plus tard pour le même
+// artisan qui vient de répondre à la même question.
+const CLE_DEJA_PROPOSE_AUTO = "compyo-install-deja-propose-auto";
+export function marquerInstallationDejaProposee() {
+  try {
+    window.localStorage.setItem(CLE_DEJA_PROPOSE_AUTO, "1");
+  } catch {
+    // Sans conséquence grave : au pire la carte automatique se propose
+    // quand même une fois, jamais bloquant.
+  }
 }

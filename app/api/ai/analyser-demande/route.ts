@@ -24,6 +24,9 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
 
 Reste concret et orienté métier du bâtiment. Ne propose jamais de prix à ce stade.`;
 
+// Sprint Beta Final (27/08) — voir même commentaire dans preparer-brouillon.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const { demandeId } = await request.json();
 

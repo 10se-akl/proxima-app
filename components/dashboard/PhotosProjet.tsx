@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
+import { compresserPhoto } from "@/lib/images/compresserPhoto";
 
 export function PhotosProjet({
   demandeId,
@@ -53,17 +54,27 @@ export function PhotosProjet({
       return;
     }
 
+    // Sprint Beta Final (27/08) — 🔴E : compression avant envoi (voir
+    // lib/images/compresserPhoto.ts), et surtout distinction claire entre
+    // "tout a échoué" et "une partie a échoué" — avant, un échec partiel
+    // silencieux faisait croire à l'artisan que toutes ses photos étaient
+    // bien envoyées alors que certaines manquaient, découvert seulement en
+    // rouvrant le projet plus tard sur le chantier.
+    //
     // Uploads indépendants les uns des autres : en parallèle plutôt qu'un
     // par un, pour ne pas faire attendre l'artisan photo par photo quand
     // il envoie tout un reportage de chantier d'un coup.
+    const fichiersOriginaux = Array.from(fichiers);
     const resultats = await Promise.all(
-      Array.from(fichiers).map(async (fichier) => {
+      fichiersOriginaux.map(async (fichierOriginal) => {
+        const fichier = await compresserPhoto(fichierOriginal);
         const chemin = `${user.id}/${demandeId}/${Date.now()}-${fichier.name}`;
         const { error } = await supabase.storage.from("photos").upload(chemin, fichier);
         return error ? null : chemin;
       })
     );
     const nouveauxChemins = resultats.filter((c): c is string => c !== null);
+    const nbEchecs = fichiersOriginaux.length - nouveauxChemins.length;
 
     setEnvoi(false);
 
@@ -89,6 +100,15 @@ export function PhotosProjet({
       setErreur("Photos envoyées mais non enregistrées sur le projet. Réessayez.");
     } else {
       onChemins(cheminsMisAJour);
+      // Échec partiel (ex : 2 photos sur 5 envoyées) : message explicite
+      // plutôt qu'un silence qui laisserait croire que tout est passé.
+      if (nbEchecs > 0) {
+        setErreur(
+          nbEchecs === 1
+            ? "1 photo n'a pas pu être envoyée. Les autres sont bien enregistrées — réessayez juste celle-ci."
+            : `${nbEchecs} photos n'ont pas pu être envoyées. Les autres sont bien enregistrées — réessayez juste celles-ci.`
+        );
+      }
       const organisationId = await getOrganisationId(supabase, user.id);
       if (organisationId) {
         await enregistrerEvenement(supabase, {
@@ -167,10 +187,19 @@ export function PhotosProjet({
                   …
                 </div>
               )}
+              {/*
+                Sprint Beta Final (27/08) — 🔴E : ce bouton était en
+                opacity-0 + group-hover, donc invisible ET impossible à
+                atteindre au doigt (pas de "hover" tactile) — la seule façon
+                de supprimer une photo depuis un téléphone était de
+                deviner l'emplacement d'un bouton invisible. Toujours
+                visible désormais, taille tactile correcte (44px min).
+              */}
               <button
                 onClick={() => supprimerPhoto(chemin)}
-                className="absolute top-1 right-1 w-6 h-6 bg-black/70 text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                className="absolute top-1 right-1 flex items-center justify-center w-9 h-9 rounded-full bg-black/60 text-white text-sm backdrop-blur-sm transition-colors hover:bg-black/80 active:bg-black/80"
                 title="Supprimer"
+                aria-label="Supprimer cette photo"
               >
                 ✕
               </button>

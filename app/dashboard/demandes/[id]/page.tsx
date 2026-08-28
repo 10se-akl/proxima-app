@@ -14,7 +14,7 @@ import { ValiderDevis } from "@/components/dashboard/ValiderDevis";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
 import { Timeline, type TimelineItem } from "@/components/dashboard/Timeline";
-import { CHECKLISTS_METIER } from "@/lib/checklistsMetier";
+import { obtenirChecklist } from "@/lib/checklistsMetier";
 import type { Projet, Devis, NoteVocale, EvenementProjet, ParametresEntreprise } from "@/types";
 
 const TYPES_CHANTIER: { value: string; label: string }[] = [
@@ -39,6 +39,7 @@ export default function DetailDemandePage({
   const [demande, setDemande] = useState<Projet | null>(null);
   const [devis, setDevis] = useState<Devis | null>(null);
   const [nomArtisan, setNomArtisan] = useState("");
+  const [metierArtisan, setMetierArtisan] = useState<string | null>(null);
   const [chargementAnalyse, setChargementAnalyse] = useState(false);
   const [chargementDevis, setChargementDevis] = useState(false);
   const [chargementReponse, setChargementReponse] = useState(false);
@@ -137,7 +138,10 @@ export default function DetailDemandePage({
       // Ces deux-là dépendent de l'utilisateur (donc après le lot
       // ci-dessus), mais restent indépendantes l'une de l'autre.
       const [{ data: profil }, { data: parametresData }] = await Promise.all([
-        supabase.from("profils").select("nom").eq("id", user.id).single(),
+        // Sprint Beta Final (27/08) — 🔴G : "metier" en plus de "nom",
+        // pour relier la checklist au métier déclaré (voir
+        // lib/checklistsMetier.ts, obtenirChecklist).
+        supabase.from("profils").select("nom, metier").eq("id", user.id).single(),
         orgId
           ? supabase
               .from("parametres_entreprise")
@@ -147,6 +151,7 @@ export default function DetailDemandePage({
           : Promise.resolve({ data: null }),
       ]);
       setNomArtisan(profil?.nom ?? "");
+      setMetierArtisan(profil?.metier ?? null);
       setParametres((parametresData as ParametresEntreprise) ?? null);
 
       if (parametresData?.logo_url) {
@@ -891,7 +896,7 @@ export default function DetailDemandePage({
         />
       </FicheSection>
 
-      <ChecklistMetier typeChantier={demande.type_chantier} />
+      <ChecklistMetier typeChantier={demande.type_chantier} metierArtisan={metierArtisan} />
 
       {/* Étape 1 : analyse IA — optionnelle. Elle sert à faire le tri dans des
           notes en vrac (dictées sur le terrain, décousues) et à repérer ce
@@ -906,7 +911,8 @@ export default function DetailDemandePage({
           <Button
             variant={demande.questions_manquantes ? "ghost" : "primary"}
             onClick={analyserDemande}
-            disabled={chargementAnalyse || !peutAnalyser || analyseAJour}
+            loading={chargementAnalyse}
+            disabled={!peutAnalyser || analyseAJour}
             title={
               !peutAnalyser
                 ? "Ajoutez d'abord une note (vocale ou écrite)"
@@ -988,7 +994,7 @@ export default function DetailDemandePage({
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm">2. Générer un devis</h2>
             {(!devis || devis.statut === "refuse") && (
-              <Button onClick={genererDevis} disabled={chargementDevis}>
+              <Button onClick={genererDevis} loading={chargementDevis}>
                 {chargementDevis
                   ? "Génération en cours…"
                   : devis
@@ -1008,7 +1014,7 @@ export default function DetailDemandePage({
               <Button
                 variant="ghost"
                 onClick={dupliquerDevis}
-                disabled={chargementDevis}
+                loading={chargementDevis}
                 className="mt-3"
               >
                 {chargementDevis ? "Duplication…" : "Dupliquer ce devis pour le modifier"}
@@ -1022,7 +1028,7 @@ export default function DetailDemandePage({
                 Le projet a changé depuis le dernier devis (nouvelle note, photo ou note
                 vocale). Voulez-vous le régénérer en tenant compte de ces changements ?
               </p>
-              <Button onClick={genererDevis} disabled={chargementDevis} className="mt-3">
+              <Button onClick={genererDevis} loading={chargementDevis} className="mt-3">
                 {chargementDevis ? "Mise à jour…" : "Mettre à jour le devis"}
               </Button>
             </Card>
@@ -1042,7 +1048,7 @@ export default function DetailDemandePage({
               <Button
                 variant="ghost"
                 onClick={dupliquerDevis}
-                disabled={chargementDevis}
+                loading={chargementDevis}
                 className="mt-3"
               >
                 {chargementDevis ? "Duplication…" : "Dupliquer ce devis pour l'ajuster"}
@@ -1090,7 +1096,7 @@ export default function DetailDemandePage({
                     <Button variant="ghost" onClick={marquerAccepte} disabled={actionEnCours}>
                       Marquer comme accepté par le client
                     </Button>
-                    <Button variant="ghost" onClick={dupliquerDevis} disabled={chargementDevis}>
+                    <Button variant="ghost" onClick={dupliquerDevis} loading={chargementDevis}>
                       {chargementDevis ? "Duplication…" : "Dupliquer pour ajuster le prix"}
                     </Button>
                     <Button variant="danger" onClick={marquerDevisRefuse} disabled={actionEnCours}>
@@ -1135,7 +1141,7 @@ export default function DetailDemandePage({
             <Button
               variant="ghost"
               onClick={genererReponse}
-              disabled={chargementReponse}
+              loading={chargementReponse}
             >
               {chargementReponse
                 ? "Rédaction en cours…"
@@ -1246,9 +1252,19 @@ function BarreProgression({ statut }: { statut: string }) {
 // partir de ce que l'artisan a déjà noté. Repliée par défaut pour ne pas
 // surcharger la fiche ; cocher ne change rien ailleurs, comme la checklist
 // générée par l'IA plus bas — c'est un pense-bête, pas un formulaire.
-function ChecklistMetier({ typeChantier }: { typeChantier: string }) {
+function ChecklistMetier({
+  typeChantier,
+  metierArtisan,
+}: {
+  typeChantier: string;
+  metierArtisan: string | null;
+}) {
   const [ouverte, setOuverte] = useState(false);
-  const points = CHECKLISTS_METIER[typeChantier as keyof typeof CHECKLISTS_METIER];
+  // Sprint Beta Final (27/08) — 🔴G : priorité au type de chantier détecté
+  // s'il est spécifique, repli sur le métier déclaré par l'artisan sinon
+  // (voir lib/checklistsMetier.ts) — un serrurier ou un paysagiste dont le
+  // chantier tombe en "autre" retrouve enfin une checklist qui lui parle.
+  const points = obtenirChecklist(typeChantier, metierArtisan);
   if (!points) return null;
 
   return (

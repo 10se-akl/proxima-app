@@ -12,6 +12,9 @@ type Extrait = {
   telephone_client: string | null;
   type_chantier: string;
   description_resumee: string;
+  // Sprint Beta Final (27/08) — 🔴H : voir même commentaire dans
+  // app/api/ai/analyser-captures/route.ts.
+  texte_brut: string;
   rdv_date: string | null;
   rdv_heure: string | null;
   capture_illisible: boolean;
@@ -172,6 +175,7 @@ export default function ImporterCapturePage() {
       telephoneClient: l.extrait!.telephone_client,
       typeChantier: l.extrait!.type_chantier,
       descriptionResumee: l.extrait!.description_resumee,
+      texteBrut: l.extrait!.texte_brut,
       rdvDate: l.extrait!.rdv_date,
       rdvHeure: l.extrait!.rdv_heure,
     }));

@@ -70,3 +70,115 @@ export const CHECKLISTS_METIER: Record<TypeChantier, string[]> = {
     "Budget approximatif si évoqué",
   ],
 };
+
+// Sprint Beta Final (27/08) — 🔴G. CHECKLISTS_METIER ci-dessus est indexé
+// par TypeChantier (la NATURE du chantier détectée dans le texte : "salle
+// de bain", "toiture"...), pas par le corps de métier déclaré par
+// l'artisan. Ça marche bien tant que le type détecté correspond à un
+// métier assez proche (plombier ↔ plomberie, couvreur ↔ toiture...), mais
+// un serrurier, un carreleur ou un paysagiste tombent presque toujours
+// dans "autre" — une checklist générique alors qu'ils ont, eux aussi, des
+// points de vigilance très spécifiques à leur métier.
+//
+// CHECKLISTS_PAR_METIER comble ce trou pour les métiers élargis (voir
+// lib/metiers.ts) qui n'ont pas d'équivalent direct dans TypeChantier.
+// Utilisée en repli uniquement quand le type de chantier détecté est
+// "autre" (voir obtenirChecklist ci-dessous) — quand le type détecté est
+// déjà spécifique (ex: "toiture"), il reste prioritaire, il est en
+// général plus précis que le métier seul.
+export const CHECKLISTS_PAR_METIER: Record<string, string[]> = {
+  "Maçon": [
+    "Nature du sol / fondations existantes",
+    "Surface et hauteur des murs concernés",
+    "Accès chantier pour livraison de matériaux (bétonnière, camion)",
+    "Réseaux enterrés à proximité (eau, élec, gaz)",
+    "Déclaration préalable ou permis nécessaire ?",
+  ],
+  "Terrassier": [
+    "Nature du terrain (roche, argile, remblai)",
+    "Surface et profondeur à terrasser",
+    "Accès pour engins de chantier",
+    "Réseaux enterrés déclarés (DICT à faire)",
+    "Évacuation des déblais prévue",
+  ],
+  "Façadier": [
+    "État actuel de la façade (fissures, humidité)",
+    "Surface totale et hauteur (échafaudage nécessaire ?)",
+    "Type de revêtement souhaité",
+    "Isolation par l'extérieur incluse ?",
+    "Autorisation copropriété / mairie si nécessaire",
+  ],
+  "Serrurier": [
+    "Type de serrure/porte concernée",
+    "Marque si remplacement à l'identique",
+    "Urgence (porte claquée, effraction) ?",
+    "Niveau de sécurité souhaité",
+    "Nombre de clés/badges à fournir",
+  ],
+  "Vitrier": [
+    "Type et dimensions du vitrage",
+    "Simple, double ou triple vitrage",
+    "Urgence (bris de glace) ?",
+    "Étage et accès pour la pose",
+    "Mesures précises disponibles",
+  ],
+  "Charpentier": [
+    "Type de charpente (traditionnelle, fermette)",
+    "État du bois existant (humidité, insectes)",
+    "Surface et portée à couvrir",
+    "Accès chantier (grue, échafaudage)",
+    "Isolation liée aux travaux de charpente",
+  ],
+  "Menuisier": [
+    "Type de menuiserie (fenêtre, porte, placard, escalier)",
+    "Matériau souhaité (bois, PVC, alu)",
+    "Mesures précises disponibles",
+    "Dépose de l'ancienne menuiserie incluse ?",
+    "Délai souhaité par le client",
+  ],
+  "Plaquiste": [
+    "Surface totale à traiter (m²)",
+    "Isolation à intégrer dans la cloison",
+    "État du support existant",
+    "Emplacements de prises/interrupteurs à prévoir",
+    "Hauteur sous plafond",
+  ],
+  "Carreleur": [
+    "Surface totale et pièce concernée",
+    "État du support (chape à prévoir ?)",
+    "Format et type de carrelage souhaité",
+    "Faïence murale incluse ?",
+    "Étage et accès (portage du matériel)",
+  ],
+  "Paysagiste": [
+    "Surface totale du terrain",
+    "Nature du sol et exposition",
+    "Accès pour engins/livraison de matériaux",
+    "Entretien récurrent souhaité ou intervention ponctuelle",
+    "Présence d'un réseau d'arrosage existant",
+  ],
+  "Climaticien": [
+    "Surface et nombre de pièces à climatiser",
+    "Type d'installation (mono/multi-split)",
+    "Emplacement souhaité pour l'unité extérieure",
+    "Installation électrique existante suffisante",
+    "Contrat d'entretien déjà existant ?",
+  ],
+};
+
+// Choisit la checklist la plus pertinente : le type de chantier détecté
+// s'il est spécifique, sinon la checklist du métier déclaré par
+// l'artisan si elle existe, sinon rien plutôt qu'un pense-bête hors sujet.
+export function obtenirChecklist(
+  typeChantier: string,
+  metierArtisan: string | null | undefined
+): string[] | null {
+  if (typeChantier !== "autre") {
+    const points = CHECKLISTS_METIER[typeChantier as keyof typeof CHECKLISTS_METIER];
+    if (points) return points;
+  }
+  if (metierArtisan && CHECKLISTS_PAR_METIER[metierArtisan]) {
+    return CHECKLISTS_PAR_METIER[metierArtisan];
+  }
+  return CHECKLISTS_METIER[typeChantier as keyof typeof CHECKLISTS_METIER] ?? null;
+}

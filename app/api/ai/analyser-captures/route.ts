@@ -32,6 +32,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec un tableau contenant
       "telephone_client": "numéro trouvé ou null",
       "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | renovation_complete | autre",
       "description_resumee": "résumé en une ou deux phrases de ce que veut le client, à partir des messages visibles",
+      "texte_brut": "retranscription FIDÈLE et COMPLÈTE du texte des messages du client visibles sur la capture, verbatim (pas un résumé) — un message par ligne si plusieurs, dans l'ordre. Chaîne vide si rien de lisible.",
       "rdv_date": "date au format AAAA-MM-JJ UNIQUEMENT si un jour de rendez-vous est explicitement proposé ou confirmé, sinon null",
       "rdv_heure": "heure au format HH:MM UNIQUEMENT si explicitement mentionnée, sinon null",
       "capture_illisible": true UNIQUEMENT si l'image ne contient aucun texte exploitable, sinon false
@@ -45,10 +46,23 @@ type Extrait = {
   telephone_client: string | null;
   type_chantier: string;
   description_resumee: string;
+  // Sprint Beta Final (27/08) — 🔴H : jusqu'ici seul le résumé (déjà une
+  // reformulation par l'IA) était conservé, jamais le texte d'origine —
+  // contrairement au partage natif et au collage de message, où le texte
+  // brut est systématiquement gardé (voir informations_disponibles ailleurs
+  // dans l'app). Fondation nécessaire à la mémoire automatique (point 6 du
+  // brief) : on ne peut rien extraire plus tard d'un texte qu'on n'a pas
+  // gardé.
+  texte_brut: string;
   rdv_date: string | null;
   rdv_heure: string | null;
   capture_illisible: boolean;
 };
+
+// Sprint Beta Final (27/08) — voir même commentaire dans preparer-brouillon
+// : évite qu'un timeout de plateforme plus court que lib/ai/client.ts tue
+// la fonction avant sa propre gestion d'erreur.
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const { images } = (await request.json()) as {

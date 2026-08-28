@@ -17,6 +17,9 @@ Ne donne aucun prix ni engagement ferme sur les délais si l'information n'est p
 
 Réponds uniquement avec le texte du message, sans guillemets, sans formule "Voici votre message :", rien d'autre que le texte prêt à copier.`;
 
+// Sprint Beta Final (27/08) — voir même commentaire dans preparer-brouillon.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const { demandeId, contexteSupplementaire } = await request.json();
 

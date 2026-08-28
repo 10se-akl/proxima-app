@@ -35,6 +35,9 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
 "temps_estime_heures" est obligatoire uniquement si categorie = "main_oeuvre" (sinon omets-le).
 Propose entre 3 et 6 postes cohérents avec le métier et la description du projet.`;
 
+// Sprint Beta Final (27/08) — voir même commentaire dans preparer-brouillon.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const { demandeId } = await request.json();
 

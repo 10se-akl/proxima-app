@@ -1061,3 +1061,110 @@ alter table parametres_systeme enable row level security;
 insert into parametres_systeme (cle, valeur)
 values ('maintenance_actif', false)
 on conflict (cle) do nothing;
+
+-- ============================================================
+-- Module 24 — Partage natif (Web Share Target, Android/PWA installée) et
+-- brouillon IA à niveaux de confiance ("premier contact sans friction").
+--
+-- Pourquoi une table plutôt qu'un traitement direct dans la route qui
+-- reçoit le partage : le mécanisme Web Share Target du navigateur fait un
+-- vrai POST HTML classique (pas un appel fetch pilotable par notre JS),
+-- suivi d'une redirection vers une page normale. Il faut donc un point de
+-- jonction entre les deux requêtes HTTP distinctes — cette table stocke le
+-- contenu brut reçu (texte + éventuelle image) le temps que la page de
+-- destination le récupère et lance l'IA, puis la ligne est supprimée
+-- (voir app/api/demandes/creer-depuis-brouillon/route.ts) : aucune
+-- rétention longue durée de contenu brut non trié.
+create table if not exists partages_entrants (
+  id uuid primary key default gen_random_uuid(),
+  organisation_id uuid not null references organisations(id) on delete cascade,
+  artisan_id uuid not null references profils(id) on delete cascade,
+  texte text,
+  image_path text, -- chemin dans le bucket "photos", même convention que le reste de l'app
+  created_at timestamptz not null default now()
+);
+
+alter table partages_entrants enable row level security;
+
+-- Un artisan ne voit et ne supprime que ses propres partages entrants —
+-- même logique que le reste du produit (isolation par utilisateur, pas
+-- seulement par organisation, un partage étant nommément personnel avant
+-- d'être transformé en projet d'équipe).
+drop policy if exists "un artisan gère ses propres partages entrants" on partages_entrants;
+create policy "un artisan gère ses propres partages entrants"
+  on partages_entrants for all
+  using (artisan_id = auth.uid())
+  with check (artisan_id = auth.uid());
+
+-- Pas de purge automatique programmée ici (pas de pg_cron configuré sur ce
+-- projet) : un partage jamais finalisé (artisan qui abandonne avant de
+-- valider) reste donc en base jusqu'à suppression manuelle ou ajout futur
+-- d'une tâche planifiée. Volume attendu très faible (quelques lignes par
+-- artisan actif, jamais lues par personne d'autre grâce à la RLS
+-- ci-dessus) — pas un problème à ce stade, à surveiller si le volume
+-- grossit.
+create index if not exists partages_entrants_menage_idx on partages_entrants (created_at);
+
+-- Module 25 — Sprint Beta Final (27/08) : corrections QA du partage natif.
+--
+-- Bug trouvé en audit : le partage Android peut contenir PLUSIEURS photos
+-- (sélection multiple depuis la galerie), mais app/api/partage/route.ts ne
+-- lisait que la première (`formData.get` au lieu de `getAll`) — les autres
+-- étaient perdues silencieusement. `images` remplace `image_path` comme
+-- source de vérité (tableau, toujours au moins vide) ; `image_path` est
+-- conservé pour compatibilité descendante (ancien code qui le lirait
+-- encore) mais n'est plus renseigné par la route de réception.
+alter table partages_entrants add column if not exists images jsonb not null default '[]'::jsonb;
+
+-- Module 26 — Sprint Beta Final (27/08) : identité client stable.
+--
+-- Jusqu'ici "client" n'était que des colonnes texte répétées sur chaque
+-- ligne de `demandes` (nom_client/telephone_client/...), sans lien entre
+-- deux projets du même client. C'est le prérequis technique au matching
+-- avant appel IA (voir app/api/partage/route.ts et lib/clients/) et à
+-- toute mémoire par client future : sans clé stable, rien à quoi
+-- s'accrocher. Volontairement minimal (pas un CRM) — mêmes conventions que
+-- le reste du schéma (organisation_id, RLS via mes_organisations()).
+--
+-- `telephone` est TOUJOURS normalisé à l'écriture (voir
+-- lib/clients/normaliserTelephone.ts) : 9 derniers chiffres significatifs
+-- après suppression de tout non-chiffre et de l'indicatif +33/0 en tête.
+-- Sans cette normalisation systématique, "+33 6 12 34 56 78" et
+-- "06.12.34.56.78" ne matcheraient jamais alors qu'ils désignent le même
+-- numéro — c'était le vrai obstacle identifié à l'audit, pas l'absence de
+-- table en elle-même. `telephone_brut` garde la valeur telle que
+-- saisie/extraite, pour affichage et audit.
+create table if not exists clients (
+  id uuid primary key default gen_random_uuid(),
+  organisation_id uuid not null references organisations(id) on delete cascade,
+  nom text,
+  telephone text, -- normalisé, voir commentaire ci-dessus
+  telephone_brut text,
+  email text,
+  adresse text,
+  created_at timestamptz not null default now()
+);
+
+alter table clients enable row level security;
+
+drop policy if exists "un membre gère les clients de son organisation" on clients;
+create policy "un membre gère les clients de son organisation"
+  on clients for all
+  using (organisation_id in (select mes_organisations()))
+  with check (organisation_id in (select mes_organisations()));
+
+-- Chemin de lecture du point 2 du brief (avant chaque appel IA sur un
+-- partage) : chercher un client par organisation + téléphone normalisé.
+-- Doit être indexé dès le départ, cohérent avec la logique du Module 17.
+create index if not exists clients_organisation_telephone_idx on clients (organisation_id, telephone);
+
+-- `demandes` gagne un lien structurel vers `clients`, SANS supprimer les
+-- colonnes texte existantes (nom_client/telephone_client/...) : elles
+-- restent la source d'affichage immédiate et le filet de sécurité si
+-- aucun client n'a pu être rapproché — même philosophie que le Module 1
+-- ("on enrichit sans renommer/casser l'existant"). Pas de backfill
+-- rétroactif automatique des projets existants ici (voir rapport de
+-- cycle) : un rapprochement fait sur des numéros historiques non
+-- normalisés créerait de faux regroupements silencieux.
+alter table demandes add column if not exists client_id uuid references clients(id) on delete set null;
+create index if not exists demandes_client_id_idx on demandes (client_id);

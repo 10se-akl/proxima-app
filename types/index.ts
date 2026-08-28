@@ -40,6 +40,7 @@ export type Projet = {
   telephone_client: string | null;
   email_client: string | null;
   adresse_client: string | null;
+  client_id: string | null;
   type_chantier: TypeChantier;
   description: string;
   informations_disponibles: string | null;
@@ -63,6 +64,35 @@ export type AnalyseIA = {
   resume: string;
   informations_manquantes: string[];
   questions_suggerees: string[];
+};
+
+// "Premier contact sans friction" (26/08) — brouillon préparé par l'IA à
+// partir d'un message/partage brut, jamais enregistré directement en base
+// (voir lib/ai/brouillonProjet.ts). Chaque champ variable porte son niveau
+// de confiance : "explicite" = valeur recopiée telle quelle du texte
+// source, "deduit" = valeur résolue/interprétée par l'IA (ex. "mardi
+// prochain" → une vraie date), "absent" = rien trouvé. L'artisan reste
+// toujours libre de corriger avant validation, quel que soit le niveau.
+export type NiveauConfiance = "explicite" | "deduit" | "absent";
+
+export type ChampBrouillon<T> = {
+  valeur: T;
+  confiance: NiveauConfiance;
+};
+
+export type BrouillonProjet = {
+  nomClient: ChampBrouillon<string | null>;
+  telephoneClient: ChampBrouillon<string | null>;
+  adresseClient: ChampBrouillon<string | null>;
+  typeChantier: ChampBrouillon<TypeChantier>;
+  resume: ChampBrouillon<string>;
+  priorite: ChampBrouillon<Priorite>;
+  rdvDate: ChampBrouillon<string | null>;
+  rdvHeure: ChampBrouillon<string | null>;
+  // Conservé pour traçabilité et comme filet de sécurité si tous les
+  // champs ci-dessus sont "absent" (voir BrouillonProjet.tsx) : l'artisan
+  // garde toujours accès au texte d'origine complet, jamais perdu.
+  texteOrigine: string;
 };
 
 export type ParametresEntreprise = {

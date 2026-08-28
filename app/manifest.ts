@@ -66,5 +66,25 @@ export default function manifest(): MetadataRoute.Manifest {
         purpose: "maskable",
       },
     ],
+    // "Premier contact sans friction" (26/08) — Web Share Target, Android
+    // uniquement (voir app/api/partage/route.ts). C'est ce bloc qui fait
+    // apparaître Compyo dans le menu "Partager" natif d'Android une fois la
+    // PWA installée : WhatsApp/SMS/Mail/Photos → Partager → Compyo. Aucun
+    // effet sur iOS/Safari (non supporté par WebKit, vérifié — voir
+    // onboarding-mobile-pwa-faisabilite.md) ni sur desktop : la présence de
+    // ce champ dans le manifest est simplement ignorée ailleurs, sans risque.
+    // Les noms de champs ("titre"/"texte"/"fichiers") sont choisis pour
+    // correspondre exactement à ce que lit app/api/partage/route.ts.
+    share_target: {
+      action: "/api/partage",
+      method: "post",
+      enctype: "multipart/form-data",
+      params: [
+        { name: "titre", value: "titre" },
+        { name: "texte", value: "texte" },
+        { name: "url", value: "url" },
+      ],
+      files: [{ name: "fichiers", accept: ["image/*"] }],
+    },
   };
 }

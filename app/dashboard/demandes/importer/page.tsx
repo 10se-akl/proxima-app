@@ -3,20 +3,33 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { getOrganisationId } from "@/lib/organisation";
-import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
+import { ConfirmationRdv } from "@/components/dashboard/ConfirmationRdv";
+import type { BrouillonProjet } from "@/types";
 
 type RdvPropose = { date: string; heure: string };
 
+// ============================================================
+// "Premier contact sans friction" (26/08) — remplace l'ancienne création
+// directe (POST /api/ai/importer-message) par le parcours en deux temps
+// commun aux deux portes d'entrée : préparer un brouillon (jamais bloquant,
+// voir components/dashboard/BrouillonProjet.tsx), le faire valider par
+// l'artisan, puis seulement créer le projet (voir
+// app/api/demandes/creer-depuis-brouillon). Cet écran reste la porte
+// "Importer un message", conservée sur iPhone/desktop — voir
+// app/dashboard/demandes/page.tsx pour la logique qui décide de son
+// affichage selon la plateforme.
+// ============================================================
+
 export default function ImporterMessagePage() {
   const router = useRouter();
-  const supabase = createClient();
 
   const [message, setMessage] = useState("");
+  const [brouillon, setBrouillon] = useState<BrouillonProjet | null>(null);
   const [chargement, setChargement] = useState(false);
+  const [creationEnCours, setCreationEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
   // Une fois le projet créé, si l'IA a détecté un créneau proposé par le
@@ -27,7 +40,6 @@ export default function ImporterMessagePage() {
     nomClient: string;
     rdv: RdvPropose;
   } | null>(null);
-  const [traitementRdv, setTraitementRdv] = useState(false);
 
   // Cycle "Release Candidate" 1 (26/08) — annulation propre : si l'artisan
   // quitte cette page pendant que l'IA analyse son message, on annule le
@@ -46,10 +58,10 @@ export default function ImporterMessagePage() {
     controleurIARef.current = controleur;
     let res: Response;
     try {
-      res = await fetch("/api/ai/importer-message", {
+      res = await fetch("/api/ai/preparer-brouillon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messageBrut: message }),
+        body: JSON.stringify({ texte: message }),
         signal: controleur.signal,
       });
     } catch (err) {
@@ -64,7 +76,36 @@ export default function ImporterMessagePage() {
 
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      setErreur(data?.error ?? "L'import a échoué. Réessayez.");
+      setErreur(data?.error ?? "L'analyse a échoué. Réessayez.");
+      return;
+    }
+
+    const data = await res.json();
+    setBrouillon(data.brouillon);
+  }
+
+  async function creerProjet(valeurs: BrouillonProjet) {
+    setCreationEnCours(true);
+    setErreur(null);
+
+    let res: Response;
+    try {
+      res = await fetch("/api/demandes/creer-depuis-brouillon", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ brouillon: valeurs }),
+      });
+    } catch {
+      setCreationEnCours(false);
+      setErreur("Impossible d'enregistrer le projet pour le moment.");
+      return;
+    }
+
+    setCreationEnCours(false);
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      setErreur(data?.error ?? "La création a échoué. Réessayez.");
       return;
     }
 
@@ -82,143 +123,33 @@ export default function ImporterMessagePage() {
     router.push(`/dashboard/demandes/${data.projetId}`);
   }
 
-  async function accepterRdv() {
-    if (!propositionEnCours) return;
-    setTraitementRdv(true);
-    setErreur(null);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      setTraitementRdv(false);
-      return;
-    }
-
-    const organisationId = await getOrganisationId(supabase, user.id);
-    if (!organisationId) {
-      setTraitementRdv(false);
-      setErreur("Aucune organisation associée à ce compte, reconnectez-vous.");
-      return;
-    }
-
-    const dateHeure = new Date(
-      `${propositionEnCours.rdv.date}T${propositionEnCours.rdv.heure}`
-    );
-
-    // Même contrôle de double-réservation que la création manuelle d'un
-    // rendez-vous (voir planning/nouveau) : un créneau proposé par SMS/mail
-    // et accepté sans vérifier peut tomber pile sur un chantier déjà prévu.
-    const debutJour = new Date(propositionEnCours.rdv.date);
-    debutJour.setHours(0, 0, 0, 0);
-    const finJour = new Date(propositionEnCours.rdv.date);
-    finJour.setHours(23, 59, 59, 999);
-
-    const { data: evenementsJour } = await supabase
-      .from("evenements_planning")
-      .select("id, titre, date_heure, duree_minutes")
-      .eq("organisation_id", organisationId)
-      .eq("type", "rendez_vous")
-      .neq("statut", "annule")
-      .gte("date_heure", debutJour.toISOString())
-      .lte("date_heure", finJour.toISOString());
-
-    const fin = new Date(dateHeure.getTime() + 60 * 60000);
-    const conflit = (evenementsJour ?? []).find((ev) => {
-      const debutExistant = new Date(ev.date_heure);
-      const finExistant = new Date(debutExistant.getTime() + (ev.duree_minutes ?? 60) * 60000);
-      return dateHeure < finExistant && fin > debutExistant;
-    });
-
-    if (conflit) {
-      setTraitementRdv(false);
-      setErreur(
-        `Créneau déjà pris : "${conflit.titre}" à ${new Date(
-          conflit.date_heure
-        ).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}. Choisissez un autre horaire.`
-      );
-      return;
-    }
-
-    const { error } = await supabase.from("evenements_planning").insert({
-      artisan_id: user.id,
-      organisation_id: organisationId,
-      demande_id: propositionEnCours.projetId,
-      titre: `Rendez-vous ${propositionEnCours.nomClient}`,
-      type: "rendez_vous",
-      date_heure: dateHeure.toISOString(),
-      duree_minutes: 60,
-    });
-
-    if (error) {
-      setTraitementRdv(false);
-      setErreur("Impossible d'enregistrer le rendez-vous. Réessayez.");
-      return;
-    }
-
-    await enregistrerEvenement(supabase, {
-      demandeId: propositionEnCours.projetId,
-      artisanId: user.id,
-      organisationId,
-      type: "rdv_planifie",
-      titre: "Rendez-vous planifié",
-      detail: dateHeure.toLocaleDateString("fr-FR", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    });
-
-    setTraitementRdv(false);
-    router.push("/dashboard/planning");
-    router.refresh();
-  }
-
-  function proposerAutreDate() {
-    if (!propositionEnCours) return;
-    router.push(`/dashboard/planning/nouveau?projetId=${propositionEnCours.projetId}`);
-  }
-
   if (propositionEnCours) {
-    const dateFormatee = new Date(
-      `${propositionEnCours.rdv.date}T${propositionEnCours.rdv.heure}`
-    ).toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
-
     return (
-      <div className="p-8 max-w-lg">
-        <h1 className="font-display text-2xl font-semibold text-ink">Projet créé</h1>
-        <Card className="mt-6 p-6">
-          <p className="text-sm text-ink/80">
-            {propositionEnCours.nomClient} propose un rendez-vous le{" "}
-            <span className="font-semibold">{dateFormatee}</span> à{" "}
-            <span className="font-semibold">{propositionEnCours.rdv.heure}</span>.
-          </p>
-          <p className="mt-2 text-sm text-ink/60">
-            Ce créneau vous convient-il ?
-          </p>
-          <div className="mt-5 flex gap-3">
-            <Button onClick={accepterRdv} disabled={traitementRdv}>
-              {traitementRdv ? "Ajout en cours…" : "✓ Accepter ce créneau"}
-            </Button>
-            <Button variant="ghost" onClick={proposerAutreDate}>
-              Choisir une autre date
-            </Button>
-          </div>
-          {erreur && <p className="mt-3 text-sm text-signal">{erreur}</p>}
-        </Card>
+      <ConfirmationRdv
+        projetId={propositionEnCours.projetId}
+        nomClient={propositionEnCours.nomClient}
+        rdv={propositionEnCours.rdv}
+      />
+    );
+  }
+
+  if (brouillon) {
+    return (
+      <div className="p-8 max-w-2xl">
         <Link
-          href={`/dashboard/demandes/${propositionEnCours.projetId}`}
-          className="mt-4 inline-block text-sm text-ink/50 hover:text-ink transition-colors"
+          href="/dashboard/demandes"
+          className="text-sm text-ink/60 hover:text-ink transition-colors"
         >
-          Voir le projet sans planifier maintenant →
+          ← Retour aux projets
         </Link>
+        <Card className="mt-6 p-6">
+          <BrouillonProjetForm
+            brouillon={brouillon}
+            onValider={creerProjet}
+            validationEnCours={creationEnCours}
+            erreur={erreur}
+          />
+        </Card>
       </div>
     );
   }
@@ -233,9 +164,8 @@ export default function ImporterMessagePage() {
         Créer un projet à partir d&apos;un message
       </h1>
       <p className="mt-2 text-sm text-ink/60">
-        Collez le message reçu du client (SMS, email, WhatsApp...) tel quel. L&apos;IA en
-        extrait le nom, les coordonnées si elles sont présentes, et un résumé. Si le client
-        propose un créneau, il vous sera proposé — jamais ajouté seul.
+        Collez le message reçu du client (SMS, email, WhatsApp...) tel quel. L&apos;IA prépare
+        un brouillon (nom, coordonnées si présentes, résumé) que vous validez avant la création.
       </p>
 
       <Card className="mt-8 p-6">
@@ -252,7 +182,7 @@ export default function ImporterMessagePage() {
           {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
           <Button type="submit" disabled={chargement} className="self-start">
-            {chargement ? "Analyse en cours…" : "Créer le projet automatiquement"}
+            {chargement ? "Analyse en cours…" : "Préparer le brouillon"}
           </Button>
         </form>
       </Card>

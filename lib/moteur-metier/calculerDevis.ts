@@ -49,6 +49,44 @@ const REFERENCE_MATERIAUX: { motsCles: string[]; prixUnitaire: number }[] = [
   { motsCles: ["pompe à chaleur", "pompe a chaleur", "pac"], prixUnitaire: 6500 },
   { motsCles: ["thermostat", "programmateur"], prixUnitaire: 130 },
   { motsCles: ["climatisation", "clim"], prixUnitaire: 1400 },
+  // Sprint Beta Final (27/08) — 🔴G : le catalogue ne couvrait que les
+  // métiers déjà présents dans TypeChantier (plombier, électricien,
+  // chauffagiste, couvreur, peintre). Avec l'élargissement de la liste
+  // des métiers (voir lib/metiers.ts), un maçon, un menuisier ou un
+  // carreleur tombait systématiquement sur le tarif générique par défaut
+  // (60€), quel que soit le poste — mêmes quelques repères que pour les
+  // métiers déjà couverts, pas un vrai catalogue fournisseur.
+  // Maçonnerie / gros œuvre
+  { motsCles: ["parpaing", "agglo"], prixUnitaire: 3 },
+  { motsCles: ["béton", "beton", "dalle"], prixUnitaire: 110 },
+  { motsCles: ["enduit"], prixUnitaire: 32 },
+  // Terrassement
+  { motsCles: ["terrassement", "décaissement", "decaissement"], prixUnitaire: 45 },
+  { motsCles: ["évacuation gravats", "evacuation gravats", "déblais", "deblais"], prixUnitaire: 350 },
+  // Façade
+  { motsCles: ["ravalement"], prixUnitaire: 48 },
+  { motsCles: ["isolation extérieure", "isolation exterieure", "ite"], prixUnitaire: 90 },
+  // Serrurerie
+  { motsCles: ["serrure", "cylindre"], prixUnitaire: 90 },
+  { motsCles: ["porte blindée", "porte blindee"], prixUnitaire: 1800 },
+  // Vitrerie
+  { motsCles: ["vitrage", "double vitrage"], prixUnitaire: 180 },
+  // Charpente / menuiserie bois
+  { motsCles: ["charpente"], prixUnitaire: 95 },
+  { motsCles: ["fenêtre", "fenetre"], prixUnitaire: 480 },
+  { motsCles: ["porte d'entrée", "porte d'entree"], prixUnitaire: 950 },
+  { motsCles: ["placard", "dressing"], prixUnitaire: 420 },
+  { motsCles: ["escalier"], prixUnitaire: 2200 },
+  // Plaquisterie
+  { motsCles: ["cloison", "placo", "plaque de plâtre", "plaque de platre"], prixUnitaire: 28 },
+  { motsCles: ["faux plafond"], prixUnitaire: 35 },
+  // Carrelage (au-delà de salle de bain/cuisine déjà couverts plus haut)
+  { motsCles: ["plinthe"], prixUnitaire: 8 },
+  // Paysagisme
+  { motsCles: ["gazon", "pelouse", "engazonnement"], prixUnitaire: 12 },
+  { motsCles: ["clôture", "cloture", "portail"], prixUnitaire: 85 },
+  { motsCles: ["terrasse bois", "terrasse composite"], prixUnitaire: 95 },
+  { motsCles: ["arrosage automatique"], prixUnitaire: 2200 },
 ];
 
 const PRIX_DEFAUT_FOURNITURE = 60;

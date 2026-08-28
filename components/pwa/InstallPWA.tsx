@@ -8,6 +8,24 @@ import {
   initialiserEcouteInstallation,
   peutProposerInstallation,
 } from "@/lib/pwa/installPrompt";
+import { detecterPlateforme, detecterMoteurRestreint, type MoteurRestreint } from "@/lib/pwa/plateforme";
+
+// Sprint Beta Final (27/08) — 🔴F : texte d'instructions par navigateur
+// restreint (voir lib/pwa/plateforme.ts pour le pourquoi de chaque cas).
+// Toujours une instruction concrète et actionnable, jamais un message
+// vague type "installation indisponible".
+function texteInstructionsMoteurRestreint(moteur: MoteurRestreint): string {
+  switch (moteur) {
+    case "webview_app":
+      return "Ce lien s'est ouvert dans l'appli qui vous l'a envoyé, pas dans votre navigateur. Appuyez sur ⋮ ou ••• en haut, puis \"Ouvrir dans le navigateur\" — vous pourrez installer Compyo depuis là.";
+    case "firefox_android":
+      return "Appuyez sur ⋮ en haut à droite de Firefox, puis \"Installer\" (ou \"Ajouter à l'écran d'accueil\").";
+    case "samsung_internet":
+      return "Appuyez sur ☰ en bas, puis \"Ajouter une page à\" → \"Écran d'accueil\".";
+    default:
+      return "";
+  }
+}
 
 // ============================================================
 // Carte discrète "Installer Compyo" — jamais une popup au chargement, et
@@ -39,15 +57,26 @@ const DELAI_AVANT_PROPOSITION_MS = 30_000;
 export function InstallPWA() {
   const [afficherCarte, setAfficherCarte] = useState(false);
   const [modeIOS, setModeIOS] = useState(false);
+  // "Parcours PWA par appareil" (27/08) — modeIOS pilote déjà le seul choix
+  // qui compte techniquement (bouton actif ou instructions manuelles,
+  // faute d'API d'installation programmatique sur Safari) ; plateforme
+  // affine seulement le TEXTE affiché dans les deux autres cas, pour ne
+  // pas parler d'"écran d'accueil" à un artisan sur ordinateur.
+  const [plateforme, setPlateforme] = useState<"android" | "ios" | "desktop">("android");
+  const [moteurRestreint, setMoteurRestreint] = useState<MoteurRestreint>(null);
   const [installationEnCours, setInstallationEnCours] = useState(false);
   const [installationReussie, setInstallationReussie] = useState(false);
 
   useEffect(() => {
     initialiserEcouteInstallation();
     setModeIOS(estIOS());
+    setPlateforme(detecterPlateforme());
+    setMoteurRestreint(detecterMoteurRestreint());
 
     const gererDemandeManuelle = () => {
       setModeIOS(estIOS());
+      setPlateforme(detecterPlateforme());
+      setMoteurRestreint(detecterMoteurRestreint());
       setInstallationReussie(false);
       setAfficherCarte(true);
     };
@@ -125,11 +154,17 @@ export function InstallPWA() {
                 </span>
               </div>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink">Installer Compyo</p>
+                <p className="text-sm font-semibold text-ink">
+                  {plateforme === "desktop" ? "Installer Compyo sur cet ordinateur" : "Installer Compyo"}
+                </p>
                 <p className="mt-1 text-xs text-ink/60 leading-relaxed">
-                  {modeIOS
-                    ? "Ajoutez Compyo à votre écran d'accueil : appuyez sur Partager puis \"Sur l'écran d'accueil\"."
-                    : "Ouvrez Compyo en un geste depuis votre écran d'accueil, comme une vraie application."}
+                  {moteurRestreint
+                    ? texteInstructionsMoteurRestreint(moteurRestreint)
+                    : modeIOS
+                      ? "Ajoutez Compyo à votre écran d'accueil : appuyez sur Partager puis \"Sur l'écran d'accueil\"."
+                      : plateforme === "desktop"
+                        ? "Ouvrez Compyo depuis votre bureau ou votre barre des tâches, dans sa propre fenêtre, sans passer par le navigateur."
+                        : "Ouvrez Compyo en un geste depuis votre écran d'accueil, comme une vraie application."}
                 </p>
               </div>
             </div>
@@ -140,7 +175,15 @@ export function InstallPWA() {
               >
                 Plus tard
               </button>
-              {!modeIOS && (
+              {/*
+                Sprint Beta Final (27/08) — 🔴F : sans moteurRestreint dans
+                cette condition, un artisan dans WhatsApp/Firefox Android/
+                Samsung Internet voyait un bouton "Installer" actif qui ne
+                faisait RIEN au clic (declencherInstallation() retombe sur
+                "indisponible" faute de beforeinstallprompt) — pire qu'une
+                absence de bouton, ça ressemble à un bug de l'app.
+              */}
+              {!modeIOS && !moteurRestreint && (
                 <button
                   onClick={installer}
                   disabled={installationEnCours}
@@ -149,7 +192,7 @@ export function InstallPWA() {
                   {installationEnCours ? "Installation…" : "Installer"}
                 </button>
               )}
-              {modeIOS && (
+              {(modeIOS || moteurRestreint) && (
                 <button
                   onClick={fermer}
                   className="text-xs font-medium bg-ink text-paper rounded-lg px-3.5 py-2 transition-colors hover:bg-signal"

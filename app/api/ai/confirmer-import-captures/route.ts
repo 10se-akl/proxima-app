@@ -44,6 +44,13 @@ type LigneImport = {
   telephoneClient: string | null;
   typeChantier: string;
   descriptionResumee: string;
+  // Sprint Beta Final (27/08) — 🔴H : jusqu'ici cette route écrivait le
+  // texte fixe "Message d'origine : capture d'écran importée" à la place
+  // du VRAI texte du message (perdu, jamais transmis par cette route) —
+  // seule route d'import à ne pas conserver le texte brut, contrairement
+  // au partage natif et au collage de message. Voir app/api/ai/
+  // analyser-captures/route.ts pour l'extraction de ce champ.
+  texteBrut: string;
   rdvDate: string | null;
   rdvHeure: string | null;
 };
@@ -90,7 +97,11 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const noteAjoutee = `--- Message importé (capture d'écran) ---\n${ligne.descriptionResumee}`;
+      // Texte brut si l'IA a pu le retranscrire, résumé en repli sinon
+      // (image partiellement lisible) — jamais rien de vide.
+      const noteAjoutee = `--- Message importé (capture d'écran) ---\n${
+        ligne.texteBrut?.trim() || ligne.descriptionResumee
+      }`;
       const notesMisesAJour = projetExistant.notes
         ? `${projetExistant.notes}\n\n${noteAjoutee}`
         : noteAjoutee;
@@ -128,7 +139,9 @@ export async function POST(request: NextRequest) {
         telephone_client: ligne.telephoneClient,
         type_chantier: typeChantierValide(ligne.typeChantier),
         description: ligne.descriptionResumee,
-        informations_disponibles: "Message d'origine : capture d'écran importée",
+        informations_disponibles: `Message d'origine (capture d'écran) :\n${
+          ligne.texteBrut?.trim() || "texte non retranscrit"
+        }`,
       })
       .select("id")
       .single();

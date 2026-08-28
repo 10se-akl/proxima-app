@@ -5,16 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-
-const METIERS = [
-  "Maçon",
-  "Plombier",
-  "Électricien",
-  "Chauffagiste",
-  "Couvreur",
-  "Entreprise de rénovation",
-  "Autre",
-];
+import { METIERS } from "@/lib/metiers";
 
 export function MonCompte() {
   const supabase = createClient();

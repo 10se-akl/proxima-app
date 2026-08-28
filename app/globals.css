@@ -496,6 +496,35 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Onboarding premium (27/08) — écran 3 : démonstration animée du parcours
+   "Partager → Compyo → Projet créé". Boucle discrète en CSS pur (pas de
+   librairie d'animation) : trois étapes qui s'allument l'une après l'autre
+   puis se réinitialisent, façon indicateur de progression vivant plutôt
+   qu'un simple schéma statique. */
+.onboarding-entree {
+  animation: onboarding-apparaitre 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes onboarding-apparaitre {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.onboarding-etape-flux {
+  opacity: 0.25;
+  transform: scale(0.92);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.onboarding-etape-flux.onboarding-etape-active {
+  opacity: 1;
+  transform: scale(1);
+}
+.onboarding-fleche-flux {
+  opacity: 0.15;
+  transition: opacity 0.5s ease;
+}
+.onboarding-fleche-flux.onboarding-fleche-active {
+  opacity: 1;
+}
+
 /* Curseur d'importance : piste dégradée (calme → signal), gros pouce
    circulaire — le natif input[type=range] stylé plutôt qu'un composant
    dédié, pour rester en CSS pur. */

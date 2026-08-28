@@ -6,16 +6,7 @@ import Link from "next/link";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-
-const METIERS = [
-  "Maçon",
-  "Plombier",
-  "Électricien",
-  "Chauffagiste",
-  "Couvreur",
-  "Entreprise de rénovation",
-  "Autre",
-];
+import { METIERS } from "@/lib/metiers";
 
 // Next.js exige que tout composant utilisant useSearchParams() soit
 // entouré d'une frontière <Suspense> — sinon le pré-rendu statique de la

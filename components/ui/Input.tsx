@@ -1,7 +1,7 @@
-import { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { InputHTMLAttributes, ReactNode, TextareaHTMLAttributes } from "react";
 
 type FieldProps = {
-  label: string;
+  label: ReactNode;
   required?: boolean;
 };
 

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { BoutonRetour } from "@/components/dashboard/BoutonRetour";
+import { PremierLancement } from "@/components/onboarding/PremierLancement";
 
 export default async function DashboardLayout({
   children,
@@ -29,6 +30,7 @@ export default async function DashboardLayout({
       <Sidebar nomArtisan={profil?.nom ?? user.email ?? ""} />
       <main className="flex-1 min-h-screen">{children}</main>
       <BoutonRetour />
+      <PremierLancement />
     </div>
   );
 }

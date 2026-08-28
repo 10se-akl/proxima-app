@@ -1,11 +1,12 @@
 "use client";
 
-import { useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { rechercherClientParTelephone, trouverOuCreerClient } from "@/lib/clients";
 import {
   obtenirClasseReconnaissance,
   messageErreurDictee,
@@ -42,6 +43,7 @@ function detecterTypeChantier(texte: string): string {
 
 export default function NouveauProjetPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
 
   const [nomClient, setNomClient] = useState("");
@@ -55,16 +57,29 @@ export default function NouveauProjetPage() {
   >([]);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
-  // Simple vérification par nom — pas de vraie fiche client (voir échange
-  // sur le sujet), juste de quoi éviter qu'un artisan recrée un projet en
-  // pensant que c'est le premier contact avec ce client, et lui montrer
-  // directement les anciens chantiers plutôt qu'un simple compteur : le
-  // clic en moins compte, surtout au téléphone avec le client en attente.
-  async function verifierClientExistant() {
-    if (!nomClient.trim()) {
+  // Vérification par nom ET par téléphone — pas de vraie fiche client
+  // (voir échange sur le sujet), juste de quoi éviter qu'un artisan
+  // recrée un projet en pensant que c'est le premier contact avec ce
+  // client, et lui montrer directement les anciens chantiers plutôt
+  // qu'un simple compteur : le clic en moins compte, surtout au
+  // téléphone avec le client en attente.
+  //
+  // Sprint Beta Final (27/08) — le matching par nom seul (`ilike`) ratait
+  // les clients dont le nom est orthographié différemment ou dont seul le
+  // prénom est saisi, alors que le téléphone est un identifiant bien plus
+  // fiable (voir lib/clients/, même normalisation que le matching sur le
+  // partage). On combine les deux résultats plutôt que de choisir l'un ou
+  // l'autre — un signal fort (téléphone) ou faible (nom) reste utile ici
+  // car c'est purement informatif, jamais un rattachement automatique.
+  async function verifierClientExistant(champ: "nom" | "telephone") {
+    if (champ === "nom" && !nomClient.trim()) {
       setAnciensProjets([]);
       return;
     }
+    if (champ === "telephone" && !telephoneClient.trim()) {
+      return;
+    }
+
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -73,15 +88,41 @@ export default function NouveauProjetPage() {
     const organisationId = await getOrganisationId(supabase, user.id);
     if (!organisationId) return;
 
-    const { data } = await supabase
-      .from("demandes")
-      .select("id, type_chantier, statut, created_at")
-      .eq("organisation_id", organisationId)
-      .ilike("nom_client", `%${nomClient.trim()}%`)
-      .order("created_at", { ascending: false })
-      .limit(5);
+    const resultats = new Map<
+      string,
+      { id: string; type_chantier: string; statut: string; created_at: string }
+    >();
 
-    setAnciensProjets(data ?? []);
+    if (nomClient.trim()) {
+      const { data: parNom } = await supabase
+        .from("demandes")
+        .select("id, type_chantier, statut, created_at")
+        .eq("organisation_id", organisationId)
+        .ilike("nom_client", `%${nomClient.trim()}%`)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      for (const p of parNom ?? []) resultats.set(p.id, p);
+    }
+
+    if (telephoneClient.trim()) {
+      const client = await rechercherClientParTelephone(
+        supabase,
+        organisationId,
+        telephoneClient.trim()
+      );
+      if (client) {
+        const { data: parTelephone } = await supabase
+          .from("demandes")
+          .select("id, type_chantier, statut, created_at")
+          .eq("organisation_id", organisationId)
+          .eq("client_id", client.id)
+          .order("created_at", { ascending: false })
+          .limit(5);
+        for (const p of parTelephone ?? []) resultats.set(p.id, p);
+      }
+    }
+
+    setAnciensProjets(Array.from(resultats.values()));
   }
 
   function dicter() {
@@ -119,6 +160,17 @@ export default function NouveauProjetPage() {
     setEnregistrement(false);
   }
 
+  // "Premier contact sans friction" (26/08) — entrée directe depuis le menu
+  // "Nouveau projet" (voir components/dashboard/NouveauProjetMenu.tsx),
+  // option "Dictée vocale" : on lance l'écoute immédiatement au lieu de
+  // forcer un clic supplémentaire sur "🎙 Dicter" une fois la page ouverte.
+  useEffect(() => {
+    if (searchParams.get("dictee") === "1") {
+      dicter();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErreur(null);
@@ -147,6 +199,17 @@ export default function NouveauProjetPage() {
       return;
     }
 
+    // Sprint Beta Final (27/08) — même fondation que creer-depuis-brouillon
+    // (Task C) : un projet créé manuellement doit lui aussi être rattaché à
+    // un client stable dès qu'un téléphone exploitable est saisi, pour que
+    // le matching (Porte A comme Porte B) reste cohérent sur toute l'appli.
+    const clientId = await trouverOuCreerClient(supabase, {
+      organisationId,
+      nom: nomClient,
+      telephoneBrut: telephoneClient || null,
+      adresse: null,
+    });
+
     const { data, error } = await supabase
       .from("demandes")
       .insert({
@@ -154,6 +217,7 @@ export default function NouveauProjetPage() {
         organisation_id: organisationId,
         nom_client: nomClient,
         telephone_client: telephoneClient || null,
+        client_id: clientId,
         description,
         type_chantier: detecterTypeChantier(description),
       })
@@ -196,7 +260,7 @@ export default function NouveauProjetPage() {
               autoFocus
               value={nomClient}
               onChange={(e) => setNomClient(e.target.value)}
-              onBlur={verifierClientExistant}
+              onBlur={() => verifierClientExistant("nom")}
             />
             {anciensProjets.length > 0 && (
               <div className="mt-2 rounded-xl border border-ink/10 bg-paper-warm p-3">
@@ -232,6 +296,7 @@ export default function NouveauProjetPage() {
             type="tel"
             value={telephoneClient}
             onChange={(e) => setTelephoneClient(e.target.value)}
+            onBlur={() => verifierClientExistant("telephone")}
           />
 
           <div>

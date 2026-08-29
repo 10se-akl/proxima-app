@@ -8,10 +8,12 @@ import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureP
 import { ResumeJournee } from "@/components/dashboard/ResumeJournee";
 import { ConseilsCompagnon } from "@/components/dashboard/ConseilsCompagnon";
 import { MiniApercu } from "@/components/dashboard/MiniApercu";
+import { NotesRappelsAujourdhui } from "@/components/notes/NotesRappelsAujourdhui";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconeCoeur, IconeDossier } from "@/components/ui/Icones";
 import type { Projet } from "@/types";
 import { getOrganisationId } from "@/lib/organisation";
+import { listerNotesActivesOrganisation } from "@/lib/notes";
 
 const SEUIL_RELANCE_JOURS = 7;
 
@@ -49,6 +51,7 @@ export default async function DashboardHome() {
     { data: aConfirmerBrut },
     { data: rdvConfirmesBrut },
     { data: evenementsFutursBrut },
+    notesAvecRappel,
   ] = await Promise.all([
     supabase.from("profils").select("nom").eq("id", user?.id).single(),
     supabase.from("demandes").select("*").eq("organisation_id", organisationId),
@@ -95,6 +98,11 @@ export default async function DashboardHome() {
       .eq("organisation_id", organisationId)
       .neq("statut", "annule")
       .gte("date_heure", maintenant.toISOString()),
+    // Notes avec rappel (29/08, voir lib/notes/index.ts) — point 3 du
+    // brief : "Aujourd'hui" et "En retard".
+    organisationId
+      ? listerNotesActivesOrganisation(supabase, organisationId, { avecRappelUniquement: true })
+      : Promise.resolve([]),
   ]);
 
   // Supabase type "demandes(...)" comme un tableau au niveau TypeScript
@@ -189,6 +197,17 @@ export default async function DashboardHome() {
         (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
     ) ?? [];
 
+  // Notes avec rappel (29/08) — "En retard" prime sur "Aujourd'hui" : une
+  // note dont le rappel est passé y reste tant qu'elle n'est pas marquée
+  // terminée (point 3 du brief), jamais reclassée automatiquement.
+  const notesEnRetard = notesAvecRappel.filter(
+    (n) => new Date(n.rappel_a as string).getTime() < maintenant.getTime()
+  );
+  const notesAujourdhui = notesAvecRappel.filter((n) => {
+    const t = new Date(n.rappel_a as string).getTime();
+    return t >= maintenant.getTime() && t <= finAujourdhui.getTime();
+  });
+
   // Un projet fraîchement créé ("nouveau") n'a encore ni analyse ni devis :
   // rien d'autre ne le fait remonter ailleurs sur cette page. Sans section
   // dédiée et toujours visible, il peut rester invisible sur "Aujourd'hui"
@@ -217,6 +236,8 @@ export default async function DashboardHome() {
 
   const premierPrenom = (profil?.nom ?? "").split(" ")[0];
   const rienAFaire =
+    notesEnRetard.length === 0 &&
+    notesAujourdhui.length === 0 &&
     rendezVousDuJour.length === 0 &&
     rappelsDuJour.length === 0 &&
     aConfirmerActifs.length === 0 &&
@@ -309,6 +330,14 @@ export default async function DashboardHome() {
       </div>
 
       <ProchaineAction action={prochaineAction} />
+
+      {/* Notes avec rappel (29/08) — point 3 du brief : "En retard" avant
+          "Aujourd'hui", tout de suite après l'action prioritaire calculée
+          ci-dessus, avant même les confirmations de rendez-vous — un
+          rappel que l'artisan s'est lui-même fixé mérite au moins autant
+          de visibilité qu'un rendez-vous du planning. */}
+      <NotesRappelsAujourdhui titre="Notes en retard" notes={notesEnRetard} accent />
+      <NotesRappelsAujourdhui titre="Notes à faire aujourd'hui" notes={notesAujourdhui} />
 
       <AConfirmer evenements={aConfirmerActifs} />
 

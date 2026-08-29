@@ -1,29 +1,14 @@
 // ============================================================
-// Scaffolding notifications push — préparé mais NON activé.
+// Notifications push — activé (29/08, voir Module 27bis, supabase/
+// schema.sql, et lib/notifications/push.ts côté serveur).
 //
-// Rien dans l'app n'appelle ces fonctions aujourd'hui. Elles existent
-// pour que le jour où Axel décide d'activer réellement les notifications
-// (ex. rappel de rendez-vous, devis accepté par un client), l'architecture
-// soit déjà posée, réfléchie et prête à brancher plutôt qu'à improviser
-// dans l'urgence — conformément à la demande de préparer sans développer.
-//
-// Ce qu'il manquera pour activer réellement l'envoi (à faire dans un
-// cycle dédié, volontairement pas fait ici) :
-// 1. Générer une paire de clés VAPID (`npx web-push generate-vapid-keys`)
-//    et les stocker en variables d'environnement :
-//    NEXT_PUBLIC_VAPID_CLE_PUBLIQUE (exposée au client) et
-//    VAPID_CLE_PRIVEE (serveur uniquement, jamais exposée).
-// 2. Une table Supabase `abonnements_push` (organisation_id, artisan_id,
-//    endpoint, clés p256dh/auth, created_at) avec RLS identique au reste
-//    du produit (un artisan ne voit que ses propres abonnements).
-// 3. Une route API (ex. /api/notifications/abonner) qui reçoit
-//    l'abonnement retourné par s'abonnerNotificationsPush() ci-dessous et
-//    l'enregistre.
-// 4. Un envoi serveur (librairie `web-push`) déclenché aux moments
-//    identifiés comme utiles par l'étude produit — jamais en spam, un
-//    artisan qui installe une PWA pro attend des alertes rares et
-//    justifiées (rappel de RDV le matin même, devis accepté), pas une
-//    notification à chaque micro-événement.
+// Philosophie Compyo (brief Axel, 29/08) : une notification ne part que
+// dans deux cas — (1) l'artisan a lui-même programmé un rappel sur une
+// note, (2) un événement système vraiment critique (hors périmètre ici).
+// JAMAIS de rappel automatique de rendez-vous, de devis ou autre. C'est
+// pour ça que demanderAbonnementSiNecessaire() ci-dessous n'est appelée
+// QUE depuis components/notes/FormulaireNote.tsx, au moment précis où
+// l'artisan programme un premier rappel — jamais au chargement de l'app.
 // ============================================================
 
 export type EtatPermissionNotifications = "non-supporte" | "defaut" | "accordee" | "refusee";
@@ -65,4 +50,51 @@ export async function sAbonnerNotificationsPush(): Promise<PushSubscription | nu
     userVisibleOnly: true,
     applicationServerKey: clePublique,
   });
+}
+
+// Sérialise un PushSubscription pour l'envoyer à /api/notifications/abonner
+// — l'objet natif du navigateur n'est pas directement JSON-sérialisable
+// (getKey() retourne des ArrayBuffer), donc on extrait ce dont le serveur
+// a besoin plutôt que de passer l'objet brut.
+function serialiserAbonnement(abonnement: PushSubscription) {
+  const cleP256dh = abonnement.getKey("p256dh");
+  const cleAuth = abonnement.getKey("auth");
+  return {
+    endpoint: abonnement.endpoint,
+    cleP256dh: cleP256dh ? btoa(String.fromCharCode(...new Uint8Array(cleP256dh))) : "",
+    cleAuth: cleAuth ? btoa(String.fromCharCode(...new Uint8Array(cleAuth))) : "",
+  };
+}
+
+// Point d'entrée UNIQUE pour demander la permission ET enregistrer
+// l'abonnement côté serveur — appelée uniquement au moment où l'artisan
+// programme un rappel sur une note (jamais au chargement de l'app, voir
+// commentaire en tête de fichier). Retourne true si l'artisan a bien un
+// abonnement actif à l'issue de l'appel (permission déjà accordée avant,
+// ou tout juste accordée), false sinon — permet à l'appelant d'afficher
+// un message adapté sans dupliquer cette logique.
+export async function demanderAbonnementSiNecessaire(): Promise<boolean> {
+  const etatActuel = lireEtatPermissionNotifications();
+  if (etatActuel === "non-supporte" || etatActuel === "refusee") return false;
+
+  const etat =
+    etatActuel === "accordee" ? etatActuel : await demanderPermissionNotifications();
+  if (etat !== "accordee") return false;
+
+  try {
+    const abonnement = await sAbonnerNotificationsPush();
+    if (!abonnement) return false;
+
+    await fetch("/api/notifications/abonner", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(serialiserAbonnement(abonnement)),
+    });
+    return true;
+  } catch {
+    // Échec réseau/navigateur : la note elle-même reste enregistrée avec
+    // son rappel (voir FormulaireNote.tsx) — seule la notification push
+    // ne partira pas, jamais bloquant pour l'action principale.
+    return false;
+  }
 }

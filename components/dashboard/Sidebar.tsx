@@ -8,18 +8,24 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
 import { Avatar } from "@/components/ui/Avatar";
 import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
+import { CentreNotifications } from "@/components/notifications/CentreNotifications";
 import {
   IconeAccueil,
   IconeDossier,
   IconeDocument,
   IconeCalendrier,
+  IconeNote,
   IconeParametres,
   IconeRetours,
 } from "@/components/ui/Icones";
 
+// Notes (29/08) — même niveau que Projets/Aujourd'hui/Planning dans la
+// nav, demande explicite du brief ("Ajouter un nouvel onglet 'Notes'.
+// Même niveau que : Projets / Aujourd'hui / Planning").
 const LIENS = [
   { href: "/dashboard", label: "Accueil", Icone: IconeAccueil },
   { href: "/dashboard/demandes", label: "Projets", Icone: IconeDossier },
+  { href: "/dashboard/notes", label: "Notes", Icone: IconeNote },
   { href: "/dashboard/devis", label: "Devis", Icone: IconeDocument },
   { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
   { href: "/carte-mentale", label: "Carte mentale", Icone: IconeRetours },
@@ -59,6 +65,7 @@ function BlocCompteSidebar({
       </div>
 
       <div className="flex items-center gap-1 px-2">
+        <CentreNotifications />
         <ThemeToggle className="w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors" />
         <BoutonInstallerDiscret
           compact

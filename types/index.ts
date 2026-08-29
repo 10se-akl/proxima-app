@@ -187,6 +187,7 @@ export type TypeEvenementProjet =
   | "message_importe"
   | "infos_completees"
   | "note_ajoutee"
+  | "note_terminee"
   | "note_vocale_ajoutee"
   | "photo_ajoutee"
   | "visite_effectuee"
@@ -229,6 +230,48 @@ export type Candidature = {
   probleme_principal: string;
   decouverte: string | null;
   statut: StatutCandidature;
+  created_at: string;
+};
+
+// Notes professionnelles (29/08) — voir Module 27, supabase/schema.sql
+// pour la philosophie complète. "verte/orange/rouge" plutôt que
+// "faible/moyenne/importante" en base : c'est la valeur affichée ET
+// stockée, cohérent avec le point coloré sur chaque carte (voir
+// components/notes/NoteCard.tsx) — un seul vocabulaire, jamais de mapping
+// texte↔couleur à maintenir en double.
+export type ImportanceNote = "verte" | "orange" | "rouge";
+export type StatutNote = "active" | "terminee";
+
+export type Note = {
+  id: string;
+  organisation_id: string;
+  artisan_id: string;
+  demande_id: string | null;
+  titre: string;
+  description: string | null;
+  importance: ImportanceNote;
+  rappel_a: string | null;
+  notifie_a: string | null;
+  statut: StatutNote;
+  termine_le: string | null;
+  created_at: string;
+  updated_at: string;
+  // Présent uniquement quand la note est chargée avec sa jointure projet
+  // (voir lib/notes/index.ts) — permet d'afficher "Projet : Dupont" sans
+  // requête supplémentaire depuis la page Notes ou le centre de
+  // notifications, qui n'ont pas déjà le projet en contexte contrairement
+  // à la fiche projet.
+  demandes?: { nom_client: string } | null;
+};
+
+// Abonnement push d'un navigateur/appareil — voir Module 27bis.
+export type AbonnementPush = {
+  id: string;
+  organisation_id: string;
+  artisan_id: string;
+  endpoint: string;
+  cle_p256dh: string;
+  cle_auth: string;
   created_at: string;
 };
 

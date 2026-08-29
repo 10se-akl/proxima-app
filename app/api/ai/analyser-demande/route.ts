@@ -4,11 +4,12 @@ import { appelerClaude, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/l
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
+import { listerNotesActivesProjet, formaterNotesPourPromptIA } from "@/lib/notes";
 import type { AnalyseIA } from "@/types";
 
 const SYSTEM_PROMPT = `Tu es l'assistant de Compyo, un outil pour artisans du bâtiment (maçons, plombiers, électriciens, chauffagistes, couvreurs).
 
-Un artisan te transmet toutes les informations qu'il a accumulées sur un projet : la description initiale, ses notes libres, et des notes vocales dictées sur le terrain (donc parfois désordonnées, avec des hésitations ou des remarques sans rapport avec le chantier).
+Un artisan te transmet toutes les informations qu'il a accumulées sur un projet : la description initiale, ses notes libres, des notes vocales dictées sur le terrain (donc parfois désordonnées, avec des hésitations ou des remarques sans rapport avec le chantier), et des notes structurées qu'il a explicitement enregistrées pour ce projet (pense-bêtes, consignes, informations client, remarques techniques). Ces notes structurées sont des rappels que l'artisan s'est donnés à lui-même : elles doivent influencer ton résumé quand elles concernent le chantier.
 
 Ton rôle :
 1. Fais la synthèse de TOUT ce qui est fourni en un résumé clair et structuré.
@@ -60,7 +61,7 @@ export async function POST(request: NextRequest) {
   // impossible de récupérer le projet d'une autre organisation ici.
   // Les deux requêtes sont indépendantes (aucune ne dépend de l'autre) :
   // lancées en parallèle plutôt qu'en chaîne.
-  const [{ data: projet, error: fetchError }, { data: notesVocales }] = await Promise.all([
+  const [{ data: projet, error: fetchError }, { data: notesVocales }, notesActives] = await Promise.all([
     supabase
       .from("demandes")
       .select(
@@ -76,6 +77,9 @@ export async function POST(request: NextRequest) {
       .select("transcription, created_at")
       .eq("demande_id", demandeId)
       .order("created_at", { ascending: true }),
+    // Notes professionnelles actives (29/08, point 4 du brief) — jamais
+    // les notes déjà terminées, voir lib/notes/index.ts.
+    listerNotesActivesProjet(supabase, demandeId),
   ]);
 
   if (fetchError || !projet) {
@@ -91,7 +95,8 @@ export async function POST(request: NextRequest) {
   const aDuContenuAAnalyser =
     Boolean(projet.notes?.trim()) ||
     Boolean(projet.informations_disponibles?.trim()) ||
-    (notesVocales?.length ?? 0) > 0;
+    (notesVocales?.length ?? 0) > 0 ||
+    notesActives.length > 0;
 
   if (!aDuContenuAAnalyser) {
     return NextResponse.json(
@@ -130,7 +135,9 @@ export async function POST(request: NextRequest) {
   const messageUtilisateur = `Description transmise par l'artisan : "${projet.description}"
 Informations déjà disponibles : "${projet.informations_disponibles ?? "aucune"}"
 Notes libres de l'artisan : "${projet.notes ?? "aucune"}"
-${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVocales}` : ""}`;
+${blocNotesVocales ? `\nNotes vocales dictées sur le terrain :\n${blocNotesVocales}` : ""}
+Notes importantes enregistrées par l'artisan pour ce projet :
+${formaterNotesPourPromptIA(notesActives)}`;
 
   const debutAppel = Date.now();
   try {

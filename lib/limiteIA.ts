@@ -11,7 +11,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 // Les plafonds sont volontairement larges : un artisan ou une petite équipe
 // qui travaille normalement ne devrait jamais les approcher. Le but n'est
 // pas de brider un usage légitime, mais d'empêcher une boucle incontrôlée.
-const TYPES_APPELS_IA = ["analyse_ia", "devis_genere", "reponse_generee", "erreur_ia"] as const;
+const TYPES_APPELS_IA = [
+  "analyse_ia",
+  "devis_genere",
+  "reponse_generee",
+  "erreur_ia",
+  "note_dictee",
+] as const;
 
 const PLAFOND_PAR_HEURE = 40;
 const PLAFOND_PAR_JOUR = 150;

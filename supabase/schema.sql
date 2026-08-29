@@ -1168,3 +1168,94 @@ create index if not exists clients_organisation_telephone_idx on clients (organi
 -- normalisés créerait de faux regroupements silencieux.
 alter table demandes add column if not exists client_id uuid references clients(id) on delete set null;
 create index if not exists demandes_client_id_idx on demandes (client_id);
+
+-- Module 27 (29/08) — Notes professionnelles + notifications push.
+--
+-- CONTEXTE PRODUIT : remplace les post-it / SMS à soi-même / notes du
+-- téléphone. UNE seule table `notes`, lue depuis 4 endroits différents
+-- (page Notes, section Notes de la fiche projet, section Rappels
+-- d'Aujourd'hui, contexte envoyé à l'IA d'analyse) — jamais de
+-- duplication : voir lib/notes/index.ts pour les fonctions de lecture
+-- partagées par ces 4 endroits.
+--
+-- `demande_id` est NULLABLE : une note "générale" (idée, tâche perso) n'a
+-- pas besoin d'être rattachée à un projet — c'est un choix explicite
+-- offert à l'artisan à la création, pas une contrainte technique.
+--
+-- `rappel_a` est NULLABLE : un rappel n'est JAMAIS obligatoire (demande
+-- explicite d'Axel). Quand il est renseigné, c'est la seule donnée qui
+-- déclenche une notification (voir Module 27bis plus bas et
+-- app/api/cron/rappels/route.ts) — aucune notification n'est jamais
+-- générée automatiquement à partir d'un rendez-vous, d'un devis ou d'un
+-- autre événement de l'app. C'est la philosophie centrale de ce module :
+-- Compyo reste silencieux sauf demande explicite de l'artisan (ou
+-- événement système critique, hors périmètre ici).
+--
+-- `notifie_a` (nullable) : horodatage de l'envoi effectif de la
+-- notification liée à `rappel_a`, mis à jour par le cron d'envoi.
+-- Empêche un double envoi si le cron tourne deux fois de suite ou si son
+-- exécution chevauche une modification de la note.
+create table if not exists notes (
+  id uuid primary key default gen_random_uuid(),
+  organisation_id uuid not null references organisations(id) on delete cascade,
+  artisan_id uuid not null references profils(id) on delete cascade,
+  demande_id uuid references demandes(id) on delete cascade,
+  titre text not null,
+  description text,
+  importance text not null default 'verte' check (importance in ('verte', 'orange', 'rouge')),
+  rappel_a timestamptz,
+  notifie_a timestamptz,
+  statut text not null default 'active' check (statut in ('active', 'terminee')),
+  termine_le timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+alter table notes enable row level security;
+
+drop policy if exists "un membre gère les notes de son organisation" on notes;
+create policy "un membre gère les notes de son organisation"
+  on notes for all
+  using (organisation_id in (select mes_organisations()))
+  with check (organisation_id in (select mes_organisations()));
+
+-- Index couvrant les deux lectures les plus fréquentes : "notes actives
+-- d'un projet" (fiche projet + contexte IA) et "rappels actifs à venir/en
+-- retard d'une organisation" (Aujourd'hui + centre de notifications + cron
+-- d'envoi).
+create index if not exists notes_demande_statut_idx on notes (demande_id, statut);
+create index if not exists notes_organisation_rappel_idx on notes (organisation_id, rappel_a) where statut = 'active' and rappel_a is not null;
+
+-- Module 27bis — fondation notifications push (active enfin le scaffolding
+-- préparé au PWA Cycle 7, voir lib/pwa/notifications.ts et public/sw.js).
+--
+-- Un abonnement par COMBINAISON navigateur/appareil, pas par artisan : le
+-- même artisan installé sur son téléphone ET son ordinateur doit recevoir
+-- la notification sur les deux. `endpoint` est unique par nature (fourni
+-- par le navigateur), on s'en sert comme clé de dédoublonnage.
+create table if not exists abonnements_push (
+  id uuid primary key default gen_random_uuid(),
+  organisation_id uuid not null references organisations(id) on delete cascade,
+  artisan_id uuid not null references profils(id) on delete cascade,
+  endpoint text not null unique,
+  cle_p256dh text not null,
+  cle_auth text not null,
+  created_at timestamptz not null default now()
+);
+
+alter table abonnements_push enable row level security;
+
+drop policy if exists "un membre gère les abonnements push de son organisation" on abonnements_push;
+create policy "un membre gère les abonnements push de son organisation"
+  on abonnements_push for all
+  using (organisation_id in (select mes_organisations()))
+  with check (organisation_id in (select mes_organisations()));
+
+create index if not exists abonnements_push_artisan_idx on abonnements_push (artisan_id);
+
+-- Préférence de notification : un seul interrupteur, volontairement
+-- simple (voir brief : "je ne veux aucun réglage compliqué"). `true` par
+-- défaut — le comportement par défaut de Compyo est déjà silencieux
+-- (aucune notification sans rappel créé par l'artisan), donc il n'y a pas
+-- de raison de désactiver par défaut ce qui ne dérange déjà personne.
+alter table profils add column if not exists notifications_push_actives boolean not null default true;

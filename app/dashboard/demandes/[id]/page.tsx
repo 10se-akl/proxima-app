@@ -15,7 +15,10 @@ import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
 import { Timeline, type TimelineItem } from "@/components/dashboard/Timeline";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
-import type { Projet, Devis, NoteVocale, EvenementProjet, ParametresEntreprise } from "@/types";
+import { listerNotesProjet, marquerNoteTerminee } from "@/lib/notes";
+import { NoteCard } from "@/components/notes/NoteCard";
+import { FormulaireNote } from "@/components/notes/FormulaireNote";
+import type { Projet, Devis, NoteVocale, EvenementProjet, ParametresEntreprise, Note } from "@/types";
 
 const TYPES_CHANTIER: { value: string; label: string }[] = [
   { value: "salle_de_bain", label: "Salle de bain" },
@@ -47,6 +50,8 @@ export default function DetailDemandePage({
   const [copie, setCopie] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [notesVocales, setNotesVocales] = useState<NoteVocale[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [formulaireNoteOuvert, setFormulaireNoteOuvert] = useState(false);
   const [evenementsProjet, setEvenementsProjet] = useState<EvenementProjet[]>([]);
   const [artisanId, setArtisanId] = useState<string | null>(null);
   const [organisationId, setOrganisationId] = useState<string | null>(null);
@@ -96,6 +101,7 @@ export default function DetailDemandePage({
       { data: devisData },
       { data: notesData },
       { data: evenementsData },
+      notesProjet,
       {
         data: { user },
       },
@@ -118,6 +124,9 @@ export default function DetailDemandePage({
         .select("*")
         .eq("demande_id", params.id)
         .order("created_at", { ascending: true }),
+      // Notes professionnelles (29/08, voir lib/notes/index.ts) — point 2
+      // du brief : section dédiée dans la fiche projet.
+      listerNotesProjet(supabase, params.id),
       supabase.auth.getUser(),
     ]);
 
@@ -129,6 +138,7 @@ export default function DetailDemandePage({
     setDevis(devisData as Devis | null);
     setNotesVocales((notesData as NoteVocale[]) ?? []);
     setEvenementsProjet((evenementsData as EvenementProjet[]) ?? []);
+    setNotes(notesProjet);
 
     if (user) {
       setArtisanId(user.id);
@@ -177,6 +187,13 @@ export default function DetailDemandePage({
       .from("demandes")
       .update({ derniere_modification_le: new Date().toISOString() })
       .eq("id", params.id);
+  }
+
+  async function terminerNote(noteId: string, terminee: boolean) {
+    setNotes((prev) =>
+      prev.map((n) => (n.id === noteId ? { ...n, statut: terminee ? "terminee" : "active" } : n))
+    );
+    await marquerNoteTerminee(supabase, noteId, terminee);
   }
 
   async function analyserDemande() {
@@ -897,6 +914,54 @@ export default function DetailDemandePage({
       </FicheSection>
 
       <ChecklistMetier typeChantier={demande.type_chantier} metierArtisan={metierArtisan} />
+
+      {/* Notes professionnelles (29/08) — point 2 du brief : "Dans la
+          fiche projet : nouvelle section 'Notes' [...] Le projet est alors
+          déjà sélectionné." Placée avant l'analyse IA : les notes actives
+          font partie du contexte envoyé à l'IA (point 4, voir
+          app/api/ai/analyser-demande/route.ts), logique de les voir juste
+          avant à l'écran aussi. */}
+      <div className="mt-8">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-sm">Notes</h2>
+          <button
+            onClick={() => setFormulaireNoteOuvert((v) => !v)}
+            className="text-xs font-medium text-ink/50 hover:text-ink underline underline-offset-2 transition-colors"
+          >
+            {formulaireNoteOuvert ? "Annuler" : "+ Ajouter une note"}
+          </button>
+        </div>
+
+        {formulaireNoteOuvert && (
+          <div className="mt-3">
+            <FormulaireNote
+              projetIdFixe={demande.id}
+              nomProjetFixe={demande.nom_client}
+              onCree={() => {
+                setFormulaireNoteOuvert(false);
+                listerNotesProjet(supabase, demande.id).then(setNotes);
+              }}
+              onAnnuler={() => setFormulaireNoteOuvert(false)}
+            />
+          </div>
+        )}
+
+        {notes.length > 0 && (
+          <div className="mt-3 flex flex-col gap-2.5">
+            {notes
+              .filter((n) => n.statut === "active")
+              .concat(notes.filter((n) => n.statut === "terminee"))
+              .map((note) => (
+                <NoteCard
+                  key={note.id}
+                  note={note}
+                  afficherProjet={false}
+                  onTerminer={terminerNote}
+                />
+              ))}
+          </div>
+        )}
+      </div>
 
       {/* Étape 1 : analyse IA — optionnelle. Elle sert à faire le tri dans des
           notes en vrac (dictées sur le terrain, décousues) et à repérer ce

@@ -12,6 +12,8 @@ export function MonCompte() {
 
   const [nom, setNom] = useState("");
   const [metier, setMetier] = useState("");
+  const [notificationsActives, setNotificationsActives] = useState(true);
+  const [enregistrementNotifications, setEnregistrementNotifications] = useState(false);
   const [chargement, setChargement] = useState(true);
   const [lienCopie, setLienCopie] = useState(false);
   const [enregistrementProfil, setEnregistrementProfil] = useState(false);
@@ -31,12 +33,13 @@ export function MonCompte() {
       if (!user) return;
       const { data } = await supabase
         .from("profils")
-        .select("nom, metier")
+        .select("nom, metier, notifications_push_actives")
         .eq("id", user.id)
         .single();
       if (data) {
         setNom(data.nom ?? "");
         setMetier(data.metier ?? "");
+        setNotificationsActives(data.notifications_push_actives ?? true);
       }
       setChargement(false);
     }
@@ -72,6 +75,23 @@ export function MonCompte() {
     }
     setProfilConfirme(true);
     setTimeout(() => setProfilConfirme(false), 2000);
+  }
+
+  // Sprint Notes (29/08) — un seul interrupteur, volontairement (voir
+  // Module 27bis, supabase/schema.sql : "je ne veux aucun réglage
+  // compliqué"). Enregistré immédiatement au clic, pas besoin de "valider"
+  // — cohérent avec un simple interrupteur, contrairement au formulaire de
+  // profil juste au-dessus qui, lui, regroupe plusieurs champs.
+  async function basculerNotifications(actif: boolean) {
+    setNotificationsActives(actif);
+    setEnregistrementNotifications(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("profils").update({ notifications_push_actives: actif }).eq("id", user.id);
+    }
+    setEnregistrementNotifications(false);
   }
 
   async function changerMotDePasse(e: React.FormEvent) {
@@ -126,6 +146,34 @@ export function MonCompte() {
             {profilConfirme && <span className="text-xs text-steel">✓ Enregistré</span>}
           </div>
         </form>
+      </Card>
+
+      {/*
+        Sprint Notes (29/08) — philosophie "Compyo doit rester discret" :
+        pas de rappel automatique de rendez-vous ou de devis, seulement les
+        rappels que l'artisan crée lui-même sur une note (voir
+        components/notes/FormulaireNote.tsx). Cet interrupteur coupe TOUT
+        (y compris ces rappels explicites) — la permission navigateur,
+        elle, n'est jamais demandée ici : uniquement au moment où
+        l'artisan programme son premier rappel (voir lib/pwa/
+        notifications.ts, demanderAbonnementSiNecessaire).
+      */}
+      <Card className="p-6">
+        <h2 className="text-sm font-semibold text-ink/70 mb-2">Notifications</h2>
+        <p className="text-sm text-ink/60 mb-4">
+          Compyo ne vous notifie que pour les rappels que vous créez vous-même sur une note —
+          jamais de rappel automatique de rendez-vous ou de devis.
+        </p>
+        <label className="flex items-center gap-2.5 text-sm text-ink/80 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={notificationsActives}
+            disabled={enregistrementNotifications}
+            onChange={(e) => basculerNotifications(e.target.checked)}
+            className="w-4 h-4 rounded border-ink/30 accent-signal"
+          />
+          Autoriser les notifications de rappel
+        </label>
       </Card>
 
       <Card className="p-6">

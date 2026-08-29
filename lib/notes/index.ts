@@ -1,0 +1,153 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+import type { Note, ImportanceNote } from "@/types";
+
+// ============================================================
+// Notes professionnelles (29/08) — voir Module 27, supabase/schema.sql.
+//
+// Point 8 du brief d'Axel : "Une seule table Notes [...] Toujours la même
+// donnée. Aucune duplication." Ces fonctions sont le SEUL endroit qui lit
+// ou écrit la table `notes` — la page Notes, la section Notes de la fiche
+// projet, la section Rappels d'Aujourd'hui, le centre de notifications et
+// le contexte envoyé à l'IA d'analyse passent tous par ici plutôt que de
+// répéter leur propre requête Supabase.
+// ============================================================
+
+const SELECTION_AVEC_PROJET = "*, demandes(nom_client)";
+
+// Supabase type une jointure "demandes(...)" comme un tableau côté
+// TypeScript même si demande_id ne peut pointer que vers un seul projet
+// (même remarque que app/dashboard/page.tsx) — aplati une bonne fois ici.
+function aplatir(ligne: any): Note {
+  return {
+    ...ligne,
+    demandes: Array.isArray(ligne.demandes) ? ligne.demandes[0] ?? null : ligne.demandes ?? null,
+  };
+}
+
+export async function listerNotesProjet(
+  supabase: SupabaseClient,
+  demandeId: string
+): Promise<Note[]> {
+  const { data } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("demande_id", demandeId)
+    .order("created_at", { ascending: false });
+  return (data as Note[]) ?? [];
+}
+
+// Notes actives (non terminées) d'un projet — c'est ce sous-ensemble,
+// jamais les notes déjà terminées, qui doit influencer le résumé IA
+// (point 4 du brief) et remonter dans les sections "Rappels".
+export async function listerNotesActivesProjet(
+  supabase: SupabaseClient,
+  demandeId: string
+): Promise<Note[]> {
+  const { data } = await supabase
+    .from("notes")
+    .select("*")
+    .eq("demande_id", demandeId)
+    .eq("statut", "active")
+    .order("created_at", { ascending: false });
+  return (data as Note[]) ?? [];
+}
+
+// Toutes les notes actives d'une organisation, projet ou générales
+// confondus — page Notes, centre de notifications. `avecRappelUniquement`
+// sert à la section "Rappels" d'Aujourd'hui, qui n'a rien à faire d'une
+// note sans échéance.
+export async function listerNotesActivesOrganisation(
+  supabase: SupabaseClient,
+  organisationId: string,
+  options?: { avecRappelUniquement?: boolean }
+): Promise<Note[]> {
+  let requete = supabase
+    .from("notes")
+    .select(SELECTION_AVEC_PROJET)
+    .eq("organisation_id", organisationId)
+    .eq("statut", "active");
+
+  if (options?.avecRappelUniquement) {
+    requete = requete.not("rappel_a", "is", null);
+  }
+
+  const { data } = await requete.order("rappel_a", { ascending: true, nullsFirst: false });
+  return ((data as any[]) ?? []).map(aplatir);
+}
+
+export async function creerNote(
+  supabase: SupabaseClient,
+  params: {
+    organisationId: string;
+    artisanId: string;
+    demandeId: string | null;
+    titre: string;
+    description: string | null;
+    importance: ImportanceNote;
+    rappelA: string | null;
+  }
+): Promise<{ note: Note | null; erreur: string | null }> {
+  const { data, error } = await supabase
+    .from("notes")
+    .insert({
+      organisation_id: params.organisationId,
+      artisan_id: params.artisanId,
+      demande_id: params.demandeId,
+      titre: params.titre,
+      description: params.description,
+      importance: params.importance,
+      rappel_a: params.rappelA,
+    })
+    .select("*")
+    .single();
+
+  if (error || !data) {
+    return { note: null, erreur: "Impossible d'enregistrer la note." };
+  }
+  return { note: data as Note, erreur: null };
+}
+
+export async function marquerNoteTerminee(
+  supabase: SupabaseClient,
+  noteId: string,
+  terminee: boolean
+): Promise<boolean> {
+  const { error } = await supabase
+    .from("notes")
+    .update({
+      statut: terminee ? "terminee" : "active",
+      termine_le: terminee ? new Date().toISOString() : null,
+    })
+    .eq("id", noteId);
+  return !error;
+}
+
+export async function supprimerNote(supabase: SupabaseClient, noteId: string): Promise<boolean> {
+  const { error } = await supabase.from("notes").delete().eq("id", noteId);
+  return !error;
+}
+
+export const LABEL_IMPORTANCE: Record<ImportanceNote, string> = {
+  verte: "Faible",
+  orange: "Moyenne",
+  rouge: "Importante",
+};
+
+// Couleurs sobres (demande explicite d'Axel : "pas de grosses cartes
+// rouges flashy") — un point coloré discret, jamais un fond plein.
+export const COULEUR_POINT_IMPORTANCE: Record<ImportanceNote, string> = {
+  verte: "bg-[#2F8F5B]",
+  orange: "bg-[#D9861A]",
+  rouge: "bg-[#C23B22]",
+};
+
+// Formate les notes actives d'un projet pour un prompt IA (point 4 du
+// brief) — texte brut, lisible, jamais du JSON : l'IA d'analyse (voir
+// app/api/ai/analyser-demande/route.ts) attend un contexte en langage
+// naturel comme le reste de son prompt.
+export function formaterNotesPourPromptIA(notes: Note[]): string {
+  if (notes.length === 0) return "aucune";
+  return notes
+    .map((n) => `- ${n.titre}${n.description ? ` : ${n.description}` : ""}`)
+    .join("\n");
+}

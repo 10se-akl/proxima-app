@@ -70,6 +70,28 @@ export function IconeCoeur({ className, taille = 18 }: Props) {
   );
 }
 
+export function IconeNote({ className, taille = 18 }: Props) {
+  // Feuille avec lignes de texte + coin plié : évite la confusion visuelle
+  // avec IconeDocument (utilisée pour les devis) tout en restant dans le
+  // même style ligne fine — un pense-bête, pas un document officiel.
+  return (
+    <svg {...base(taille)} className={className}>
+      <path d="M6.5 3.5h8l4 4V19a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1V4.5a1 1 0 0 1 1-1Z" />
+      <path d="M14.5 3.5V8h4" />
+      <path d="M9 12h6M9 15.5h4" />
+    </svg>
+  );
+}
+
+export function IconeCloche({ className, taille = 18 }: Props) {
+  return (
+    <svg {...base(taille)} className={className}>
+      <path d="M18 16H6l1.4-2.1a4 4 0 0 0 .6-2.2V9a4 4 0 0 1 8 0v2.7c0 .8.2 1.5.6 2.2L18 16Z" />
+      <path d="M10 19a2 2 0 0 0 4 0" />
+    </svg>
+  );
+}
+
 export function IconeRetours({ className, taille = 18 }: Props) {
   // Bulle de dialogue avec point d'exclamation : "signaler / donner son avis".
   return (

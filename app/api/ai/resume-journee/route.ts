@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
+import { listerNotesActivesOrganisation } from "@/lib/notes";
 
 // Pas d'appel IA ici, volontairement : le contenu de ce résumé est
 // entièrement factuel (qui a contacté, quel devis attend, quel projet
@@ -53,7 +54,7 @@ export async function POST() {
     // de rendez-vous prévu" pour un projet où un rendez-vous avait déjà eu
     // lieu — vrai au sens strict (rien de FUTUR), mais trompeur à la
     // lecture, comme si aucun rendez-vous n'avait jamais existé.
-    const [{ data: demandes }, { data: devisList }, { data: planningComplet }] =
+    const [{ data: demandes }, { data: devisList }, { data: planningComplet }, notesAvecRappel] =
       await Promise.all([
         supabase
           .from("demandes")
@@ -69,6 +70,10 @@ export async function POST() {
           .eq("organisation_id", organisationId)
           .eq("type", "rendez_vous")
           .neq("statut", "annule"),
+        // Notes actives avec rappel (29/08, point 4 du brief) — toujours
+        // la même fonction de lecture que la page Notes/Aujourd'hui/centre
+        // de notifications, voir lib/notes/index.ts.
+        listerNotesActivesOrganisation(supabase, organisationId, { avecRappelUniquement: true }),
       ]);
 
     const idsAvecRdvFutur = new Set(
@@ -124,6 +129,33 @@ export async function POST() {
     );
 
     const lignes: string[] = [];
+
+    // Notes avec rappel en retard ou prévu aujourd'hui — priorité la plus
+    // haute dans le résumé : ce sont des rappels que l'artisan s'est
+    // explicitement donnés à lui-même (point 4 du brief), pas une
+    // suggestion de l'app.
+    const notesEnRetard = notesAvecRappel.filter(
+      (n) => new Date(n.rappel_a as string).getTime() < maintenant.getTime()
+    );
+    const notesAujourdhui = notesAvecRappel.filter((n) => {
+      const t = new Date(n.rappel_a as string).getTime();
+      return t >= maintenant.getTime() && t <= finAujourdhui.getTime();
+    });
+
+    notesEnRetard.slice(0, MAX_PAR_CATEGORIE).forEach((n) => {
+      lignes.push(
+        `🔴 ${n.titre}${n.demandes?.nom_client ? ` — ${n.demandes.nom_client}` : ""} — rappel en retard.`
+      );
+    });
+    notesAujourdhui.slice(0, MAX_PAR_CATEGORIE).forEach((n) => {
+      const heure = new Date(n.rappel_a as string).toLocaleTimeString("fr-FR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      lignes.push(
+        `📝 ${n.titre}${n.demandes?.nom_client ? ` — ${n.demandes.nom_client}` : ""} — rappel ${heure}.`
+      );
+    });
 
     if (nouveauxAujourdhui.length > 0) {
       nouveauxAujourdhui.slice(0, MAX_PAR_CATEGORIE).forEach((p) => {

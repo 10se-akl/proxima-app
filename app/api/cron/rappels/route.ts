@@ -1,0 +1,89 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { envoyerPush } from "@/lib/notifications/push";
+
+// ============================================================
+// Cron d'envoi des rappels de notes — voir vercel.json (toutes les 10
+// minutes) et Module 27/27bis, supabase/schema.sql.
+//
+// C'est le SEUL déclencheur de notification automatique de toute l'app,
+// et il ne fait qu'une chose : chercher les notes dont le rappel
+// programmé par l'artisan lui-même est arrivé à échéance, et les
+// notifier — jamais rien d'autre (pas de rappel de RDV, pas de relance de
+// devis, voir philosophie dans le brief).
+//
+// Protégé par CRON_SECRET (en-tête Authorization) — sans ça, n'importe
+// qui connaissant l'URL pourrait déclencher des envois. Vercel Cron
+// envoie automatiquement cet en-tête pour les routes /api/cron/* définies
+// dans vercel.json ; à définir manuellement en variable d'environnement
+// Vercel (CRON_SECRET, n'importe quelle chaîne aléatoire) pour que ça
+// fonctionne.
+//
+// Utilise le client Supabase "service role" (pas le client serveur
+// habituel lié à une session utilisateur) : cette route tourne sans
+// utilisateur connecté, elle doit pouvoir lire toutes les organisations.
+// SUPABASE_SERVICE_ROLE_KEY ne doit JAMAIS être exposée au client — elle
+// n'est utilisée qu'ici, côté serveur, jamais dans un fichier "use client".
+// ============================================================
+
+export const maxDuration = 60;
+
+export async function GET(request: NextRequest) {
+  const secretAttendu = process.env.CRON_SECRET;
+  if (secretAttendu) {
+    const enTete = request.headers.get("authorization");
+    if (enTete !== `Bearer ${secretAttendu}`) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+  }
+
+  const supabase = createAdminClient();
+
+  const maintenant = new Date().toISOString();
+
+  // Notes actives, avec rappel arrivé à échéance, jamais encore notifiées.
+  // `notifie_a is null` est le garde-fou anti-double-envoi si le cron
+  // tourne deux fois de suite avant que l'écriture précédente soit visible.
+  const { data: notesAEnvoyer, error } = await supabase
+    .from("notes")
+    .select("id, artisan_id, organisation_id, titre, description, demande_id, demandes(nom_client)")
+    .eq("statut", "active")
+    .not("rappel_a", "is", null)
+    .lte("rappel_a", maintenant)
+    .is("notifie_a", null);
+
+  if (error) {
+    return NextResponse.json({ error: "Erreur de lecture des rappels" }, { status: 500 });
+  }
+  if (!notesAEnvoyer || notesAEnvoyer.length === 0) {
+    return NextResponse.json({ envoyees: 0 });
+  }
+
+  let envoyees = 0;
+  for (const note of notesAEnvoyer) {
+    const nomClient = Array.isArray(note.demandes)
+      ? note.demandes[0]?.nom_client
+      : (note.demandes as { nom_client?: string } | null)?.nom_client;
+
+    try {
+      await envoyerPush(supabase, {
+        artisanId: note.artisan_id,
+        titre: note.titre,
+        corps: nomClient ? `Projet : ${nomClient}` : note.description || "Rappel Compyo",
+        url: note.demande_id ? `/dashboard/demandes/${note.demande_id}` : "/dashboard/notes",
+      });
+      envoyees += 1;
+    } catch (err) {
+      console.error("Échec d'envoi du rappel pour la note", note.id, err);
+    } finally {
+      // Marqué "notifié" même en cas d'échec d'envoi (abonnement absent,
+      // erreur réseau...) : la note reste visible dans "Rappels"/"En
+      // retard" sur Aujourd'hui et le centre de notifications de toute
+      // façon — seule la notification push, elle, ne se retente pas en
+      // boucle indéfiniment.
+      await supabase.from("notes").update({ notifie_a: new Date().toISOString() }).eq("id", note.id);
+    }
+  }
+
+  return NextResponse.json({ envoyees });
+}

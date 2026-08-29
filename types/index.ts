@@ -252,6 +252,9 @@ export type Note = {
   importance: ImportanceNote;
   rappel_a: string | null;
   notifie_a: string | null;
+  // Vu dans l'app via la pop-up "Compris" (29/08, Module 27ter) — distinct
+  // de notifie_a qui suit l'envoi PUSH, voir lib/notes/index.ts.
+  vu_le: string | null;
   statut: StatutNote;
   termine_le: string | null;
   created_at: string;

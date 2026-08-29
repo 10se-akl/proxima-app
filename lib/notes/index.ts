@@ -127,6 +127,35 @@ export async function supprimerNote(supabase: SupabaseClient, noteId: string): P
   return !error;
 }
 
+// Rappels arrivés à échéance mais jamais encore vus DANS l'app (canal
+// séparé du push, voir Module 27ter / vu_le) — c'est la file d'attente de
+// la pop-up bloquante "Compris" (components/notes/PopupRappel.tsx).
+// Triés du plus ancien au plus récent : on ne montre jamais deux pop-ups
+// en même temps, l'artisan les traite une par une dans l'ordre.
+export async function listerRappelsAVoir(
+  supabase: SupabaseClient,
+  organisationId: string
+): Promise<Note[]> {
+  const { data } = await supabase
+    .from("notes")
+    .select(SELECTION_AVEC_PROJET)
+    .eq("organisation_id", organisationId)
+    .eq("statut", "active")
+    .not("rappel_a", "is", null)
+    .lte("rappel_a", new Date().toISOString())
+    .is("vu_le", null)
+    .order("rappel_a", { ascending: true });
+  return ((data as any[]) ?? []).map(aplatir);
+}
+
+export async function marquerNoteVue(supabase: SupabaseClient, noteId: string): Promise<boolean> {
+  const { error } = await supabase
+    .from("notes")
+    .update({ vu_le: new Date().toISOString() })
+    .eq("id", noteId);
+  return !error;
+}
+
 export const LABEL_IMPORTANCE: Record<ImportanceNote, string> = {
   verte: "Faible",
   orange: "Moyenne",

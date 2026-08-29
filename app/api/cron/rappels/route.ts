@@ -3,21 +3,29 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { envoyerPush } from "@/lib/notifications/push";
 
 // ============================================================
-// Cron d'envoi des rappels de notes — voir vercel.json (toutes les 10
-// minutes) et Module 27/27bis, supabase/schema.sql.
+// Cron d'envoi des rappels de notes — voir Module 27/27bis,
+// supabase/schema.sql.
 //
-// C'est le SEUL déclencheur de notification automatique de toute l'app,
-// et il ne fait qu'une chose : chercher les notes dont le rappel
-// programmé par l'artisan lui-même est arrivé à échéance, et les
-// notifier — jamais rien d'autre (pas de rappel de RDV, pas de relance de
-// devis, voir philosophie dans le brief).
+// Déclenché par un service EXTERNE (cron-job.org ou équivalent), pas par
+// Vercel Cron : le compte Vercel Hobby limite les cron jobs intégrés à
+// une exécution par jour, incompatible avec une vérification à la minute
+// (voir vercel.json, volontairement vide — retiré le 29/08 après blocage
+// de déploiement). N'importe quel appelant externe qui connaît
+// CRON_SECRET peut déclencher cette route de la même façon ; voir rapport
+// à Axel pour la configuration exacte du service externe.
+//
+// C'est le SEUL déclencheur de notification PUSH automatique de toute
+// l'app (canal complémentaire : voir aussi components/notes/
+// PopupRappel.tsx pour la pop-up in-app), et il ne fait qu'une chose :
+// chercher les notes dont le rappel programmé par l'artisan lui-même est
+// arrivé à échéance, et les notifier — jamais rien d'autre (pas de rappel
+// de RDV, pas de relance de devis, voir philosophie dans le brief).
 //
 // Protégé par CRON_SECRET (en-tête Authorization) — sans ça, n'importe
-// qui connaissant l'URL pourrait déclencher des envois. Vercel Cron
-// envoie automatiquement cet en-tête pour les routes /api/cron/* définies
-// dans vercel.json ; à définir manuellement en variable d'environnement
-// Vercel (CRON_SECRET, n'importe quelle chaîne aléatoire) pour que ça
-// fonctionne.
+// qui connaissant l'URL pourrait déclencher des envois. À définir en
+// variable d'environnement Vercel (CRON_SECRET, n'importe quelle chaîne
+// aléatoire), puis à fournir au service externe comme en-tête
+// "Authorization: Bearer <CRON_SECRET>" sur chaque appel programmé.
 //
 // Utilise le client Supabase "service role" (pas le client serveur
 // habituel lié à une session utilisateur) : cette route tourne sans

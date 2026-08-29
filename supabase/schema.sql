@@ -1259,3 +1259,14 @@ create index if not exists abonnements_push_artisan_idx on abonnements_push (art
 -- (aucune notification sans rappel créé par l'artisan), donc il n'y a pas
 -- de raison de désactiver par défaut ce qui ne dérange déjà personne.
 alter table profils add column if not exists notifications_push_actives boolean not null default true;
+
+-- Module 27ter (29/08, suite retour Axel) — pop-up de rappel in-app.
+--
+-- Distincte de `notifie_a` (qui suit l'envoi de la notification PUSH, une
+-- fois, voir app/api/cron/rappels/route.ts) : `vu_le` suit le moment où
+-- l'artisan a VU le rappel dans l'app elle-même et cliqué "Compris" (voir
+-- components/notes/PopupRappel.tsx). Les deux canaux sont complémentaires
+-- et volontairement indépendants — push si l'app est fermée, pop-up
+-- bloquante si elle est déjà ouverte — donc deux colonnes distinctes
+-- plutôt qu'un seul statut "notifié" qui mélangerait les deux canaux.
+alter table notes add column if not exists vu_le timestamptz;

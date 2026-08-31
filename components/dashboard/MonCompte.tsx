@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { EtatErreur } from "@/components/ui/EtatErreur";
 import { METIERS } from "@/lib/metiers";
 
 export function MonCompte() {
@@ -15,34 +16,60 @@ export function MonCompte() {
   const [notificationsActives, setNotificationsActives] = useState(true);
   const [enregistrementNotifications, setEnregistrementNotifications] = useState(false);
   const [chargement, setChargement] = useState(true);
+  // Sprint Robustesse (30/08) — le chargement initial n'avait aucun état
+  // d'échec : sur coupure réseau, `chargement` restait bloqué à `true` pour
+  // toujours (voir plus bas, `if (chargement) return null`) et l'artisan
+  // voyait un écran vide sans aucune explication ni moyen de réessayer.
+  const [erreurChargement, setErreurChargement] = useState<string | null>(null);
   const [lienCopie, setLienCopie] = useState(false);
   const [enregistrementProfil, setEnregistrementProfil] = useState(false);
   const [profilConfirme, setProfilConfirme] = useState(false);
   const [erreurProfil, setErreurProfil] = useState<string | null>(null);
+  // Sprint Robustesse (30/08) — voir basculerNotifications ci-dessous.
+  const [erreurNotifications, setErreurNotifications] = useState<string | null>(null);
 
   const [nouveauMotDePasse, setNouveauMotDePasse] = useState("");
   const [enregistrementMdp, setEnregistrementMdp] = useState(false);
   const [mdpConfirme, setMdpConfirme] = useState(false);
   const [erreurMdp, setErreurMdp] = useState<string | null>(null);
 
-  useEffect(() => {
-    async function charger() {
+  // Sprint Robustesse (30/08) — sorti du useEffect pour pouvoir être
+  // relancé par le bouton "Réessayer" de <EtatErreur /> ci-dessous, sans
+  // dupliquer la logique de chargement.
+  async function charger() {
+    setChargement(true);
+    setErreurChargement(null);
+    try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data } = await supabase
+      if (!user) {
+        setChargement(false);
+        return;
+      }
+      const { data, error } = await supabase
         .from("profils")
         .select("nom, metier, notifications_push_actives")
         .eq("id", user.id)
         .single();
+      if (error) throw error;
       if (data) {
         setNom(data.nom ?? "");
         setMetier(data.metier ?? "");
         setNotificationsActives(data.notifications_push_actives ?? true);
       }
+    } catch {
+      // Coupure réseau ou erreur Supabase : avant ce correctif, `chargement`
+      // restait bloqué à `true` indéfiniment (voir `if (chargement) return
+      // null` plus bas) — écran vide sans aucune explication ni action
+      // possible pour l'artisan.
+      setErreurChargement("Impossible de charger votre compte. Vérifiez votre connexion.");
+    } finally {
       setChargement(false);
     }
+  }
+
+  useEffect(() => {
     charger();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -83,15 +110,34 @@ export function MonCompte() {
   // — cohérent avec un simple interrupteur, contrairement au formulaire de
   // profil juste au-dessus qui, lui, regroupe plusieurs champs.
   async function basculerNotifications(actif: boolean) {
+    // Sprint Robustesse (30/08) — la mise à jour optimiste ci-dessous
+    // changeait visuellement l'interrupteur avant même de savoir si
+    // l'enregistrement Supabase avait réussi, et n'a jamais vérifié `error` :
+    // en cas d'échec, l'artisan croyait avoir changé son réglage alors que
+    // la base gardait l'ancienne valeur. On garde la valeur précédente pour
+    // pouvoir revenir en arrière si besoin.
+    const valeurPrecedente = notificationsActives;
     setNotificationsActives(actif);
+    setErreurNotifications(null);
     setEnregistrementNotifications(true);
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user) {
-      await supabase.from("profils").update({ notifications_push_actives: actif }).eq("id", user.id);
+    if (!user) {
+      setNotificationsActives(valeurPrecedente);
+      setErreurNotifications("Session expirée, reconnectez-vous.");
+      setEnregistrementNotifications(false);
+      return;
     }
+    const { error } = await supabase
+      .from("profils")
+      .update({ notifications_push_actives: actif })
+      .eq("id", user.id);
     setEnregistrementNotifications(false);
+    if (error) {
+      setNotificationsActives(valeurPrecedente);
+      setErreurNotifications("Impossible d'enregistrer ce réglage. Réessayez.");
+    }
   }
 
   async function changerMotDePasse(e: React.FormEvent) {
@@ -117,6 +163,13 @@ export function MonCompte() {
   }
 
   if (chargement) return null;
+
+  // Sprint Robustesse (30/08) — voir `charger()` ci-dessus : affiche un
+  // message compréhensible + un vrai bouton "Réessayer" plutôt qu'un écran
+  // vide indéfini sur coupure réseau.
+  if (erreurChargement) {
+    return <EtatErreur message={erreurChargement} onReessayer={charger} />;
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -174,6 +227,7 @@ export function MonCompte() {
           />
           Autoriser les notifications de rappel
         </label>
+        {erreurNotifications && <p className="mt-2 text-sm text-signal">{erreurNotifications}</p>}
       </Card>
 
       <Card className="p-6">

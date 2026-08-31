@@ -18,6 +18,11 @@ import { obtenirChecklist } from "@/lib/checklistsMetier";
 import { listerNotesProjet, marquerNoteTerminee } from "@/lib/notes";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { FormulaireNote } from "@/components/notes/FormulaireNote";
+// Sprint Robustesse (30/08) — outils partagés pour les mutations Supabase
+// (voir lib/supabase/resultat.ts) et pour l'affichage d'un échec de
+// chargement de page (voir components/ui/EtatErreur.tsx).
+import { executerMutation } from "@/lib/supabase/resultat";
+import { EtatErreur, ErreurInline } from "@/components/ui/EtatErreur";
 import type { Projet, Devis, NoteVocale, EvenementProjet, ParametresEntreprise, Note } from "@/types";
 
 const TYPES_CHANTIER: { value: string; label: string }[] = [
@@ -73,6 +78,15 @@ export default function DetailDemandePage({
   // demande. .maybeSingle() + ce drapeau distinguent maintenant "encore en
   // train de charger" de "vraiment introuvable".
   const [introuvable, setIntrouvable] = useState(false);
+  // Sprint Robustesse (30/08) — chargerDonnees() (Promise.all de ~6 requêtes)
+  // n'était protégée par aucun try/catch : une coupure réseau pendant le
+  // chargement initial faisait rejeter le Promise.all sans jamais mettre à
+  // jour "demande", laissant la page bloquée sur "Chargement…" à l'infini,
+  // sans message ni action possible pour l'artisan. Ce drapeau permet de
+  // distinguer "encore en train de charger" (demande === null, pas
+  // d'erreur) de "le chargement a échoué" (à afficher avec EtatErreur, qui
+  // propose un vrai bouton "Réessayer" relançant chargerDonnees).
+  const [erreurChargement, setErreurChargement] = useState<string | null>(null);
 
   // Cycle "Release Candidate" 1 (26/08) — annulation propre des appels IA :
   // si l'artisan quitte cette fiche projet (navigation, fermeture d'onglet)
@@ -92,86 +106,100 @@ export default function DetailDemandePage({
   }, []);
 
   async function chargerDonnees() {
-    // Ces cinq appels sont indépendants les uns des autres (aucun ne dépend
-    // du résultat d'un autre) : les lancer en parallèle plutôt qu'en série
-    // réduit d'autant le temps de chargement de la fiche projet — sensible
-    // sur un chantier avec un réseau mobile faible.
-    const [
-      { data: demandeData },
-      { data: devisData },
-      { data: notesData },
-      { data: evenementsData },
-      notesProjet,
-      {
-        data: { user },
-      },
-    ] = await Promise.all([
-      supabase.from("demandes").select("*").eq("id", params.id).maybeSingle(),
-      supabase
-        .from("devis")
-        .select("*")
-        .eq("demande_id", params.id)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("notes_vocales")
-        .select("*")
-        .eq("demande_id", params.id)
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("evenements_projet")
-        .select("*")
-        .eq("demande_id", params.id)
-        .order("created_at", { ascending: true }),
-      // Notes professionnelles (29/08, voir lib/notes/index.ts) — point 2
-      // du brief : section dédiée dans la fiche projet.
-      listerNotesProjet(supabase, params.id),
-      supabase.auth.getUser(),
-    ]);
-
-    if (!demandeData) {
-      setIntrouvable(true);
-      return;
-    }
-    setDemande(demandeData as Projet);
-    setDevis(devisData as Devis | null);
-    setNotesVocales((notesData as NoteVocale[]) ?? []);
-    setEvenementsProjet((evenementsData as EvenementProjet[]) ?? []);
-    setNotes(notesProjet);
-
-    if (user) {
-      setArtisanId(user.id);
-      const orgId = await getOrganisationId(supabase, user.id);
-      setOrganisationId(orgId);
-
-      // Ces deux-là dépendent de l'utilisateur (donc après le lot
-      // ci-dessus), mais restent indépendantes l'une de l'autre.
-      const [{ data: profil }, { data: parametresData }] = await Promise.all([
-        // Sprint Beta Final (27/08) — 🔴G : "metier" en plus de "nom",
-        // pour relier la checklist au métier déclaré (voir
-        // lib/checklistsMetier.ts, obtenirChecklist).
-        supabase.from("profils").select("nom, metier").eq("id", user.id).single(),
-        orgId
-          ? supabase
-              .from("parametres_entreprise")
-              .select("*")
-              .eq("organisation_id", orgId)
-              .maybeSingle()
-          : Promise.resolve({ data: null }),
+    // Sprint Robustesse (30/08) — try/catch autour de tout le chargement :
+    // sans ça, une exception (fetch rejeté par coupure réseau, timeout...)
+    // sur n'importe lequel des appels ci-dessous remontait jusqu'au
+    // useEffect appelant sans jamais être rattrapée, et la page restait
+    // bloquée sur "Chargement…" indéfiniment (voir rendu plus bas). On
+    // efface d'abord une éventuelle erreur précédente : un "Réessayer" qui
+    // réussit doit repartir sur un état propre.
+    setErreurChargement(null);
+    try {
+      // Ces cinq appels sont indépendants les uns des autres (aucun ne dépend
+      // du résultat d'un autre) : les lancer en parallèle plutôt qu'en série
+      // réduit d'autant le temps de chargement de la fiche projet — sensible
+      // sur un chantier avec un réseau mobile faible.
+      const [
+        { data: demandeData },
+        { data: devisData },
+        { data: notesData },
+        { data: evenementsData },
+        notesProjet,
+        {
+          data: { user },
+        },
+      ] = await Promise.all([
+        supabase.from("demandes").select("*").eq("id", params.id).maybeSingle(),
+        supabase
+          .from("devis")
+          .select("*")
+          .eq("demande_id", params.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from("notes_vocales")
+          .select("*")
+          .eq("demande_id", params.id)
+          .order("created_at", { ascending: false }),
+        supabase
+          .from("evenements_projet")
+          .select("*")
+          .eq("demande_id", params.id)
+          .order("created_at", { ascending: true }),
+        // Notes professionnelles (29/08, voir lib/notes/index.ts) — point 2
+        // du brief : section dédiée dans la fiche projet.
+        listerNotesProjet(supabase, params.id),
+        supabase.auth.getUser(),
       ]);
-      setNomArtisan(profil?.nom ?? "");
-      setMetierArtisan(profil?.metier ?? null);
-      setParametres((parametresData as ParametresEntreprise) ?? null);
 
-      if (parametresData?.logo_url) {
-        const { data: signe } = await supabase.storage
-          .from("logos")
-          .createSignedUrl(parametresData.logo_url, 3600);
-        setLogoUrl(signe?.signedUrl ?? null);
-      } else {
-        setLogoUrl(null);
+      if (!demandeData) {
+        setIntrouvable(true);
+        return;
       }
+      setDemande(demandeData as Projet);
+      setDevis(devisData as Devis | null);
+      setNotesVocales((notesData as NoteVocale[]) ?? []);
+      setEvenementsProjet((evenementsData as EvenementProjet[]) ?? []);
+      setNotes(notesProjet);
+
+      if (user) {
+        setArtisanId(user.id);
+        const orgId = await getOrganisationId(supabase, user.id);
+        setOrganisationId(orgId);
+
+        // Ces deux-là dépendent de l'utilisateur (donc après le lot
+        // ci-dessus), mais restent indépendantes l'une de l'autre.
+        const [{ data: profil }, { data: parametresData }] = await Promise.all([
+          // Sprint Beta Final (27/08) — 🔴G : "metier" en plus de "nom",
+          // pour relier la checklist au métier déclaré (voir
+          // lib/checklistsMetier.ts, obtenirChecklist).
+          supabase.from("profils").select("nom, metier").eq("id", user.id).single(),
+          orgId
+            ? supabase
+                .from("parametres_entreprise")
+                .select("*")
+                .eq("organisation_id", orgId)
+                .maybeSingle()
+            : Promise.resolve({ data: null }),
+        ]);
+        setNomArtisan(profil?.nom ?? "");
+        setMetierArtisan(profil?.metier ?? null);
+        setParametres((parametresData as ParametresEntreprise) ?? null);
+
+        if (parametresData?.logo_url) {
+          const { data: signe } = await supabase.storage
+            .from("logos")
+            .createSignedUrl(parametresData.logo_url, 3600);
+          setLogoUrl(signe?.signedUrl ?? null);
+        } else {
+          setLogoUrl(null);
+        }
+      }
+    } catch {
+      // Fetch rejeté (réseau coupé, DNS, timeout) — jamais une erreur
+      // Supabase "métier" propre, donc message générique de connexion.
+      setErreurChargement("Impossible de charger cette fiche projet. Vérifiez votre connexion et réessayez.");
     }
   }
 
@@ -303,26 +331,35 @@ export default function DetailDemandePage({
     if (!devis) return;
     setErreur(null);
     setChargementDevis(true);
-    const res = await fetch("/api/devis/dupliquer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ devisId: devis.id }),
-    });
-    setChargementDevis(false);
-    if (!res.ok) {
-      setErreur("Impossible de dupliquer ce devis. Réessayez.");
-      return;
-    }
-    if (artisanId && organisationId) {
-      await enregistrerEvenement(supabase, {
-        demandeId: params.id,
-        artisanId,
-        organisationId,
-        type: "devis_genere",
-        titre: "Devis dupliqué",
+    // Sprint Robustesse (30/08) — aucun try/catch ici auparavant : une
+    // exception réseau (coupure, timeout) sur ce fetch faisait rejeter la
+    // promesse sans jamais repasser chargementDevis à false, laissant le
+    // bouton bloqué sur "Duplication…" indéfiniment.
+    try {
+      const res = await fetch("/api/devis/dupliquer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ devisId: devis.id }),
       });
+      if (!res.ok) {
+        setErreur("Impossible de dupliquer ce devis. Réessayez.");
+        return;
+      }
+      if (artisanId && organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: params.id,
+          artisanId,
+          organisationId,
+          type: "devis_genere",
+          titre: "Devis dupliqué",
+        });
+      }
+      await chargerDonnees();
+    } catch {
+      setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+    } finally {
+      setChargementDevis(false);
     }
-    await chargerDonnees();
   }
 
   async function genererReponse() {
@@ -572,6 +609,11 @@ export default function DetailDemandePage({
 
   const [notesLocales, setNotesLocales] = useState("");
   const [notesEnregistrees, setNotesEnregistrees] = useState(false);
+  // Sprint Robustesse (30/08) — voir enregistrerNotes ci-dessous : un échec
+  // Supabase (RLS, contrainte, coupure réseau) ne déclenchait ni le "✓
+  // Enregistré" ni aucun message d'erreur, l'artisan croyant sa note
+  // enregistrée alors qu'elle ne l'était pas.
+  const [erreurNotes, setErreurNotes] = useState<string | null>(null);
 
   useEffect(() => {
     if (demande) setNotesLocales(demande.notes ?? "");
@@ -583,26 +625,35 @@ export default function DetailDemandePage({
     // évite de spammer la timeline à chaque clic hors du champ.
     if (notesLocales === (demande.notes ?? "")) return;
 
-    const { error } = await supabase
-      .from("demandes")
-      .update({ notes: notesLocales, derniere_modification_le: new Date().toISOString() })
-      .eq("id", demande.id);
-    if (!error) {
-      setNotesEnregistrees(true);
-      setTimeout(() => setNotesEnregistrees(false), 1500);
-      if (artisanId && organisationId && notesLocales.trim()) {
-        await enregistrerEvenement(supabase, {
-          demandeId: demande.id,
-          artisanId,
-          organisationId,
-          type: "note_ajoutee",
-          titre: "Note ajoutée",
-          detail: notesLocales.slice(0, 80) + (notesLocales.length > 80 ? "…" : ""),
-        });
-      }
-      setDemande({ ...demande, notes: notesLocales });
-      await chargerDonnees();
+    // Sprint Robustesse (30/08) — `if (!error)` sans `else` : un échec
+    // Supabase passait totalement inaperçu (voir lib/supabase/resultat.ts).
+    // executerMutation force à traiter explicitement le cas d'échec.
+    const resultat = await executerMutation(
+      supabase
+        .from("demandes")
+        .update({ notes: notesLocales, derniere_modification_le: new Date().toISOString() })
+        .eq("id", demande.id),
+      "Impossible d'enregistrer. Réessayez."
+    );
+    if (!resultat.ok) {
+      setErreurNotes(resultat.erreur);
+      return;
     }
+    setErreurNotes(null);
+    setNotesEnregistrees(true);
+    setTimeout(() => setNotesEnregistrees(false), 1500);
+    if (artisanId && organisationId && notesLocales.trim()) {
+      await enregistrerEvenement(supabase, {
+        demandeId: demande.id,
+        artisanId,
+        organisationId,
+        type: "note_ajoutee",
+        titre: "Note ajoutée",
+        detail: notesLocales.slice(0, 80) + (notesLocales.length > 80 ? "…" : ""),
+      });
+    }
+    setDemande({ ...demande, notes: notesLocales });
+    await chargerDonnees();
   }
 
   // Informations complémentaires (facultatives, ajoutées après coup)
@@ -612,6 +663,10 @@ export default function DetailDemandePage({
     type_chantier: "autre",
   });
   const [infosEnregistrees, setInfosEnregistrees] = useState(false);
+  // Sprint Robustesse (30/08) — même bug que erreurNotes ci-dessus : un
+  // échec Supabase sur enregistrerInfos ne se traduisait par rien à
+  // l'écran, l'artisan pensant ses coordonnées client enregistrées.
+  const [erreurInfos, setErreurInfos] = useState<string | null>(null);
 
   useEffect(() => {
     if (demande) {
@@ -625,28 +680,34 @@ export default function DetailDemandePage({
 
   async function enregistrerInfos() {
     if (!demande) return;
-    const { error } = await supabase
-      .from("demandes")
-      .update({
-        telephone_client: infos.telephone_client || null,
-        adresse_client: infos.adresse_client || null,
-        type_chantier: infos.type_chantier,
-      })
-      .eq("id", demande.id);
-    if (!error) {
-      setInfosEnregistrees(true);
-      setTimeout(() => setInfosEnregistrees(false), 1500);
-      if (artisanId && organisationId) {
-        await enregistrerEvenement(supabase, {
-          demandeId: demande.id,
-          artisanId,
-          organisationId,
-          type: "infos_completees",
-          titre: "Informations complétées",
-        });
-      }
-      await chargerDonnees();
+    const resultat = await executerMutation(
+      supabase
+        .from("demandes")
+        .update({
+          telephone_client: infos.telephone_client || null,
+          adresse_client: infos.adresse_client || null,
+          type_chantier: infos.type_chantier,
+        })
+        .eq("id", demande.id),
+      "Impossible d'enregistrer. Réessayez."
+    );
+    if (!resultat.ok) {
+      setErreurInfos(resultat.erreur);
+      return;
     }
+    setErreurInfos(null);
+    setInfosEnregistrees(true);
+    setTimeout(() => setInfosEnregistrees(false), 1500);
+    if (artisanId && organisationId) {
+      await enregistrerEvenement(supabase, {
+        demandeId: demande.id,
+        artisanId,
+        organisationId,
+        type: "infos_completees",
+        titre: "Informations complétées",
+      });
+    }
+    await chargerDonnees();
   }
 
   if (introuvable) {
@@ -663,6 +724,21 @@ export default function DetailDemandePage({
         >
           ← Retour à la liste des projets
         </Link>
+      </div>
+    );
+  }
+
+  // Sprint Robustesse (30/08) — si le chargement initial a échoué (réseau
+  // coupé, timeout...), on ne reste plus indéfiniment sur "Chargement…" :
+  // EtatErreur affiche un message compréhensible + un bouton "Réessayer"
+  // qui relance chargerDonnees. On ne remplace la page que si "demande"
+  // n'a encore jamais été chargée avec succès (un échec de rechargement
+  // après une action, lui, ne doit pas faire disparaître la fiche déjà
+  // affichée à l'écran).
+  if (erreurChargement && !demande) {
+    return (
+      <div className="p-8 max-w-lg">
+        <EtatErreur message={erreurChargement} onReessayer={chargerDonnees} />
       </div>
     );
   }
@@ -860,6 +936,11 @@ export default function DetailDemandePage({
                 {infosEnregistrees && (
                   <span className="text-xs text-steel">✓ Enregistré</span>
                 )}
+                {/* Sprint Robustesse (30/08) — voir enregistrerInfos : un échec
+                    Supabase est maintenant signalé ici, à côté du champ concerné. */}
+                {erreurInfos && (
+                  <ErreurInline message={erreurInfos} onReessayer={enregistrerInfos} />
+                )}
               </div>
             </div>
           )}
@@ -902,6 +983,12 @@ export default function DetailDemandePage({
       <FicheSection icone="📝" titre="Notes libres">
         {notesEnregistrees && (
           <p className="text-xs text-steel mb-2">✓ Enregistré</p>
+        )}
+        {/* Sprint Robustesse (30/08) — voir enregistrerNotes : un échec
+            Supabase est maintenant signalé ici, à côté du champ concerné,
+            plutôt que de disparaître silencieusement. */}
+        {erreurNotes && (
+          <ErreurInline message={erreurNotes} onReessayer={enregistrerNotes} className="mb-2" />
         )}
         <textarea
           value={notesLocales}
@@ -1001,6 +1088,17 @@ export default function DetailDemandePage({
             : "Utile si vos notes sont en vrac — l'IA en fait la synthèse et repère ce qui manque. Si le projet est déjà clair, passez directement à l'étape 2."}
         </p>
 
+        {/* Sprint Robustesse (30/08) — un seul état `erreur` partagé par les
+            3 actions IA (analyser/générer devis/générer réponse), affiché
+            jusqu'ici seulement tout en bas de page, après l'historique :
+            un artisan cliquant ce bouton en haut de la fiche ne voyait
+            jamais l'erreur sans scroller toute la page. Correctif le plus
+            simple sans réarchitecturer l'état : dupliquer l'affichage sous
+            chacun des 3 boutons concernés (celui-ci reste aussi en bas, en
+            filet de sécurité pour les autres mutations qui utilisent le
+            même état, ex. dupliquerDevis). */}
+        {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
+
         {demande.questions_manquantes && (
           <Card className="mt-4 p-6">
             <p className="text-sm text-ink/80">
@@ -1068,6 +1166,11 @@ export default function DetailDemandePage({
               </Button>
             )}
           </div>
+
+          {/* Sprint Robustesse (30/08) — voir commentaire identique plus
+              haut sous le bouton "Analyser avec l'IA" : même état `erreur`
+              partagé, dupliqué ici pour rester visible sans scroller. */}
+          {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
 
           {devis?.statut === "refuse" && (
             <Card className="mt-4 p-4 border-signal/30 bg-signal/5">
@@ -1215,6 +1318,11 @@ export default function DetailDemandePage({
                 : "Générer une réponse"}
             </Button>
           </div>
+
+          {/* Sprint Robustesse (30/08) — voir les deux commentaires
+              identiques plus haut : même état `erreur` partagé, dupliqué
+              ici pour rester visible sans scroller. */}
+          {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
 
           {brouillonReponse && (
             <Card className="mt-4 p-6">

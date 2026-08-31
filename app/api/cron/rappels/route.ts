@@ -27,6 +27,14 @@ import { envoyerPush } from "@/lib/notifications/push";
 // aléatoire), puis à fournir au service externe comme en-tête
 // "Authorization: Bearer <CRON_SECRET>" sur chaque appel programmé.
 //
+// Sprint Robustesse (30/08) — 🔴 faille corrigée : si CRON_SECRET n'est
+// PAS défini en environnement, la route refuse désormais tout appel
+// (fail-closed) au lieu de laisser passer sans vérification (fail-open,
+// l'ancien comportement). Sans ça, oublier cette variable en prod aurait
+// permis à n'importe qui connaissant l'URL de déclencher l'envoi de
+// notifications à tous les artisans ET de marquer leurs rappels comme
+// "notifiés" (perte définitive du rappel, sans qu'il n'ait jamais été vu).
+//
 // Utilise le client Supabase "service role" (pas le client serveur
 // habituel lié à une session utilisateur) : cette route tourne sans
 // utilisateur connecté, elle doit pouvoir lire toutes les organisations.
@@ -38,11 +46,15 @@ export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
   const secretAttendu = process.env.CRON_SECRET;
-  if (secretAttendu) {
-    const enTete = request.headers.get("authorization");
-    if (enTete !== `Bearer ${secretAttendu}`) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-    }
+  if (!secretAttendu) {
+    // Fail-closed : une variable d'environnement manquante ne doit jamais
+    // se traduire par une route non protégée.
+    console.error("CRON_SECRET absent — appel du cron de rappels refusé.");
+    return NextResponse.json({ error: "Non configuré" }, { status: 503 });
+  }
+  const enTete = request.headers.get("authorization");
+  if (enTete !== `Bearer ${secretAttendu}`) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   }
 
   const supabase = createAdminClient();

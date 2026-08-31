@@ -35,6 +35,15 @@ export function EquipeSection() {
 
   async function charger() {
     setChargement(true);
+    // Sprint Robustesse (30/08) — cette fonction enchaîne 3 requêtes
+    // Supabase sans jamais vérifier leur `error` individuellement : si l'une
+    // échouait (coupure réseau en cours de route, par exemple), la liste de
+    // membres se construisait quand même à partir de `data` vide/partiel,
+    // silencieusement tronquée. On affiche désormais un message clair et on
+    // arrête la construction de la liste dès qu'une requête échoue, plutôt
+    // que de laisser l'artisan croire que l'équipe est plus petite qu'elle
+    // ne l'est réellement.
+    setErreur(null);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -44,11 +53,17 @@ export function EquipeSection() {
     }
     setMonUserId(user.id);
 
-    const { data: maMembership } = await supabase
+    const { data: maMembership, error: erreurMembership } = await supabase
       .from("memberships")
       .select("organisation_id, role")
       .eq("user_id", user.id)
       .maybeSingle();
+
+    if (erreurMembership) {
+      setErreur("Impossible de charger votre équipe. Vérifiez votre connexion.");
+      setChargement(false);
+      return;
+    }
 
     if (!maMembership) {
       setChargement(false);
@@ -56,16 +71,28 @@ export function EquipeSection() {
     }
     setMonRole(maMembership.role as "proprietaire" | "employe");
 
-    const { data: memberships } = await supabase
+    const { data: memberships, error: erreurMemberships } = await supabase
       .from("memberships")
       .select("user_id, role")
       .eq("organisation_id", maMembership.organisation_id);
 
+    if (erreurMemberships) {
+      setErreur("Impossible de charger la liste des membres. Vérifiez votre connexion.");
+      setChargement(false);
+      return;
+    }
+
     const idsMembres = (memberships ?? []).map((m) => m.user_id);
-    const { data: profils } = await supabase
+    const { data: profils, error: erreurProfils } = await supabase
       .from("profils")
       .select("id, nom, email")
       .in("id", idsMembres.length > 0 ? idsMembres : ["00000000-0000-0000-0000-000000000000"]);
+
+    if (erreurProfils) {
+      setErreur("Impossible de charger les informations des membres. Vérifiez votre connexion.");
+      setChargement(false);
+      return;
+    }
 
     const liste: Membre[] = (memberships ?? []).map((m) => {
       const profil = profils?.find((p) => p.id === m.user_id);
@@ -118,6 +145,10 @@ export function EquipeSection() {
     if (!confirm(`Retirer ${nom} de l'équipe ? Cette personne perdra immédiatement l'accès.`)) {
       return;
     }
+    // Sprint Robustesse (30/08) — en cas d'échec, rien n'était affiché :
+    // l'artisan cliquait sur "Retirer" et ne pouvait pas savoir si la
+    // personne avait bien été retirée ou non.
+    setErreur(null);
     const reponse = await fetch("/api/equipe/retirer", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -125,7 +156,10 @@ export function EquipeSection() {
     });
     if (reponse.ok) {
       charger();
+      return;
     }
+    const resultat = await reponse.json().catch(() => null);
+    setErreur(resultat?.error ?? "Impossible de retirer cette personne. Réessayez.");
   }
 
   if (chargement) {
@@ -138,6 +172,12 @@ export function EquipeSection() {
         Toutes les personnes de votre équipe voient et travaillent sur les mêmes projets,
         devis et planning — comme si vous partagiez un seul bureau.
       </p>
+
+      {/* Sprint Robustesse (30/08) — affiché ici (pas seulement dans le
+          formulaire d'invitation plus bas) pour rester visible même quand
+          `charger()` ou `handleRetirer` échouent avant que le rôle de
+          l'artisan soit connu. */}
+      {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
       <Card className="p-5">
         <h2 className="text-sm font-semibold text-ink/70 mb-4">Membres ({membres.length})</h2>

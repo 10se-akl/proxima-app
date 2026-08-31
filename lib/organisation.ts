@@ -15,11 +15,22 @@ export async function getOrganisationId(
   supabase: SupabaseClient,
   userId: string
 ): Promise<string | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("memberships")
     .select("organisation_id")
     .eq("user_id", userId)
     .maybeSingle();
+  // Sprint Robustesse (30/08) — un `error` ici est un échec technique
+  // (réseau, Supabase indisponible...), pas "cet artisan n'a pas
+  // d'organisation". Sans ce log, les deux cas retournaient silencieusement
+  // `null` et un simple souci réseau pouvait faire perdre l'accès à ses
+  // propres projets à l'artisan. On garde `Promise<string | null>` tel
+  // quel (signature utilisée par des dizaines d'appelants) et on logue
+  // clairement pour pouvoir diagnostiquer ce cas plutôt que de le
+  // confondre avec une absence réelle d'organisation.
+  if (error) {
+    console.error("getOrganisationId: échec Supabase (memberships)", error);
+  }
   return data?.organisation_id ?? null;
 }
 
@@ -30,11 +41,17 @@ export async function getMembership(
   supabase: SupabaseClient,
   userId: string
 ): Promise<{ organisationId: string; role: "proprietaire" | "employe" } | null> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("memberships")
     .select("organisation_id, role")
     .eq("user_id", userId)
     .maybeSingle();
+  // Sprint Robustesse (30/08) — même distinction que getOrganisationId
+  // ci-dessus : on logue l'échec technique avant de retomber sur `null`,
+  // pour ne pas le confondre avec un artisan réellement sans organisation.
+  if (error) {
+    console.error("getMembership: échec Supabase (memberships)", error);
+  }
   if (!data) return null;
   return { organisationId: data.organisation_id, role: data.role as "proprietaire" | "employe" };
 }

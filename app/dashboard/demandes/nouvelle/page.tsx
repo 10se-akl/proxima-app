@@ -224,13 +224,24 @@ export default function NouveauProjetPage() {
       .select("id")
       .single();
 
-    setChargement(false);
-
     if (error || !data) {
+      setChargement(false);
       setErreur("Impossible d'enregistrer le projet.");
       return;
     }
 
+    // Sprint Robustesse (30/08) — 🔴 risque de doublon corrigé : le bouton
+    // restait cliquable dès `setChargement(false)`, avant même que la
+    // redirection ci-dessous ait démarré. Un artisan impatient (réseau
+    // lent) pouvait recliquer "Créer le projet" pendant cette fenêtre et
+    // soumettre le formulaire une seconde fois — le premier projet, déjà
+    // créé, restait alors invisible tant que la page n'avait pas changé.
+    // `chargement` (donc le bouton) ne repasse à `false` que sur les
+    // chemins d'échec ci-dessus ; sur le chemin de succès, il reste à
+    // `true` jusqu'à la navigation, qui démonte de toute façon la page.
+    // `enregistrerEvenement` est volontairement "jamais bloquant" (voir
+    // lib/timeline.ts) : son échec éventuel ne doit jamais retarder ni
+    // empêcher la redirection vers le projet qui, lui, existe déjà.
     await enregistrerEvenement(supabase, {
       demandeId: data.id,
       artisanId: user.id,

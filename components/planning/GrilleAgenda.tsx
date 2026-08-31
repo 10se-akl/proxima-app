@@ -148,25 +148,33 @@ function BlocEvenement({
         <>
           {/* Fond transparent pour fermer le menu au clic ailleurs */}
           <div className="fixed inset-0 z-20" onClick={() => setMenuOuvert(false)} />
+          {/* Sprint Robustesse (30/08) — la grille reste scrollable telle
+              quelle (la refaire en liste empilée était trop risqué vu le
+              positionnement absolu basé sur les heures, potentiel de
+              régression visuelle élevé) mais ce menu contextuel, lui, est
+              sans risque à agrandir : py-2 (~32px de haut) passe à min-h-11
+              (44px, norme tactile Apple/Google) avec le texte centré
+              verticalement via flex, pour absorber l'imprécision du doigt
+              sur un écran de chantier. */}
           <div className="relative z-30 mt-1 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-xs w-44">
             {evenement.demande_id && (
               <button
                 onClick={() => router.push(`/dashboard/demandes/${evenement.demande_id}`)}
-                className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
               >
                 → Ouvrir le projet
               </button>
             )}
             <button
               onClick={() => router.push(`/dashboard/planning/nouveau?eventId=${evenement.id}`)}
-              className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
             >
               ✏️ Modifier
             </button>
             <button
               onClick={basculerTermine}
               disabled={enCours || annule}
-              className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5 disabled:opacity-40"
+              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5 disabled:opacity-40"
             >
               {termine ? "Marquer à faire" : "✓ Marquer terminé"}
             </button>
@@ -174,7 +182,7 @@ function BlocEvenement({
               <button
                 onClick={annuler}
                 disabled={enCours}
-                className="w-full text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
               >
                 ✕ Annuler ce rendez-vous
               </button>
@@ -182,7 +190,7 @@ function BlocEvenement({
             <button
               onClick={supprimer}
               disabled={enCours}
-              className="w-full text-left px-3 py-2 transition-colors hover:bg-signal/10 text-signal"
+              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-signal/10 text-signal"
             >
               🗑 Supprimer
             </button>

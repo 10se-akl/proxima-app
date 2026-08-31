@@ -21,6 +21,8 @@ export function CentreNotifications() {
   const [ouvert, setOuvert] = useState(false);
   const [notes, setNotes] = useState<Note[]>([]);
   const [chargement, setChargement] = useState(true);
+  // Sprint Robustesse (30/08) — voir `terminer()` ci-dessous.
+  const [erreurTerminer, setErreurTerminer] = useState<string | null>(null);
 
   async function charger() {
     const {
@@ -55,8 +57,22 @@ export function CentreNotifications() {
   async function terminer(noteId: string) {
     // Optimiste : disparaît immédiatement de la liste, cohérent avec "Une
     // fois la note terminée : elle disparaît automatiquement" (point 6).
+    const noteRetiree = notes.find((n) => n.id === noteId);
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
-    await marquerNoteTerminee(supabase, noteId, true);
+    setErreurTerminer(null);
+    // Sprint Robustesse (30/08) — le retrait optimiste ci-dessus n'attendait
+    // jamais le résultat de `marquerNoteTerminee` : sur échec (réseau,
+    // session expirée), la note disparaissait de l'écran alors qu'elle
+    // restait active en base — l'artisan croyait l'avoir traitée alors que
+    // le rappel pouvait ressurgir plus tard. On remet la note dans la liste
+    // si l'appel échoue.
+    const reussi = await marquerNoteTerminee(supabase, noteId, true);
+    if (!reussi) {
+      if (noteRetiree) {
+        setNotes((prev) => [...prev, noteRetiree]);
+      }
+      setErreurTerminer("Impossible de marquer cette note comme terminée. Réessayez.");
+    }
   }
 
   const maintenant = Date.now();
@@ -82,6 +98,9 @@ export function CentreNotifications() {
           <p className="px-4 pt-3.5 pb-2 font-mono text-[10px] tracking-[0.2em] uppercase text-steel">
             Notifications
           </p>
+          {erreurTerminer && (
+            <p className="px-4 pb-2 text-xs text-signal">{erreurTerminer}</p>
+          )}
           {chargement ? (
             <p className="px-4 pb-4 text-xs text-ink/40">Chargement…</p>
           ) : notes.length === 0 ? (

@@ -85,11 +85,25 @@ export async function demanderAbonnementSiNecessaire(): Promise<boolean> {
     const abonnement = await sAbonnerNotificationsPush();
     if (!abonnement) return false;
 
-    await fetch("/api/notifications/abonner", {
+    const res = await fetch("/api/notifications/abonner", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(serialiserAbonnement(abonnement)),
     });
+
+    // Sprint Robustesse (30/08) — avant, on retournait `true` dès que le
+    // fetch partait, sans regarder la réponse : un échec d'enregistrement
+    // côté serveur (ex : 500, table indisponible) faisait quand même
+    // croire à l'artisan que ses notifications étaient bien activées,
+    // alors qu'aucun abonnement n'était réellement stocké pour lui envoyer
+    // quoi que ce soit plus tard. On garde `Promise<boolean>` inchangé
+    // (l'appelant actuel, FormulaireNote.tsx, ne regarde même pas la
+    // valeur de retour — best effort — donc ce resserrement ne casse rien)
+    // mais on logue l'échec pour pouvoir le diagnostiquer.
+    if (!res.ok) {
+      console.error("demanderAbonnementSiNecessaire: échec enregistrement serveur", res.status);
+      return false;
+    }
     return true;
   } catch {
     // Échec réseau/navigateur : la note elle-même reste enregistrée avec

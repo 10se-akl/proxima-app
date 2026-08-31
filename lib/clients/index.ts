@@ -31,13 +31,22 @@ export async function rechercherClientParTelephone(
   const telephone = normaliserTelephone(telephoneBrut);
   if (!telephone) return null;
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("clients")
     .select("id, nom, telephone")
     .eq("organisation_id", organisationId)
     .eq("telephone", telephone)
     .limit(1)
     .maybeSingle();
+
+  // Sprint Robustesse (30/08) — sans ce log, un échec réseau pendant la
+  // recherche produit exactement le même résultat qu'"aucun client
+  // existant" (`null`), ce qui peut mener à la création d'une fiche client
+  // en double. On garde `Promise<ClientTrouve | null>` inchangé (utilisé
+  // par trouverOuCreerClient et par le parcours de partage).
+  if (error) {
+    console.error("rechercherClientParTelephone: échec Supabase (clients)", error);
+  }
 
   return data ?? null;
 }
@@ -58,13 +67,20 @@ export async function rechercherProjetsOuvertsClient(
   organisationId: string,
   clientId: string
 ): Promise<ProjetOuvert[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("demandes")
     .select("id, nom_client, type_chantier, statut, created_at")
     .eq("organisation_id", organisationId)
     .eq("client_id", clientId)
     .neq("statut", "termine")
     .order("created_at", { ascending: false });
+
+  // Sprint Robustesse (30/08) — même logique : un échec réseau ne doit pas
+  // se confondre silencieusement avec "aucun projet ouvert" pour ce
+  // client. Signature `Promise<ProjetOuvert[]>` inchangée.
+  if (error) {
+    console.error("rechercherProjetsOuvertsClient: échec Supabase (demandes)", error);
+  }
 
   return data ?? [];
 }

@@ -20,6 +20,11 @@ export function PhotosProjet({
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
+  // Sprint Robustesse (30/08) — état dédié aux miniatures : avant, un
+  // échec (réseau, Supabase indisponible) laissait `urls` vide sans jamais
+  // le signaler, donc les miniatures restaient bloquées sur "…"
+  // indéfiniment, sans aucun message ni moyen de relancer le chargement.
+  const [erreurUrls, setErreurUrls] = useState(false);
 
   // Le bucket est privé : on génère des URLs signées temporaires pour
   // afficher les miniatures, plutôt que de rendre les photos publiques.
@@ -28,12 +33,25 @@ export function PhotosProjet({
   // requêtes séquentielles à une seule, sensible sur un réseau de chantier.
   useEffect(() => {
     async function chargerUrls() {
-      const { data } = await supabase.storage.from("photos").createSignedUrls(chemins, 3600);
-      const nouvelles: Record<string, string> = {};
-      for (const item of data ?? []) {
-        if (item.signedUrl && !item.error) nouvelles[item.path ?? ""] = item.signedUrl;
+      setErreurUrls(false);
+      try {
+        const { data, error } = await supabase.storage
+          .from("photos")
+          .createSignedUrls(chemins, 3600);
+        if (error) {
+          console.error("PhotosProjet: échec createSignedUrls", error);
+          setErreurUrls(true);
+          return;
+        }
+        const nouvelles: Record<string, string> = {};
+        for (const item of data ?? []) {
+          if (item.signedUrl && !item.error) nouvelles[item.path ?? ""] = item.signedUrl;
+        }
+        setUrls(nouvelles);
+      } catch (err) {
+        console.error("PhotosProjet: échec createSignedUrls", err);
+        setErreurUrls(true);
       }
-      setUrls(nouvelles);
     }
     if (chemins.length > 0) chargerUrls();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -168,7 +186,49 @@ export function PhotosProjet({
 
       {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
 
-      {chemins.length > 0 && (
+      {/*
+        Sprint Robustesse (30/08) — avant, un échec de createSignedUrls
+        laissait les miniatures bloquées sur "…" indéfiniment, sans aucun
+        message ni moyen de relancer le chargement. On affiche désormais un
+        message clair avec un bouton "Réessayer" qui redéclenche le même
+        effet en forçant son exécution manuellement.
+      */}
+      {erreurUrls && chemins.length > 0 && (
+        <div className="mt-4 flex items-center gap-3 rounded-xl border border-signal/20 bg-signal/5 px-4 py-3 text-sm text-ink/70">
+          <span>Impossible de charger les photos. Réessayez.</span>
+          <button
+            type="button"
+            onClick={() => {
+              setErreurUrls(false);
+              (async () => {
+                try {
+                  const { data, error } = await supabase.storage
+                    .from("photos")
+                    .createSignedUrls(chemins, 3600);
+                  if (error) {
+                    console.error("PhotosProjet: échec createSignedUrls (relance)", error);
+                    setErreurUrls(true);
+                    return;
+                  }
+                  const nouvelles: Record<string, string> = {};
+                  for (const item of data ?? []) {
+                    if (item.signedUrl && !item.error) nouvelles[item.path ?? ""] = item.signedUrl;
+                  }
+                  setUrls(nouvelles);
+                } catch (err) {
+                  console.error("PhotosProjet: échec createSignedUrls (relance)", err);
+                  setErreurUrls(true);
+                }
+              })();
+            }}
+            className="shrink-0 rounded-lg bg-ink text-paper text-xs font-medium px-3 py-1.5 hover:bg-signal transition-colors"
+          >
+            Réessayer
+          </button>
+        </div>
+      )}
+
+      {!erreurUrls && chemins.length > 0 && (
         <div className="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-2">
           {chemins.map((chemin) => (
             <div

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { FormulaireNote } from "@/components/notes/FormulaireNote";
+import { EtatErreur } from "@/components/ui/EtatErreur";
 
 type ProjetLeger = { id: string; nom_client: string };
 
@@ -26,31 +27,59 @@ function NouvelleNoteForm() {
 
   const [projets, setProjets] = useState<ProjetLeger[]>([]);
   const [chargement, setChargement] = useState(true);
+  // Sprint Robustesse (30/08) — sans ça, un échec réseau au chargement de la
+  // liste des projets laissait la page bloquée sur "Chargement…" indéfiniment.
+  const [erreurChargement, setErreurChargement] = useState(false);
   const nomProjetFixe = projets.find((p) => p.id === projetIdFixe)?.nom_client;
 
-  useEffect(() => {
-    async function charger() {
+  async function charger() {
+    setChargement(true);
+    setErreurChargement(false);
+    try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) {
+        // Sprint Robustesse (30/08) — repéré en revue de régression :
+        // sans ce `setChargement(false)`, une session expirée laissait la
+        // page bloquée sur "Chargement…" comme le bug qu'on corrige ici.
+        setChargement(false);
+        return;
+      }
       const organisationId = await getOrganisationId(supabase, user.id);
-      if (!organisationId) return;
-      const { data } = await supabase
+      if (!organisationId) {
+        setChargement(false);
+        return;
+      }
+      const { data, error } = await supabase
         .from("demandes")
         .select("id, nom_client")
         .eq("organisation_id", organisationId)
         .neq("statut", "termine")
         .order("created_at", { ascending: false });
+      if (error) throw error;
       setProjets((data as ProjetLeger[]) ?? []);
       setChargement(false);
+    } catch {
+      // Sprint Robustesse (30/08) — coupure réseau typiquement : état
+      // d'erreur explicite avec "Réessayer" plutôt qu'un chargement bloqué.
+      setErreurChargement(true);
+      setChargement(false);
     }
+  }
+
+  useEffect(() => {
     charger();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (chargement) {
     return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
+  }
+
+  // Sprint Robustesse (30/08) — voir le catch dans `charger` ci-dessus.
+  if (erreurChargement) {
+    return <EtatErreur onReessayer={charger} className="p-8" />;
   }
 
   return (

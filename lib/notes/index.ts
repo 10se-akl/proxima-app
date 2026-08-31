@@ -28,11 +28,18 @@ export async function listerNotesProjet(
   supabase: SupabaseClient,
   demandeId: string
 ): Promise<Note[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("notes")
     .select("*")
     .eq("demande_id", demandeId)
     .order("created_at", { ascending: false });
+  // Sprint Robustesse (30/08) — sans ce log, un échec réseau retombait
+  // silencieusement sur [] exactement comme "aucune note" : un rappel
+  // programmé par l'artisan pouvait disparaître de son écran sans qu'on
+  // sache jamais pourquoi. Signature `Promise<Note[]>` inchangée.
+  if (error) {
+    console.error("listerNotesProjet: échec Supabase (notes)", error);
+  }
   return (data as Note[]) ?? [];
 }
 
@@ -43,12 +50,17 @@ export async function listerNotesActivesProjet(
   supabase: SupabaseClient,
   demandeId: string
 ): Promise<Note[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("notes")
     .select("*")
     .eq("demande_id", demandeId)
     .eq("statut", "active")
     .order("created_at", { ascending: false });
+  // Sprint Robustesse (30/08) — voir listerNotesProjet ci-dessus : même
+  // distinction erreur technique / réellement aucune note active.
+  if (error) {
+    console.error("listerNotesActivesProjet: échec Supabase (notes)", error);
+  }
   return (data as Note[]) ?? [];
 }
 
@@ -71,7 +83,14 @@ export async function listerNotesActivesOrganisation(
     requete = requete.not("rappel_a", "is", null);
   }
 
-  const { data } = await requete.order("rappel_a", { ascending: true, nullsFirst: false });
+  const { data, error } = await requete.order("rappel_a", { ascending: true, nullsFirst: false });
+  // Sprint Robustesse (30/08) — cette fonction alimente la page Notes et le
+  // centre de notifications : un échec réseau silencieux ferait croire à
+  // l'artisan qu'il n'a aucune note/rappel actif, alors que c'est juste la
+  // requête qui a échoué.
+  if (error) {
+    console.error("listerNotesActivesOrganisation: échec Supabase (notes)", error);
+  }
   return ((data as any[]) ?? []).map(aplatir);
 }
 
@@ -136,7 +155,7 @@ export async function listerRappelsAVoir(
   supabase: SupabaseClient,
   organisationId: string
 ): Promise<Note[]> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("notes")
     .select(SELECTION_AVEC_PROJET)
     .eq("organisation_id", organisationId)
@@ -145,6 +164,13 @@ export async function listerRappelsAVoir(
     .lte("rappel_a", new Date().toISOString())
     .is("vu_le", null)
     .order("rappel_a", { ascending: true });
+  // Sprint Robustesse (30/08) — c'est la file de la pop-up bloquante
+  // "Compris" : un échec réseau silencieux ferait simplement disparaître
+  // un rappel programmé par l'artisan, sans aucune trace de la vraie
+  // cause. Signature `Promise<Note[]>` inchangée.
+  if (error) {
+    console.error("listerRappelsAVoir: échec Supabase (notes)", error);
+  }
   return ((data as any[]) ?? []).map(aplatir);
 }
 

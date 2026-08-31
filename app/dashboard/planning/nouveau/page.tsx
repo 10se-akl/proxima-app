@@ -10,6 +10,7 @@ import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
+import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { TypeEvenement, Priorite } from "@/types";
 
 const COULEUR_PRIORITE: Record<Priorite, string> = {
@@ -51,6 +52,11 @@ function NouvelEvenementForm() {
   const [chargement, setChargement] = useState(false);
   const [chargementInitial, setChargementInitial] = useState(enModeEdition);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Sprint Robustesse (30/08) — erreur dédiée au chargement initial de
+  // l'événement en édition (distincte de `erreur`, qui concerne la
+  // soumission du formulaire) : elle affiche <EtatErreur /> à la place du
+  // formulaire au lieu de laisser la page bloquée sur "Chargement…".
+  const [erreurChargement, setErreurChargement] = useState(false);
 
   useEffect(() => {
     async function chargerProjets() {
@@ -75,13 +81,25 @@ function NouvelEvenementForm() {
   useEffect(() => {
     if (!eventId) return;
     async function chargerEvenement() {
-      const { data } = await supabase
-        .from("evenements_planning")
-        .select("*")
-        .eq("id", eventId)
-        .single();
+      setChargementInitial(true);
+      setErreurChargement(false);
+      // Sprint Robustesse (30/08) — 🔴 sans try/catch, une coupure réseau
+      // ici (ou toute erreur Supabase) laissait la page bloquée sur
+      // "Chargement…" pour toujours : aucun retour, aucun moyen de
+      // réessayer. On affiche désormais <EtatErreur /> à la place du
+      // formulaire, avec un bouton pour relancer le chargement.
+      try {
+        const { data, error } = await supabase
+          .from("evenements_planning")
+          .select("*")
+          .eq("id", eventId)
+          .single();
 
-      if (data) {
+        if (error || !data) {
+          setErreurChargement(true);
+          return;
+        }
+
         setType(data.type);
         setTitre(data.titre);
         const d = new Date(data.date_heure);
@@ -90,8 +108,11 @@ function NouvelEvenementForm() {
         setDureeMinutes(data.duree_minutes ?? 60);
         setDemandeId(data.demande_id ?? "");
         setNotes(data.notes ?? "");
+      } catch {
+        setErreurChargement(true);
+      } finally {
+        setChargementInitial(false);
       }
-      setChargementInitial(false);
     }
     chargerEvenement();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -129,6 +150,23 @@ function NouvelEvenementForm() {
     setErreur(null);
     setChargement(true);
 
+    // Sprint Robustesse (30/08) — repéré en revue de régression : toute la
+    // fonction manquait d'un filet try/catch. Les branches d'erreur
+    // "propres" (Supabase renvoie { error }) remettaient déjà bien
+    // `chargement` à false, mais une exception brute (réseau coupé en
+    // plein milieu d'un `await`) n'était rattrapée nulle part et laissait
+    // le bouton bloqué sur "Enregistrement…" pour toujours — exactement
+    // le défaut de classe que ce sprint corrige ailleurs (voir
+    // NotesVocales.tsx, la fiche projet...).
+    try {
+      await soumettre(e);
+    } catch {
+      setErreur("Connexion perdue. Réessayez.");
+      setChargement(false);
+    }
+  }
+
+  async function soumettre(e: React.FormEvent) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -167,7 +205,7 @@ function NouvelEvenementForm() {
       const finJour = new Date(date);
       finJour.setHours(23, 59, 59, 999);
 
-      const { data: evenementsJour } = await supabase
+      const { data: evenementsJour, error: erreurConflit } = await supabase
         .from("evenements_planning")
         .select("id, titre, date_heure, duree_minutes")
         .eq("organisation_id", organisationId)
@@ -175,6 +213,15 @@ function NouvelEvenementForm() {
         .neq("statut", "annule")
         .gte("date_heure", debutJour.toISOString())
         .lte("date_heure", finJour.toISOString());
+
+      // Sprint Robustesse (30/08) — 🔴 même correctif que
+      // ConfirmationRdv.tsx : ne jamais traiter une vérification de
+      // conflit échouée comme "aucun conflit".
+      if (erreurConflit) {
+        setErreur("Impossible de vérifier les créneaux déjà pris. Réessayez.");
+        setChargement(false);
+        return;
+      }
 
       const conflit = (evenementsJour ?? [])
         .filter((ev) => ev.id !== eventId)
@@ -213,10 +260,15 @@ function NouvelEvenementForm() {
           .from("evenements_planning")
           .insert({ ...donnees, artisan_id: user.id, organisation_id: organisationId });
 
-    setChargement(false);
-
     if (error) {
+      // Sprint Robustesse (30/08) — 🔴 `setChargement(false)` était appelé
+      // ici inconditionnellement, avant l'enregistrement dans la timeline
+      // et avant la redirection : le bouton redevenait cliquable pendant
+      // cette fenêtre, ouvrant la porte à un double-clic créateur de
+      // doublon. On ne le repasse à false que sur l'échec ; sur le succès,
+      // la redirection démonte la page, donc inutile de le refaire.
       setErreur("Impossible d'enregistrer. Réessayez.");
+      setChargement(false);
       return;
     }
 
@@ -258,6 +310,23 @@ function NouvelEvenementForm() {
         {enModeEdition ? "Modifier l'événement" : "Ajouter au planning"}
       </h1>
 
+      {erreurChargement ? (
+        // Sprint Robustesse (30/08) — page bloquée évitée : à la place du
+        // formulaire (dont les champs seraient de toute façon vides), on
+        // affiche l'état d'erreur standard avec un bouton "Réessayer" qui
+        // relance le préchargement de l'événement.
+        <EtatErreur
+          message="Impossible de charger cet événement. Vérifiez votre connexion."
+          onReessayer={() => {
+            // Le useEffect de chargement dépend de `eventId`, qui ne change
+            // pas d'un essai à l'autre : un simple re-render ne relancerait
+            // donc rien. On recharge la page pour relancer proprement le
+            // chargement, plus simple ici que d'extraire l'effet en fonction
+            // rappelable.
+            window.location.reload();
+          }}
+        />
+      ) : (
       <Card className="mt-8 p-6">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex gap-2">
@@ -391,6 +460,7 @@ function NouvelEvenementForm() {
           </Button>
         </form>
       </Card>
+      )}
     </div>
   );
 }

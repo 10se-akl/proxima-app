@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { CATEGORIES, trouverCategorie, type Categorie, type SousCategorie } from "@/lib/retours/taxonomie";
@@ -23,6 +23,21 @@ const NB_ETAPES = 4;
 
 export function BoutonRetour() {
   const [ouvert, setOuvert] = useState(false);
+  // Sprint Robustesse (30/08) — la carte d'installation PWA (InstallPWA.tsx,
+  // fixed inset-x-4 en bas de l'écran mobile) recouvre entièrement ce
+  // bouton flottant tant qu'elle est affichée. On écoute l'évènement
+  // qu'elle expose pour se décaler plus haut uniquement pendant ce temps,
+  // plutôt que de rester relevé en permanence.
+  const [carteInstallVisible, setCarteInstallVisible] = useState(false);
+
+  useEffect(() => {
+    function surChangement(e: Event) {
+      const detail = (e as CustomEvent<{ visible: boolean }>).detail;
+      setCarteInstallVisible(Boolean(detail?.visible));
+    }
+    window.addEventListener("compyo:install-carte-visible", surChangement);
+    return () => window.removeEventListener("compyo:install-carte-visible", surChangement);
+  }, []);
 
   return (
     <>
@@ -33,7 +48,15 @@ export function BoutonRetour() {
         // "bottom-5" fixe (20px) colle le bouton contre cette zone de
         // geste système en app installée — on ajoute la marge de sécurité
         // du téléphone par-dessus les 20px voulus, au lieu de les remplacer.
-        className="fixed right-5 z-40 flex items-center gap-2 rounded-full bg-anthracite text-white pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-ink hover:scale-[1.03] active:scale-[0.97] transition-all [bottom:calc(1.25rem+env(safe-area-inset-bottom))]"
+        // Sprint Robustesse (30/08) — quand la carte d'installation est
+        // affichée, on remonte le bouton au-dessus d'elle (9rem couvre
+        // largement sa hauteur habituelle, marge de sécurité comprise) ;
+        // "transition-all" déjà présent anime ce décalage en douceur.
+        className={`fixed right-5 z-40 flex items-center gap-2 rounded-full bg-anthracite text-white pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-ink hover:scale-[1.03] active:scale-[0.97] transition-all ${
+          carteInstallVisible
+            ? "[bottom:calc(9rem+env(safe-area-inset-bottom))]"
+            : "[bottom:calc(1.25rem+env(safe-area-inset-bottom))]"
+        }`}
       >
         {/* Retour d'Axel (26/08) : "Faire un retour" seul seul se lisait
             trop comme "signaler un problème" pour certains artisans, alors

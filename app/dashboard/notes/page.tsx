@@ -8,6 +8,7 @@ import { listerNotesActivesOrganisation, marquerNoteTerminee } from "@/lib/notes
 import { NoteCard } from "@/components/notes/NoteCard";
 import { Button } from "@/components/ui/Button";
 import { IconeNote } from "@/components/ui/Icones";
+import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { Note } from "@/types";
 
 // ============================================================
@@ -24,18 +25,41 @@ export default function NotesPage() {
   const supabase = createClient();
   const [notes, setNotes] = useState<Note[]>([]);
   const [chargement, setChargement] = useState(true);
+  // Sprint Robustesse (30/08) — sans ça, un échec réseau au chargement
+  // laissait la page bloquée sur "Chargement…" indéfiniment (chargement
+  // restait à true, aucun message, aucune action possible pour l'artisan).
+  const [erreurChargement, setErreurChargement] = useState(false);
   const [filtreProjet, setFiltreProjet] = useState<string>("");
 
   async function charger() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const organisationId = await getOrganisationId(supabase, user.id);
-    if (!organisationId) return;
-    const donnees = await listerNotesActivesOrganisation(supabase, organisationId);
-    setNotes(donnees);
-    setChargement(false);
+    setChargement(true);
+    setErreurChargement(false);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        // Sprint Robustesse (30/08) — repéré en revue de régression :
+        // sans ce `setChargement(false)`, une session expirée laissait la
+        // page bloquée sur "Chargement…" comme le bug qu'on corrige ici.
+        setChargement(false);
+        return;
+      }
+      const organisationId = await getOrganisationId(supabase, user.id);
+      if (!organisationId) {
+        setChargement(false);
+        return;
+      }
+      const donnees = await listerNotesActivesOrganisation(supabase, organisationId);
+      setNotes(donnees);
+      setChargement(false);
+    } catch {
+      // Sprint Robustesse (30/08) — coupure réseau typiquement : on montre un
+      // vrai état d'erreur avec bouton "Réessayer" plutôt qu'un chargement
+      // qui ne finit jamais.
+      setErreurChargement(true);
+      setChargement(false);
+    }
   }
 
   useEffect(() => {
@@ -76,6 +100,11 @@ export default function NotesPage() {
 
   if (chargement) {
     return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
+  }
+
+  // Sprint Robustesse (30/08) — voir le catch dans `charger` ci-dessus.
+  if (erreurChargement) {
+    return <EtatErreur onReessayer={charger} className="p-8" />;
   }
 
   return (

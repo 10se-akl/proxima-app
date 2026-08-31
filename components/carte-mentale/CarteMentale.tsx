@@ -843,7 +843,15 @@ function PanneauDetail({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="cm-panneau-glisse w-full sm:w-[440px] sm:h-full bg-[#160f0c] text-white sm:border-l border-white/10 shadow-2xl p-6 sm:p-7 max-h-[85vh] sm:max-h-none overflow-y-auto rounded-t-3xl sm:rounded-none"
+        // Sprint Robustesse (30/08) — marge de sécurité iPhone manquante ici
+        // contrairement aux autres bottom-sheets de l'app (voir
+        // PremierLancement.tsx, PopupRappel.tsx, BoutonRetour.tsx) : sans
+        // elle, le dernier bloc du panneau (vote/tâches) se retrouve sous
+        // la barre de geste système sur iPhone à encoche. sm:[padding-
+        // bottom:1.75rem] rétablit le padding normal en version desktop
+        // (panneau plein écran, pas un bottom-sheet, safe-area non
+        // pertinente là).
+        className="cm-panneau-glisse w-full sm:w-[440px] sm:h-full bg-[#160f0c] text-white sm:border-l border-white/10 shadow-2xl p-6 sm:p-7 max-h-[85vh] sm:max-h-none overflow-y-auto rounded-t-3xl sm:rounded-none [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:[padding-bottom:1.75rem]"
       >
         <div className="flex items-start justify-between gap-3">
           <div>

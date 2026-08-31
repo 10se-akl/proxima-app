@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { EtatErreur } from "@/components/ui/EtatErreur";
 import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
 import { ConfirmationRdv } from "@/components/dashboard/ConfirmationRdv";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
@@ -52,6 +53,10 @@ export default function RevuePartagePage() {
   const [brouillon, setBrouillon] = useState<BrouillonProjet | null>(null);
   const [images, setImages] = useState<string[]>([]);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Sprint Robustesse (30/08) — voir commentaire dans le useEffect ci-dessous :
+  // ce message partagé (SMS/message client) est le contenu le plus important à
+  // ne jamais perdre silencieusement en cas de coupure réseau.
+  const [erreurChargement, setErreurChargement] = useState(false);
   const [correspondances, setCorrespondances] = useState<ProjetOuvert[]>([]);
   const [attachementEnCours, setAttachementEnCours] = useState(false);
   const [propositionEnCours, setPropositionEnCours] = useState<{
@@ -85,17 +90,23 @@ export default function RevuePartagePage() {
     }
   }
 
-  useEffect(() => {
-    let annule = false;
+  // Sprint Robustesse (30/08) — sortie du useEffect (au lieu d'une fonction
+  // locale) pour que le bouton "Réessayer" de EtatErreur puisse relancer
+  // exactement le même chargement. `annuleRef` remplace le flag `annule`
+  // local : il doit survivre en dehors du useEffect pour être lu depuis un
+  // appel manuel (retry) comme depuis le montage automatique.
+  const annuleRef = useRef(false);
 
-    async function charger() {
+  async function charger() {
+    setErreurChargement(false);
+    try {
       const { data: partage, error } = await supabase
         .from("partages_entrants")
         .select("id, texte, images")
         .eq("id", params.id)
         .single();
 
-      if (annule) return;
+      if (annuleRef.current) return;
 
       // Un partage sans AUCUN contenu exploitable (ni texte ni photo — cas
       // très rare, partage vide ou déjà traité) renvoie vers la création
@@ -138,7 +149,7 @@ export default function RevuePartagePage() {
           body: JSON.stringify({ partageId: params.id }),
         });
         const donneesMatch = await reponseMatch.json();
-        if (annule) return;
+        if (annuleRef.current) return;
 
         if (reponseMatch.ok && donneesMatch.statut === "un") {
           setCorrespondances([donneesMatch.projet]);
@@ -157,11 +168,21 @@ export default function RevuePartagePage() {
 
       // Aucune correspondance (ou matching indisponible) : parcours normal.
       lancerAnalyseIA(partage.texte);
+    } catch {
+      // Sprint Robustesse (30/08) — coupure réseau pendant la récupération du
+      // partage entrant : c'est le contenu le plus important de tout le
+      // parcours (le message/SMS du client), donc pas question de le perdre
+      // silencieusement derrière un "Chargement…" qui ne finit jamais. On
+      // affiche un état d'erreur explicite avec possibilité de réessayer.
+      if (!annuleRef.current) setErreurChargement(true);
     }
+  }
 
+  useEffect(() => {
+    annuleRef.current = false;
     charger();
     return () => {
-      annule = true;
+      annuleRef.current = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
@@ -229,6 +250,22 @@ export default function RevuePartagePage() {
       setErreur("Impossible d'enregistrer le projet pour le moment.");
       setEtape("revue");
     }
+  }
+
+  // Sprint Robustesse (30/08) — priorité absolue à ne pas laisser cet écran
+  // bloqué : voir le catch dans `charger`. `onReessayer` relance le même
+  // chargement (message partagé + matching + analyse IA).
+  if (erreurChargement) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        <Card className="p-6">
+          <EtatErreur
+            message="Impossible de récupérer le message partagé. Vérifiez votre connexion et réessayez."
+            onReessayer={charger}
+          />
+        </Card>
+      </div>
+    );
   }
 
   if (propositionEnCours) {

@@ -35,7 +35,19 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
   async function accepterRdv() {
     setTraitementRdv(true);
     setErreur(null);
+    // Sprint Robustesse (30/08) — repéré en revue de régression : sans ce
+    // try/catch, une exception réseau brute (pas juste une erreur Supabase
+    // "propre") laissait le bouton bloqué sur "Ajout en cours…" pour
+    // toujours, sans message ni possibilité de réessayer.
+    try {
+      await tenterAccepterRdv();
+    } catch {
+      setTraitementRdv(false);
+      setErreur("Connexion perdue. Réessayez.");
+    }
+  }
 
+  async function tenterAccepterRdv() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -62,7 +74,7 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
     const finJour = new Date(rdv.date);
     finJour.setHours(23, 59, 59, 999);
 
-    const { data: evenementsJour } = await supabase
+    const { data: evenementsJour, error: erreurConflit } = await supabase
       .from("evenements_planning")
       .select("id, titre, date_heure, duree_minutes")
       .eq("organisation_id", organisationId)
@@ -70,6 +82,20 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
       .neq("statut", "annule")
       .gte("date_heure", debutJour.toISOString())
       .lte("date_heure", finJour.toISOString());
+
+    // Sprint Robustesse (30/08) — 🔴 corrigé : cette requête ne servait
+    // qu'à VÉRIFIER l'absence de conflit, mais son résultat d'erreur
+    // n'était jamais regardé. Sur une coupure réseau, `evenementsJour`
+    // retombait sur `undefined` -> `[]` via le `??` plus bas, donc "aucun
+    // conflit détecté" alors qu'on n'avait tout simplement pas pu vérifier
+    // — un chantier déjà planifié à cette heure pouvait se faire doubler
+    // en silence. On refuse maintenant de continuer si la vérification
+    // elle-même a échoué, plutôt que de supposer optimistement "c'est bon".
+    if (erreurConflit) {
+      setTraitementRdv(false);
+      setErreur("Impossible de vérifier les créneaux déjà pris. Réessayez.");
+      return;
+    }
 
     const fin = new Date(dateHeure.getTime() + 60 * 60000);
     const conflit = (evenementsJour ?? []).find((ev) => {

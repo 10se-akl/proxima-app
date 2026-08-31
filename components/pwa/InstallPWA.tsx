@@ -115,6 +115,20 @@ export function InstallPWA() {
     };
   }, []);
 
+  // Sprint Robustesse (30/08) — expose l'état d'affichage de la carte via un
+  // évènement custom global : tant qu'elle est visible, elle recouvre en
+  // pleine largeur (fixed inset-x-4) le bouton flottant "Avis & idées"
+  // (BoutonRetour.tsx, fixed right-5) qui se trouve dans la même zone en
+  // bas de l'écran mobile. BoutonRetour.tsx écoute cet évènement pour se
+  // décaler vers le haut le temps que la carte est affichée, plutôt que de
+  // rester relevé en permanence (ce qui gênerait inutilement le reste du
+  // temps).
+  useEffect(() => {
+    window.dispatchEvent(
+      new CustomEvent("compyo:install-carte-visible", { detail: { visible: afficherCarte } })
+    );
+  }, [afficherCarte]);
+
   function fermer() {
     setAfficherCarte(false);
   }

@@ -64,18 +64,27 @@ function BlocCompteSidebar({
         <p className="text-sm text-white/80 font-medium truncate">{nomArtisan}</p>
       </div>
 
-      <div className="flex items-center gap-1 px-2">
+      {/* Sprint Robustesse (30/08) — zones tactiles agrandies (32px → 44px,
+          recommandation Apple/Google) et espacement doublé (gap-1 → gap-2.5)
+          entre les 4 boutons : un artisan visant le thème pouvait toucher
+          "Se déconnecter" juste à côté par imprécision du doigt. L'icône
+          elle-même (taille={17} sur CentreNotifications, emoji des autres)
+          ne change pas visuellement — seule la zone cliquable grandit via
+          w-11 h-11 (44px) plutôt qu'un padding qui aurait aussi agrandi
+          l'icône. Le bouton "Se déconnecter" garde 44px mais reste
+          visuellement identique. */}
+      <div className="flex items-center gap-2.5 px-2">
         <CentreNotifications />
-        <ThemeToggle className="w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors" />
+        <ThemeToggle className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors" />
         <BoutonInstallerDiscret
           compact
-          className="w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
         />
         <button
           onClick={onDeconnexion}
           title="Se déconnecter"
           aria-label="Se déconnecter"
-          className="w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
         >
           <span aria-hidden="true">⏻</span>
         </button>
@@ -106,6 +115,13 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
   const [menuOuvert, setMenuOuvert] = useState(false);
 
   async function handleLogout() {
+    // Sprint Robustesse (30/08) — confirmation avant déconnexion, cohérent
+    // avec le pattern déjà utilisé pour les actions à conséquence ailleurs
+    // dans l'app (ex: suppression d'un rendez-vous). Utile en particulier
+    // maintenant que ce bouton est juste à côté de "Installer l'app" et
+    // "Thème" : un doigt qui touche la mauvaise icône ne déconnecte plus
+    // l'artisan sans qu'il l'ait vraiment voulu.
+    if (!window.confirm("Se déconnecter de Compyo ?")) return;
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
@@ -130,9 +146,15 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
           <CompyoMark variante="blanc" taille={24} />
           <p className="font-display font-semibold">Compyo</p>
         </span>
+        {/* Sprint Robustesse (30/08) — zone tactile ~36×31px avant (p-2),
+            trop petite pour la norme 44×44px. w-11 h-11 (44px) avec un
+            flex centré garde les 3 barres visuellement identiques et à la
+            même place (la marge négative -mr-3 compense l'agrandissement
+            du padding pour que la barre reste alignée au bord droit comme
+            avant). */}
         <button
           onClick={() => setMenuOuvert(!menuOuvert)}
-          className="p-2 -mr-2"
+          className="w-11 h-11 -mr-3 flex flex-col items-center justify-center"
           aria-label="Menu"
         >
           <span className="block w-5 h-px bg-white mb-1.5" />

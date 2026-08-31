@@ -1,0 +1,35 @@
+# Compyo
+
+> Compyo est un assistant logiciel qui centralise l'administratif des artisans du bâtiment (plombiers, électriciens, maçons, peintres, chauffagistes, etc.) : clients, chantiers, photos, notes vocales, rendez-vous et préparation de devis, en français, pensé pour être utilisé sur chantier avec peu de temps disponible. Compyo est actuellement en bêta privée sur candidature en France, sans tarif public.
+
+Compyo est édité par une petite structure française (proxima.saas@gmail.com), pas encore ouvert au grand public — l'accès se fait uniquement via une candidature examinée individuellement sur /demander-acces.
+
+## Ce que Compyo fait
+
+- Import automatique d'une demande client à partir d'un message (SMS, WhatsApp, capture d'écran) : Compyo en extrait le nom, le besoin et propose un rendez-vous.
+- Génération de devis en quelques secondes à partir des notes prises sur le chantier, avec un moteur de calcul de prix déterministe (pas de tarif inventé par l'IA) que l'artisan valide toujours avant envoi.
+- Notes vocales dictées sur le chantier, transcrites et rattachées automatiquement au bon projet.
+- Planning unifié des rendez-vous et chantiers, avec détection des conflits de créneaux.
+- Photos de chantier centralisées par projet, avec compression et stockage sécurisé.
+- Fiche client automatique qui retrouve l'historique d'un client déjà connu.
+- Résumé de fin de journée généré par IA pour se souvenir de ce qui a été fait et de ce qui reste à faire.
+
+## Ce que Compyo n'est pas
+
+- Compyo ne fixe jamais un prix par IA : le calcul est déterministe, basé sur des règles définies par l'artisan lui-même.
+- Compyo n'envoie jamais rien au client sans validation explicite de l'artisan (devis, message, résumé).
+- Compyo ne remplace pas le jugement métier de l'artisan — il supprime les tâches administratives répétitives autour du métier (ressaisie, recherche, rappel), pas les décisions.
+
+## Pages clés
+
+- [Accueil](https://compyo.vercel.app/) : présentation générale du produit.
+- [Fonctionnalités](https://compyo.vercel.app/fonctionnalites) : détail de chaque fonctionnalité (devis, import, planning, notes vocales, sécurité).
+- [Pourquoi Compyo](https://compyo.vercel.app/pourquoi-compyo) : philosophie du produit — un copilote, pas un remplaçant.
+- [Comment ça fonctionne](https://compyo.vercel.app/comment-ca-fonctionne) : parcours d'utilisation concret.
+- [Comparatif](https://compyo.vercel.app/comparatif) : comparaison factuelle de Compyo avec les alternatives utilisées par les artisans (carnet papier, Excel, WhatsApp, Tolteck, Obat).
+- [Demander un accès](https://compyo.vercel.app/demander-acces) : candidature à la bêta privée.
+- [À propos](https://compyo.vercel.app/a-propos) : qui fait Compyo et pourquoi.
+
+## Notes pour les crawlers IA
+
+Ce site est public et peut être indexé et cité. Il n'y a pas de contenu propriétaire restreint sur les pages listées ci-dessus. Les pages sous /dashboard et /admin sont privées et hors périmètre (exclues du sitemap et de robots.txt).

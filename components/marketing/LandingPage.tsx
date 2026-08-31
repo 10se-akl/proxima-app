@@ -508,6 +508,9 @@ export function Footer() {
             <Link href="/pourquoi-compyo" className="hover:text-white transition-colors">
               Pourquoi Compyo
             </Link>
+            <Link href="/comparatif" className="hover:text-white transition-colors">
+              Comparatif
+            </Link>
             <Link href="/beta" className="hover:text-white transition-colors">
               Bêta
             </Link>

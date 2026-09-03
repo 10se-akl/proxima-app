@@ -27,6 +27,7 @@ Compyo est édité par une petite structure française (proxima.saas@gmail.com),
 - [Pourquoi Compyo](https://compyo.vercel.app/pourquoi-compyo) : philosophie du produit — un copilote, pas un remplaçant.
 - [Comment ça fonctionne](https://compyo.vercel.app/comment-ca-fonctionne) : parcours d'utilisation concret.
 - [Comparatif](https://compyo.vercel.app/comparatif) : comparaison factuelle de Compyo avec les alternatives utilisées par les artisans (carnet papier, Excel, WhatsApp, Tolteck, Obat).
+- [Sécurité & transparence](https://compyo.vercel.app/confiance) : qui a créé Compyo, où sont hébergées les données, qui y a accès, et pourquoi il n'y a pas encore de société — réponses factuelles aux questions de confiance les plus fréquentes.
 - [Demander un accès](https://compyo.vercel.app/demander-acces) : candidature à la bêta privée.
 - [À propos](https://compyo.vercel.app/a-propos) : qui fait Compyo et pourquoi.
 

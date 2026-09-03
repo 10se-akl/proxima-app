@@ -511,6 +511,9 @@ export function Footer() {
             <Link href="/comparatif" className="hover:text-white transition-colors">
               Comparatif
             </Link>
+            <Link href="/confiance" className="hover:text-white transition-colors">
+              Sécurité & transparence
+            </Link>
             <Link href="/beta" className="hover:text-white transition-colors">
               Bêta
             </Link>

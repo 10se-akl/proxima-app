@@ -1,12 +1,19 @@
 "use client";
 
 // ============================================================================
-// Brouillon isolé — "Aperçu immersif" (voir app/apercu-immersif/page.tsx)
+// Accueil en production (app/page.tsx) — également monté depuis
+// app/apercu-immersif/page.tsx (doublon conservé comme page de comparaison,
+// exclu du référencement).
 // ----------------------------------------------------------------------------
-// Composant 100% autonome : aucune dépendance ajoutée (pas de framer-motion),
-// uniquement React + Tailwind + IntersectionObserver/scroll natif. Ne touche
-// à aucun composant partagé — les seuls imports externes sont next/link et
-// components/ui/Button (en lecture seule, non modifié).
+// Composant quasi autonome : aucune dépendance ajoutée (pas de
+// framer-motion), uniquement React + Tailwind + IntersectionObserver/scroll
+// natif. Ne touche à aucun composant partagé EXTÉRIEUR à ce module — les
+// seuls imports externes sont next/link et components/ui/Button (en lecture
+// seule, non modifié). Plusieurs sous-sections et données sont exportées
+// (05/09) pour être réutilisées par components/marketing/LandingImmersiveV2
+// (voir app/apercu-visuel/page.tsx) sans dupliquer leur code : ça reste un
+// module interne au dossier marketing, pas un composant partagé au sens du
+// reste de l'app.
 //
 // Direction artistique validée par Axel : thème sombre café/atelier
 // (réutilise les tokens --c-* du mode sombre existant plutôt que des hex en
@@ -30,7 +37,7 @@ import { Header, Footer } from "./LandingPage";
  * accepte toujours une classe (couleur/taille via Tailwind) et, pour les
  * usages animés (avant/après), un style inline optionnel (opacité/couleur
  * interpolées en JS). */
-type IconComponent = (props: { className?: string; style?: CSSProperties }) => ReactNode;
+export type IconComponent = (props: { className?: string; style?: CSSProperties }) => ReactNode;
 
 // ----------------------------------------------------------------------------
 // Petits hooks locaux (pas de dépendance externe)
@@ -124,7 +131,7 @@ function smoothstep(t: number) {
 // Icônes inline (SVG minimalistes, pas de librairie d'icônes)
 // ----------------------------------------------------------------------------
 
-const IconMicro: IconComponent = ({ className, style }) => {
+export const IconMicro: IconComponent = ({ className, style }) => {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
       <rect x="9" y="3" width="6" height="11" rx="3" stroke="currentColor" strokeWidth="1.6" />
@@ -134,7 +141,7 @@ const IconMicro: IconComponent = ({ className, style }) => {
   );
 };
 
-const IconPhoto: IconComponent = ({ className, style }) => {
+export const IconPhoto: IconComponent = ({ className, style }) => {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
       <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" strokeWidth="1.6" />
@@ -144,7 +151,7 @@ const IconPhoto: IconComponent = ({ className, style }) => {
   );
 };
 
-const IconMessage: IconComponent = ({ className, style }) => {
+export const IconMessage: IconComponent = ({ className, style }) => {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
       <path
@@ -158,7 +165,7 @@ const IconMessage: IconComponent = ({ className, style }) => {
   );
 };
 
-const IconDevis: IconComponent = ({ className, style }) => {
+export const IconDevis: IconComponent = ({ className, style }) => {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
       <path
@@ -183,7 +190,7 @@ const IconCarnet: IconComponent = ({ className, style }) => {
   );
 };
 
-const IconCheck: IconComponent = ({ className, style }) => {
+export const IconCheck: IconComponent = ({ className, style }) => {
   return (
     <svg viewBox="0 0 24 24" fill="none" className={className} style={style} aria-hidden="true">
       <path d="M5 12.5 10 17l9-10" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
@@ -325,13 +332,95 @@ const METIERS: Metier[] = [
       </svg>
     ),
   },
+  // Revue métier (06/09) — cette section n'en montrait que 6 sur les 18
+  // métiers réellement couverts par Compyo (voir lib/metiers.ts) :
+  // menuisier, carreleur, serrurier, paysagiste et bien d'autres ne se
+  // reconnaissaient nulle part sur l'accueil. Ajout d'un échantillon plus
+  // large, réparti sur les mêmes familles que lib/metiers.ts (bois/finitions,
+  // sécurité, extérieur) plutôt que d'ajouter les 18 (onglets illisibles) —
+  // toujours pas exhaustif, mais beaucoup plus représentatif qu'avant.
+  {
+    id: "menuisier",
+    nom: "Menuisier",
+    accent: "#C08A52",
+    phrase: "Vos mesures et références de matériel toujours à portée de main.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <rect x="58" y="52" width="84" height="96" rx="6" fill="none" stroke={accent} strokeWidth="8" opacity="0.85" />
+        <path d="M100 52v96M58 100h84" stroke={accent} strokeWidth="6" opacity="0.55" />
+      </svg>
+    ),
+  },
+  {
+    id: "carreleur",
+    nom: "Carreleur",
+    accent: "#5C7A99",
+    phrase: "Le bon métrage retrouvé, sans ressortir le mètre à chaque devis.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        {[0, 1, 2].map((row) =>
+          [0, 1, 2].map((col) => (
+            <rect
+              key={`${row}-${col}`}
+              x={62 + col * 28}
+              y={62 + row * 28}
+              width="24"
+              height="24"
+              rx="2"
+              fill={accent}
+              fillOpacity={(row + col) % 2 === 0 ? 0.85 : 0.35}
+            />
+          ))
+        )}
+      </svg>
+    ),
+  },
+  {
+    id: "serrurier",
+    nom: "Serrurier",
+    accent: "#9B8F6E",
+    phrase: "Un dépannage urgent facturé avant même de reprendre la route.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <circle cx="76" cy="76" r="18" fill="none" stroke={accent} strokeWidth="9" opacity="0.85" />
+        <path
+          d="M88 88 136 136M112 112l16-16M128 128l16-16"
+          stroke={accent}
+          strokeWidth="9"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.85"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "paysagiste",
+    nom: "Paysagiste",
+    accent: "#6FA05C",
+    phrase: "Le suivi de chaque jardin, jamais deux fois la même visite.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <path
+          d="M100 146c-32-10-44-42-33-75 32 1 58 17 63 48 4 20-9 33-30 27Z"
+          fill={accent}
+          fillOpacity="0.85"
+        />
+        <path d="M100 146c4-27 15-49 37-64" stroke={accent} strokeWidth="4" fill="none" opacity="0.55" />
+      </svg>
+    ),
+  },
 ];
 
 // ----------------------------------------------------------------------------
 // Données du hero (cartes flottantes)
 // ----------------------------------------------------------------------------
 
-type CarteFlottante = {
+export type CarteFlottante = {
   id: string;
   label: string;
   Icon: IconComponent;
@@ -344,7 +433,7 @@ type CarteFlottante = {
 // Positions volontairement irrégulières (coins, distances différentes du
 // centre, légère bascule) — un cercle parfait N/E/S/O fait "schéma
 // technique", ce placement organique fait "constellation vivante".
-const CARTES_HERO: CarteFlottante[] = [
+export const CARTES_HERO: CarteFlottante[] = [
   { id: "voix", label: "Note vocale", Icon: IconMicro, style: { top: "10%", left: "16%" }, duree: 6.2, retard: 0, inclinaison: -3 },
   { id: "photo", label: "Photo de chantier", Icon: IconPhoto, style: { top: "16%", left: "80%" }, duree: 7.1, retard: 0.4, inclinaison: 2 },
   { id: "message", label: "Message WhatsApp", Icon: IconMessage, style: { top: "86%", left: "22%" }, duree: 6.7, retard: 0.9, inclinaison: 2.5 },
@@ -399,6 +488,19 @@ function HeroConvergence() {
         <p className="mx-auto mt-5 max-w-md text-base text-[#C9C0B4] sm:text-lg">
           L&apos;assistant conçu pour les artisans du bâtiment : vos clients, vos chantiers et vos
           devis, réunis au même endroit.
+        </p>
+
+        {/* Résumé concret, présent dans le HTML mais non affiché à l'écran
+            (page volontairement très visuelle, peu de texte) : donne aux
+            moteurs de recherche et aux assistants IA de quoi expliquer
+            précisément ce que fait Compyo, sans dépendre uniquement de la
+            meta description. */}
+        <p className="sr-only">
+          Compyo importe automatiquement vos messages WhatsApp et SMS, transcrit vos notes
+          vocales, range vos photos de chantier par projet, et génère vos devis à partir de ces
+          informations. Chaque artisan du bâtiment — électricien, chauffagiste, peintre, couvreur,
+          plombier, maçon et autres métiers — retrouve ainsi tout l&apos;historique d&apos;un
+          chantier ou d&apos;un client sans avoir à le ressaisir.
         </p>
 
         <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
@@ -565,7 +667,7 @@ function HeroConvergence() {
   );
 }
 
-function AvantApres() {
+export function AvantApres() {
   const { ref, progress } = useSectionProgress<HTMLDivElement>();
   const t = smoothstep(progress);
 
@@ -638,7 +740,7 @@ function AvantApres() {
   );
 }
 
-function MetiersInteractifs() {
+export function MetiersInteractifs() {
   const [actif, setActif] = useState(0);
   const metier = METIERS[actif];
   const { ref, visible } = useRevealOnce<HTMLDivElement>();
@@ -691,6 +793,21 @@ function MetiersInteractifs() {
         </div>
       </div>
 
+      {/* Version texte complète, toujours présente dans le HTML (pas
+          seulement le métier survolé/sélectionné) : les lecteurs d'écran et
+          les moteurs qui lisent la page (recherche, IA) doivent pouvoir
+          connaître les 6 métiers et leur bénéfice sans avoir à cliquer.
+          Invisible à l'écran pour un visiteur voyant (identique en
+          contenu à ce qui est déjà affiché un par un ci-dessus, donc pas
+          du "cloaking" — juste rendu autrement). */}
+      <ul className="sr-only">
+        {METIERS.map((m) => (
+          <li key={m.id}>
+            {m.nom} : {m.phrase}
+          </li>
+        ))}
+      </ul>
+
       <style jsx>{`
         .metier-illustration,
         .metier-texte {
@@ -717,7 +834,7 @@ function MetiersInteractifs() {
   );
 }
 
-function Temoignage() {
+export function Temoignage() {
   const { ref, visible } = useRevealOnce<HTMLDivElement>();
   return (
     <section className="bg-[#C96B4A] px-6 py-24 sm:py-32">
@@ -740,7 +857,7 @@ function Temoignage() {
   );
 }
 
-function CtaFinal() {
+export function CtaFinal() {
   const { ref, visible } = useRevealOnce<HTMLDivElement>();
   return (
     <section className="px-6 py-24 sm:py-32">
@@ -775,9 +892,18 @@ export function LandingImmersive() {
   // reste isolée, elle ne doit rien changer au thème du reste du site
   // (pas de header/footer global à ce jour dans app/layout.tsx — voir
   // app/apercu-immersif/page.tsx pour le contexte).
+  //
+  // "theme-sombre-fixe" (voir globals.css, audit 05/09) : Header et Footer
+  // sont partagés avec le reste du site et suivent normalement le réglage
+  // clair/sombre du visiteur — sans cette classe, un visiteur en mode
+  // clair voyait un bandeau d'en-tête presque blanc au-dessus du fond
+  // sombre codé en dur ci-dessous. Cette direction artistique est un choix
+  // volontaire et permanent, pas un thème : elle reste sombre quel que
+  // soit le réglage du visiteur, sans jamais changer sa préférence
+  // globale pour le reste du site (voir le commentaire dans globals.css).
   return (
-    <div className="min-h-screen bg-[#171512] text-[#E8DCCB]">
-      <Header />
+    <div className="theme-sombre-fixe min-h-screen bg-[#171512] text-[#E8DCCB]">
+      <Header masquerToggleTheme />
       <main>
         <HeroConvergence />
         <AvantApres />

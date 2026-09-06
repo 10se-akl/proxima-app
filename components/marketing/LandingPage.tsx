@@ -141,7 +141,18 @@ const LIENS_NAV = [
   { href: "/contact", label: "Contact" },
 ];
 
-export function Header() {
+export function Header({
+  masquerToggleTheme = false,
+}: {
+  // Audit sécurité/bugs (05/09) — 🟠 : LandingImmersive.tsx force son
+  // propre thème sombre en permanence (voir .theme-sombre-fixe dans
+  // globals.css), indépendamment du réglage clair/sombre global du
+  // visiteur. Le ThemeToggle n'y a donc plus aucun effet visible — un
+  // bouton qui semble ne rien faire est pire qu'un bouton absent. Ce prop
+  // le masque uniquement pour cet appelant précis ; toutes les autres
+  // pages (qui, elles, suivent bien le thème choisi) le gardent tel quel.
+  masquerToggleTheme?: boolean;
+} = {}) {
   const [menuOuvert, setMenuOuvert] = useState(false);
   // Refonte navigation (Module 16) : le site vitrine et l'app forment un
   // seul produit, plus jamais de déconnexion forcée pour naviguer entre
@@ -182,7 +193,9 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          <ThemeToggle className="hidden sm:inline-block text-base leading-none hover:scale-110 transition-transform" />
+          {!masquerToggleTheme && (
+            <ThemeToggle className="hidden sm:inline-block text-base leading-none hover:scale-110 transition-transform" />
+          )}
           {connecte ? (
             <Link
               href="/dashboard"

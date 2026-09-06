@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
 import { LandingImmersive } from "@/components/marketing/LandingImmersive";
 
-// Page 100% isolée, non liée à la landing en production : sert uniquement
-// à faire valider à Axel une nouvelle direction artistique en local, avant
-// toute décision de remplacer réellement app/page.tsx. On la retire du
-// référencement pour ne pas la faire apparaître comme une vraie page du
-// site tant qu'elle n'est qu'un brouillon.
+// Mise à jour (05/09) — commentaire obsolète corrigé : la décision a été
+// prise, app/page.tsx monte désormais ce même composant LandingImmersive
+// en production. Cette route n'est donc plus un brouillon isolé mais un
+// doublon de l'accueil, conservé comme page de travail/comparaison (utile
+// pour comparer une future évolution visuelle côte à côte avec la version
+// en prod). Toujours retirée du référencement pour ne pas indexer une URL
+// en double de l'accueil.
 export const metadata: Metadata = {
   title: "Aperçu immersif (brouillon)",
   description: "Brouillon interne — nouvelle direction artistique pour la landing Compyo.",

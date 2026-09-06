@@ -5,11 +5,38 @@ import { DemoImport } from "@/components/marketing/DemoImport";
 import { DemoPlanning } from "@/components/marketing/DemoPlanning";
 import { DemoNotesVocales } from "@/components/marketing/DemoNotesVocales";
 import { SectionSecurite } from "@/components/marketing/SectionSecurite";
+import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "Fonctionnalités — Compyo",
+  // SEO (05/09) — le layout racine applique déjà un template "%s — Compyo"
+  // (voir app/layout.tsx) : garder "— Compyo" ici aussi produisait un
+  // titre dupliqué ("Fonctionnalités — Compyo — Compyo") dans l'onglet du
+  // navigateur et les résultats de recherche.
+  title: "Fonctionnalités",
   description:
     "Devis générés en quelques secondes, import automatique des messages clients, planning unifié, notes vocales transcrites — le détail de ce que fait Compyo pour les artisans du bâtiment.",
+};
+
+// SEO/GEO (05/09) — cette page détaille les 4 fonctionnalités du produit,
+// c'était jusqu'ici la seule information non lisible par un moteur (humain
+// ou IA) qui ne lit QUE les données structurées : le JSON-LD global de
+// app/layout.tsx décrit Compyo comme "SoftwareApplication" mais sans
+// featureList. On référence ce même @id (${URL_SITE}/#logiciel) plutôt que
+// d'en redéclarer un second — un même produit, une seule entité — et on
+// n'ajoute que ce qui manque : la liste des fonctionnalités, reprise mot
+// pour mot du contenu réellement visible sur cette page juste en dessous
+// (jamais de données inventées, cohérent avec la note déjà présente dans
+// layout.tsx sur les champs volontairement omis).
+const DONNEES_STRUCTUREES_FONCTIONNALITES = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "@id": `${SITE_URL}/#logiciel`,
+  featureList: [
+    "Génération de devis en quelques secondes à partir des notes de chantier, avec un moteur de calcul déterministe",
+    "Import automatique d'une demande client depuis un message (SMS, WhatsApp, capture d'écran)",
+    "Planning unifié des rendez-vous et chantiers, avec détection des conflits de créneaux",
+    "Notes vocales dictées sur le chantier, transcrites et rattachées automatiquement au bon projet",
+  ],
 };
 
 // Page dédiée aux fonctionnalités, séparée de l'accueil — à la demande
@@ -24,6 +51,10 @@ export const metadata: Metadata = {
 export default function FonctionnalitesPage() {
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(DONNEES_STRUCTUREES_FONCTIONNALITES) }}
+      />
       <Header />
 
       <div className="bg-paper">

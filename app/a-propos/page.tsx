@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
 
 export const metadata: Metadata = {
-  title: "À propos — Compyo",
+  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
+  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
+  title: "À propos",
   description:
     "Compyo est développé par Axel Thfoin, 15 ans, développeur indépendant, en bêta privée avec de vrais retours d'artisans du bâtiment. Pas de storytelling inventé, juste un outil construit sérieusement.",
 };

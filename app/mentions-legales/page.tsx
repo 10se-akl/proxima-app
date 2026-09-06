@@ -3,6 +3,11 @@ import { LayoutJuridique } from "@/components/marketing/LayoutJuridique";
 
 export const metadata: Metadata = {
   title: "Mentions légales",
+  // SEO (05/09) — sans description propre, cette page héritait de celle de
+  // l'accueil (app/layout.tsx), identique sur 3 pages légales différentes :
+  // un signal de contenu dupliqué pour les moteurs de recherche, sans
+  // rapport avec le contenu réel de la page.
+  description: "Éditeur du site Compyo, hébergement, et informations légales obligatoires.",
 };
 
 export default function MentionsLegalesPage() {

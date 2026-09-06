@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
 import { CarteMentale } from "@/components/carte-mentale/CarteMentale";
+import { CATEGORIES } from "@/lib/retours/taxonomie";
 
 export const metadata: Metadata = {
-  title: "Carte mentale — Compyo",
+  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
+  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
+  title: "Carte mentale",
   description:
     "Les grands thèmes remontés par les artisans qui utilisent Compyo, regroupés automatiquement par IA — sans jamais révéler qui a dit quoi.",
 };
@@ -50,6 +53,21 @@ export default async function CarteMentalePage() {
               toujours anonymes.
             </p>
           </Reveal>
+
+          {/* SEO/GEO (05/09) — le contenu réel de cette page (les bulles de
+              la carte mentale) est chargé côté client par CarteMentale.tsx
+              (fetch après montage) : un moteur de recherche ou une IA qui ne
+              lit que le HTML servi ne voit donc que ce paragraphe d'intro,
+              sans jamais savoir sur QUELS THÈMES portent les retours des
+              artisans — même problème identifié et corrigé sur l'accueil.
+              Les catégories, elles, sont une liste fixe (lib/retours/
+              taxonomie.ts, jamais générée par l'IA) : on peut donc citer les
+              vrais intitulés sans rien inventer, contrairement au contenu
+              des bulles elles-mêmes qui dépend des retours reçus. */}
+          <p className="sr-only">
+            Catégories de retours suivies sur cette carte mentale :{" "}
+            {CATEGORIES.map((c) => c.label).join(", ")}.
+          </p>
         </div>
       </div>
 

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { ErreurInline } from "@/components/ui/EtatErreur";
 import { METIERS } from "@/lib/metiers";
 
 // Next.js exige que tout composant utilisant useSearchParams() soit
@@ -51,25 +52,41 @@ function DemanderAccesForm() {
     ) => setForm({ ...form, [field]: e.target.value });
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  // Audit sécurité/bugs (05/09) — 🟠 : cette fonction est isolée (plutôt que
+  // écrite en ligne dans handleSubmit) pour pouvoir être rappelée depuis le
+  // bouton "Réessayer" de ErreurInline, pas seulement depuis la soumission
+  // du <form>. Surtout : le try/catch manquait autour de fetch() — un
+  // authentique échec réseau (hors-ligne, DNS, coupure), pas seulement une
+  // réponse HTTP non-2xx, faisait rejeter la promesse AVANT setEnvoi(false),
+  // laissant le bouton bloqué indéfiniment sur "Envoi en cours…" sans
+  // aucun message ni moyen de réessayer sans recharger la page (et perdre
+  // la saisie). Même pattern que components/carte-mentale/CarteMentale.tsx.
+  async function envoyerCandidature() {
     setErreur(null);
     setEnvoi(true);
+    try {
+      const res = await fetch("/api/candidatures", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    const res = await fetch("/api/candidatures", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+      if (!res.ok) {
+        setErreur("L'envoi a échoué. Réessayez dans un instant.");
+        return;
+      }
 
-    setEnvoi(false);
-
-    if (!res.ok) {
-      setErreur("L'envoi a échoué. Réessayez dans un instant.");
-      return;
+      setEnvoye(true);
+    } catch {
+      setErreur("Connexion impossible. Vérifiez votre réseau et réessayez.");
+    } finally {
+      setEnvoi(false);
     }
+  }
 
-    setEnvoye(true);
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    await envoyerCandidature();
   }
 
   if (envoye) {
@@ -202,7 +219,7 @@ function DemanderAccesForm() {
               onChange={update("decouverte")}
             />
 
-            {erreur && <p className="text-sm text-signal">{erreur}</p>}
+            {erreur && <ErreurInline message={erreur} onReessayer={envoyerCandidature} />}
 
             <p className="text-xs text-ink/50 -mt-1">
               En envoyant ce formulaire, vous acceptez nos{" "}

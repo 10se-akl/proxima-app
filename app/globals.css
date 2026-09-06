@@ -42,6 +42,31 @@
   --c-surface: 36 30 26; /* légèrement plus clair que le fond, relief inversé */
 }
 
+/* Audit sécurité/bugs (05/09) — 🟠 corrigé : l'accueil (LandingImmersive,
+   voir components/marketing/LandingImmersive.tsx) est une direction
+   artistique volontairement TOUJOURS sombre ("café/atelier"), pas un thème
+   qui doit suivre le réglage clair/sombre du visiteur. Il réutilise
+   pourtant Header/Footer (components/marketing/LandingPage.tsx), qui,
+   eux, suivent ce réglage global via .dark sur <html> — un visiteur en
+   mode clair voyait donc un bandeau d'en-tête presque blanc posé sur un
+   fond sombre codé en dur juste en dessous.
+   Cette classe réapplique exactement les mêmes valeurs que .dark, mais sur
+   un conteneur plus proche dans l'arbre que <html> : la résolution des
+   variables CSS personnalisées prend toujours la définition la plus
+   proche, donc ce bloc gagne systématiquement sur .theme-sombre-fixe,
+   que .dark soit présent sur <html> ou non — sans jamais modifier la
+   préférence globale du visiteur (stockée séparément, voir
+   ThemeToggle.tsx) qui continue de s'appliquer normalement au reste du
+   site (dashboard, autres pages marketing) en dehors de ce conteneur. */
+.theme-sombre-fixe {
+  --c-paper: 24 20 18;
+  --c-paper-warm: 33 27 23;
+  --c-ink: 245 243 240;
+  --c-steel: 168 156 145;
+  --c-gris-clair: 50 42 36;
+  --c-surface: 36 30 26;
+}
+
 /* Animations discrètes pour la landing page — implémentées en CSS pur
    plutôt qu'avec Framer Motion : le bac à sable de développement n'a pas
    accès au registre npm pour installer une nouvelle dépendance de façon
@@ -356,24 +381,33 @@
   body * {
     visibility: hidden;
   }
+  /* .doc-imprimable (06/09) : cible désormais aussi bien un devis
+     (#devis-imprimable) qu'une facture (#facture-imprimable) — même
+     traitement d'impression pour les deux, une seule règle à maintenir.
+     Les deux id restent en plus de la classe pour ne rien casser des
+     usages déjà en place. */
   #devis-imprimable,
-  #devis-imprimable * {
+  #devis-imprimable *,
+  .doc-imprimable,
+  .doc-imprimable * {
     visibility: visible;
   }
-  #devis-imprimable {
+  #devis-imprimable,
+  .doc-imprimable {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     border: none !important;
-    /* Un devis imprimé/exporté en PDF doit toujours ressembler à un vrai
-       document papier — blanc, texte sombre — peu importe si l'artisan
-       a le mode sombre activé au moment d'imprimer (le navigateur ne
-       retire pas la classe .dark de <html> pendant l'impression). Comme
-       ces variables sont héritées en CSS, les redéfinir ici les force
-       en valeurs "mode clair" pour tout ce sous-arbre, quoi qu'il arrive
-       au reste de la page — sans toucher à la structure du composant.
-       Repéré lors du polish visuel de la zone devis (voir DevisPreview). */
+    /* Un devis/une facture imprimé(e)/exporté(e) en PDF doit toujours
+       ressembler à un vrai document papier — blanc, texte sombre — peu
+       importe si l'artisan a le mode sombre activé au moment d'imprimer
+       (le navigateur ne retire pas la classe .dark de <html> pendant
+       l'impression). Comme ces variables sont héritées en CSS, les
+       redéfinir ici les force en valeurs "mode clair" pour tout ce
+       sous-arbre, quoi qu'il arrive au reste de la page — sans toucher à
+       la structure du composant. Repéré lors du polish visuel de la zone
+       devis (voir DevisPreview). */
     --c-paper: 250 248 245;
     --c-paper-warm: 243 237 230;
     --c-ink: 31 41 55;
@@ -383,7 +417,8 @@
     background: #fff !important;
     color: #1f2937 !important;
   }
-  #devis-imprimable img {
+  #devis-imprimable img,
+  .doc-imprimable img {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
   }

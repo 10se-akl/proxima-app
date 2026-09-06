@@ -3,6 +3,9 @@ import { LayoutJuridique } from "@/components/marketing/LayoutJuridique";
 
 export const metadata: Metadata = {
   title: "Conditions générales d'utilisation",
+  // SEO (05/09) — voir le même correctif sur /mentions-legales : sans
+  // description propre, cette page héritait de celle de l'accueil.
+  description: "Conditions d'utilisation de Compyo : accès en bêta privée, rôle de l'IA, responsabilités de l'artisan et de l'éditeur.",
 };
 
 export default function CguPage() {

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
 
 export const metadata: Metadata = {
-  title: "Comment ça fonctionne — Compyo",
+  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
+  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
+  title: "Comment ça fonctionne",
   description:
     "Du premier appel du client à la fin du chantier : le parcours complet d'un projet avec Compyo, étape par étape — import automatique, notes vocales transcrites, devis généré par IA avec moteur de calcul déterministe, planning unifié.",
 };

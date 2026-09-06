@@ -9,7 +9,9 @@ import type { Metadata } from "next";
 // ============================================================
 
 export const metadata: Metadata = {
-  title: "Maintenance en cours — Compyo",
+  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
+  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
+  title: "Maintenance en cours",
   robots: { index: false, follow: false },
 };
 

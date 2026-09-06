@@ -3,6 +3,10 @@ import { LayoutJuridique } from "@/components/marketing/LayoutJuridique";
 
 export const metadata: Metadata = {
   title: "Politique de confidentialité",
+  // SEO (05/09) — voir le même correctif sur /mentions-legales : sans
+  // description propre, cette page héritait de celle de l'accueil.
+  description:
+    "Quelles données Compyo collecte, pourquoi, et comment les artisans utilisateurs et leurs clients peuvent exercer leurs droits (RGPD).",
 };
 
 export default function PolitiqueConfidentialitePage() {

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
 
 export const metadata: Metadata = {
-  title: "Bêta privée — Compyo",
+  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
+  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
+  title: "Bêta privée",
   description:
     "Pourquoi Compyo se construit en bêta privée, sur candidature, avec un petit nombre d'artisans plutôt qu'en lancement ouvert — et comment rejoindre.",
 };

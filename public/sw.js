@@ -54,7 +54,14 @@
 // chantier volontairement laissé pour une itération dédiée, pas oublié.
 // ============================================================
 
-const VERSION_CACHE = "compyo-v1";
+// v2 (05/09, audit sécurité) : force l'invalidation de TOUT cache v1 déjà
+// installé chez les artisans — voir le correctif ci-dessous sur les pages
+// /dashboard/*, qui pouvaient jusqu'ici finir dans CACHE_PAGES avec de
+// vraies données d'organisation (noms clients, montants de devis...). Un
+// simple changement de logique ne suffit pas à purger ce qui est déjà
+// stocké sur les appareils existants — seul un changement de nom de cache
+// déclenche le ménage déjà en place dans l'event "activate" ci-dessous.
+const VERSION_CACHE = "compyo-v2";
 const CACHE_STATIQUE = `${VERSION_CACHE}-statique`;
 const CACHE_PAGES = `${VERSION_CACHE}-pages`;
 const PAGE_HORS_LIGNE = "/hors-ligne";
@@ -114,6 +121,23 @@ function estApiOuSupabase(url) {
   return false;
 }
 
+// Audit sécurité (05/09) : /dashboard/* est rendu côté serveur avec de
+// vraies données d'organisation (noms clients, adresses, montants de
+// devis...) — voir app/dashboard/page.tsx, demandes/page.tsx, devis/
+// page.tsx, planning/page.tsx (Server Components). La stratégie
+// "network-first" ci-dessous écrivait quand même chaque réponse réussie
+// dans CACHE_PAGES, donc ces données finissaient dans le Cache Storage du
+// navigateur — jamais purgées à la déconnexion (voir Sidebar.tsx). Sur un
+// appareil partagé, un visiteur suivant (ou un artisan d'une autre
+// organisation, appareil revendu/prêté) pouvait les retrouver, y compris
+// hors-ligne. /admin est logé à la même enseigne (déjà exclu du
+// référencement, aucune valeur hors-ligne pour Axel non plus). Ces pages
+// sont désormais réseau-uniquement, jamais écrites en cache — voir
+// reponseReseauSansCache plus bas.
+function estPageProtegee(url) {
+  return url.pathname.startsWith("/dashboard") || url.pathname.startsWith("/admin");
+}
+
 function estRessourceStatiqueImmuable(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
@@ -152,6 +176,18 @@ async function reponseCachePuisRevalidation(requete, cache) {
   // d'attente réseau visible pour l'artisan), tout en laissant la requête
   // réseau se terminer en tâche de fond pour la prochaine visite.
   return correspondance || misAJour;
+}
+
+// Réseau uniquement, jamais de cache.put() — voir estPageProtegee ci-dessus.
+// En cas d'échec réseau, retombe sur la page hors-ligne générique plutôt
+// que sur une copie mise en cache de la page privée (qui n'existe plus).
+async function reponseReseauSansCache(requete) {
+  try {
+    return await fetch(requete);
+  } catch {
+    const cache = await caches.open(CACHE_STATIQUE);
+    return cache.match(PAGE_HORS_LIGNE);
+  }
 }
 
 async function reponseCacheDabord(requete, cache) {
@@ -224,6 +260,10 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin && !estRessourceStatiqueImmuable(url)) return;
 
   if (requete.mode === "navigate") {
+    if (estPageProtegee(url)) {
+      event.respondWith(reponseReseauSansCache(requete));
+      return;
+    }
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_PAGES);
@@ -243,6 +283,16 @@ self.addEventListener("fetch", (event) => {
         return strategie(requete, cache);
       })()
     );
+    return;
+  }
+
+  // Audit sécurité (05/09) : ce bloc attrape aussi les requêtes de
+  // prefetch/RSC que Next.js émet en arrière-plan pour /dashboard/* (mode
+  // "cors", pas "navigate") — même exclusion que la navigation ci-dessus,
+  // sinon le payload React Server Component (qui contient les mêmes
+  // données d'organisation sérialisées) se serait juste caché ailleurs.
+  if (estPageProtegee(url)) {
+    event.respondWith(reponseReseauSansCache(requete));
     return;
   }
 

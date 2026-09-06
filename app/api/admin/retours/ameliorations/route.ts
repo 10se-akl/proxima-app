@@ -17,7 +17,11 @@ async function verifierAdmin() {
   const {
     data: { user },
   } = await supabase.auth.getUser();
-  return user?.email === process.env.ADMIN_EMAIL;
+  // 🔴 Audit sécurité (05/09) : `user?.email === process.env.ADMIN_EMAIL`
+  // vaut `true` pour un visiteur NON CONNECTÉ si ADMIN_EMAIL n'est pas
+  // défini en environnement (undefined === undefined) — accès admin total
+  // sans authentification en cas d'oubli de variable d'env.
+  return Boolean(user && user.email === process.env.ADMIN_EMAIL);
 }
 
 export async function GET(request: NextRequest) {

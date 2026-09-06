@@ -4,7 +4,9 @@ import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Lan
 import { SectionContact } from "@/components/marketing/SectionContact";
 
 export const metadata: Metadata = {
-  title: "Contact — Compyo",
+  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
+  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
+  title: "Contact",
   description:
     "Une question sur Compyo ? Écrivez directement à l'équipe — chaque message est lu. Réponses aux questions les plus fréquentes sur la bêta privée.",
 };

@@ -6,7 +6,9 @@ import type { Metadata } from "next";
 // Router. Ce layout serveur, lui, le peut, et enveloppe simplement la
 // page sans rien changer visuellement.
 export const metadata: Metadata = {
-  title: "Demander un accès à la bêta privée — Compyo",
+  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
+  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
+  title: "Demander un accès à la bêta privée",
   description:
     "Rejoignez la bêta privée de Compyo, l'assistant administratif pensé pour les artisans du bâtiment. Chaque candidature est lue et examinée individuellement.",
 };

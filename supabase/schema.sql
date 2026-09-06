@@ -1493,3 +1493,13 @@ create trigger verrouiller_facture_emise_trigger
 -- supprime jamais, elle s'annule via un avoir (même logique que candidatures
 -- plus haut dans ce fichier — l'absence de policy est le mécanisme de
 -- protection, pas un oubli).
+
+-- ============================================================
+-- Module 29 (06/09) — Anti-oubli sur devis. Voir
+-- app/api/ai/generer-devis/route.ts : au moment de générer les postes, l'IA
+-- identifie séparément les postes probablement oubliés (dépose manquante,
+-- protection de chantier, évacuation des déchets...), déjà chiffrés par le
+-- moteur déterministe. Une colonne suffit — ce n'est qu'un résultat de
+-- calcul à afficher sur l'écran de validation, pas un nouvel objet métier.
+-- ============================================================
+alter table devis add column if not exists suggestions_oublis jsonb;

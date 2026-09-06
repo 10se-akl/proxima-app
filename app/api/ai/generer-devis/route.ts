@@ -5,7 +5,24 @@ import { calculerDevis, PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calcul
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
-import type { PosteTravailIA, ParametresEntreprise } from "@/types";
+import { obtenirChecklist } from "@/lib/checklistsMetier";
+import type { PosteTravailIA, ParametresEntreprise, LigneDevisCalculee } from "@/types";
+
+// Anti-oubli (06/09) — validation partagée entre "postes" (bloquant si
+// invalide, voir plus bas) et "postes_oublies_probables" (filtré
+// silencieusement si invalide : c'est une suggestion annexe, un item mal
+// formé ne doit jamais faire échouer la génération du devis principal).
+function posteEstValide(p: PosteTravailIA): boolean {
+  const categorieValide = ["main_oeuvre", "fourniture", "forfait"].includes(p.categorie);
+  const quantite = p.categorie === "main_oeuvre" ? (p.temps_estime_heures ?? p.quantite) : p.quantite;
+  const quantiteValide = typeof quantite === "number" && Number.isFinite(quantite) && quantite > 0;
+  const descriptionValide = typeof p.description === "string" && p.description.trim().length > 0;
+  return categorieValide && quantiteValide && descriptionValide;
+}
+
+// Nombre max de suggestions affichées à l'artisan — au-delà, ce n'est plus
+// une aide ciblée mais une liste qui noie l'attention (voir spec produit).
+const MAX_SUGGESTIONS_OUBLIS = 4;
 
 // L'IA ne produit QUE des postes de travaux, jamais de prix. Le calcul
 // financier appartient entièrement au moteur métier (voir
@@ -19,9 +36,20 @@ const SYSTEM_PROMPT = `Tu es l'assistant de Compyo, un outil pour artisans du b�
 
 RÈGLE ABSOLUE : tu ne dois JAMAIS indiquer de prix, de montant en euros, ou de coût. Ce n'est pas ton rôle. Un système séparé calcule les prix à partir de ces postes.
 
+En plus de cette liste principale, identifie séparément les postes ADDITIONNELS probablement nécessaires mais absents de ta première liste — des oublis fréquents qui coûtent de l'argent à l'artisan s'ils ne sont jamais facturés : dépose de l'existant quand une pose est prévue sans dépose associée, protection du chantier (sol, mobilier), évacuation des déchets/gravats, finitions, nettoyage de fin de chantier. N'en invente jamais si rien ne manque clairement : une liste vide est la réponse correcte la plupart du temps.
+
 Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exacte :
 {
   "postes": [
+    {
+      "description": "...",
+      "categorie": "main_oeuvre" | "fourniture" | "forfait",
+      "quantite": 0,
+      "unite": "m² | unité | forfait | heure",
+      "temps_estime_heures": 0
+    }
+  ],
+  "postes_oublies_probables": [
     {
       "description": "...",
       "categorie": "main_oeuvre" | "fourniture" | "forfait",
@@ -33,7 +61,8 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
 }
 
 "temps_estime_heures" est obligatoire uniquement si categorie = "main_oeuvre" (sinon omets-le).
-Propose entre 3 et 6 postes cohérents avec le métier et la description du projet.`;
+Propose entre 3 et 6 postes cohérents avec le métier et la description du projet dans "postes".
+"postes_oublies_probables" contient entre 0 et ${MAX_SUGGESTIONS_OUBLIS} éléments, jamais plus — et [] si rien ne manque.`;
 
 // Sprint Beta Final (27/08) — voir même commentaire dans preparer-brouillon.
 export const maxDuration = 60;
@@ -135,6 +164,17 @@ export async function POST(request: NextRequest) {
     .map((n, i) => `Note vocale ${i + 1} : "${n.transcription}"`)
     .join("\n");
 
+  // Anti-oubli (06/09) — la checklist du métier n'est pas une liste de
+  // postes de travaux (ce sont des questions à vérifier sur place), mais
+  // elle donne un contexte utile à l'IA pour repérer des oublis probables
+  // (ex. "dépose de l'ancienne menuiserie incluse ?" pointe directement
+  // vers un poste souvent manquant). Purement informationnel dans le
+  // prompt, jamais recopié tel quel dans les postes.
+  const checklist = obtenirChecklist(projet.type_chantier, profil?.metier);
+  const blocChecklist = checklist?.length
+    ? `\nPoints de vigilance habituels pour ce métier (informationnel, pas des postes en soi) :\n${checklist.map((p) => `- ${p}`).join("\n")}`
+    : "";
+
   const parametresConfigures = Boolean(parametresBrutes);
   const parametres: ParametresEntreprise = parametresBrutes
     ? (parametresBrutes as ParametresEntreprise)
@@ -150,12 +190,15 @@ ${
     ? `Résumé déjà établi par l'IA : "${projet.questions_manquantes.resume}"`
     : ""
 }
-${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récentes reflètent l'état actuel du chantier, y compris d'éventuels changements) :\n${blocNotesVocales}` : ""}`;
+${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récentes reflètent l'état actuel du chantier, y compris d'éventuels changements) :\n${blocNotesVocales}` : ""}${blocChecklist}`;
 
   const debutAppel = Date.now();
   try {
     const reponseTexte = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur, request.signal);
-    const { postes } = parserReponseJSON<{ postes: PosteTravailIA[] }>(reponseTexte);
+    const { postes, postes_oublies_probables } = parserReponseJSON<{
+      postes: PosteTravailIA[];
+      postes_oublies_probables?: PosteTravailIA[];
+    }>(reponseTexte);
 
     // Un devis sans aucun poste ne doit jamais atteindre l'écran de
     // validation en silence — mieux vaut un message d'erreur clair que de
@@ -174,13 +217,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // totaux NaN ou négatifs qui passerait ensuite les contrôles de
     // ValiderDevis (NaN <= 0 vaut "false" en JS, donc un devis cassé
     // pourrait sinon être validé et envoyé tel quel à un client).
-    const posteInvalide = postes.find((p) => {
-      const categorieValide = ["main_oeuvre", "fourniture", "forfait"].includes(p.categorie);
-      const quantite = p.categorie === "main_oeuvre" ? (p.temps_estime_heures ?? p.quantite) : p.quantite;
-      const quantiteValide = typeof quantite === "number" && Number.isFinite(quantite) && quantite > 0;
-      const descriptionValide = typeof p.description === "string" && p.description.trim().length > 0;
-      return !categorieValide || !quantiteValide || !descriptionValide;
-    });
+    const posteInvalide = postes.find((p) => !posteEstValide(p));
     if (posteInvalide) {
       return NextResponse.json(
         { error: "L'IA a renvoyé un poste de travaux mal formé. Réessayez la génération." },
@@ -190,6 +227,17 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
 
     // Calcul entièrement déterministe, aucun appel IA à partir d'ici.
     const devisCalcule = calculerDevis(postes, parametres);
+
+    // Anti-oubli (06/09) — contrairement aux postes principaux, un item mal
+    // formé ici est filtré silencieusement plutôt que de faire échouer toute
+    // la génération : c'est une suggestion annexe, pas le devis lui-même.
+    // Chaque suggestion retenue est chiffrée par le MÊME moteur déterministe
+    // (jamais un prix à 0€ à deviner par l'artisan) — calculerDevis() sur un
+    // tableau d'un seul poste renvoie une unique ligne calculée.
+    const lignesSuggerees: LigneDevisCalculee[] = (postes_oublies_probables ?? [])
+      .filter(posteEstValide)
+      .slice(0, MAX_SUGGESTIONS_OUBLIS)
+      .map((p) => calculerDevis([p], parametres).lignes[0]);
 
     // Numéro séquentiel par ORGANISATION et par année (ex : 2026-014) plutôt
     // qu'un identifiant aléatoire — un devis envoyé à un client doit
@@ -239,6 +287,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
           tva_pct: devisCalcule.tva_pct,
           montant_tva: devisCalcule.montant_tva,
           total_estime: devisCalcule.total_ttc,
+          suggestions_oublis: lignesSuggerees.length > 0 ? lignesSuggerees : null,
         })
         .select()
         .single();

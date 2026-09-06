@@ -242,7 +242,9 @@ export type TypeEvenementProjet =
   | "appel_telephonique"
   | "facture_creee"
   | "facture_payee"
-  | "avoir_cree";
+  | "avoir_cree"
+  // Journal chantier vocal (06/09) — voir app/api/ai/interpreter-note-vocale.
+  | "journal_chantier_interprete";
 
 export type EvenementProjet = {
   id: string;
@@ -336,6 +338,11 @@ export type Devis = {
   commentaires: string | null;
   statut: "brouillon" | "a_valider" | "envoye" | "refuse";
   created_at: string;
+  // Anti-oubli (06/09) — postes probablement manquants détectés par l'IA au
+  // moment de la génération (voir app/api/ai/generer-devis/route.ts), déjà
+  // chiffrés par le moteur déterministe. Suggestions à accepter/ignorer sur
+  // l'écran de validation (ValiderDevis.tsx) — jamais ajoutées seules.
+  suggestions_oublis: LigneDevisCalculee[] | null;
 };
 
 // ============================================================

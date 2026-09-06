@@ -17,6 +17,7 @@ const TYPES_APPELS_IA = [
   "reponse_generee",
   "erreur_ia",
   "note_dictee",
+  "journal_chantier_interprete",
 ] as const;
 
 const PLAFOND_PAR_HEURE = 40;

@@ -51,6 +51,7 @@ export default async function DashboardHome() {
     { data: aConfirmerBrut },
     { data: rdvConfirmesBrut },
     { data: evenementsFutursBrut },
+    { data: journalEvenementsBrut },
     notesAvecRappel,
   ] = await Promise.all([
     supabase.from("profils").select("nom").eq("id", user?.id).single(),
@@ -98,6 +99,15 @@ export default async function DashboardHome() {
       .eq("organisation_id", organisationId)
       .neq("statut", "annule")
       .gte("date_heure", maintenant.toISOString()),
+    // Journal chantier vocal (06/09) — second signal de clôture en plus du
+    // rendez-vous confirmé "fait", voir plus bas et
+    // components/dashboard/NotesVocales.tsx pour la génération du signal.
+    supabase
+      .from("evenements_projet")
+      .select("demande_id, metadata")
+      .eq("organisation_id", organisationId)
+      .eq("type", "journal_chantier_interprete")
+      .order("created_at", { ascending: false }),
     // Notes avec rappel (29/08, voir lib/notes/index.ts) — point 3 du
     // brief : "Aujourd'hui" et "En retard".
     organisationId
@@ -169,11 +179,38 @@ export default async function DashboardHome() {
   const idsAvecEvenementFutur = new Set(
     (evenementsFutursBrut ?? []).map((e) => e.demande_id).filter(Boolean)
   );
+
+  // Journal chantier vocal (06/09) — deuxième façon de détecter qu'un
+  // chantier est probablement terminé, en plus du rendez-vous confirmé
+  // "fait" ci-dessus : au moins deux comptes-rendus vocaux CONSÉCUTIFS
+  // (les plus récents en premier grâce à l'ordre de la requête) signalant
+  // "chantier_semble_termine". Le seuil de 2 évite qu'un seul
+  // compte-rendu ambigu déclenche une clôture prématurée (faux positif) —
+  // voir components/dashboard/NotesVocales.tsx pour la génération de ce
+  // signal à chaque note vocale interprétée.
+  const SEUIL_SIGNAUX_CLOTURE = 2;
+  const signauxParProjet = new Map<string, boolean[]>();
+  for (const e of journalEvenementsBrut ?? []) {
+    if (!e.demande_id) continue;
+    const liste = signauxParProjet.get(e.demande_id) ?? [];
+    liste.push(Boolean((e.metadata as { chantier_semble_termine?: boolean } | null)?.chantier_semble_termine));
+    signauxParProjet.set(e.demande_id, liste);
+  }
+  const idsAvecSignalCloture = new Set(
+    Array.from(signauxParProjet.entries())
+      .filter(
+        ([, signaux]) =>
+          signaux.length >= SEUIL_SIGNAUX_CLOTURE &&
+          signaux.slice(0, SEUIL_SIGNAUX_CLOTURE).every(Boolean)
+      )
+      .map(([id]) => id)
+  );
+
   const projetsAConfirmerTermine = listeProjets
     .filter(
       (p) =>
         p.statut !== "termine" &&
-        idsAvecRdvConfirme.has(p.id) &&
+        (idsAvecRdvConfirme.has(p.id) || idsAvecSignalCloture.has(p.id)) &&
         !idsAvecEvenementFutur.has(p.id)
     )
     .map((p) => ({ id: p.id, nom_client: p.nom_client }));

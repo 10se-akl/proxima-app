@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { creerNote } from "@/lib/notes";
 import {
   obtenirClasseReconnaissance,
   messageErreurDictee,
@@ -13,13 +14,27 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import type { NoteVocale } from "@/types";
 
+// Journal chantier vocal (06/09) — résultat ÉPHÉMÈRE affiché juste après la
+// dictée, même logique que le brouillon de réponse client ailleurs dans
+// l'app (app/dashboard/demandes/[id]/page.tsx, brouillonReponse) : pas
+// persisté tel quel, il disparaît à la fermeture/au rechargement de la
+// page. Ce qui doit survivre (tâches restantes, signal de fin de chantier)
+// est déjà enregistré en base à ce moment-là (note + événement timeline),
+// donc rien n'est perdu — seul l'AFFICHAGE du brouillon de message est
+// éphémère, comme partout ailleurs dans le produit.
+type InterpretationNote = {
+  brouillonMessageClient: string | null;
+};
+
 export function NotesVocales({
   demandeId,
   notes,
+  telephoneClient,
   onNouvelleNote,
 }: {
   demandeId: string;
   notes: NoteVocale[];
+  telephoneClient?: string | null;
   onNouvelleNote: () => void;
 }) {
   const supabase = createClient();
@@ -28,6 +43,8 @@ export function NotesVocales({
   const [editionManuelle, setEditionManuelle] = useState(false);
   const [sauvegarde, setSauvegarde] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [interpretation, setInterpretation] = useState<InterpretationNote | null>(null);
+  const [copie, setCopie] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   const ClasseReconnaissance = obtenirClasseReconnaissance();
@@ -87,6 +104,7 @@ export function NotesVocales({
     // à tort au-dessus d'une toute nouvelle dictée, laissant croire que le
     // nouveau texte était l'ancien brouillon restauré.
     setBrouillonRestaure(false);
+    setInterpretation(null);
     if (!ClasseReconnaissance) {
       // Pas de dictée sur ce navigateur : on ouvre directement la saisie
       // manuelle plutôt que de laisser un message d'erreur sans issue.
@@ -131,9 +149,101 @@ export function NotesVocales({
 
   function ecrireManuel() {
     setBrouillonRestaure(false);
+    setInterpretation(null);
     setErreur(null);
     setTranscription("");
     setEditionManuelle(true);
+  }
+
+  // Journal chantier vocal (06/09) — interprétation best-effort d'une note
+  // déjà enregistrée avec succès. Ne doit JAMAIS faire échouer ou ralentir
+  // visiblement la sauvegarde de la note elle-même (voir l'appel plus bas,
+  // volontairement non "await"é dans le flux principal ni signalé par une
+  // erreur visible en cas d'échec) — un compte-rendu mal interprété reste
+  // quand même une note vocale correctement sauvegardée.
+  async function interpreterNote(texte: string, userId: string, orgId: string) {
+    try {
+      const res = await fetch("/api/ai/interpreter-note-vocale", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demandeId, transcription: texte }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const tachesRestantes: string[] = Array.isArray(data.tachesRestantes) ? data.tachesRestantes : [];
+      const brouillonMessageClient: string | null = data.brouillonMessageClient ?? null;
+      const rappelLendemain: boolean = Boolean(data.rappelLendemain);
+      const chantierSembleTermine: boolean = Boolean(data.chantierSembleTermine);
+
+      // Tâches restantes (06/09) — regroupées dans UNE seule note plutôt
+      // qu'une par tâche : réutilise tel quel le système de notes déjà
+      // coché/décoché existant (voir lib/notes/index.ts), sans créer de
+      // nouvelle mécanique de liste à cocher. Choix de conception : une
+      // note consolidée reste plus simple à lire qu'une rafale de 3-5
+      // petites notes séparées pour un artisan qui n'a pas le temps.
+      if (tachesRestantes.length > 0) {
+        const demain = new Date();
+        demain.setDate(demain.getDate() + 1);
+        demain.setHours(8, 0, 0, 0);
+        await creerNote(supabase, {
+          organisationId: orgId,
+          artisanId: userId,
+          demandeId,
+          titre: `Tâches restantes — ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`,
+          description: tachesRestantes.map((t) => `- ${t}`).join("\n"),
+          importance: "verte",
+          rappelA: rappelLendemain ? demain.toISOString() : null,
+        });
+      }
+
+      // Trace toujours un événement, même sans tâche détectée — sert de
+      // signal pour la détection de fin de chantier (voir
+      // app/dashboard/page.tsx, plusieurs signaux "chantier_semble_termine"
+      // consécutifs) en plus de garder l'historique complet sur la fiche
+      // projet.
+      await enregistrerEvenement(supabase, {
+        demandeId,
+        artisanId: userId,
+        organisationId: orgId,
+        type: "journal_chantier_interprete",
+        titre: "Compte-rendu interprété",
+        detail:
+          tachesRestantes.length > 0
+            ? `${tachesRestantes.length} tâche${tachesRestantes.length > 1 ? "s" : ""} restante${tachesRestantes.length > 1 ? "s" : ""} détectée${tachesRestantes.length > 1 ? "s" : ""}`
+            : "Rien de particulier détecté",
+        metadata: {
+          chantier_semble_termine: chantierSembleTermine,
+          rappel_lendemain: rappelLendemain,
+          nb_taches: tachesRestantes.length,
+        },
+      });
+
+      if (brouillonMessageClient) {
+        setInterpretation({ brouillonMessageClient });
+      }
+
+      onNouvelleNote();
+    } catch {
+      // Best-effort — la note vocale elle-même est déjà en sécurité, voir
+      // commentaire au-dessus de la fonction.
+    }
+  }
+
+  async function envoyerMessageParSms() {
+    if (!interpretation?.brouillonMessageClient) return;
+    if (telephoneClient) {
+      const numero = telephoneClient.replace(/[^\d+]/g, "");
+      window.open(`sms:${numero}?body=${encodeURIComponent(interpretation.brouillonMessageClient)}`, "_self");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(interpretation.brouillonMessageClient);
+      setCopie(true);
+      setTimeout(() => setCopie(false), 2000);
+    } catch {
+      // Copie best-effort — le texte reste de toute façon affiché et
+      // sélectionnable manuellement.
+    }
   }
 
   async function enregistrerNote() {
@@ -179,13 +289,15 @@ export function NotesVocales({
         return;
       }
 
+      const texteNote = transcription.trim();
+
       await enregistrerEvenement(supabase, {
         demandeId,
         artisanId: user.id,
         organisationId,
         type: "note_vocale_ajoutee",
         titre: "Note vocale ajoutée",
-        detail: transcription.trim().slice(0, 80) + (transcription.trim().length > 80 ? "…" : ""),
+        detail: texteNote.slice(0, 80) + (texteNote.length > 80 ? "…" : ""),
       });
 
       effacerBrouillon();
@@ -194,6 +306,11 @@ export function NotesVocales({
       setEditionManuelle(false);
       setBrouillonRestaure(false);
       onNouvelleNote();
+
+      // Volontairement non "await"é : l'artisan n'a pas à attendre ce
+      // second appel IA pour reprendre la main, la note est déjà en
+      // sécurité (voir commentaire sur interpreterNote plus haut).
+      interpreterNote(texteNote, user.id, organisationId);
     } catch {
       setSauvegarde(false);
       setErreur("Connexion perdue. Votre texte est conservé — réessayez dès que le réseau revient.");
@@ -255,6 +372,28 @@ export function NotesVocales({
           >
             {sauvegarde ? "Enregistrement…" : "Ajouter cette note au projet"}
           </Button>
+        </Card>
+      )}
+
+      {interpretation?.brouillonMessageClient && (
+        <Card className="mt-3 p-4">
+          <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-2">
+            Message client suggéré — relisez avant d&apos;envoyer
+          </p>
+          <p className="text-sm text-ink/80 whitespace-pre-line">
+            {interpretation.brouillonMessageClient}
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <Button variant="ghost" onClick={envoyerMessageParSms}>
+              {telephoneClient ? "📱 Envoyer par SMS" : copie ? "✓ Copié" : "Copier le message"}
+            </Button>
+            <button
+              onClick={() => setInterpretation(null)}
+              className="text-xs text-ink/40 hover:text-ink/60 underline transition-colors"
+            >
+              Ignorer
+            </button>
+          </div>
         </Card>
       )}
 

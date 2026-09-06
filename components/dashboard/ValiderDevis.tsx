@@ -49,6 +49,30 @@ export function ValiderDevis({
   const [enregistrement, setEnregistrement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
+  // Anti-oubli (06/09) — suggestions détectées à la génération, déjà
+  // chiffrées par le même moteur déterministe que le reste du devis (voir
+  // app/api/ai/generer-devis/route.ts). État local uniquement : "Ignorer"
+  // fait juste disparaître la suggestion de cet écran, "Ajouter au devis"
+  // la déplace dans les lignes normales, éditable comme n'importe quelle
+  // autre. Ne survit pas à un rechargement de page une fois traité — la
+  // colonne suggestions_oublis en base garde son contenu d'origine, sans
+  // conséquence puisque ce bloc ne s'affiche que sur un devis "brouillon".
+  const [suggestionsRestantes, setSuggestionsRestantes] = useState<LigneDevisCalculee[]>(
+    devis.suggestions_oublis ?? []
+  );
+
+  function ajouterSuggestion(index: number) {
+    setSuggestionsRestantes((prev) => {
+      const suggestion = prev[index];
+      setLignes((l) => [...l, suggestion]);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  function ignorerSuggestion(index: number) {
+    setSuggestionsRestantes((prev) => prev.filter((_, i) => i !== index));
+  }
+
   const totaux = useMemo(
     () => recalculerDevis(lignes, deplacement, margePct, tvaPct),
     [lignes, deplacement, margePct, tvaPct]
@@ -283,6 +307,46 @@ export function ValiderDevis({
           <span className="font-mono text-lg">{formatEuros(totaux.total_ttc)}</span>
         </div>
       </div>
+
+      {suggestionsRestantes.length > 0 && (
+        <div className="mt-6 pt-5 border-t border-ink/10">
+          <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
+            Postes probablement oubliés
+          </p>
+          <p className="text-xs text-ink/40 mb-3">
+            Déjà chiffrés selon vos paramètres — à vous de juger si c&apos;est pertinent ici.
+          </p>
+          <div className="flex flex-col gap-2">
+            {suggestionsRestantes.map((s, i) => (
+              <div
+                key={`${s.description}-${i}`}
+                className="flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-paper px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm text-ink/80 truncate">{s.description}</p>
+                  <p className="text-xs text-ink/40 font-mono">{formatEuros(s.total)}</p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => ajouterSuggestion(i)}
+                    className="text-xs font-medium text-signal hover:text-signal-fonce transition-colors"
+                  >
+                    + Ajouter au devis
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => ignorerSuggestion(i)}
+                    className="text-xs text-ink/40 hover:text-ink/60 underline transition-colors"
+                  >
+                    Ignorer
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {erreur && <p className="mt-4 text-sm text-signal">{erreur}</p>}
 

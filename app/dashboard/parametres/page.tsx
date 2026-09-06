@@ -16,6 +16,20 @@ type Onglet = "entreprise" | "equipe" | "compte";
 // ni côté client ni côté serveur — une faute de frappe (TVA négative, coût
 // horaire à 1e8...) contaminait silencieusement tous les devis générés
 // ensuite. Bornes larges mais réalistes pour un artisan du bâtiment.
+// Revue métier (06/09) — "prix_km" et "rayon_max_km" ont été retirés d'ici
+// (et du formulaire plus bas) : deux champs éditables, sauvegardés, mais
+// jamais lus par lib/moteur-metier/calculerDevis.ts — le déplacement a
+// toujours été un forfait fixe, jamais un calcul distance × prix au km.
+// Un artisan qui réglait "prix au km" pensait légitimement que ça changeait
+// quelque chose à ses devis ; ça ne faisait rien. Un vrai calcul par
+// distance demanderait de géolocaliser chaque chantier (nouvelle
+// dépendance externe) — disproportionné pour l'instant plutôt que de
+// laisser deux réglages fantômes. Voir aussi calculerLigne() : "cout_
+// journalier", lui, était dans le même cas et a été câblé pour de vrai
+// (bascule automatique en tarif jour au-delà d'une journée de travail)
+// plutôt que retiré, parce que plusieurs métiers (maçon, couvreur,
+// charpentier, terrassier, façadier) raisonnent naturellement à la
+// journée sur un gros chantier, pas à l'heure.
 const BORNES: Partial<Record<keyof FormState, { min: number; max: number; label: string }>> = {
   tva_pct: { min: 0, max: 100, label: "TVA" },
   cout_horaire: { min: 0, max: 1000, label: "Coût horaire" },
@@ -23,8 +37,6 @@ const BORNES: Partial<Record<keyof FormState, { min: number; max: number; label:
   marge_defaut_pct: { min: 0, max: 500, label: "Marge par défaut" },
   heures_min_facturables: { min: 0, max: 24, label: "Heures minimum facturables" },
   forfait_deplacement: { min: 0, max: 2000, label: "Forfait déplacement" },
-  prix_km: { min: 0, max: 20, label: "Prix au km" },
-  rayon_max_km: { min: 0, max: 500, label: "Rayon d'intervention max" },
 };
 
 function validerForm(form: FormState): string | null {
@@ -307,7 +319,65 @@ export default function ParametresPage() {
           </div>
 
           <div>
+            <h2 className="text-sm font-semibold text-ink/70 mb-4">Informations légales</h2>
+            <p className="text-xs text-ink/50 -mt-2 mb-4">
+              Nécessaires uniquement pour émettre des factures (Module Factures) — un devis n&apos;en a pas besoin.
+              Complétez-les avant votre première facture.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-5">
+              <Field label="SIRET" value={form.siret ?? ""} onChange={update("siret")} placeholder="123 456 789 00012" />
+              <Field
+                label="Forme juridique"
+                value={form.forme_juridique ?? ""}
+                onChange={update("forme_juridique")}
+                placeholder="Ex : Auto-entrepreneur, EURL, SARL…"
+              />
+              <Field
+                label="N° TVA intracommunautaire"
+                value={form.numero_tva_intracommunautaire ?? ""}
+                onChange={update("numero_tva_intracommunautaire")}
+                placeholder="FR00000000000"
+              />
+              <div className="flex items-end pb-2.5">
+                <label className="flex items-center gap-2 text-sm text-ink/70">
+                  <input
+                    type="checkbox"
+                    checked={form.mention_tva_non_applicable}
+                    onChange={(e) => setForm({ ...form, mention_tva_non_applicable: e.target.checked })}
+                    className="w-4 h-4 rounded border-ink/25 accent-signal"
+                  />
+                  Franchise en base de TVA (auto-entrepreneur)
+                </label>
+              </div>
+              <Field
+                label="Assurance décennale — compagnie"
+                value={form.assurance_decennale_compagnie ?? ""}
+                onChange={update("assurance_decennale_compagnie")}
+              />
+              <Field
+                label="Assurance décennale — n° de police"
+                value={form.assurance_decennale_police ?? ""}
+                onChange={update("assurance_decennale_police")}
+              />
+              <Field
+                label="IBAN (affiché sur les factures)"
+                value={form.iban ?? ""}
+                onChange={update("iban")}
+                placeholder="FR76 0000 0000 0000 0000 0000 000"
+              />
+              <Field label="BIC" value={form.bic ?? ""} onChange={update("bic")} />
+            </div>
+          </div>
+
+          <div>
             <h2 className="text-sm font-semibold text-ink/70 mb-4">Tarification</h2>
+            <p className="text-xs text-ink/50 -mt-2 mb-4">
+              Le coût journalier n&apos;est utilisé qu&apos;au-delà d&apos;une journée de travail
+              estimée sur un même poste — sinon, c&apos;est le coût horaire qui s&apos;applique.
+              Utile pour les gros chantiers (maçonnerie, toiture, charpente…) où le client
+              raisonne au jour plutôt qu&apos;à l&apos;heure. Laissez-le vide pour toujours
+              facturer à l&apos;heure.
+            </p>
             <div className="grid sm:grid-cols-2 gap-5">
               <Field
                 label="TVA (%)"
@@ -363,6 +433,10 @@ export default function ParametresPage() {
 
           <div>
             <h2 className="text-sm font-semibold text-ink/70 mb-4">Déplacement</h2>
+            <p className="text-xs text-ink/50 -mt-2 mb-4">
+              Un forfait fixe, ajouté une fois par devis — pas de calcul de distance réelle
+              pour l&apos;instant (ça demanderait de géolocaliser chaque chantier).
+            </p>
             <div className="grid sm:grid-cols-2 gap-5">
               <Field
                 label="Forfait déplacement (€)"
@@ -372,24 +446,6 @@ export default function ParametresPage() {
                 max={BORNES.forfait_deplacement!.max}
                 value={form.forfait_deplacement}
                 onChange={update("forfait_deplacement")}
-              />
-              <Field
-                label="Prix au km (€)"
-                type="number"
-                step="0.01"
-                min={BORNES.prix_km!.min}
-                max={BORNES.prix_km!.max}
-                value={form.prix_km}
-                onChange={update("prix_km")}
-              />
-              <Field
-                label="Rayon d'intervention max (km)"
-                type="number"
-                step="1"
-                min={BORNES.rayon_max_km!.min}
-                max={BORNES.rayon_max_km!.max}
-                value={form.rayon_max_km ?? ""}
-                onChange={update("rayon_max_km")}
               />
             </div>
           </div>

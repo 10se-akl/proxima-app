@@ -44,6 +44,18 @@ export function IconeDocument({ className, taille = 18 }: Props) {
   );
 }
 
+// Module 28 (06/09) — distincte de IconeDocument (le devis) : un signe
+// euro plutôt qu'une feuille, pour que "Factures" se reconnaisse au
+// premier coup d'œil dans la navigation sans lire le libellé.
+export function IconeFacture({ className, taille = 18 }: Props) {
+  return (
+    <svg {...base(taille)} className={className}>
+      <path d="M16.5 6.3C15.2 5 13.5 4.3 11.8 4.8c-2.5.7-4.3 3.4-4.3 7.2s1.8 6.5 4.3 7.2c1.7.5 3.4-.2 4.7-1.5" />
+      <path d="M5.5 10.5h7.5M5.5 13.5h6.5" />
+    </svg>
+  );
+}
+
 export function IconeCalendrier({ className, taille = 18 }: Props) {
   return (
     <svg {...base(taille)} className={className}>

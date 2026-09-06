@@ -315,6 +315,48 @@ Aucune mise à jour SQL. Relancez `npm run dev`.
   Si un collègue candidate via ce lien, sa candidature indique automatiquement qui l'a
   recommandé
 
+## Étape 22 — Facturation
+
+1. **Mettez à jour votre base de données** : dans `supabase/schema.sql`, copiez toute la
+   section `-- Module 28 (06/09) — Facturation.` (jusqu'à la fin du fichier), collez-la
+   dans le **SQL Editor** de Supabase, "Run"
+2. Relancez `npm run dev`
+3. **Avant votre toute première facture** : allez dans Paramètres → "Informations
+   légales" et complétez au minimum votre **SIRET** (obligatoire, la création de facture
+   est bloquée sans lui) — le reste (TVA intracommunautaire, assurance décennale, IBAN)
+   est fortement recommandé mais pas bloquant.
+
+**Ce qui change :**
+- Un nouvel onglet **"Factures"** dans la navigation, et une section "Facturation" sur la
+  fiche de chaque projet dont le devis a été accepté
+- **Facture d'acompte** : montant libre en €, calculé en HT/TTC au même taux de TVA que le
+  devis
+- **Facture (solde)** : reprend les lignes du devis, déduit automatiquement les acomptes
+  déjà facturés — une seule facture de solde par devis (protection contre le double clic)
+- **Avoir** : annule une facture émise ou payée, en créant un document séparé plutôt qu'en
+  supprimant quoi que ce soit — une facture reste immuable une fois émise, y compris au
+  niveau de la base de données (voir le trigger `verrouiller_facture_emise` dans
+  `schema.sql`)
+- **Numérotation légale continue** (sans trou, par organisation et par année) via
+  `prochain_numero_facture()` — plus robuste que le compteur "comptage + nouvelle
+  tentative" utilisé pour les devis, volontairement, parce qu'un trou dans la
+  numérotation d'un devis n'a aucune conséquence légale, contrairement à une facture
+- **Export comptable (CSV)** : bouton disponible sur la liste des factures et sur chaque
+  fiche projet facturée
+- **Relance suggérée** : sur un devis envoyé depuis au moins 1 jour sans réponse, un
+  bouton "Suggérer une relance" prépare un brouillon de message (même mécanisme que
+  "Préparer une réponse au client", jamais envoyé automatiquement)
+- **Mémoire client visible** : la fiche projet affiche désormais "Vous avez déjà travaillé
+  avec ce client sur X autre(s) chantier(s)" quand c'est le cas (rapprochement déjà fait en
+  interne par numéro de téléphone, simplement jamais montré jusqu'ici)
+
+**⚠️ Ce que cette étape ne fait PAS** : transmettre une facture à l'administration fiscale
+via une Plateforme Agréée (PDP), obligatoire pour la facturation électronique B2B à partir
+de septembre 2026. Ça suppose un compte chez un partenaire externe (démarche commerciale,
+pas du code) — voir le rapport de cycle livré séparément pour la marche à suivre et les
+questions à poser à un comptable avant de considérer ce module comme suffisant pour une
+mise en conformité complète.
+
 ## Si quelque chose ne marche pas
 
 - **Erreur liée à Supabase** → vérifie que `.env.local` contient bien les vraies valeurs

@@ -101,12 +101,47 @@ function trouverPrixReference(description: string): number {
   return PRIX_DEFAUT_FOURNITURE;
 }
 
+// Seuil à partir duquel un poste de main d'œuvre bascule en tarif jour
+// plutôt qu'horaire — voir calculerLigne(). 7h plutôt que 8 pile : une
+// journée de chantier inclut trajet/installation/rangement, un artisan qui
+// estime "7h de pose" pense déjà en termes de journée complète, pas d'un
+// gros reliquat d'heures.
+const SEUIL_HEURES_JOURNEE = 7;
+const HEURES_PAR_JOURNEE = 8;
+
 function calculerLigne(
   poste: PosteTravailIA,
   parametres: ParametresEntreprise
 ): LigneDevisCalculee {
   if (poste.categorie === "main_oeuvre") {
     const temps = poste.temps_estime_heures ?? poste.quantite;
+
+    // Revue métier (06/09) — "cout_journalier" était configurable dans
+    // Paramètres mais jamais lu ici : un maçon, un couvreur, un
+    // charpentier ou un terrassier qui chiffre plusieurs jours de chantier
+    // raisonne naturellement en tarif jour, pas en multipliant des heures.
+    // Bascule automatique dès que le temps estimé atteint une journée
+    // complète ET que l'artisan a configuré ce tarif — sinon (petite
+    // intervention, ou champ laissé vide) le calcul horaire habituel
+    // s'applique sans aucun changement de comportement.
+    if (temps >= SEUIL_HEURES_JOURNEE && parametres.cout_journalier) {
+      // Arrondi au demi-jour supérieur : jamais moins facturé que le temps
+      // réellement estimé, cohérent avec la façon dont un artisan compte
+      // ses journées sur un chantier de plusieurs jours.
+      const jours = Math.ceil((temps / HEURES_PAR_JOURNEE) * 2) / 2;
+      const prixUnitaire = parametres.cout_journalier;
+      const total = Math.round(jours * prixUnitaire * 100) / 100;
+      return {
+        description: poste.description,
+        categorie: poste.categorie,
+        quantite: jours,
+        unite: "jour",
+        prix_unitaire: prixUnitaire,
+        total,
+        detail_calcul: `${jours} jour${jours > 1 ? "s" : ""} × ${prixUnitaire}€/jour (${temps}h estimées, coût journalier configuré)`,
+      };
+    }
+
     const prixUnitaire = parametres.cout_horaire;
     const total = Math.round(temps * prixUnitaire * 100) / 100;
     return {
@@ -136,12 +171,21 @@ function calculerLigne(
 
 // Ajuste le total main d'œuvre si le temps facturé est sous le minimum
 // configuré par l'artisan (ex : "1h minimum même pour un petit dépannage").
+//
+// Filtre désormais explicitement sur unite === "heure" (06/09) : depuis que
+// calculerLigne() peut produire des lignes en tarif JOUR (voir
+// SEUIL_HEURES_JOURNEE), sommer leur "quantite" comme si c'était des heures
+// aurait mélangé les deux unités — un poste de "1.5 jour" aurait compté
+// pour 1.5 dans ce total, presque toujours sous le seuil minimum, et
+// déclenché un ajustement absurde sur un chantier qui dure déjà plusieurs
+// jours. Un poste déjà facturé au jour n'a de toute façon aucune raison de
+// repasser sous un plancher pensé pour les petites interventions horaires.
 function appliquerHeuresMinimum(
   lignes: LigneDevisCalculee[],
   parametres: ParametresEntreprise
 ): LigneDevisCalculee[] {
   const totalHeures = lignes
-    .filter((l) => l.categorie === "main_oeuvre")
+    .filter((l) => l.categorie === "main_oeuvre" && l.unite === "heure")
     .reduce((s, l) => s + l.quantite, 0);
 
   if (totalHeures === 0 || totalHeures >= parametres.heures_min_facturables) {
@@ -211,13 +255,22 @@ export const PARAMETRES_PAR_DEFAUT: Omit<ParametresEntreprise, "id" | "artisan_i
   tva_pct: 20,
   cout_horaire: 45,
   cout_journalier: null,
-  prix_km: 0,
   forfait_deplacement: 0,
-  rayon_max_km: null,
   marge_defaut_pct: 15,
   heures_min_facturables: 1,
   logo_url: null,
   conditions_generales: null,
+  // Module 28 (06/09) — voir types/index.ts. Nécessaires uniquement pour
+  // générer une facture (jamais pour un devis) — nulles/désactivées par
+  // défaut, à compléter par l'artisan avant sa première facture.
+  siret: null,
+  forme_juridique: null,
+  numero_tva_intracommunautaire: null,
+  mention_tva_non_applicable: false,
+  assurance_decennale_compagnie: null,
+  assurance_decennale_police: null,
+  iban: null,
+  bic: null,
 };
 
 // ============================================================

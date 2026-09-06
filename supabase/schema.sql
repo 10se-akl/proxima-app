@@ -549,37 +549,57 @@ end $$;
 -- policies "un membre de l'organisation gère les données de son
 -- organisation". drop + create (Postgres n'a pas de "create or replace
 -- policy") pour pouvoir réexécuter ce fichier sans erreur.
+--
+-- Bug corrigé (06/09, repéré en le rejouant sur une base où il avait déjà
+-- tourné une fois) : chaque bloc ci-dessous ne "drop"ait que l'ANCIEN nom
+-- de la policy avant de créer le NOUVEAU nom — correct au tout premier
+-- passage, mais pas rejouable ensuite. Au deuxième passage : l'ancien nom
+-- n'existe plus (déjà renommé la première fois), donc son "drop if
+-- exists" ne fait rien, et la ligne juste avant dans ce fichier (qui crée
+-- justement CET ancien nom) le recrée depuis zéro sans erreur puisqu'il
+-- n'existe plus — on se retrouve avec les deux versions en même temps, et
+-- la création du NOUVEAU nom échoue avec "policy already exists" (il
+-- existait déjà depuis le premier passage, jamais supprimé). Chaque
+-- create ci-dessous a donc maintenant AUSSI un "drop if exists" sur son
+-- propre nom, juste avant lui — le seul moyen de rendre un renommage de
+-- policy vraiment rejouable à l'infini.
 drop policy if exists "un artisan gère ses propres demandes" on demandes;
+drop policy if exists "un membre gère les demandes de son organisation" on demandes;
 create policy "un membre gère les demandes de son organisation"
   on demandes for all
   using (organisation_id in (select mes_organisations()))
   with check (organisation_id in (select mes_organisations()));
 
 drop policy if exists "un artisan gère ses propres devis" on devis;
+drop policy if exists "un membre gère les devis de son organisation" on devis;
 create policy "un membre gère les devis de son organisation"
   on devis for all
   using (organisation_id in (select mes_organisations()))
   with check (organisation_id in (select mes_organisations()));
 
 drop policy if exists "un artisan gère ses propres paramètres" on parametres_entreprise;
+drop policy if exists "un membre gère les paramètres de son organisation" on parametres_entreprise;
 create policy "un membre gère les paramètres de son organisation"
   on parametres_entreprise for all
   using (organisation_id in (select mes_organisations()))
   with check (organisation_id in (select mes_organisations()));
 
 drop policy if exists "un artisan gère son propre planning" on evenements_planning;
+drop policy if exists "un membre gère le planning de son organisation" on evenements_planning;
 create policy "un membre gère le planning de son organisation"
   on evenements_planning for all
   using (organisation_id in (select mes_organisations()))
   with check (organisation_id in (select mes_organisations()));
 
 drop policy if exists "un artisan gère ses propres notes vocales" on notes_vocales;
+drop policy if exists "un membre gère les notes vocales de son organisation" on notes_vocales;
 create policy "un membre gère les notes vocales de son organisation"
   on notes_vocales for all
   using (organisation_id in (select mes_organisations()))
   with check (organisation_id in (select mes_organisations()));
 
 drop policy if exists "un artisan gère ses propres événements de projet" on evenements_projet;
+drop policy if exists "un membre gère les événements de projet de son organisation" on evenements_projet;
 create policy "un membre gère les événements de projet de son organisation"
   on evenements_projet for all
   using (organisation_id in (select mes_organisations()))
@@ -590,6 +610,7 @@ create policy "un membre gère les événements de projet de son organisation"
 -- l'appartenance à l'organisation, pour qu'un salarié puisse logger une
 -- action sans que ce soit rattaché à un artisan_id qui n'est pas le sien.
 drop policy if exists "un artisan peut enregistrer ses propres logs" on logs;
+drop policy if exists "un membre peut enregistrer un log pour son organisation" on logs;
 create policy "un membre peut enregistrer un log pour son organisation"
   on logs for insert
   with check (organisation_id in (select mes_organisations()));
@@ -600,6 +621,7 @@ create policy "un membre peut enregistrer un log pour son organisation"
 -- personne, pas seulement à elle — sans avoir à déplacer un seul fichier
 -- déjà stocké.
 drop policy if exists "un artisan gère ses propres photos" on storage.objects;
+drop policy if exists "un membre de l'organisation gère les photos de l'équipe" on storage.objects;
 create policy "un membre de l'organisation gère les photos de l'équipe"
   on storage.objects for all
   using (
@@ -625,6 +647,7 @@ create policy "un membre de l'organisation gère les photos de l'équipe"
 -- modification restent, elles, limitées à son propre profil (personne ne
 -- doit pouvoir modifier le profil d'un coéquipier).
 drop policy if exists "un artisan lit son propre profil" on profils;
+drop policy if exists "un membre lit les profils de son organisation" on profils;
 create policy "un membre lit les profils de son organisation"
   on profils for select
   using (
@@ -636,6 +659,7 @@ create policy "un membre lit les profils de son organisation"
   );
 
 drop policy if exists "un artisan gère son propre logo" on storage.objects;
+drop policy if exists "un membre de l'organisation gère le logo de l'équipe" on storage.objects;
 create policy "un membre de l'organisation gère le logo de l'équipe"
   on storage.objects for all
   using (
@@ -981,6 +1005,14 @@ revoke select (propositions_ia) on problemes_produits from authenticated, anon;
 --    refusé ne peut plus jamais être modifié en base, même par un appel
 --    direct qui contournerait l'UI.
 drop policy if exists "un membre gère les devis de son organisation" on devis;
+-- Bug corrigé (06/09) : même défaut de rejouabilité que plus haut dans ce
+-- fichier — ces 4 policies n'avaient aucun "drop" d'elles-mêmes avant leur
+-- "create", donc rejouer ce script une deuxième fois échouait ici avec
+-- "policy already exists" dès qu'on atteignait ce bloc.
+drop policy if exists "un membre lit les devis de son organisation" on devis;
+drop policy if exists "un membre crée des devis pour son organisation" on devis;
+drop policy if exists "un membre modifie un devis encore brouillon" on devis;
+drop policy if exists "un membre supprime les devis de son organisation" on devis;
 
 create policy "un membre lit les devis de son organisation"
   on devis for select
@@ -1270,3 +1302,194 @@ alter table profils add column if not exists notifications_push_actives boolean 
 -- bloquante si elle est déjà ouverte — donc deux colonnes distinctes
 -- plutôt qu'un seul statut "notifié" qui mélangerait les deux canaux.
 alter table notes add column if not exists vu_le timestamptz;
+
+-- ============================================================
+-- Module 28 (06/09) — Facturation.
+--
+-- CONTEXTE : la facturation électronique devient obligatoire en France à
+-- partir de septembre 2026 (réforme portée par la DGFiP, transmission via
+-- Plateforme de Dématérialisation Partenaire — PDP — pour les transactions
+-- B2B, obligation d'e-reporting pour le B2C). Compyo ne produisait jusqu'ici
+-- que des devis, jamais de factures — un vrai manque pour un artisan qui
+-- veut suivre tout son cycle administratif au même endroit.
+--
+-- CE QUE CE MODULE FAIT : un vrai objet "facture", distinct du devis,
+-- avec numérotation légale continue (sans trou, par organisation et par
+-- année — voir compteurs_facturation ci-dessous), mentions obligatoires
+-- figées au moment de l'émission (voir mentions_legales, un instantané —
+-- jamais une relecture live de parametres_entreprise, qui peut changer
+-- après coup), gestion des acomptes et des avoirs.
+--
+-- CE QUE CE MODULE NE FAIT PAS : transmettre réellement une facture à
+-- l'administration via une Plateforme Agréée. Ça suppose un compte chez un
+-- partenaire PDP externe (démarche commerciale/contractuelle qu'un humain
+-- doit faire, pas du code) — voir le rapport livré à Axel pour la marche à
+-- suivre. Ce module prépare le terrain (document conforme, structuré,
+-- numéroté correctement) pour qu'une intégration PDP future n'ait qu'à
+-- brancher un appel de transmission sur une facture déjà bien formée,
+-- plutôt que de tout reconstruire.
+-- ============================================================
+
+-- Informations légales de l'entreprise, nécessaires sur toute facture mais
+-- absentes jusqu'ici (le devis n'est pas un document fiscal, il n'en a
+-- jamais eu besoin). "mention_tva_non_applicable" couvre le cas d'un
+-- artisan auto-entrepreneur en franchise en base de TVA (art. 293B du CGI)
+-- — dans ce cas tva_pct doit être ignoré à l'affichage de la facture (géré
+-- côté application, pas ici).
+alter table parametres_entreprise add column if not exists siret text;
+alter table parametres_entreprise add column if not exists forme_juridique text;
+alter table parametres_entreprise add column if not exists numero_tva_intracommunautaire text;
+alter table parametres_entreprise add column if not exists mention_tva_non_applicable boolean not null default false;
+-- Assurance décennale : mention obligatoire sur les devis ET les factures
+-- du bâtiment (Code des assurances, loi Spinetta) — absente elle aussi
+-- jusqu'ici. Nom du champ au singulier "assurance_..." pour rester lisible
+-- même si un artisan a plusieurs polices (cas rare, pas géré ici).
+alter table parametres_entreprise add column if not exists assurance_decennale_compagnie text;
+alter table parametres_entreprise add column if not exists assurance_decennale_police text;
+-- Coordonnées bancaires : affichées sur la facture pour indiquer à quel
+-- compte payer — jamais utilisées pour un prélèvement automatique ou un
+-- quelconque mouvement d'argent piloté par Compyo, uniquement du texte
+-- informatif imprimé sur le document.
+alter table parametres_entreprise add column if not exists iban text;
+alter table parametres_entreprise add column if not exists bic text;
+
+-- Compteur atomique de numérotation, séparé de la table "factures"
+-- elle-même : la loi exige une numérotation chronologique CONTINUE, sans
+-- trou, y compris entre facture/acompte/avoir (une seule séquence par
+-- organisation et par année, le type de document est indiqué par ailleurs
+-- sur le document, pas par la numérotation). Le pattern "compter les lignes
+-- existantes + retenter sur conflit" déjà utilisé pour les devis (voir
+-- Module 12) est volontairement insuffisant ici : un devis sans réponse au
+-- client n'a aucune conséquence légale si son numéro saute, une facture si.
+-- La fonction ci-dessous utilise "insert ... on conflict do update ...
+-- returning" : Postgres verrouille la ligne le temps de l'opération, ce qui
+-- rend l'incrémentation atomique même sous appels concurrents (pas de
+-- fenêtre de course possible, contrairement à un "select puis insert"
+-- classique).
+create table if not exists compteurs_facturation (
+  organisation_id uuid not null references organisations(id) on delete cascade,
+  annee integer not null,
+  dernier_numero integer not null default 0,
+  primary key (organisation_id, annee)
+);
+
+alter table compteurs_facturation enable row level security;
+-- Aucune policy pour "authenticated" : accès exclusivement via la fonction
+-- security definer ci-dessous, jamais en lecture/écriture directe depuis le
+-- navigateur — même logique que mes_organisations() plus haut dans ce
+-- fichier.
+
+create or replace function prochain_numero_facture(p_organisation_id uuid, p_annee integer)
+returns integer
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_numero integer;
+begin
+  insert into compteurs_facturation (organisation_id, annee, dernier_numero)
+  values (p_organisation_id, p_annee, 1)
+  on conflict (organisation_id, annee)
+  do update set dernier_numero = compteurs_facturation.dernier_numero + 1
+  returning dernier_numero into v_numero;
+  return v_numero;
+end;
+$$;
+
+create table if not exists factures (
+  id uuid primary key default gen_random_uuid(),
+  organisation_id uuid not null references organisations(id) on delete cascade,
+  demande_id uuid not null references demandes(id) on delete cascade,
+  devis_id uuid references devis(id) on delete set null,
+  client_id uuid references clients(id) on delete set null,
+  artisan_id uuid not null references profils(id) on delete cascade,
+  type text not null check (type in ('facture', 'acompte', 'avoir')),
+  numero text not null,
+  statut text not null default 'emise' check (statut in ('emise', 'payee', 'annulee')),
+  lignes jsonb not null,
+  sous_total_ht numeric(10, 2) not null,
+  tva_pct numeric(5, 2) not null,
+  montant_tva numeric(10, 2) not null,
+  total_ttc numeric(10, 2) not null,
+  -- Pour un avoir : la facture qu'il annule. Pour une facture de solde :
+  -- non utilisé ici, la déduction des acomptes déjà facturés apparaît
+  -- directement comme une ligne négative dans "lignes" (voir
+  -- lib/moteur-metier/genererFacture.ts) — plus simple à afficher qu'une
+  -- jointure à reconstituer à chaque lecture.
+  facture_liee_id uuid references factures(id) on delete set null,
+  -- Instantané des informations légales au moment de l'émission (nom
+  -- entreprise, SIRET, TVA intra, assurance décennale, IBAN...) — jamais
+  -- une relecture live de parametres_entreprise : une facture déjà émise
+  -- ne doit jamais changer de contenu si l'artisan modifie ses paramètres
+  -- après coup (obligation légale d'immutabilité d'une facture émise).
+  mentions_legales jsonb not null,
+  date_emission timestamptz not null default now(),
+  date_echeance timestamptz,
+  created_at timestamptz not null default now(),
+  unique (organisation_id, numero)
+);
+
+create index if not exists factures_organisation_id_date_idx on factures (organisation_id, date_emission desc);
+create index if not exists factures_demande_id_idx on factures (demande_id, created_at desc);
+create index if not exists factures_devis_id_idx on factures (devis_id);
+
+alter table factures enable row level security;
+
+drop policy if exists "un membre lit les factures de son organisation" on factures;
+create policy "un membre lit les factures de son organisation"
+  on factures for select
+  using (organisation_id in (select mes_organisations()));
+
+drop policy if exists "un membre crée des factures pour son organisation" on factures;
+create policy "un membre crée des factures pour son organisation"
+  on factures for insert
+  with check (organisation_id in (select mes_organisations()));
+
+-- Une facture émise est un document légal : son CONTENU (lignes, montants,
+-- mentions) ne doit jamais changer après coup, seul son STATUT peut évoluer
+-- (émise → payée, ou émise → annulée via un avoir qui la référence). La
+-- policy RLS ne peut pas à elle seule distinguer "quelles colonnes"
+-- changent — elle empêche déjà de modifier une facture déjà annulée, mais
+-- laisserait techniquement passer une requête qui réécrirait lignes/
+-- montants d'une facture encore "émise" tant que l'organisation et le
+-- statut de départ correspondent. Le trigger juste en dessous ferme cette
+-- fenêtre au niveau base de données (donc quel que soit le client qui
+-- appelle — navigateur, route serveur, futur script d'import), plutôt que
+-- de ne compter que sur la discipline du code applicatif.
+drop policy if exists "un membre change le statut d'une facture non annulée" on factures;
+create policy "un membre change le statut d'une facture non annulée"
+  on factures for update
+  using (organisation_id in (select mes_organisations()) and statut != 'annulee')
+  with check (organisation_id in (select mes_organisations()));
+
+create or replace function verrouiller_facture_emise()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.lignes is distinct from old.lignes
+     or new.sous_total_ht is distinct from old.sous_total_ht
+     or new.tva_pct is distinct from old.tva_pct
+     or new.montant_tva is distinct from old.montant_tva
+     or new.total_ttc is distinct from old.total_ttc
+     or new.mentions_legales is distinct from old.mentions_legales
+     or new.numero is distinct from old.numero
+     or new.type is distinct from old.type
+     or new.date_emission is distinct from old.date_emission
+  then
+    raise exception 'Une facture émise ne peut plus être modifiée — seul son statut peut changer (voir un avoir pour l''annuler)';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists verrouiller_facture_emise_trigger on factures;
+create trigger verrouiller_facture_emise_trigger
+  before update on factures
+  for each row execute function verrouiller_facture_emise();
+
+-- Aucune policy de suppression, volontairement : une facture émise ne se
+-- supprime jamais, elle s'annule via un avoir (même logique que candidatures
+-- plus haut dans ce fichier — l'absence de policy est le mécanisme de
+-- protection, pas un oubli).

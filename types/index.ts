@@ -17,6 +17,15 @@ export type StatutProjet =
 
 export type Priorite = "urgent" | "important" | "normal";
 
+// Revue métier (06/09) — élargi de 9 à 20 valeurs pour couvrir les 18
+// métiers de lib/metiers.ts (auparavant, un serrurier, un carreleur, un
+// menuisier... tombaient systématiquement sur "autre", aucune information
+// ne les distinguait). "salle_de_bain"/"cuisine"/"renovation_complete"
+// restent des catégories de NATURE de chantier (transverses à plusieurs
+// métiers à la fois — un plombier, un carreleur ET un électricien peuvent
+// tous les trois travailler sur "une salle de bain"), les nouvelles
+// valeurs ci-dessous sont, elles, spécifiques à un seul métier — voir
+// lib/metiers.ts pour la correspondance exacte, un métier vers un type.
 export type TypeChantier =
   | "renovation_complete"
   | "salle_de_bain"
@@ -26,6 +35,17 @@ export type TypeChantier =
   | "electricite"
   | "plomberie"
   | "chauffage"
+  | "maconnerie"
+  | "terrassement"
+  | "facade"
+  | "serrurerie"
+  | "vitrerie"
+  | "charpente"
+  | "menuiserie"
+  | "plaquisterie"
+  | "carrelage"
+  | "amenagement_exterieur"
+  | "climatisation"
   | "autre";
 
 // "Projet" est désormais le cœur du produit : une demande client enrichie
@@ -105,14 +125,32 @@ export type ParametresEntreprise = {
   email: string | null;
   tva_pct: number;
   cout_horaire: number;
+  // Utilisé par calculerLigne() (lib/moteur-metier/calculerDevis.ts)
+  // au-delà d'une journée de travail estimée sur un même poste, sinon
+  // c'est cout_horaire qui s'applique.
   cout_journalier: number | null;
-  prix_km: number;
   forfait_deplacement: number;
-  rayon_max_km: number | null;
+  // Revue métier (06/09) — "prix_km" et "rayon_max_km" existent encore
+  // comme colonnes en base (jamais supprimées, aucune migration
+  // destructrice) mais ont été retirés de ce type et du formulaire
+  // Paramètres : ils n'étaient lus nulle part dans le calcul du devis,
+  // seul forfait_deplacement compte réellement. Voir schema.sql si un
+  // vrai calcul par distance (géolocalisation) est construit plus tard.
   marge_defaut_pct: number;
   heures_min_facturables: number;
   logo_url: string | null;
   conditions_generales: string | null;
+  // Module 28 (06/09) — informations légales nécessaires à la facturation,
+  // absentes jusqu'ici (le devis n'est pas un document fiscal). Voir
+  // supabase/schema.sql pour le détail de chaque champ.
+  siret: string | null;
+  forme_juridique: string | null;
+  numero_tva_intracommunautaire: string | null;
+  mention_tva_non_applicable: boolean;
+  assurance_decennale_compagnie: string | null;
+  assurance_decennale_police: string | null;
+  iban: string | null;
+  bic: string | null;
 };
 
 export type CategoriePoste = "main_oeuvre" | "fourniture" | "forfait";
@@ -201,7 +239,10 @@ export type TypeEvenementProjet =
   | "chantier_termine"
   | "priorite_changee"
   | "rdv_planifie"
-  | "appel_telephonique";
+  | "appel_telephonique"
+  | "facture_creee"
+  | "facture_payee"
+  | "avoir_cree";
 
 export type EvenementProjet = {
   id: string;
@@ -294,5 +335,59 @@ export type Devis = {
   envoye_le: string | null;
   commentaires: string | null;
   statut: "brouillon" | "a_valider" | "envoye" | "refuse";
+  created_at: string;
+};
+
+// ============================================================
+// Module 28 (06/09) — Facturation. Voir supabase/schema.sql pour le détail
+// des règles (numérotation continue, immutabilité une fois émise...).
+// ============================================================
+
+export type TypeFacture = "facture" | "acompte" | "avoir";
+export type StatutFacture = "emise" | "payee" | "annulee";
+
+// Réutilise la même forme que les lignes de devis (description, quantité,
+// prix, total) — une facture affiche des lignes déjà connues (copiées du
+// devis, ou une ligne unique "Acompte de X%"), jamais un nouveau calcul IA.
+export type LigneFacture = LigneDevisCalculee;
+
+// Instantané figé des informations légales de l'entreprise au moment de
+// l'émission — voir le commentaire sur la colonne "mentions_legales" dans
+// supabase/schema.sql. Sous-ensemble de ParametresEntreprise, uniquement
+// les champs qui doivent apparaître sur le document.
+export type MentionsLegalesFacture = {
+  nom_entreprise: string | null;
+  adresse: string | null;
+  telephone: string | null;
+  email: string | null;
+  siret: string | null;
+  forme_juridique: string | null;
+  numero_tva_intracommunautaire: string | null;
+  mention_tva_non_applicable: boolean;
+  assurance_decennale_compagnie: string | null;
+  assurance_decennale_police: string | null;
+  iban: string | null;
+  bic: string | null;
+};
+
+export type Facture = {
+  id: string;
+  organisation_id: string;
+  demande_id: string;
+  devis_id: string | null;
+  client_id: string | null;
+  artisan_id: string;
+  type: TypeFacture;
+  numero: string;
+  statut: StatutFacture;
+  lignes: LigneFacture[];
+  sous_total_ht: number;
+  tva_pct: number;
+  montant_tva: number;
+  total_ttc: number;
+  facture_liee_id: string | null;
+  mentions_legales: MentionsLegalesFacture;
+  date_emission: string;
+  date_echeance: string | null;
   created_at: string;
 };

@@ -13,11 +13,35 @@ import {
   IconeAccueil,
   IconeDossier,
   IconeDocument,
+  IconeFacture,
   IconeCalendrier,
   IconeNote,
   IconeParametres,
   IconeRetours,
 } from "@/components/ui/Icones";
+
+// Audit sécurité (05/09) — le service worker (voir public/sw.js) a mis en
+// cache, jusqu'ici, le HTML rendu de /dashboard/* (Server Components avec
+// de vraies données d'organisation : noms clients, montants de devis...)
+// sans jamais le purger à la déconnexion. La logique du service worker est
+// corrigée à la source (ces pages ne sont plus jamais écrites en cache),
+// mais un artisan qui se déconnecte AVANT que le nouveau service worker
+// n'ait pris le relais aurait encore l'ancien cache sur son appareil —
+// purge immédiate ici, en plus, pour ne pas dépendre uniquement du délai
+// de mise à jour du service worker. Best-effort : l'API Cache peut être
+// indisponible (navigateur privé, contexte non sécurisé) sans que ça doive
+// jamais bloquer la déconnexion elle-même.
+async function purgerCachePagesHorsLigne() {
+  if (typeof caches === "undefined") return;
+  try {
+    const noms = await caches.keys();
+    await Promise.all(
+      noms.filter((nom) => nom.startsWith("compyo-") && nom.endsWith("-pages")).map((nom) => caches.delete(nom))
+    );
+  } catch {
+    // Non bloquant — la déconnexion elle-même a déjà réussi à ce stade.
+  }
+}
 
 // Notes (29/08) — même niveau que Projets/Aujourd'hui/Planning dans la
 // nav, demande explicite du brief ("Ajouter un nouvel onglet 'Notes'.
@@ -27,6 +51,7 @@ const LIENS = [
   { href: "/dashboard/demandes", label: "Projets", Icone: IconeDossier },
   { href: "/dashboard/notes", label: "Notes", Icone: IconeNote },
   { href: "/dashboard/devis", label: "Devis", Icone: IconeDocument },
+  { href: "/dashboard/factures", label: "Factures", Icone: IconeFacture },
   { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
   { href: "/carte-mentale", label: "Carte mentale", Icone: IconeRetours },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
@@ -123,6 +148,7 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
     // l'artisan sans qu'il l'ait vraiment voulu.
     if (!window.confirm("Se déconnecter de Compyo ?")) return;
     await supabase.auth.signOut();
+    await purgerCachePagesHorsLigne();
     router.push("/login");
     router.refresh();
   }

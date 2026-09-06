@@ -1246,13 +1246,17 @@ export default function DetailDemandePage({
               {demande.questions_manquantes.resume}
             </p>
 
-            {demande.questions_manquantes.informations_manquantes.length > 0 && (
+            {/* Garde-fou (06/09) : "?? []" plutôt qu'un accès direct — une
+                réponse IA légèrement malformée (champ manquant, mauvais
+                type) ne doit jamais faire planter l'affichage de toute la
+                fiche projet, seulement afficher moins d'informations. */}
+            {(demande.questions_manquantes.informations_manquantes ?? []).length > 0 && (
               <>
                 <p className="mt-4 text-xs font-medium text-ink/50 uppercase tracking-wider">
                   Checklist — ce qu'il manque peut-être encore
                 </p>
                 <div className="mt-2 flex flex-col gap-1.5">
-                  {demande.questions_manquantes.informations_manquantes.map((info) => {
+                  {(demande.questions_manquantes.informations_manquantes ?? []).map((info) => {
                     const dejaCoche =
                       /photo/i.test(info) && (demande.photos?.length ?? 0) > 0;
                     return (
@@ -1282,7 +1286,7 @@ export default function DetailDemandePage({
               Questions à poser au client
             </p>
             <ul className="mt-2 list-disc list-inside text-sm text-ink/70 space-y-1">
-              {demande.questions_manquantes.questions_suggerees.map((q) => (
+              {(demande.questions_manquantes.questions_suggerees ?? []).map((q) => (
                 <li key={q}>{q}</li>
               ))}
             </ul>

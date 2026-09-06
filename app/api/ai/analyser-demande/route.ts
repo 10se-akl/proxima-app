@@ -142,17 +142,39 @@ ${formaterNotesPourPromptIA(notesActives)}`;
   const debutAppel = Date.now();
   try {
     const reponseTexte = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur, request.signal);
-    const analyse = parserReponseJSON<AnalyseIA>(reponseTexte);
+    const brut = parserReponseJSON<Partial<AnalyseIA>>(reponseTexte);
 
     // Un JSON valide mais avec un résumé vide reste un résultat inexploitable
     // — l'artisan verrait un résumé blanc sans explication. Traité comme un
     // échec plutôt qu'enregistré tel quel (relevé à l'audit IA du 25/08).
-    if (!analyse.resume?.trim()) {
+    if (!brut.resume?.trim()) {
       return NextResponse.json(
         { error: "L'IA n'a pas pu résumer ce projet. Réessayez." },
         { status: 502 }
       );
     }
+
+    // Normalisation défensive (06/09) — bug trouvé en relecture avant tout
+    // premier test réel : si "informations_manquantes" ou
+    // "questions_suggerees" manquait ou n'était pas un tableau, l'objet
+    // était quand même enregistré tel quel en base (questions_manquantes),
+    // puis TOUT rendu de la fiche projet plantait au premier .map()/.length
+    // sur ce champ (app/dashboard/demandes/[id]/page.tsx) — un vrai crash
+    // d'écran, pas juste un message d'erreur. On force ici la forme
+    // attendue une bonne fois, avant toute écriture en base.
+    const analyse: AnalyseIA = {
+      resume: brut.resume.trim(),
+      informations_manquantes: Array.isArray(brut.informations_manquantes)
+        ? brut.informations_manquantes.filter(
+            (i): i is string => typeof i === "string" && i.trim().length > 0
+          )
+        : [],
+      questions_suggerees: Array.isArray(brut.questions_suggerees)
+        ? brut.questions_suggerees.filter(
+            (q): q is string => typeof q === "string" && q.trim().length > 0
+          )
+        : [],
+    };
 
     // Horodate cette analyse pour pouvoir détecter, la prochaine fois,
     // qu'aucune note n'a été ajoutée depuis — voir peutAnalyser côté

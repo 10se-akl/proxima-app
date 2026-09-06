@@ -38,6 +38,16 @@ const nouveautes = [
     description:
       "Utile pour l'entretien saisonnier (paysagiste) ou annuel (chauffagiste, climaticien) : programmez un rappel de suivi dans 3, 6 ou 12 mois en un clic.",
   },
+  {
+    titre: "Anti-oubli sur devis",
+    description:
+      "Au moment de générer le devis, Compyo signale les postes probablement oubliés (dépose manquante, protection de chantier, évacuation des déchets...) — à ajouter ou ignorer en un clic, jamais ajoutés seuls.",
+  },
+  {
+    titre: "Journal chantier vocal",
+    description:
+      "Dictez un compte-rendu de fin de visite : Compyo en tire les tâches restantes, un brouillon de message client à valider, et détecte quand le chantier semble terminé.",
+  },
 ];
 
 export function SectionNouveautes() {

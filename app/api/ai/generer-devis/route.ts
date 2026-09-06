@@ -13,6 +13,10 @@ import type { PosteTravailIA, ParametresEntreprise, LigneDevisCalculee } from "@
 // silencieusement si invalide : c'est une suggestion annexe, un item mal
 // formé ne doit jamais faire échouer la génération du devis principal).
 function posteEstValide(p: PosteTravailIA): boolean {
+  // Un élément null/non-objet dans le tableau (JSON malformé renvoyé par
+  // l'IA) ne doit jamais faire planter cette vérification — juste être
+  // traité comme invalide, comme n'importe quel autre poste mal formé.
+  if (!p || typeof p !== "object") return false;
   const categorieValide = ["main_oeuvre", "fourniture", "forfait"].includes(p.categorie);
   const quantite = p.categorie === "main_oeuvre" ? (p.temps_estime_heures ?? p.quantite) : p.quantite;
   const quantiteValide = typeof quantite === "number" && Number.isFinite(quantite) && quantite > 0;
@@ -203,8 +207,11 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // Un devis sans aucun poste ne doit jamais atteindre l'écran de
     // validation en silence — mieux vaut un message d'erreur clair que de
     // laisser l'artisan valider (et potentiellement envoyer) un devis vide
-    // à 0€ sans s'en rendre compte.
-    if (!postes || postes.length === 0) {
+    // à 0€ sans s'en rendre compte. Array.isArray() explicite (pas juste
+    // "!postes") : si l'IA renvoie "postes" comme un objet ou une chaîne
+    // au lieu d'un tableau, ".length" ne le détecterait pas forcément et
+    // ".find()" plus bas planterait avec une TypeError non gérée.
+    if (!Array.isArray(postes) || postes.length === 0) {
       return NextResponse.json(
         { error: "L'IA n'a proposé aucun poste de travaux. Réessayez, ou complétez d'abord la description du projet." },
         { status: 502 }
@@ -234,7 +241,12 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // Chaque suggestion retenue est chiffrée par le MÊME moteur déterministe
     // (jamais un prix à 0€ à deviner par l'artisan) — calculerDevis() sur un
     // tableau d'un seul poste renvoie une unique ligne calculée.
-    const lignesSuggerees: LigneDevisCalculee[] = (postes_oublies_probables ?? [])
+    // Array.isArray() explicite : un champ "postes_oublies_probables"
+    // malformé (objet, chaîne...) ne doit jamais faire planter la
+    // génération du devis principal, qui, lui, est déjà valide à ce stade.
+    const lignesSuggerees: LigneDevisCalculee[] = (
+      Array.isArray(postes_oublies_probables) ? postes_oublies_probables : []
+    )
       .filter(posteEstValide)
       .slice(0, MAX_SUGGESTIONS_OUBLIS)
       .map((p) => calculerDevis([p], parametres).lignes[0]);

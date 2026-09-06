@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function PolitiqueConfidentialitePage() {
   return (
-    <LayoutJuridique titre="Politique de confidentialité" misAJour="10 août 2026">
+    <LayoutJuridique titre="Politique de confidentialité" misAJour="6 septembre 2026">
       <section>
         <p>
           Compyo est un outil destiné aux artisans du bâtiment, actuellement en bêta privée
@@ -96,11 +96,32 @@ export default function PolitiqueConfidentialitePage() {
           <li><strong>Resend</strong> — envoi des emails de notification (ex. nouvelle candidature à la bêta).</li>
         </ul>
         <p>
-          Certains de ces prestataires sont situés aux États-Unis. Le lieu exact d&apos;hébergement
-          des données au sein de Supabase dépend de la configuration de la région du projet ; cette
-          page sera précisée dès que ce point est confirmé. Aucune donnée n&apos;est vendue à des
-          tiers ni utilisée à des fins publicitaires.
+          Certains de ces prestataires (Vercel, Anthropic) sont situés aux États-Unis. La base de
+          données elle-même — où sont stockées les données des artisans et de leurs clients — est
+          hébergée par Supabase dans l&apos;Union européenne (région Stockholm, Suède). Aucune
+          donnée n&apos;est vendue à des tiers ni utilisée à des fins publicitaires.
         </p>
+      </section>
+
+      <section>
+        <h2>En cas de faille de sécurité</h2>
+        <p>
+          Aucun service en ligne ne peut garantir une sécurité absolue. Compyo applique des mesures
+          concrètes pour limiter ce risque : isolement strict des données entre organisations au
+          niveau de la base de données elle-même (un artisan ne peut techniquement accéder qu&apos;aux
+          données de sa propre organisation, même en cas d&apos;erreur ailleurs dans
+          l&apos;application), connexions chiffrées (HTTPS), et accès aux clés d&apos;administration
+          limité au strict nécessaire.
+        </p>
+        <p>
+          Si une faille de sécurité touchant vos données (ou celles de vos clients) survient malgré
+          tout, Compyo s&apos;engage à :
+        </p>
+        <ul>
+          <li>Vous en informer sans délai injustifié dès que la faille est connue, avec les informations disponibles à ce stade.</li>
+          <li>Notifier la CNIL dans un délai de 72 heures après en avoir eu connaissance, conformément à l&apos;article 33 du RGPD, lorsque la faille présente un risque pour les droits et libertés des personnes concernées.</li>
+          <li>Informer directement les personnes concernées lorsque le risque est élevé, conformément à l&apos;article 34 du RGPD.</li>
+        </ul>
       </section>
 
       <section>

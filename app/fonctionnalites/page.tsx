@@ -5,6 +5,7 @@ import { DemoImport } from "@/components/marketing/DemoImport";
 import { DemoPlanning } from "@/components/marketing/DemoPlanning";
 import { DemoNotesVocales } from "@/components/marketing/DemoNotesVocales";
 import { SectionSecurite } from "@/components/marketing/SectionSecurite";
+import { SectionNouveautes } from "@/components/marketing/SectionNouveautes";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
   // navigateur et les résultats de recherche.
   title: "Fonctionnalités",
   description:
-    "Devis générés en quelques secondes, import automatique des messages clients, planning unifié, notes vocales transcrites — le détail de ce que fait Compyo pour les artisans du bâtiment.",
+    "Devis et facturation électronique, import automatique des messages clients, planning avec alerte météo, notes vocales transcrites, adapté à 18 corps de métier — le détail de ce que fait Compyo pour les artisans du bâtiment.",
 };
 
 // SEO/GEO (05/09) — cette page détaille les 4 fonctionnalités du produit,
@@ -33,8 +34,13 @@ const DONNEES_STRUCTUREES_FONCTIONNALITES = {
   "@id": `${SITE_URL}/#logiciel`,
   featureList: [
     "Génération de devis en quelques secondes à partir des notes de chantier, avec un moteur de calcul déterministe",
+    "Devis express pour chiffrer directement à la main une intervention déjà réalisée sur place",
+    "Facturation électronique : numérotation légale, acomptes, avoirs, export comptable",
     "Import automatique d'une demande client depuis un message (SMS, WhatsApp, capture d'écran)",
     "Planning unifié des rendez-vous et chantiers, avec détection des conflits de créneaux",
+    "Alerte météo sur le planning pour les chantiers extérieurs sensibles",
+    "Rappel client récurrent en un clic pour l'entretien saisonnier ou annuel",
+    "Champs et checklists adaptés à 18 corps de métier du bâtiment",
     "Notes vocales dictées sur le chantier, transcrites et rattachées automatiquement au bon projet",
   ],
 };
@@ -80,6 +86,8 @@ export default function FonctionnalitesPage() {
       <div id="notes-vocales">
         <DemoNotesVocales />
       </div>
+
+      <SectionNouveautes />
 
       {/* Sécurité/confidentialité : déplacée ici depuis l'accueil (qui
           devient très court) — sa place naturelle est sur la page qui doit

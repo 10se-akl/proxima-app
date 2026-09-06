@@ -83,7 +83,9 @@ function QuiEtOu() {
               (hébergement du code et des pages) et <span className="font-medium text-ink">Supabase</span>{" "}
               (base de données, authentification, stockage des fichiers) — deux
               prestataires cloud utilisés par un grand nombre d&apos;entreprises tech, avec
-              chiffrement des données en transit (HTTPS) et au stockage.
+              chiffrement des données en transit (HTTPS) et au stockage. La base de données —
+              où sont stockées les données des artisans et de leurs clients — est hébergée dans
+              l&apos;Union européenne (région Stockholm, Suède).
             </p>
           </div>
         </Reveal>
@@ -118,6 +120,17 @@ function Securite() {
               base de données, pas seulement dans l&apos;interface). Vos données ne sont ni
               vendues, ni partagées à des fins commerciales, et peuvent être supprimées
               intégralement sur simple demande — voir la{" "}
+              <Link href="/politique-de-confidentialite" className="underline hover:text-ink">
+                politique de confidentialité
+              </Link>.
+            </p>
+            <p>
+              Aucun outil en ligne ne peut promettre un risque zéro. En cas de faille de
+              sécurité touchant vos données, l&apos;engagement pris est de vous en informer sans
+              délai injustifié dès qu&apos;elle est connue, de notifier la CNIL sous 72 heures si
+              elle présente un risque pour vos droits, et de prévenir directement les personnes
+              concernées si le risque est élevé — conformément aux articles 33 et 34 du RGPD.
+              Détail complet dans la{" "}
               <Link href="/politique-de-confidentialite" className="underline hover:text-ink">
                 politique de confidentialité
               </Link>.
@@ -217,7 +230,15 @@ const DONNEES_STRUCTUREES_FAQ = {
       name: "Où sont hébergées les données de Compyo ?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Compyo est hébergé chez Vercel (hébergement du site et de l'application) et Supabase (base de données, authentification, stockage des fichiers).",
+        text: "Compyo est hébergé chez Vercel (hébergement du site et de l'application) et Supabase (base de données, authentification, stockage des fichiers). La base de données, qui contient les données des artisans et de leurs clients, est hébergée dans l'Union européenne, région Stockholm (Suède).",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Que se passe-t-il en cas de faille de sécurité chez Compyo ?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Compyo s'engage à informer les utilisateurs concernés sans délai injustifié dès qu'une faille est connue, à notifier la CNIL sous 72 heures lorsque la faille présente un risque pour les droits des personnes concernées (article 33 du RGPD), et à informer directement les personnes concernées en cas de risque élevé (article 34 du RGPD).",
       },
     },
     {

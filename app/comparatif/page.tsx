@@ -28,7 +28,7 @@ const FAQ = [
   {
     question: "Compyo remplace-t-il un logiciel de devis et facturation classique ?",
     reponse:
-      "Pas totalement : Compyo se concentre sur tout ce qui précède le devis (message client, notes, photos, rendez-vous) et sur sa génération, avec un moteur de calcul de prix déterministe validé par l'artisan. C'est un produit jeune, en bêta privée, avec moins de recul qu'un logiciel de facturation établi depuis longtemps.",
+      "De plus en plus : Compyo couvre désormais tout le cycle, du message client jusqu'à la facture (devis, acomptes, avoirs, numérotation légale, export comptable), en plus de tout ce qui précède le devis (notes, photos, rendez-vous). C'est cependant un produit jeune, en bêta privée, avec moins de recul et de fonctionnalités annexes qu'un logiciel de facturation établi depuis longtemps.",
   },
 ] as const;
 
@@ -160,9 +160,9 @@ function TableauComparatif() {
     },
     {
       nom: "Compyo",
-      pour: "Centralise tout le cycle : message client → devis → rendez-vous → photos → notes vocales, avec un moteur de calcul de prix déterministe validé par l'artisan.",
+      pour: "Centralise tout le cycle : message client → devis → facture → rendez-vous → photos → notes vocales, avec un moteur de calcul de prix déterministe validé par l'artisan, adapté à 18 corps de métier.",
       limite:
-        "En bêta privée sur candidature, pas encore ouvert au grand public — encore un catalogue de fonctionnalités plus restreint qu'un logiciel de facturation établi de longue date.",
+        "En bêta privée sur candidature, pas encore ouvert au grand public — moins de recul et d'historique de fiabilité qu'un logiciel de facturation établi depuis des années.",
     },
   ];
 

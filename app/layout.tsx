@@ -23,6 +23,8 @@ export const metadata: Metadata = {
     "gestion chantier",
     "assistant IA artisan",
     "plombier chauffagiste logiciel",
+    "facturation électronique artisan",
+    "logiciel BTP tous corps de métier",
   ],
   authors: [{ name: "Compyo" }],
   robots: { index: true, follow: true },
@@ -105,7 +107,20 @@ const DONNEES_STRUCTUREES = {
       url: URL_SITE,
       logo: `${URL_SITE}/icon`,
       email: "proxima.saas@gmail.com",
+      // Signal E-E-A-T (autorité/confiance) explicite : "qui est derrière
+      // Compyo" revient constamment comme question de confiance (voir
+      // /confiance, /a-propos) — un éditeur nommément identifié plutôt
+      // qu'une structure floue est ce que les moteurs classiques ET
+      // génératifs valorisent le plus pour ce type de question.
+      founder: { "@id": `${URL_SITE}/#fondateur` },
       sameAs: [],
+    },
+    {
+      "@type": "Person",
+      "@id": `${URL_SITE}/#fondateur`,
+      name: "Axel Thfoin",
+      jobTitle: "Développeur indépendant",
+      worksFor: { "@id": `${URL_SITE}/#organisation` },
     },
     {
       "@type": "SoftwareApplication",

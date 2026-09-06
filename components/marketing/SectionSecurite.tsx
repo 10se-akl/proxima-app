@@ -15,9 +15,9 @@ const points = [
       "Chaque entreprise ne voit que ses propres projets, clients et devis. Aucune autre équipe sur Compyo n'y a accès.",
   },
   {
-    titre: "Hébergement sérieux, en Europe",
+    titre: "Base de données hébergée en Europe",
     description:
-      "Les données sont hébergées chez Vercel et Supabase, avec chiffrement pendant le transfert et au stockage.",
+      "Vos données et celles de vos clients sont stockées chez Supabase, région Stockholm (Suède), avec chiffrement pendant le transfert et au stockage.",
   },
   {
     titre: "Aucune revente à qui que ce soit",

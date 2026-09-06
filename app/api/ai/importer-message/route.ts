@@ -10,6 +10,7 @@ import type { TypeChantier } from "@/types";
 // Même garde-fou que dans confirmer-import-captures : "type_chantier" est
 // un texte libre en base, sans contrainte enum — on revalide côté serveur
 // avant d'écrire, plutôt que de faire confiance à la réponse de l'IA.
+// Revue métier (06/09) — liste élargie à 20 valeurs, voir types/index.ts.
 const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
   "renovation_complete",
   "salle_de_bain",
@@ -19,6 +20,17 @@ const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
   "electricite",
   "plomberie",
   "chauffage",
+  "maconnerie",
+  "terrassement",
+  "facade",
+  "serrurerie",
+  "vitrerie",
+  "charpente",
+  "menuiserie",
+  "plaquisterie",
+  "carrelage",
+  "amenagement_exterieur",
+  "climatisation",
   "autre",
 ];
 
@@ -47,7 +59,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
   "telephone_client": "numéro trouvé ou null",
   "email_client": "email trouvé ou null",
   "adresse_client": "adresse trouvée ou null",
-  "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | renovation_complete | autre",
+  "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | maconnerie | terrassement | facade | serrurerie | vitrerie | charpente | menuiserie | plaquisterie | carrelage | amenagement_exterieur | climatisation | renovation_complete | autre",
   "description_resumee": "résumé en une ou deux phrases de ce que veut le client, à partir du message",
   "rdv_date": "date au format AAAA-MM-JJ UNIQUEMENT si le client propose ou confirme explicitement un jour de rendez-vous, sinon null",
   "rdv_heure": "heure au format HH:MM UNIQUEMENT si explicitement mentionnée, sinon null"

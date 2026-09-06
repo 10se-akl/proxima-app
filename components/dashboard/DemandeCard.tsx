@@ -20,6 +20,9 @@ export const LABEL_STATUT: Record<Projet["statut"], string> = {
   termine: "Terminé",
 };
 
+// Revue métier (06/09) — élargi en même temps que TypeChantier (voir
+// types/index.ts) : 11 nouvelles valeurs, une par métier auparavant sans
+// équivalent (tous tombaient sur "autre" jusqu'ici).
 export const LABEL_TYPE_CHANTIER: Record<string, string> = {
   salle_de_bain: "Salle de bain",
   cuisine: "Cuisine",
@@ -28,6 +31,17 @@ export const LABEL_TYPE_CHANTIER: Record<string, string> = {
   electricite: "Électricité",
   plomberie: "Plomberie",
   chauffage: "Chauffage",
+  maconnerie: "Maçonnerie",
+  terrassement: "Terrassement",
+  facade: "Façade",
+  serrurerie: "Serrurerie",
+  vitrerie: "Vitrerie",
+  charpente: "Charpente",
+  menuiserie: "Menuiserie",
+  plaquisterie: "Plaquisterie",
+  carrelage: "Carrelage",
+  amenagement_exterieur: "Aménagement extérieur",
+  climatisation: "Climatisation",
   renovation_complete: "Rénovation complète",
   autre: "",
 };

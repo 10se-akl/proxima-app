@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { EvenementPlanning, Priorite } from "@/types";
+import type { EvenementPlanning, Priorite, TypeChantier } from "@/types";
+import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 
 // Plage par défaut : couvre une journée de travail classique sans obliger
 // à scroller pour un artisan qui n'a jamais de rendez-vous hors de ces
@@ -26,7 +27,12 @@ const COULEUR_PRIORITE: Record<Priorite, string> = {
 const COULEUR_TACHE_SANS_PROJET = "bg-ink/40 border-ink/40";
 
 type EvenementAvecProjet = EvenementPlanning & {
-  demandes?: { nom_client?: string; priorite?: Priorite } | null;
+  demandes?: {
+    nom_client?: string;
+    priorite?: Priorite;
+    type_chantier?: TypeChantier;
+    telephone_client?: string | null;
+  } | null;
 };
 
 function estMemeJour(a: Date, b: Date) {
@@ -35,6 +41,16 @@ function estMemeJour(a: Date, b: Date) {
     a.getMonth() === b.getMonth() &&
     a.getDate() === b.getDate()
   );
+}
+
+// Clé locale (pas toISOString, qui bascule en UTC et peut décaler le jour
+// pour un événement en soirée) — doit correspondre au format des dates
+// renvoyées par l'API météo Open-Meteo ("AAAA-MM-JJ").
+function cleDateLocale(date: Date) {
+  const annee = date.getFullYear();
+  const mois = String(date.getMonth() + 1).padStart(2, "0");
+  const jour = String(date.getDate()).padStart(2, "0");
+  return `${annee}-${mois}-${jour}`;
 }
 
 function estPasse(jour: Date) {
@@ -46,9 +62,11 @@ function estPasse(jour: Date) {
 function BlocEvenement({
   evenement,
   heureDebut,
+  meteo,
 }: {
   evenement: EvenementAvecProjet;
   heureDebut: number;
+  meteo?: RisqueMeteoJour;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -65,6 +83,22 @@ function BlocEvenement({
   const couleur = evenement.demandes?.priorite
     ? COULEUR_PRIORITE[evenement.demandes.priorite]
     : COULEUR_TACHE_SANS_PROJET;
+
+  const typeChantier = evenement.demandes?.type_chantier;
+  const alerteMeteo =
+    !!meteo?.risque && !!typeChantier && TYPES_CHANTIER_METEO_SENSIBLES.includes(typeChantier);
+  const telephone = evenement.demandes?.telephone_client;
+
+  function prevenirClientMeteo() {
+    if (!telephone) return;
+    const numero = telephone.replace(/[^\d+]/g, "");
+    const message = `Bonjour, en raison de la météo prévue (${meteo?.resume}), il est possible que je doive reporter notre rendez-vous du ${date.toLocaleDateString(
+      "fr-FR",
+      { day: "numeric", month: "long" }
+    )}. Je vous tiens au courant. Merci de votre compréhension.`;
+    window.open(`sms:${numero}?body=${encodeURIComponent(message)}`, "_self");
+    setMenuOuvert(false);
+  }
 
   const termine = evenement.statut === "termine";
   // Audit Cycle 2 (Agent Artisan terrain) : le statut "annule" existe dans
@@ -136,11 +170,16 @@ function BlocEvenement({
         className={`w-full text-left px-2 py-1 border-l-4 text-white text-[11px] leading-tight overflow-hidden rounded-md transition-all duration-150 hover:brightness-110 hover:shadow-sm ${couleur} ${
           termine ? "opacity-40 line-through" : ""
         } ${annule ? "opacity-35 line-through italic" : ""}`}
-        title={evenement.titre}
+        title={
+          alerteMeteo
+            ? `⚠️ Météo à risque (${meteo?.resume}) — ${evenement.titre}`
+            : evenement.titre
+        }
       >
         <span className="font-mono opacity-80">
           {date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
         </span>{" "}
+        {alerteMeteo && <span aria-hidden>⚠️ </span>}
         {evenement.titre}
       </button>
 
@@ -157,6 +196,20 @@ function BlocEvenement({
               verticalement via flex, pour absorber l'imprécision du doigt
               sur un écran de chantier. */}
           <div className="relative z-30 mt-1 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-xs w-44">
+            {alerteMeteo && (
+              <button
+                onClick={prevenirClientMeteo}
+                disabled={!telephone}
+                title={
+                  telephone
+                    ? `Météo : ${meteo?.resume}`
+                    : "Aucun numéro de téléphone enregistré pour ce client"
+                }
+                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5 disabled:opacity-40"
+              >
+                ⚠️ Prévenir le client (météo)
+              </button>
+            )}
             {evenement.demande_id && (
               <button
                 onClick={() => router.push(`/dashboard/demandes/${evenement.demande_id}`)}
@@ -209,9 +262,11 @@ function BlocEvenement({
 export function GrilleAgenda({
   jours,
   evenements,
+  meteoParJour,
 }: {
   jours: Date[];
   evenements: EvenementAvecProjet[];
+  meteoParJour?: Record<string, RisqueMeteoJour>;
 }) {
   // On élargit la plage par défaut si un événement tombe avant 7h ou après
   // 20h, pour ne jamais rendre un rendez-vous invisible (voir commentaire
@@ -292,7 +347,12 @@ export function GrilleAgenda({
               {evenements
                 .filter((e) => estMemeJour(new Date(e.date_heure), jour))
                 .map((e) => (
-                  <BlocEvenement key={e.id} evenement={e} heureDebut={heureDebut} />
+                  <BlocEvenement
+                    key={e.id}
+                    evenement={e}
+                    heureDebut={heureDebut}
+                    meteo={meteoParJour?.[cleDateLocale(jour)]}
+                  />
                 ))}
             </div>
           ))}

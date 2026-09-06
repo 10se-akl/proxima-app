@@ -11,11 +11,19 @@ import { Field } from "@/components/ui/Input";
 import { Avatar } from "@/components/ui/Avatar";
 import { DevisPreview } from "@/components/dashboard/DevisPreview";
 import { ValiderDevis } from "@/components/dashboard/ValiderDevis";
+import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
 import { Timeline, type TimelineItem } from "@/components/dashboard/Timeline";
+import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
-import { listerNotesProjet, marquerNoteTerminee } from "@/lib/notes";
+import {
+  listerNotesProjet,
+  marquerNoteTerminee,
+  creerRappelRecurrentClient,
+  TYPES_CHANTIER_RAPPEL_RECURRENT,
+  PRESETS_RAPPEL_RECURRENT,
+} from "@/lib/notes";
 import { NoteCard } from "@/components/notes/NoteCard";
 import { FormulaireNote } from "@/components/notes/FormulaireNote";
 // Sprint Robustesse (30/08) — outils partagés pour les mutations Supabase
@@ -25,17 +33,13 @@ import { executerMutation } from "@/lib/supabase/resultat";
 import { EtatErreur, ErreurInline } from "@/components/ui/EtatErreur";
 import type { Projet, Devis, NoteVocale, EvenementProjet, ParametresEntreprise, Note } from "@/types";
 
-const TYPES_CHANTIER: { value: string; label: string }[] = [
-  { value: "salle_de_bain", label: "Salle de bain" },
-  { value: "cuisine", label: "Cuisine" },
-  { value: "peinture", label: "Peinture" },
-  { value: "toiture", label: "Toiture" },
-  { value: "electricite", label: "Électricité" },
-  { value: "plomberie", label: "Plomberie" },
-  { value: "chauffage", label: "Chauffage" },
-  { value: "renovation_complete", label: "Rénovation complète" },
-  { value: "autre", label: "Autre" },
-];
+// Revue métier (06/09) — dérivé de LABEL_TYPE_CHANTIER (components/
+// dashboard/DemandeCard.tsx) plutôt que dupliqué ici : une seule liste à
+// tenir à jour désormais (l'ancienne copie ne comptait que 9 des 20
+// valeurs possibles, oubliée lors de l'élargissement aux 18 métiers).
+const TYPES_CHANTIER: { value: string; label: string }[] = Object.entries(LABEL_TYPE_CHANTIER).map(
+  ([value, label]) => ({ value, label: label || "Autre" })
+);
 
 export default function DetailDemandePage({
   params,
@@ -57,7 +61,13 @@ export default function DetailDemandePage({
   const [notesVocales, setNotesVocales] = useState<NoteVocale[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [formulaireNoteOuvert, setFormulaireNoteOuvert] = useState(false);
+  const [rappelRecurrentEnCours, setRappelRecurrentEnCours] = useState<number | null>(null);
+  const [rappelRecurrentCree, setRappelRecurrentCree] = useState<number | null>(null);
   const [evenementsProjet, setEvenementsProjet] = useState<EvenementProjet[]>([]);
+  // "Mémoire client" (06/09) — voir chargerDonnees() : null tant que non
+  // chargé, pour ne jamais afficher "0 autre projet" pendant une fraction
+  // de seconde avant que la vraie valeur n'arrive.
+  const [nbAutresProjetsClient, setNbAutresProjetsClient] = useState<number | null>(null);
   const [artisanId, setArtisanId] = useState<string | null>(null);
   const [organisationId, setOrganisationId] = useState<string | null>(null);
   const [parametres, setParametres] = useState<ParametresEntreprise | null>(null);
@@ -168,9 +178,9 @@ export default function DetailDemandePage({
         const orgId = await getOrganisationId(supabase, user.id);
         setOrganisationId(orgId);
 
-        // Ces deux-là dépendent de l'utilisateur (donc après le lot
-        // ci-dessus), mais restent indépendantes l'une de l'autre.
-        const [{ data: profil }, { data: parametresData }] = await Promise.all([
+        // Ces trois-là dépendent de l'utilisateur (donc après le lot
+        // ci-dessus), mais restent indépendantes les unes des autres.
+        const [{ data: profil }, { data: parametresData }, comptageAutresProjets] = await Promise.all([
           // Sprint Beta Final (27/08) — 🔴G : "metier" en plus de "nom",
           // pour relier la checklist au métier déclaré (voir
           // lib/checklistsMetier.ts, obtenirChecklist).
@@ -182,10 +192,24 @@ export default function DetailDemandePage({
                 .eq("organisation_id", orgId)
                 .maybeSingle()
             : Promise.resolve({ data: null }),
+          // "Mémoire client" (06/09) — met en avant un rapprochement déjà
+          // fait en interne (table clients, voir lib/clients/index.ts) mais
+          // jamais montré à l'artisan jusqu'ici : combien d'AUTRES projets
+          // partagent le même client_id. Aucune nouvelle donnée, juste un
+          // comptage sur ce qui existe déjà.
+          orgId && (demandeData as Projet).client_id
+            ? supabase
+                .from("demandes")
+                .select("id", { count: "exact", head: true })
+                .eq("organisation_id", orgId)
+                .eq("client_id", (demandeData as Projet).client_id as string)
+                .neq("id", params.id)
+            : Promise.resolve({ count: 0 }),
         ]);
         setNomArtisan(profil?.nom ?? "");
         setMetierArtisan(profil?.metier ?? null);
         setParametres((parametresData as ParametresEntreprise) ?? null);
+        setNbAutresProjetsClient(comptageAutresProjets.count ?? 0);
 
         if (parametresData?.logo_url) {
           const { data: signe } = await supabase.storage
@@ -362,7 +386,66 @@ export default function DetailDemandePage({
     }
   }
 
-  async function genererReponse() {
+  // Rappel client récurrent (06/09) — voir lib/notes/index.ts. Un clic,
+  // pas de formulaire : crée directement une note avec rappel programmé.
+  async function creerRappelRecurrent(mois: number) {
+    if (!artisanId || !organisationId) return;
+    setRappelRecurrentEnCours(mois);
+    const { note, erreur: erreurCreation } = await creerRappelRecurrentClient(supabase, {
+      organisationId,
+      artisanId,
+      demandeId: params.id,
+      nomClient: demande?.nom_client ?? "ce client",
+      mois,
+    });
+    setRappelRecurrentEnCours(null);
+    if (erreurCreation || !note) {
+      setErreur(erreurCreation ?? "Impossible de programmer le rappel.");
+      return;
+    }
+    setRappelRecurrentCree(mois);
+    listerNotesProjet(supabase, params.id).then(setNotes);
+  }
+
+  // "Devis express" (06/09) — audit métier : pour un serrurier, un vitrier,
+  // un dépannage chiffré sur place, le cycle "décrire → analyser → générer
+  // par IA" n'apporte rien — le travail est déjà fait au moment de
+  // chiffrer, il n'y a rien à analyser. Saute directement à un devis
+  // brouillon avec une ligne vide (voir /api/devis/creer-vide), rempli à
+  // la main dans le même écran ValiderDevis déjà utilisé pour un devis
+  // généré par IA — aucune nouvelle UI de saisie à maintenir.
+  async function creerDevisExpress() {
+    setErreur(null);
+    setChargementDevis(true);
+    try {
+      const res = await fetch("/api/devis/creer-vide", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ demandeId: params.id }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setErreur(data?.error ?? "Impossible de créer le devis express. Réessayez.");
+        return;
+      }
+      if (artisanId && organisationId) {
+        await enregistrerEvenement(supabase, {
+          demandeId: params.id,
+          artisanId,
+          organisationId,
+          type: "devis_genere",
+          titre: "Devis express créé",
+        });
+      }
+      await chargerDonnees();
+    } catch {
+      setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+    } finally {
+      setChargementDevis(false);
+    }
+  }
+
+  async function genererReponse(contexteSupplementaire?: string) {
     setErreur(null);
     setChargementReponse(true);
     setCopie(false);
@@ -373,7 +456,7 @@ export default function DetailDemandePage({
       res = await fetch("/api/ai/generer-reponse", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ demandeId: params.id }),
+        body: JSON.stringify({ demandeId: params.id, contexteSupplementaire }),
         signal: controleur.signal,
       });
     } catch (err) {
@@ -394,6 +477,29 @@ export default function DetailDemandePage({
     }
     const data = await res.json();
     setBrouillonReponse(data.brouillon);
+    document.getElementById("bloc-reponse-client")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+
+  // Sprint "Relance suggérée" (06/09) — le résumé de fin de journée détecte
+  // déjà les devis envoyés sans réponse depuis plusieurs jours (voir
+  // app/api/ai/resume-journee/route.ts), mais ne proposait jusqu'ici aucune
+  // action directe. Réutilise /api/ai/generer-reponse (déjà existant, déjà
+  // validé par l'artisan avant tout envoi) avec un contexte de relance
+  // plutôt que de dupliquer un nouvel appel IA — même philosophie que le
+  // reste du produit : l'IA propose, l'artisan décide et envoie lui-même.
+  function genererRelance() {
+    const jours = joursDepuisEnvoiDevis();
+    genererReponse(
+      jours
+        ? `Le client n'a pas répondu depuis ${jours} jour${jours > 1 ? "s" : ""} après l'envoi du devis. Rédige un message de relance courtois qui donne simplement des nouvelles et demande si le devis convient, sans être insistant.`
+        : "Rédige un message de relance courtois qui donne des nouvelles et demande si le devis envoyé convient, sans être insistant."
+    );
+  }
+
+  function joursDepuisEnvoiDevis(): number | null {
+    if (!devis?.envoye_le) return null;
+    const jours = Math.floor((Date.now() - new Date(devis.envoye_le).getTime()) / 86400000);
+    return jours > 0 ? jours : null;
   }
 
   async function copierReponse() {
@@ -819,6 +925,18 @@ export default function DetailDemandePage({
         </div>
       </div>
 
+      {/* "Mémoire client" (06/09) — un rapprochement déjà fait en interne
+          (table clients, par numéro de téléphone normalisé) mais jamais
+          montré à l'artisan jusqu'ici. Aucune concurrent établi (Obat,
+          Tolteck, Batappli) ne fait ce lien automatique entre chantiers
+          d'un même client. */}
+      {nbAutresProjetsClient !== null && nbAutresProjetsClient > 0 && (
+        <p className="mt-2 text-xs text-steel">
+          🧠 Vous avez déjà travaillé avec ce client sur {nbAutresProjetsClient} autre
+          {nbAutresProjetsClient > 1 ? "s" : ""} chantier{nbAutresProjetsClient > 1 ? "s" : ""}.
+        </p>
+      )}
+
       {/* Échappatoire toujours disponible : le parcours guidé (devis →
           accepté → en cours → terminé) plus bas reste la voie normale, mais
           un artisan doit toujours pouvoir clôturer un projet directement,
@@ -1019,6 +1137,28 @@ export default function DetailDemandePage({
           </button>
         </div>
 
+        {TYPES_CHANTIER_RAPPEL_RECURRENT.includes(demande.type_chantier) && (
+          <div className="mt-3 flex items-center flex-wrap gap-2">
+            <span className="text-xs text-ink/50">Programmer un rappel de suivi :</span>
+            {PRESETS_RAPPEL_RECURRENT.map(({ mois, libelle }) => (
+              <button
+                key={mois}
+                type="button"
+                onClick={() => creerRappelRecurrent(mois)}
+                disabled={rappelRecurrentEnCours !== null}
+                className="text-xs rounded-full border border-ink/15 px-3 py-1.5 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
+              >
+                {rappelRecurrentEnCours === mois ? "…" : libelle}
+              </button>
+            ))}
+            {rappelRecurrentCree !== null && (
+              <span className="text-xs text-[#2F8F5B]">
+                ✓ Rappel programmé, {PRESETS_RAPPEL_RECURRENT.find((p) => p.mois === rappelRecurrentCree)?.libelle.toLowerCase()}
+              </span>
+            )}
+          </div>
+        )}
+
         {formulaireNoteOuvert && (
           <div className="mt-3">
             <FormulaireNote
@@ -1154,16 +1294,24 @@ export default function DetailDemandePage({
           projet ; l'analyse IA n'est pas un prérequis, juste une aide en
           option pour les notes en vrac. */}
       <div className="mt-8">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="font-semibold text-sm">2. Générer un devis</h2>
             {(!devis || devis.statut === "refuse") && (
-              <Button onClick={genererDevis} loading={chargementDevis}>
-                {chargementDevis
-                  ? "Génération en cours…"
-                  : devis
-                  ? "Générer un nouveau devis"
-                  : "Générer le devis"}
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Devis express (06/09) — pour un dépannage/une intervention
+                    déjà réalisée sur place (serrurier, vitrier, urgence) :
+                    saute l'IA, ouvre directement une ligne vide à remplir. */}
+                <Button variant="ghost" onClick={creerDevisExpress} loading={chargementDevis} title="Chiffrer directement à la main, sans passer par l'IA — pour une intervention déjà réalisée sur place.">
+                  {chargementDevis ? "Création…" : "⚡ Devis express"}
+                </Button>
+                <Button onClick={genererDevis} loading={chargementDevis}>
+                  {chargementDevis
+                    ? "Génération en cours…"
+                    : devis
+                    ? "Générer un nouveau devis"
+                    : "Générer le devis"}
+                </Button>
+              </div>
             )}
           </div>
 
@@ -1264,6 +1412,11 @@ export default function DetailDemandePage({
                     <Button variant="ghost" onClick={marquerAccepte} disabled={actionEnCours}>
                       Marquer comme accepté par le client
                     </Button>
+                    {joursDepuisEnvoiDevis() !== null && (
+                      <Button variant="ghost" onClick={genererRelance} loading={chargementReponse}>
+                        {chargementReponse ? "Rédaction…" : "Suggérer une relance"}
+                      </Button>
+                    )}
                     <Button variant="ghost" onClick={dupliquerDevis} loading={chargementDevis}>
                       {chargementDevis ? "Duplication…" : "Dupliquer pour ajuster le prix"}
                     </Button>
@@ -1297,18 +1450,38 @@ export default function DetailDemandePage({
                   ✓ Chantier terminé
                 </span>
               )}
+
+              {/* Module 28 (06/09) — facturation : disponible dès que le
+                  client a accepté le devis, quel que soit l'avancement du
+                  chantier ensuite (un acompte se facture souvent avant même
+                  le démarrage). */}
+              {["accepte", "en_cours", "termine"].includes(demande.statut) && (
+                <FacturesProjet
+                  devis={devis}
+                  nomClient={demande.nom_client}
+                  telephoneClient={demande.telephone_client}
+                  adresseClient={demande.adresse_client}
+                  logoUrl={logoUrl}
+                />
+              )}
             </div>
           )}
         </div>
 
-      {/* Étape 3 : réponse suggérée au client — l'artisan valide toujours avant envoi */}
-      {demande.questions_manquantes && (
-        <div className="mt-8">
+      {/* Étape 3 : réponse suggérée au client — l'artisan valide toujours avant envoi.
+          Sprint "Relance suggérée" (06/09) — condition élargie à
+          "brouillonReponse déjà généré" : le bouton "Suggérer une relance"
+          (voir plus haut, à côté des actions du devis envoyé) peut produire
+          un brouillon même sur un projet jamais passé par l'analyse IA
+          (questions_manquantes resterait alors null) — sans cet ajout, la
+          relance générée n'aurait eu aucun endroit où s'afficher. */}
+      {(demande.questions_manquantes || brouillonReponse) && (
+        <div className="mt-8" id="bloc-reponse-client">
           <div className="flex items-center justify-between">
             <h2 className="font-semibold text-sm">3. Préparer une réponse au client</h2>
             <Button
               variant="ghost"
-              onClick={genererReponse}
+              onClick={() => genererReponse()}
               loading={chargementReponse}
             >
               {chargementReponse

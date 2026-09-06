@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Note, ImportanceNote } from "@/types";
+import type { Note, ImportanceNote, TypeChantier } from "@/types";
 
 // ============================================================
 // Notes professionnelles (29/08) — voir Module 27, supabase/schema.sql.
@@ -195,6 +195,51 @@ export const COULEUR_POINT_IMPORTANCE: Record<ImportanceNote, string> = {
   orange: "bg-[#D9861A]",
   rouge: "bg-[#C23B22]",
 };
+
+// Rappel client récurrent (06/09) — audit métier : un paysagiste (taille
+// saisonnière, entretien de jardin) ou un chauffagiste/climaticien
+// (entretien annuel) perd des clients récurrents faute de recontacter au
+// bon moment — pas d'oubli volontaire, juste rien qui le lui rappelle. Ne
+// crée pas de nouvelle mécanique : réutilise telle quelle l'infrastructure
+// Note + rappel_a + cron de rappels déjà existante (voir listerRappelsAVoir,
+// app/api/cron/rappels/route.ts), juste avec un raccourci "dans X mois" au
+// lieu de composer le formulaire complet.
+export const TYPES_CHANTIER_RAPPEL_RECURRENT: TypeChantier[] = [
+  "amenagement_exterieur",
+  "chauffage",
+  "climatisation",
+];
+
+export const PRESETS_RAPPEL_RECURRENT = [
+  { mois: 3, libelle: "Dans 3 mois" },
+  { mois: 6, libelle: "Dans 6 mois" },
+  { mois: 12, libelle: "Dans 1 an" },
+] as const;
+
+export async function creerRappelRecurrentClient(
+  supabase: SupabaseClient,
+  params: {
+    organisationId: string;
+    artisanId: string;
+    demandeId: string;
+    nomClient: string;
+    mois: number;
+  }
+): Promise<{ note: Note | null; erreur: string | null }> {
+  const rappelA = new Date();
+  rappelA.setMonth(rappelA.getMonth() + params.mois);
+  rappelA.setHours(9, 0, 0, 0);
+
+  return creerNote(supabase, {
+    organisationId: params.organisationId,
+    artisanId: params.artisanId,
+    demandeId: params.demandeId,
+    titre: `Recontacter ${params.nomClient}`,
+    description: "Rappel de suivi programmé automatiquement — proposer un entretien ou une visite de contrôle.",
+    importance: "verte",
+    rappelA: rappelA.toISOString(),
+  });
+}
 
 // Formate les notes actives d'un projet pour un prompt IA (point 4 du
 // brief) — texte brut, lisible, jamais du JSON : l'IA d'analyse (voir

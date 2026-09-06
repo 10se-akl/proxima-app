@@ -13,6 +13,7 @@ import type { BrouillonProjet, NiveauConfiance, Priorite, TypeChantier } from "@
 // que l'artisan valide — voir components/dashboard/BrouillonProjet.tsx.
 // ============================================================
 
+// Revue métier (06/09) — liste élargie à 20 valeurs, voir types/index.ts.
 const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
   "renovation_complete",
   "salle_de_bain",
@@ -22,6 +23,17 @@ const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
   "electricite",
   "plomberie",
   "chauffage",
+  "maconnerie",
+  "terrassement",
+  "facade",
+  "serrurerie",
+  "vitrerie",
+  "charpente",
+  "menuiserie",
+  "plaquisterie",
+  "carrelage",
+  "amenagement_exterieur",
+  "climatisation",
   "autre",
 ];
 
@@ -69,7 +81,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
   "nom_client": { "valeur": "nom ou null", "confiance": "explicite | deduit | absent" },
   "telephone_client": { "valeur": "numéro ou null", "confiance": "..." },
   "adresse_client": { "valeur": "adresse ou null", "confiance": "..." },
-  "type_chantier": { "valeur": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | renovation_complete | autre", "confiance": "..." },
+  "type_chantier": { "valeur": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | maconnerie | terrassement | facade | serrurerie | vitrerie | charpente | menuiserie | plaquisterie | carrelage | amenagement_exterieur | climatisation | renovation_complete | autre", "confiance": "..." },
   "resume": { "valeur": "résumé en une ou deux phrases de ce que veut le client", "confiance": "..." },
   "urgence": { "valeur": "urgent ou normal", "confiance": "..." },
   "rdv_date": { "valeur": "AAAA-MM-JJ ou null", "confiance": "..." },

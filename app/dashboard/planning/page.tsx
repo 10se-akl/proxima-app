@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { GrilleAgenda } from "@/components/planning/GrilleAgenda";
 import { getOrganisationId } from "@/lib/organisation";
+import { recupererAlertesMeteoSemaine } from "@/lib/meteo";
 
 function lundiDeLaSemaine(offsetSemaines: number): Date {
   const aujourdhui = new Date();
@@ -40,7 +41,7 @@ export default async function PlanningPage({
 
   const { data: evenementsBrut } = await supabase
     .from("evenements_planning")
-    .select("*, demandes(nom_client, priorite)")
+    .select("*, demandes(nom_client, priorite, type_chantier, telephone_client)")
     .eq("organisation_id", organisationId)
     .gte("date_heure", lundi.toISOString())
     .lte("date_heure", dimanche.toISOString())
@@ -55,6 +56,16 @@ export default async function PlanningPage({
     ...e,
     demandes: Array.isArray(e.demandes) ? e.demandes[0] ?? null : e.demandes,
   }));
+
+  // Alerte météo (06/09) — approximation par la ville du siège de
+  // l'entreprise, voir lib/meteo.ts pour le raisonnement.
+  const { data: parametres } = await supabase
+    .from("parametres_entreprise")
+    .select("adresse")
+    .eq("organisation_id", organisationId)
+    .maybeSingle();
+  const alertesMeteoBrut = await recupererAlertesMeteoSemaine(parametres?.adresse);
+  const alertesMeteo = Object.fromEntries(alertesMeteoBrut);
 
   const libelleSemaine = `${lundi.toLocaleDateString("fr-FR", {
     day: "numeric",
@@ -103,10 +114,15 @@ export default async function PlanningPage({
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-ink/40" /> Tâche sans projet
         </span>
+        {Object.values(alertesMeteo).some((m) => m.risque) && (
+          <span className="flex items-center gap-1.5">
+            ⚠️ Météo à risque sur un chantier extérieur — cliquez le rendez-vous pour prévenir le client
+          </span>
+        )}
       </div>
 
       <div className="mt-4">
-        <GrilleAgenda jours={jours} evenements={evenements} />
+        <GrilleAgenda jours={jours} evenements={evenements} meteoParJour={alertesMeteo} />
       </div>
     </div>
   );

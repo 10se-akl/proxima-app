@@ -31,6 +31,7 @@ function BadgeConfiance({ niveau }: { niveau: NiveauConfiance }) {
   );
 }
 
+// Revue métier (06/09) — liste élargie à 20 valeurs, voir types/index.ts.
 const TYPES_CHANTIER: TypeChantier[] = [
   "renovation_complete",
   "salle_de_bain",
@@ -40,6 +41,17 @@ const TYPES_CHANTIER: TypeChantier[] = [
   "electricite",
   "plomberie",
   "chauffage",
+  "maconnerie",
+  "terrassement",
+  "facade",
+  "serrurerie",
+  "vitrerie",
+  "charpente",
+  "menuiserie",
+  "plaquisterie",
+  "carrelage",
+  "amenagement_exterieur",
+  "climatisation",
   "autre",
 ];
 

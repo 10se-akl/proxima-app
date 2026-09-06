@@ -69,23 +69,105 @@ export const CHECKLISTS_METIER: Record<TypeChantier, string[]> = {
     "Délai souhaité par le client",
     "Budget approximatif si évoqué",
   ],
+  // Revue métier (06/09) — 11 nouveaux types, un par métier qui tombait
+  // systématiquement sur "autre" jusqu'ici (voir types/index.ts). Contenu
+  // repris tel quel de CHECKLISTS_PAR_METIER ci-dessous (même texte, déjà
+  // écrit et pensé pour ce métier) : ces types de chantier sont
+  // spécifiques à UN SEUL métier, contrairement à "salle_de_bain"/
+  // "cuisine" qui restent transverses — inutile de dupliquer le contenu
+  // dans deux tables différentes indéfiniment, mais CHECKLISTS_PAR_METIER
+  // reste en place comme filet de sécurité (voir obtenirChecklist) pour le
+  // cas où l'IA classerait malgré tout un chantier en "autre".
+  maconnerie: [
+    "Nature du sol / fondations existantes",
+    "Surface et hauteur des murs concernés",
+    "Accès chantier pour livraison de matériaux (bétonnière, camion)",
+    "Réseaux enterrés à proximité (eau, élec, gaz)",
+    "Déclaration préalable ou permis nécessaire ?",
+  ],
+  terrassement: [
+    "Nature du terrain (roche, argile, remblai)",
+    "Surface et profondeur à terrasser",
+    "Accès pour engins de chantier",
+    "Réseaux enterrés déclarés (DICT à faire)",
+    "Évacuation des déblais prévue",
+  ],
+  facade: [
+    "État actuel de la façade (fissures, humidité)",
+    "Surface totale et hauteur (échafaudage nécessaire ?)",
+    "Type de revêtement souhaité",
+    "Isolation par l'extérieur incluse ?",
+    "Autorisation copropriété / mairie si nécessaire",
+  ],
+  serrurerie: [
+    "Type de serrure/porte concernée",
+    "Marque si remplacement à l'identique",
+    "Urgence (porte claquée, effraction) ?",
+    "Niveau de sécurité souhaité",
+    "Nombre de clés/badges à fournir",
+  ],
+  vitrerie: [
+    "Type et dimensions du vitrage",
+    "Simple, double ou triple vitrage",
+    "Urgence (bris de glace) ?",
+    "Étage et accès pour la pose",
+    "Mesures précises disponibles",
+  ],
+  charpente: [
+    "Type de charpente (traditionnelle, fermette)",
+    "État du bois existant (humidité, insectes)",
+    "Surface et portée à couvrir",
+    "Accès chantier (grue, échafaudage)",
+    "Isolation liée aux travaux de charpente",
+  ],
+  menuiserie: [
+    "Type de menuiserie (fenêtre, porte, placard, escalier)",
+    "Matériau souhaité (bois, PVC, alu)",
+    "Mesures précises disponibles",
+    "Dépose de l'ancienne menuiserie incluse ?",
+    "Délai souhaité par le client",
+  ],
+  plaquisterie: [
+    "Surface totale à traiter (m²)",
+    "Isolation à intégrer dans la cloison",
+    "État du support existant",
+    "Emplacements de prises/interrupteurs à prévoir",
+    "Hauteur sous plafond",
+  ],
+  carrelage: [
+    "Surface totale et pièce concernée",
+    "État du support (chape à prévoir ?)",
+    "Format et type de carrelage souhaité",
+    "Faïence murale incluse ?",
+    "Étage et accès (portage du matériel)",
+  ],
+  amenagement_exterieur: [
+    "Surface totale du terrain",
+    "Nature du sol et exposition",
+    "Accès pour engins/livraison de matériaux",
+    "Entretien récurrent souhaité ou intervention ponctuelle",
+    "Présence d'un réseau d'arrosage existant",
+  ],
+  climatisation: [
+    "Surface et nombre de pièces à climatiser",
+    "Type d'installation (mono/multi-split)",
+    "Emplacement souhaité pour l'unité extérieure",
+    "Installation électrique existante suffisante",
+    "Contrat d'entretien déjà existant ?",
+  ],
 };
 
-// Sprint Beta Final (27/08) — 🔴G. CHECKLISTS_METIER ci-dessus est indexé
-// par TypeChantier (la NATURE du chantier détectée dans le texte : "salle
-// de bain", "toiture"...), pas par le corps de métier déclaré par
-// l'artisan. Ça marche bien tant que le type détecté correspond à un
-// métier assez proche (plombier ↔ plomberie, couvreur ↔ toiture...), mais
-// un serrurier, un carreleur ou un paysagiste tombent presque toujours
-// dans "autre" — une checklist générique alors qu'ils ont, eux aussi, des
-// points de vigilance très spécifiques à leur métier.
-//
-// CHECKLISTS_PAR_METIER comble ce trou pour les métiers élargis (voir
-// lib/metiers.ts) qui n'ont pas d'équivalent direct dans TypeChantier.
-// Utilisée en repli uniquement quand le type de chantier détecté est
-// "autre" (voir obtenirChecklist ci-dessous) — quand le type détecté est
-// déjà spécifique (ex: "toiture"), il reste prioritaire, il est en
-// général plus précis que le métier seul.
+// Sprint Beta Final (27/08), mise à jour Revue métier (06/09) —
+// CHECKLISTS_METIER ci-dessus est indexé par TypeChantier (la NATURE du
+// chantier détectée dans le texte). Jusqu'au 06/09, un serrurier, un
+// carreleur ou un paysagiste tombaient presque toujours dans "autre" faute
+// de type dédié — corrigé depuis (voir types/index.ts, 11 nouveaux types
+// ajoutés, un par métier). CHECKLISTS_PAR_METIER reste toutefois en place :
+// c'est le filet de sécurité si l'IA classe malgré tout un chantier en
+// "autre" (message ambigu, description trop courte...) alors que l'artisan
+// a bien déclaré son métier à l'inscription — voir obtenirChecklist
+// ci-dessous, qui vérifie d'abord le type de chantier détecté, puis
+// retombe sur le métier déclaré uniquement si besoin.
 export const CHECKLISTS_PAR_METIER: Record<string, string[]> = {
   "Maçon": [
     "Nature du sol / fondations existantes",

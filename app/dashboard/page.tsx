@@ -235,6 +235,11 @@ export default async function DashboardHome() {
     .sort((a, b) => b.joursDepuis - a.joursDepuis);
 
   const premierPrenom = (profil?.nom ?? "").split(" ")[0];
+  const dateDuJour = maintenant.toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
   const rienAFaire =
     notesEnRetard.length === 0 &&
     notesAujourdhui.length === 0 &&
@@ -290,19 +295,21 @@ export default async function DashboardHome() {
       // Colonne masquée sous lg : sur mobile/tablette, pas de vide à combler.
       <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
         <div className="max-w-2xl flex-1 min-w-0">
-          <h1 className="font-display text-2xl font-semibold">
-            Bonjour {premierPrenom} 👋
-          </h1>
-          <Card className="mt-8 p-8 text-center">
-            <span className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-signal/10 mb-4">
+          <EnTeteAccueil dateDuJour={dateDuJour} premierPrenom={premierPrenom} />
+          <Card className="relative mt-6 p-8 text-center overflow-hidden">
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-signal/10 blur-3xl"
+            />
+            <span className="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-signal/10 mb-4">
               <IconeCoeur taille={24} className="text-signal" />
             </span>
-            <p className="font-display text-lg font-semibold">Bienvenue sur Compyo.</p>
-            <p className="mt-2 text-sm text-ink/60 max-w-sm mx-auto">
+            <p className="relative font-display text-lg font-semibold">Bienvenue sur Compyo.</p>
+            <p className="relative mt-2 text-sm text-ink/60 max-w-sm mx-auto">
               Tout commence par un projet. Créez le premier dès qu&apos;un client vous
               contacte — trente secondes suffisent, le reste se complète plus tard.
             </p>
-            <div className="mt-6 flex items-center justify-center gap-3">
+            <div className="relative mt-6 flex items-center justify-center gap-3">
               <Link href="/dashboard/demandes/nouvelle">
                 <Button>+ Créer mon premier projet</Button>
               </Link>
@@ -320,14 +327,11 @@ export default async function DashboardHome() {
   return (
     <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
       <div className="max-w-2xl flex-1 min-w-0">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-2xl font-semibold">
-          Bonjour {premierPrenom} 👋
-        </h1>
+      <EnTeteAccueil dateDuJour={dateDuJour} premierPrenom={premierPrenom}>
         <Link href="/dashboard/demandes/nouvelle">
           <Button>+ Nouveau projet</Button>
         </Link>
-      </div>
+      </EnTeteAccueil>
 
       <ProchaineAction action={prochaineAction} />
 
@@ -617,6 +621,42 @@ function determinerProchaineAction(listes: {
     };
   }
   return null;
+}
+
+// Redesign accueil (06/09) — retour d'Axel : l'app "ne donne pas envie de
+// l'ouvrir" comparée au site vitrine. Ce bandeau, vu en premier à chaque
+// ouverture, remplace le simple <h1> texte par une carte avec un peu du
+// même relief que la landing (blob flouté en dégradé de la couleur de
+// marque) — sobre, pas de 3D ni d'animation ici : c'est un outil de
+// travail ouvert plusieurs fois par jour, pas une page d'accueil marketing.
+function EnTeteAccueil({
+  dateDuJour,
+  premierPrenom,
+  children,
+}: {
+  dateDuJour: string;
+  premierPrenom: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-3xl border border-ink/10 bg-surface px-6 py-6 sm:px-8 sm:py-7">
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-14 -top-16 w-56 h-56 rounded-full bg-signal/10 blur-3xl"
+      />
+      <div className="relative flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel capitalize">
+            {dateDuJour}
+          </p>
+          <h1 className="mt-1 font-display text-2xl sm:text-3xl font-semibold">
+            Bonjour {premierPrenom} 👋
+          </h1>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
 }
 
 function ProchaineAction({ action }: { action: ActionSuggestion | null }) {

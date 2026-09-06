@@ -17,6 +17,12 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { LABEL_STATUT, LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 
+// Revue métier (06/09) — élargi de 7 à 18 branches, une par métier
+// désormais couvert par TypeChantier (voir types/index.ts). "clim"/
+// "climatisation" avait jusqu'ici sa propre branche mais renvoyait
+// "chauffage" — un vrai bug une fois "climatisation" devenu un type à part
+// entière : corrigé en lui donnant sa propre branche, vérifiée AVANT
+// "chauffage" pour ne jamais être court-circuitée par lui.
 function detecterTypeChantier(texte: string): string {
   const t = texte.toLowerCase();
   if (t.includes("salle de bain") || t.includes("douche") || t.includes("baignoire"))
@@ -27,16 +33,76 @@ function detecterTypeChantier(texte: string): string {
   if (t.includes("électri") || t.includes("electri") || t.includes("tableau électrique"))
     return "electricite";
   if (t.includes("plomb") || t.includes("fuite") || t.includes("robinet")) return "plomberie";
+  if (t.includes("climatisation") || t.includes("climatiseur") || t.includes("clim") || t.includes("split"))
+    return "climatisation";
   if (
     t.includes("chauffage") ||
     t.includes("chaudière") ||
     t.includes("chaudiere") ||
     t.includes("radiateur") ||
     t.includes("pompe à chaleur") ||
-    t.includes("pompe a chaleur") ||
-    t.includes("clim")
+    t.includes("pompe a chaleur")
   )
     return "chauffage";
+  if (
+    t.includes("parpaing") ||
+    t.includes("béton") ||
+    t.includes("beton") ||
+    t.includes("fondation") ||
+    t.includes("mur porteur") ||
+    t.includes("maçon") ||
+    t.includes("macon")
+  )
+    return "maconnerie";
+  if (t.includes("terrassement") || t.includes("terrasser") || t.includes("décaissement") || t.includes("decaissement"))
+    return "terrassement";
+  if (t.includes("façade") || t.includes("facade") || t.includes("ravalement") || t.includes("crépi") || t.includes("crepi"))
+    return "facade";
+  if (
+    t.includes("serrure") ||
+    t.includes("serrurier") ||
+    t.includes("porte claquée") ||
+    t.includes("porte claquee") ||
+    t.includes("clé cassée") ||
+    t.includes("cle cassee") ||
+    t.includes("verrou")
+  )
+    return "serrurerie";
+  if (t.includes("vitre") || t.includes("vitrage") || t.includes("verre cassé") || t.includes("verre casse"))
+    return "vitrerie";
+  if (t.includes("charpente") || t.includes("charpentier") || t.includes("fermette") || t.includes("poutre"))
+    return "charpente";
+  if (
+    t.includes("menuiserie") ||
+    t.includes("menuisier") ||
+    t.includes("fenêtre") ||
+    t.includes("fenetre") ||
+    t.includes("porte d'entrée") ||
+    t.includes("porte d'entree")
+  )
+    return "menuiserie";
+  if (
+    t.includes("placo") ||
+    t.includes("cloison") ||
+    t.includes("plaque de plâtre") ||
+    t.includes("plaque de platre") ||
+    t.includes("plaquiste") ||
+    t.includes("faux plafond")
+  )
+    return "plaquisterie";
+  if (t.includes("carrelage") || t.includes("carreleur") || t.includes("faïence") || t.includes("faience"))
+    return "carrelage";
+  if (
+    t.includes("jardin") ||
+    t.includes("paysagiste") ||
+    t.includes("gazon") ||
+    t.includes("pelouse") ||
+    t.includes("clôture") ||
+    t.includes("cloture") ||
+    t.includes("portail") ||
+    (t.includes("terrasse") && !t.includes("terrassement"))
+  )
+    return "amenagement_exterieur";
   if (t.includes("rénovation") || t.includes("renovation")) return "renovation_complete";
   return "autre";
 }

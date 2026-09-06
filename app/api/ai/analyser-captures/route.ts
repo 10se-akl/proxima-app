@@ -30,7 +30,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec un tableau contenant
     {
       "nom_client": "nom trouvé (dans les messages ou le nom du contact affiché en haut de la conversation), ou \\"Client à identifier\\" si absent",
       "telephone_client": "numéro trouvé ou null",
-      "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | renovation_complete | autre",
+      "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | maconnerie | terrassement | facade | serrurerie | vitrerie | charpente | menuiserie | plaquisterie | carrelage | amenagement_exterieur | climatisation | renovation_complete | autre",
       "description_resumee": "résumé en une ou deux phrases de ce que veut le client, à partir des messages visibles",
       "texte_brut": "retranscription FIDÈLE et COMPLÈTE du texte des messages du client visibles sur la capture, verbatim (pas un résumé) — un message par ligne si plusieurs, dans l'ordre. Chaîne vide si rien de lisible.",
       "rdv_date": "date au format AAAA-MM-JJ UNIQUEMENT si un jour de rendez-vous est explicitement proposé ou confirmé, sinon null",
@@ -80,6 +80,23 @@ export async function POST(request: NextRequest) {
   if (images.length > 20) {
     return NextResponse.json(
       { error: "Maximum 20 captures à la fois. Importez-les en plusieurs fois." },
+      { status: 400 }
+    );
+  }
+
+  // Audit sécurité/bugs (05/09) — 🟡 : le nombre de captures était borné,
+  // pas leur poids individuel. Une capture inhabituellement lourde (scan
+  // haute résolution, image non compressée) partait telle quelle vers
+  // Claude, sans limite de coût ni de risque de timeout côté serveur. 8 Mo
+  // décodés par image est largement suffisant pour une capture d'écran de
+  // conversation (WhatsApp/SMS), tout en écartant les cas dégénérés.
+  const TAILLE_MAX_IMAGE_OCTETS = 8 * 1024 * 1024;
+  const imageTropLourde = images.some(
+    (img) => img.base64.length * 0.75 > TAILLE_MAX_IMAGE_OCTETS
+  );
+  if (imageTropLourde) {
+    return NextResponse.json(
+      { error: "Une des captures est trop lourde (max 8 Mo par image). Réessayez avec une capture d'écran classique plutôt qu'un scan haute résolution." },
       { status: 400 }
     );
   }

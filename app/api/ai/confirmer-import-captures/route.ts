@@ -9,6 +9,7 @@ import type { TypeChantier } from "@/types";
 // réponse IA imprévue, ou une requête modifiée à la main) et de casser
 // ensuite l'affichage des libellés ailleurs dans l'app. On revalide donc
 // ici, côté serveur, avant d'écrire.
+// Revue métier (06/09) — liste élargie à 20 valeurs, voir types/index.ts.
 const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
   "renovation_complete",
   "salle_de_bain",
@@ -18,6 +19,17 @@ const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
   "electricite",
   "plomberie",
   "chauffage",
+  "maconnerie",
+  "terrassement",
+  "facade",
+  "serrurerie",
+  "vitrerie",
+  "charpente",
+  "menuiserie",
+  "plaquisterie",
+  "carrelage",
+  "amenagement_exterieur",
+  "climatisation",
   "autre",
 ];
 

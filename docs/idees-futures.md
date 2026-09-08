@@ -27,6 +27,27 @@ Prochaine étape côté Axel (pas du code) : en parler avec un parent (rôle de 
 - **Prix de lancement** : ~20€/mois pendant les 3 premiers mois d'ouverture au public.
 - **Prix "normal"** : ~35-40€/mois, à partir de 3-6 mois après le lancement.
 - **Règle non négociable** : jamais augmenter le prix de quelqu'un déjà abonné à un tarif inférieur — un tarif obtenu est gardé tant que l'abonnement continue. Seuls les nouveaux arrivants paient le tarif du moment.
+
+### Palier "Entreprise" (idée de la prof d'Axel, 08/09) — pour plus tard
+
+Principe économique : une structure avec plusieurs salariés tire une valeur ABSOLUE bien plus grande de Compyo (plus de devis, plus d'heures gagnées, plus d'argent) qu'un solo — elle a donc une disposition à payer plus élevée, et un prix unique pour tout le monde laisse de la valeur sur la table pour les grosses structures tout en pesant trop lourd pour les petites. Solution classique en SaaS B2B (Obat le fait déjà : 25€ pour un auto-entrepreneur, jusqu'à 85€ pour les fonctionnalités complètes) : un palier "Entreprise" plus cher.
+
+**Pas pertinent MAINTENANT** : Compyo est aujourd'hui pensé et construit pour le solo/petite équipe (pas de vraies fonctionnalités de gestion d'équipe — attribution de tâches à des employés, écarté précédemment comme hors cible). Ne changer le prix de lancement (20€→40€) que pour la cible actuelle. Ce palier "Entreprise" a du sens le jour où de vraies fonctionnalités équipe sont construites, pas avant.
+
+**Argument de vente lié, à garder pour la communication** (idée d'Axel) : Compyo consolide ce que plusieurs outils séparés font chez la concurrence (devis, facturation, planning, signature électronique...) — un artisan qui paierait plusieurs abonnements séparés pour obtenir tout ça ailleurs (potentiellement ~100€/mois cumulés) peut tout avoir avec un seul abonnement Compyo à 40€. Un vrai argument de consolidation/coût total, pas juste "moins cher à l'unité".
+
+**Confirmé le 08/09** : pas maintenant, priorité au solo/petite équipe. Reste ici pour plus tard.
+
+## Petites équipes (08/09) — construit, et ce qui reste écarté
+
+En creusant la question, l'API d'invitation/retrait d'équipe existait déjà (`app/api/equipe/inviter`, `app/api/equipe/retirer`) mais sans aucune page pour s'en servir — corrigé (`/dashboard/equipe`). Le planning était par ailleurs déjà partagé entre tous les membres d'une organisation (vérifié dans les policies RLS), ce n'était pas un manque.
+
+Recherche concurrentielle rapide (Obat, Batikko, BTPBip, Kaliti) sur ce que proposent les autres pour les petites équipes (2-5 personnes) :
+- **Rôles/permissions par employé** (Obat, Batikko) — écarté pour l'instant : Compyo n'a que 2 rôles (propriétaire/membre), tout le monde voit tout au sein d'une organisation. Ajouter des permissions fines serait de la complexité pour un usage à 2-5 personnes qui se font déjà confiance dans la réalité (souvent famille/couple/1-2 employés).
+- **Accès gratuit pour l'expert-comptable** (Obat) — idée intéressante mais prématurée : Axel lui-même n'a pas encore de comptable (voir plus haut).
+- **Pointage horaire par employé** (BTPBip) — écarté : hors du périmètre actuel de Compyo (devis/facturation/planning/suivi de chantier), ajouterait une fonctionnalité entière pour un besoin non exprimé par les bêta-testeurs actuels.
+
+À revisiter si de vrais retours d'artisans en équipe (pas juste solo) le demandent explicitement — ne pas construire par anticipation.
 - **Affichage du prix de lancement** : éviter un "~~40€~~ 20€ (-50%)" barré — juridiquement risqué pour un produit jamais vendu à 40€ avant (pratique commerciale trompeuse potentielle). Préférer : "Prix de lancement : 20€/mois — passera à 40€/mois à partir du [date]. Verrouillez ce tarif maintenant." Mettre une vraie limite (date précise, ou nombre de places) pour que l'offre reste crédible.
 - **Accès sans paiement** : ne jamais bloquer la lecture des données existantes (projets, devis, factures, planning, notes) même si l'abonnement s'arrête — seul l'accès aux fonctionnalités IA doit être coupé (c'est la seule chose qui coûte réellement de l'argent à l'usage).
 

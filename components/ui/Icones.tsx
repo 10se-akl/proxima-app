@@ -68,6 +68,19 @@ export function IconeBilan({ className, taille = 18 }: Props) {
   );
 }
 
+// Équipe (08/09) — deux silhouettes superposées, lecture immédiate dans la
+// navigation.
+export function IconeEquipe({ className, taille = 18 }: Props) {
+  return (
+    <svg {...base(taille)} className={className}>
+      <circle cx="9" cy="8" r="3.2" />
+      <path d="M3.5 19.5c0-3 2.5-5.3 5.5-5.3s5.5 2.3 5.5 5.3" />
+      <path d="M15.5 5.3a3.2 3.2 0 0 1 0 5.6" />
+      <path d="M15 14.4c2.6.4 4.5 2.5 4.5 5.1" />
+    </svg>
+  );
+}
+
 export function IconeCalendrier({ className, taille = 18 }: Props) {
   return (
     <svg {...base(taille)} className={className}>

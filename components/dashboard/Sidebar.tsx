@@ -15,6 +15,7 @@ import {
   IconeDocument,
   IconeFacture,
   IconeBilan,
+  IconeEquipe,
   IconeCalendrier,
   IconeNote,
   IconeParametres,
@@ -55,6 +56,7 @@ const LIENS = [
   { href: "/dashboard/factures", label: "Factures", Icone: IconeFacture },
   { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
   { href: "/dashboard/bilan", label: "Bilan", Icone: IconeBilan },
+  { href: "/dashboard/equipe", label: "Équipe", Icone: IconeEquipe },
   { href: "/carte-mentale", label: "Carte mentale", Icone: IconeRetours },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
 ];

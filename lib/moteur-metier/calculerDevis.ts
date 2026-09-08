@@ -60,6 +60,9 @@ const REFERENCE_MATERIAUX: { motsCles: string[]; prixUnitaire: number }[] = [
   { motsCles: ["parpaing", "agglo"], prixUnitaire: 3 },
   { motsCles: ["béton", "beton", "dalle"], prixUnitaire: 110 },
   { motsCles: ["enduit"], prixUnitaire: 32 },
+  { motsCles: ["chape"], prixUnitaire: 28 },
+  { motsCles: ["ferraillage", "armature"], prixUnitaire: 4 },
+  { motsCles: ["linteau"], prixUnitaire: 65 },
   // Terrassement
   { motsCles: ["terrassement", "décaissement", "decaissement"], prixUnitaire: 45 },
   { motsCles: ["évacuation gravats", "evacuation gravats", "déblais", "deblais"], prixUnitaire: 350 },
@@ -69,24 +72,68 @@ const REFERENCE_MATERIAUX: { motsCles: string[]; prixUnitaire: number }[] = [
   // Serrurerie
   { motsCles: ["serrure", "cylindre"], prixUnitaire: 90 },
   { motsCles: ["porte blindée", "porte blindee"], prixUnitaire: 1800 },
+  { motsCles: ["verrou"], prixUnitaire: 45 },
+  { motsCles: ["barillet"], prixUnitaire: 35 },
+  { motsCles: ["garde-corps", "garde corps", "rambarde"], prixUnitaire: 220 },
   // Vitrerie
   { motsCles: ["vitrage", "double vitrage"], prixUnitaire: 180 },
+  { motsCles: ["miroir"], prixUnitaire: 95 },
+  { motsCles: ["survitrage"], prixUnitaire: 140 },
   // Charpente / menuiserie bois
   { motsCles: ["charpente"], prixUnitaire: 95 },
+  { motsCles: ["poutre"], prixUnitaire: 85 },
+  { motsCles: ["solivage", "solive"], prixUnitaire: 55 },
   { motsCles: ["fenêtre", "fenetre"], prixUnitaire: 480 },
+  { motsCles: ["baie vitrée", "baie vitree"], prixUnitaire: 1400 },
+  { motsCles: ["volet roulant"], prixUnitaire: 380 },
+  { motsCles: ["porte de garage"], prixUnitaire: 950 },
   { motsCles: ["porte d'entrée", "porte d'entree"], prixUnitaire: 950 },
   { motsCles: ["placard", "dressing"], prixUnitaire: 420 },
   { motsCles: ["escalier"], prixUnitaire: 2200 },
   // Plaquisterie
   { motsCles: ["cloison", "placo", "plaque de plâtre", "plaque de platre"], prixUnitaire: 28 },
   { motsCles: ["faux plafond"], prixUnitaire: 35 },
-  // Carrelage (au-delà de salle de bain/cuisine déjà couverts plus haut)
+  { motsCles: ["rail placo", "ossature métallique", "ossature metallique"], prixUnitaire: 12 },
+  { motsCles: ["laine de verre", "laine de roche", "isolant"], prixUnitaire: 18 },
+  { motsCles: ["bande à joint", "bande a joint", "enduit de jointoiement"], prixUnitaire: 6 },
+  // Carrelage / peinture (au-delà de salle de bain/cuisine déjà couverts)
   { motsCles: ["plinthe"], prixUnitaire: 8 },
+  { motsCles: ["joint de carrelage", "joint carrelage"], prixUnitaire: 9 },
+  { motsCles: ["primaire d'accrochage", "primaire accrochage", "sous-couche", "sous couche"], prixUnitaire: 15 },
+  { motsCles: ["enduit de lissage", "ratissage"], prixUnitaire: 12 },
+  // Toiture (au-delà de tuile/gouttière/zinguerie déjà couverts)
+  { motsCles: ["ardoise"], prixUnitaire: 35 },
+  { motsCles: ["velux", "fenêtre de toit", "fenetre de toit"], prixUnitaire: 850 },
+  { motsCles: ["membrane d'étanchéité", "membrane etancheite", "étanchéité toiture", "etancheite toiture"], prixUnitaire: 42 },
+  // Plomberie (au-delà de robinet/chauffe-eau/wc déjà couverts)
+  { motsCles: ["siphon"], prixUnitaire: 22 },
+  { motsCles: ["groupe de sécurité", "groupe de securite"], prixUnitaire: 45 },
+  { motsCles: ["adoucisseur"], prixUnitaire: 1200 },
+  // Électricité (au-delà de tableau/prise/disjoncteur déjà couverts)
+  { motsCles: ["va-et-vient", "va et vient"], prixUnitaire: 45 },
+  { motsCles: ["gaine électrique", "gaine electrique"], prixUnitaire: 3 },
+  { motsCles: ["câble électrique", "cable electrique"], prixUnitaire: 2 },
+  { motsCles: ["détecteur de fumée", "detecteur de fumee"], prixUnitaire: 25 },
+  { motsCles: ["borne de recharge", "wallbox"], prixUnitaire: 950 },
+  // Chauffage (au-delà de chaudière/radiateur/PAC déjà couverts)
+  { motsCles: ["plancher chauffant"], prixUnitaire: 65 },
+  { motsCles: ["ballon tampon"], prixUnitaire: 1400 },
+  { motsCles: ["vanne thermostatique", "tête thermostatique", "tete thermostatique"], prixUnitaire: 35 },
   // Paysagisme
   { motsCles: ["gazon", "pelouse", "engazonnement"], prixUnitaire: 12 },
   { motsCles: ["clôture", "cloture", "portail"], prixUnitaire: 85 },
   { motsCles: ["terrasse bois", "terrasse composite"], prixUnitaire: 95 },
   { motsCles: ["arrosage automatique"], prixUnitaire: 2200 },
+  { motsCles: ["dallage extérieur", "dallage exterieur", "pavage"], prixUnitaire: 55 },
+  { motsCles: ["haie", "plantation"], prixUnitaire: 25 },
+  { motsCles: ["élagage", "elagage"], prixUnitaire: 180 },
+  // Piscine (08/09) — 19ème métier, voir types/index.ts
+  { motsCles: ["liner"], prixUnitaire: 2800 },
+  { motsCles: ["pompe à chaleur piscine", "pompe a chaleur piscine", "pac piscine"], prixUnitaire: 2200 },
+  { motsCles: ["pompe de filtration", "filtration piscine"], prixUnitaire: 650 },
+  { motsCles: ["margelle"], prixUnitaire: 55 },
+  { motsCles: ["volet de piscine", "volet piscine", "bâche à bulles", "bache a bulles"], prixUnitaire: 3200 },
+  { motsCles: ["local technique piscine"], prixUnitaire: 1800 },
 ];
 
 const PRIX_DEFAUT_FOURNITURE = 60;
@@ -242,6 +289,27 @@ export function calculerDevis(
 
 function arrondir(n: number): number {
   return Math.round(n * 100) / 100;
+}
+
+// ============================================================
+// Mention TVA réduite (08/09) — depuis le 16/02/2025, l'ancienne attestation
+// CERFA papier est supprimée : le taux réduit (5,5%/10%) doit être justifié
+// par une mention directement sur le devis/la facture, pas un document
+// séparé. À la date d'écriture de ce code, l'administration fiscale n'a pas
+// publié de formulation officielle unique et définitive — le texte
+// ci-dessous reprend la substance la plus largement reprise par les
+// professionnels (FFB, éditeurs du secteur), volontairement SUGGÉRÉE
+// seulement : toujours modifiable par l'artisan avant validation (voir
+// ValiderDevis.tsx), jamais imposée comme un texte figé et certain.
+// ============================================================
+export function genererMentionTvaReduite(tvaPct: number): string | null {
+  if (tvaPct === 10) {
+    return "Le client atteste que les travaux se rapportent à des locaux à usage d'habitation achevés depuis plus de deux ans et qu'ils n'entraînent pas la production d'un immeuble neuf ni un agrandissement de la surface de plancher supérieur à 10 % — conditions d'application du taux réduit de TVA de 10 % (article 279-0 bis du CGI).";
+  }
+  if (tvaPct === 5.5) {
+    return "Le client atteste que les travaux se rapportent à des locaux à usage d'habitation achevés depuis plus de deux ans et constituent des travaux d'amélioration de la qualité énergétique — conditions d'application du taux réduit de TVA de 5,5 % (article 278-0 bis A du CGI).";
+  }
+  return null;
 }
 
 // Paramètres par défaut utilisés UNIQUEMENT si l'artisan n'a pas encore

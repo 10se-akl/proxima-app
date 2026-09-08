@@ -3,7 +3,7 @@ import { Reveal, SectionLabel } from "./LandingPage";
 // ============================================================
 // SEO/GEO (06/09) — le featureList JSON-LD de /fonctionnalites a été
 // étendu avec la facturation électronique, le devis express, l'alerte
-// météo, le rappel client et la couverture des 18 corps de métier ; un
+// météo, le rappel client et la couverture des 19 corps de métier ; un
 // schema sans contenu visible correspondant est traité comme trompeur par
 // les moteurs (même règle déjà suivie sur /comparatif et /confiance) — ce
 // bloc est ce contenu visible. Grille de cartes sobre, même traitement que
@@ -24,7 +24,7 @@ const nouveautes = [
       "Pour un dépannage déjà chiffré sur place (serrurier, vitrier, urgence) : un devis vide à remplir directement, sans passer par l'analyse IA.",
   },
   {
-    titre: "18 corps de métier couverts",
+    titre: "19 corps de métier couverts",
     description:
       "Champs, checklists et catégories de chantier adaptés à chaque métier — un carreleur et un paysagiste n'ont pas les mêmes besoins, Compyo ne leur montre pas les mêmes options.",
   },
@@ -47,6 +47,16 @@ const nouveautes = [
     titre: "Journal chantier vocal",
     description:
       "Dictez un compte-rendu de fin de visite : Compyo en tire les tâches restantes, un brouillon de message client à valider, et détecte quand le chantier semble terminé.",
+  },
+  {
+    titre: "Signature électronique du devis",
+    description:
+      "Un lien à envoyer au client : il consulte le devis, signe au doigt ou à la souris, accepte ou refuse — sans imprimer, sans appel téléphonique à programmer.",
+  },
+  {
+    titre: "Vos postes fréquents",
+    description:
+      "Compyo retient les postes que vous chiffrez souvent — un clic pour les reprendre avec le même prix, plutôt qu'une bibliothèque générique qui ne connaît pas vos vraies habitudes.",
   },
 ];
 

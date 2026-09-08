@@ -1,10 +1,11 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
-import { recalculerDevis } from "@/lib/moteur-metier/calculerDevis";
+import { recalculerDevis, genererMentionTvaReduite } from "@/lib/moteur-metier/calculerDevis";
+import { obtenirPostesFrequents, type PosteFrequent } from "@/lib/postesFrequents";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field, TextareaField } from "@/components/ui/Input";
@@ -49,6 +50,25 @@ export function ValiderDevis({
   const [enregistrement, setEnregistrement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
+  // Mention TVA réduite (08/09) — suggérée automatiquement si le devis a
+  // déjà un taux réduit au chargement, sinon vide. Reste éditable, et se
+  // met à jour automatiquement UNIQUEMENT si l'artisan change le taux de
+  // TVA lui-même et n'a encore rien tapé — jamais écrasée une fois modifiée
+  // à la main (voir gestionnaireTvaPct plus bas).
+  const [mentionTvaReduite, setMentionTvaReduite] = useState(
+    devis.mention_tva_reduite ?? genererMentionTvaReduite(devis.tva_pct) ?? ""
+  );
+  const [mentionModifieeManuellement, setMentionModifieeManuellement] = useState(
+    Boolean(devis.mention_tva_reduite)
+  );
+
+  function gestionnaireTvaPct(valeur: number) {
+    setTvaPct(valeur);
+    if (!mentionModifieeManuellement) {
+      setMentionTvaReduite(genererMentionTvaReduite(valeur) ?? "");
+    }
+  }
+
   // Anti-oubli (06/09) — suggestions détectées à la génération, déjà
   // chiffrées par le même moteur déterministe que le reste du devis (voir
   // app/api/ai/generer-devis/route.ts). État local uniquement : "Ignorer"
@@ -60,6 +80,42 @@ export function ValiderDevis({
   const [suggestionsRestantes, setSuggestionsRestantes] = useState<LigneDevisCalculee[]>(
     devis.suggestions_oublis ?? []
   );
+
+  // Postes fréquents (08/09) — voir lib/postesFrequents.ts : les propres
+  // postes déjà utilisés par cet artisan dans ses devis récents, pas une
+  // bibliothèque de prix générique. Chargé une fois au montage, best-effort
+  // (une liste vide en cas d'échec ne doit jamais bloquer la validation du
+  // devis, qui reste l'action principale de cet écran).
+  const [postesFrequents, setPostesFrequents] = useState<PosteFrequent[]>([]);
+
+  useEffect(() => {
+    let annule = false;
+    (async () => {
+      const organisationId = await getOrganisationId(supabase, artisanId);
+      if (!organisationId || annule) return;
+      const postes = await obtenirPostesFrequents(supabase, organisationId, demandeId);
+      if (!annule) setPostesFrequents(postes);
+    })();
+    return () => {
+      annule = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  function ajouterPosteFrequent(poste: PosteFrequent) {
+    setLignes((prev) => [
+      ...prev,
+      {
+        description: poste.description,
+        categorie: poste.categorie,
+        quantite: 1,
+        unite: poste.unite,
+        prix_unitaire: poste.prix_unitaire,
+        total: poste.prix_unitaire,
+        detail_calcul: `Prix repris de votre dernière utilisation — à ajuster si besoin`,
+      },
+    ]);
+  }
 
   function ajouterSuggestion(index: number) {
     setSuggestionsRestantes((prev) => {
@@ -152,6 +208,7 @@ export function ValiderDevis({
         montant_tva: totaux.montant_tva,
         total_estime: totaux.total_ttc,
         commentaires: commentaires || null,
+        mention_tva_reduite: totaux.tva_pct !== 20 ? mentionTvaReduite.trim() || null : null,
         statut: "a_valider",
       })
       .eq("id", devis.id);
@@ -245,6 +302,27 @@ export function ValiderDevis({
         ))}
       </div>
 
+      {postesFrequents.length > 0 && (
+        <div className="mt-4">
+          <p className="text-[11px] font-medium text-ink/40 uppercase tracking-wider mb-2">
+            Vos postes fréquents — un clic pour ajouter
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {postesFrequents.map((poste, i) => (
+              <button
+                key={`${poste.description}-${i}`}
+                type="button"
+                onClick={() => ajouterPosteFrequent(poste)}
+                title={`Déjà utilisé ${poste.nb_utilisations} fois — ${formatEuros(poste.prix_unitaire)}`}
+                className="rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-signal/40 hover:text-signal"
+              >
+                + {poste.description}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={ajouterLigne}
@@ -276,9 +354,27 @@ export function ValiderDevis({
           step="0.01"
           min={0}
           value={tvaPct}
-          onChange={(e) => setTvaPct(valeurPositive(e.target.value))}
+          onChange={(e) => gestionnaireTvaPct(valeurPositive(e.target.value))}
         />
       </div>
+
+      {tvaPct !== 20 && (
+        <div className="mt-5">
+          <TextareaField
+            label="Mention TVA réduite (visible sur le devis puis la facture)"
+            rows={3}
+            value={mentionTvaReduite}
+            onChange={(e) => {
+              setMentionTvaReduite(e.target.value);
+              setMentionModifieeManuellement(true);
+            }}
+          />
+          <p className="mt-1.5 text-[11px] text-ink/40 leading-relaxed">
+            Texte suggéré à titre indicatif — la formulation officielle exacte n&apos;est pas
+            garantie, à vérifier avec votre comptable avant un premier envoi.
+          </p>
+        </div>
+      )}
 
       <div className="mt-5">
         <TextareaField

@@ -105,7 +105,10 @@ export function calculerTotauxFacture(lignes: LigneFacture[], tvaPct: number) {
 // commentaire sur factures.mentions_legales dans supabase/schema.sql :
 // une facture émise ne doit jamais changer de contenu si l'artisan modifie
 // ses paramètres après coup.
-export function figerMentionsLegales(parametres: ParametresEntreprise): MentionsLegalesFacture {
+export function figerMentionsLegales(
+  parametres: ParametresEntreprise,
+  mentionTvaReduite: string | null = null
+): MentionsLegalesFacture {
   return {
     nom_entreprise: parametres.nom_entreprise,
     adresse: parametres.adresse,
@@ -119,6 +122,11 @@ export function figerMentionsLegales(parametres: ParametresEntreprise): Mentions
     assurance_decennale_police: parametres.assurance_decennale_police,
     iban: parametres.iban,
     bic: parametres.bic,
+    // Mention TVA réduite (08/09) — reprise telle quelle du devis d'origine,
+    // jamais régénérée : si l'artisan a modifié le texte suggéré sur le
+    // devis, c'est CE texte-là (déjà montré/accepté par le client) qui doit
+    // figurer sur la facture, pas une nouvelle version recalculée.
+    mention_tva_reduite: mentionTvaReduite,
   };
 }
 

@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   // navigateur et les résultats de recherche.
   title: "Fonctionnalités",
   description:
-    "Devis et facturation électronique, import automatique des messages clients, planning avec alerte météo, notes vocales transcrites, adapté à 18 corps de métier — le détail de ce que fait Compyo pour les artisans du bâtiment.",
+    "Devis et facturation électronique, import automatique des messages clients, planning avec alerte météo, notes vocales transcrites, adapté à 19 corps de métier — le détail de ce que fait Compyo pour les artisans du bâtiment.",
 };
 
 // SEO/GEO (05/09) — cette page détaille les 4 fonctionnalités du produit,
@@ -40,8 +40,10 @@ const DONNEES_STRUCTUREES_FONCTIONNALITES = {
     "Planning unifié des rendez-vous et chantiers, avec détection des conflits de créneaux",
     "Alerte météo sur le planning pour les chantiers extérieurs sensibles",
     "Rappel client récurrent en un clic pour l'entretien saisonnier ou annuel",
-    "Champs et checklists adaptés à 18 corps de métier du bâtiment",
+    "Champs et checklists adaptés à 19 corps de métier du bâtiment",
     "Notes vocales dictées sur le chantier, transcrites et rattachées automatiquement au bon projet",
+    "Signature électronique du devis par le client, via un lien à envoyer",
+    "Postes fréquents : réutilisation en un clic des postes déjà chiffrés par l'artisan",
   ],
 };
 

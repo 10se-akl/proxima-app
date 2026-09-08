@@ -30,7 +30,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec un tableau contenant
     {
       "nom_client": "nom trouvé (dans les messages ou le nom du contact affiché en haut de la conversation), ou \\"Client à identifier\\" si absent",
       "telephone_client": "numéro trouvé ou null",
-      "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | maconnerie | terrassement | facade | serrurerie | vitrerie | charpente | menuiserie | plaquisterie | carrelage | amenagement_exterieur | climatisation | renovation_complete | autre",
+      "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | maconnerie | terrassement | facade | serrurerie | vitrerie | charpente | menuiserie | plaquisterie | carrelage | amenagement_exterieur | climatisation | piscine | renovation_complete | autre",
       "description_resumee": "résumé en une ou deux phrases de ce que veut le client, à partir des messages visibles",
       "texte_brut": "retranscription FIDÈLE et COMPLÈTE du texte des messages du client visibles sur la capture, verbatim (pas un résumé) — un message par ligne si plusieurs, dans l'ordre. Chaîne vide si rien de lisible.",
       "rdv_date": "date au format AAAA-MM-JJ UNIQUEMENT si un jour de rendez-vous est explicitement proposé ou confirmé, sinon null",

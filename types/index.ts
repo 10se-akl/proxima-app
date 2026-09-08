@@ -46,6 +46,12 @@ export type TypeChantier =
   | "carrelage"
   | "amenagement_exterieur"
   | "climatisation"
+  // Revue métier (08/09) — 19ème métier ajouté après étude de marché : le
+  // pisciniste est un vrai métier BTP à part entière (construction ET
+  // entretien récurrent, hivernage/remise en route saisonnière — exactement
+  // le même schéma que le paysagiste, déjà couvert par le rappel client
+  // récurrent), absent jusqu'ici de la liste.
+  | "piscine"
   | "autre";
 
 // "Projet" est désormais le cœur du produit : une demande client enrichie
@@ -343,6 +349,21 @@ export type Devis = {
   // chiffrés par le moteur déterministe. Suggestions à accepter/ignorer sur
   // l'écran de validation (ValiderDevis.tsx) — jamais ajoutées seules.
   suggestions_oublis: LigneDevisCalculee[] | null;
+  // Mention TVA réduite (08/09) — suggérée automatiquement quand le taux
+  // choisi est 5,5% ou 10% (voir lib/moteur-metier/calculerDevis.ts,
+  // genererMentionTvaReduite), mais toujours modifiable par l'artisan avant
+  // validation : la formulation légale exacte n'est pas figée par
+  // l'administration fiscale au moment où ceci est écrit, mieux vaut un
+  // texte éditable qu'une fausse certitude. Null au taux normal (20%).
+  mention_tva_reduite: string | null;
+  // Signature électronique en ligne (08/09) — voir supabase/schema.sql,
+  // Module 31. Renseignés uniquement une fois le client passé par le lien
+  // public et signé — null tant que le devis n'a reçu aucune réponse.
+  signature_nom: string | null;
+  signature_data: string | null;
+  signature_ip: string | null;
+  signature_user_agent: string | null;
+  signe_le: string | null;
 };
 
 // ============================================================
@@ -375,6 +396,10 @@ export type MentionsLegalesFacture = {
   assurance_decennale_police: string | null;
   iban: string | null;
   bic: string | null;
+  // Mention TVA réduite (08/09) — reprise telle quelle du devis d'origine
+  // au moment de l'émission (voir figerMentionsLegales), figée comme le
+  // reste des mentions légales une fois la facture émise.
+  mention_tva_reduite: string | null;
 };
 
 export type Facture = {

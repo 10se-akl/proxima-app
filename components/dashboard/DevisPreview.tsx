@@ -5,6 +5,26 @@ function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 }
 
+// Sous-totaux par catégorie (08/09) — repéré en étude de marché : une
+// vraie faiblesse citée sur un concurrent (Tolteck) est l'absence de
+// distinction main d'œuvre / fournitures sur le devis. N'affiche que les
+// catégories réellement présentes, et seulement s'il y en a plus d'une —
+// un devis 100% main d'œuvre n'a rien à gagner à répéter un total déjà
+// visible juste en dessous.
+const LABEL_CATEGORIE: Record<string, string> = {
+  main_oeuvre: "Main d'œuvre",
+  fourniture: "Fournitures",
+  forfait: "Forfait",
+};
+
+function sousTotauxParCategorie(lignes: { categorie: string; total: number }[]) {
+  const parCategorie = new Map<string, number>();
+  for (const l of lignes) {
+    parCategorie.set(l.categorie, (parCategorie.get(l.categorie) ?? 0) + l.total);
+  }
+  return Array.from(parCategorie.entries());
+}
+
 export function DevisPreview({
   devis,
   nomClient,
@@ -71,6 +91,17 @@ export function DevisPreview({
           ))}
         </div>
 
+        {sousTotauxParCategorie(devis.lignes).length > 1 && (
+          <div className="px-5 py-3 border-t border-ink/10 text-xs text-ink/50 space-y-1">
+            {sousTotauxParCategorie(devis.lignes).map(([categorie, total]) => (
+              <div key={categorie} className="flex items-center justify-between">
+                <span>{LABEL_CATEGORIE[categorie] ?? categorie}</span>
+                <span className="font-mono">{formatEuros(total)}</span>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="px-5 py-4 border-t border-ink/10 bg-paper text-sm space-y-1.5">
           <div className="flex items-center justify-between text-ink/60">
             <span>Sous-total HT</span>
@@ -100,6 +131,12 @@ export function DevisPreview({
           <div className="px-5 py-3 border-t border-ink/10 text-sm text-ink/70">
             {devis.commentaires}
           </div>
+        )}
+
+        {devis.mention_tva_reduite && (
+          <p className="px-5 py-3 border-t border-ink/10 text-[11px] text-ink/50 leading-relaxed">
+            {devis.mention_tva_reduite}
+          </p>
         )}
 
         {entreprise?.conditions_generales && (

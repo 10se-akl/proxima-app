@@ -9,7 +9,10 @@ export default function robots(): MetadataRoute.Robots {
     rules: {
       userAgent: "*",
       allow: "/",
-      disallow: ["/dashboard", "/admin"],
+      // "/devis" : liens publics de consultation/signature d'un devis
+      // précis (voir Module 31) — jamais destinés à être indexés, chaque
+      // page contient le nom et les montants d'un client.
+      disallow: ["/dashboard", "/admin", "/devis"],
     },
     sitemap: `${SITE_URL}/sitemap.xml`,
   };

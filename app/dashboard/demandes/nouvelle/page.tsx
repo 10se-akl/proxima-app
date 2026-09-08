@@ -103,6 +103,8 @@ function detecterTypeChantier(texte: string): string {
     (t.includes("terrasse") && !t.includes("terrassement"))
   )
     return "amenagement_exterieur";
+  if (t.includes("piscine") || t.includes("bassin") || t.includes("pisciniste") || t.includes("hivernage"))
+    return "piscine";
   if (t.includes("rénovation") || t.includes("renovation")) return "renovation_complete";
   return "autre";
 }

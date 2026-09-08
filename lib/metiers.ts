@@ -22,6 +22,11 @@ export const METIERS = [
   "Peintre",
   "Carreleur",
   "Paysagiste",
+  // Revue métier (08/09) — ajouté après étude de marché : marché réel en
+  // France, et un profil d'entretien récurrent (hivernage/remise en route
+  // saisonnière) qui correspond exactement au rappel client déjà construit
+  // pour le paysagiste — pas juste ajouté pour compléter la liste.
+  "Pisciniste",
   "Entreprise de rénovation",
   "Autre",
 ];

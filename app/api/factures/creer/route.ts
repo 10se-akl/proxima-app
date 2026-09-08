@@ -208,7 +208,10 @@ export async function POST(request: NextRequest) {
       tva_pct: lignesEtTva.tva_pct,
       montant_tva: totaux.montant_tva,
       total_ttc: totaux.total_ttc,
-      mentions_legales: figerMentionsLegales({ ...PARAMETRES_PAR_DEFAUT, ...parametres }),
+      mentions_legales: figerMentionsLegales(
+        { ...PARAMETRES_PAR_DEFAUT, ...parametres },
+        devis.mention_tva_reduite ?? null
+      ),
       date_echeance: dateEcheance || null,
     })
     .select()

@@ -42,6 +42,7 @@ export const LABEL_TYPE_CHANTIER: Record<string, string> = {
   carrelage: "Carrelage",
   amenagement_exterieur: "Aménagement extérieur",
   climatisation: "Climatisation",
+  piscine: "Piscine",
   renovation_complete: "Rénovation complète",
   autre: "",
 };

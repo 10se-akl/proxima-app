@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
+import { SITE_URL } from "@/lib/site";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -57,6 +58,7 @@ export default function DetailDemandePage({
   const [chargementReponse, setChargementReponse] = useState(false);
   const [brouillonReponse, setBrouillonReponse] = useState("");
   const [copie, setCopie] = useState(false);
+  const [lienCopie, setLienCopie] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [notesVocales, setNotesVocales] = useState<NoteVocale[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
@@ -506,6 +508,20 @@ export default function DetailDemandePage({
     await navigator.clipboard.writeText(brouillonReponse);
     setCopie(true);
     setTimeout(() => setCopie(false), 2000);
+  }
+
+  // Signature électronique en ligne (08/09) — voir Module 31. Le lien lui-
+  // même EST la sécurité (UUID du devis, non-devinable) : pas besoin d'un
+  // jeton séparé, voir supabase/schema.sql pour le raisonnement complet.
+  async function copierLienSignature() {
+    if (!devis) return;
+    try {
+      await navigator.clipboard.writeText(`${SITE_URL}/devis/${devis.id}`);
+      setLienCopie(true);
+      setTimeout(() => setLienCopie(false), 2000);
+    } catch {
+      setErreur("Impossible de copier le lien — copiez-le manuellement depuis la barre d'adresse après l'avoir ouvert.");
+    }
   }
 
   async function changerPriorite(priorite: Projet["priorite"]) {
@@ -1414,6 +1430,9 @@ export default function DetailDemandePage({
                 )}
                 {devis.statut === "envoye" && demande.statut !== "accepte" && (
                   <>
+                    <Button variant="ghost" onClick={copierLienSignature}>
+                      {lienCopie ? "✓ Lien copié" : "🔗 Copier le lien de signature"}
+                    </Button>
                     <Button variant="ghost" onClick={marquerAccepte} disabled={actionEnCours}>
                       Marquer comme accepté par le client
                     </Button>

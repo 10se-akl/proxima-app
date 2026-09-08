@@ -208,6 +208,10 @@ export const TYPES_CHANTIER_RAPPEL_RECURRENT: TypeChantier[] = [
   "amenagement_exterieur",
   "chauffage",
   "climatisation",
+  // Revue métier (08/09) — hivernage/remise en route saisonnière d'une
+  // piscine suit exactement le même rythme récurrent qu'un jardin ou une
+  // chaudière, voir types/index.ts pour le raisonnement complet.
+  "piscine",
 ];
 
 export const PRESETS_RAPPEL_RECURRENT = [

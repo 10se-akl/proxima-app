@@ -24,6 +24,10 @@ export const TYPES_CHANTIER_METEO_SENSIBLES: TypeChantier[] = [
   "toiture",
   "charpente",
   "amenagement_exterieur",
+  // Revue métier (08/09) — construction d'un bassin (terrassement +
+  // maçonnerie/coque) est un chantier extérieur au même titre que les
+  // autres ci-dessus.
+  "piscine",
 ];
 
 export type RisqueMeteoJour = {

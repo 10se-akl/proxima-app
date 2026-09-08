@@ -31,6 +31,7 @@ const TYPES_CHANTIER_VALIDES: TypeChantier[] = [
   "carrelage",
   "amenagement_exterieur",
   "climatisation",
+  "piscine",
   "autre",
 ];
 
@@ -59,7 +60,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
   "telephone_client": "numéro trouvé ou null",
   "email_client": "email trouvé ou null",
   "adresse_client": "adresse trouvée ou null",
-  "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | maconnerie | terrassement | facade | serrurerie | vitrerie | charpente | menuiserie | plaquisterie | carrelage | amenagement_exterieur | climatisation | renovation_complete | autre",
+  "type_chantier": "salle_de_bain | cuisine | peinture | toiture | electricite | plomberie | chauffage | maconnerie | terrassement | facade | serrurerie | vitrerie | charpente | menuiserie | plaquisterie | carrelage | amenagement_exterieur | climatisation | piscine | renovation_complete | autre",
   "description_resumee": "résumé en une ou deux phrases de ce que veut le client, à partir du message",
   "rdv_date": "date au format AAAA-MM-JJ UNIQUEMENT si le client propose ou confirme explicitement un jour de rendez-vous, sinon null",
   "rdv_heure": "heure au format HH:MM UNIQUEMENT si explicitement mentionnée, sinon null"

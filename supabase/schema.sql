@@ -1503,3 +1503,162 @@ create trigger verrouiller_facture_emise_trigger
 -- calcul à afficher sur l'écran de validation, pas un nouvel objet métier.
 -- ============================================================
 alter table devis add column if not exists suggestions_oublis jsonb;
+
+-- ============================================================
+-- Module 30 (08/09) — Mention TVA réduite. Depuis le 16/02/2025, l'ancienne
+-- attestation CERFA papier (13947/13948) est supprimée : le taux réduit de
+-- TVA (5,5%/10%) doit désormais être justifié par une mention directement
+-- intégrée au devis puis à la facture, plutôt qu'un document séparé signé.
+-- Colonne texte simple, éditable par l'artisan (voir types/index.ts pour le
+-- raisonnement complet) — la valeur suggérée par défaut n'est pas gravée
+-- dans le code serveur.
+-- ============================================================
+alter table devis add column if not exists mention_tva_reduite text;
+
+-- ============================================================
+-- Module 31 (08/09) — Signature électronique en ligne du devis. Lien public
+-- (voir app/devis/[id]/page.tsx) accessible sans compte, sécurisé par le
+-- caractère non-devinable de l'UUID du devis — jamais une policy RLS
+-- publique sur cette table (ça permettrait de lister tous les devis via
+-- l'API REST directe, pas seulement celui pointé par le lien). Toute
+-- lecture/écriture publique passe exclusivement par des routes serveur
+-- utilisant le client admin (voir app/api/devis-public/), qui ne renvoient
+-- jamais la ligne brute — uniquement les champs nécessaires à l'affichage
+-- client. Signature "simple" au sens eIDAS (pas de prestataire certifié
+-- payant) : la valeur juridique vient de la combinaison nom saisi + tracé +
+-- horodatage + IP + user-agent, jamais d'un seul de ces éléments isolé.
+-- ============================================================
+alter table devis add column if not exists signature_nom text;
+alter table devis add column if not exists signature_data text;
+alter table devis add column if not exists signature_ip text;
+alter table devis add column if not exists signature_user_agent text;
+alter table devis add column if not exists signe_le timestamptz;
+
+-- Lecture publique d'un devis via son lien de partage. "security definer" :
+-- tourne avec les droits du propriétaire de la fonction, pas ceux de
+-- l'appelant (anonyme, sans session) — c'est ce qui permet un accès public
+-- CONTRÔLÉ (uniquement les colonnes listées ici, jamais artisan_id/
+-- organisation_id/suggestions_oublis, et seulement pour un devis déjà
+-- envoyé ou refusé, jamais un brouillon) sans jamais ouvrir de policy RLS
+-- publique sur la table "devis" — une policy "using (true)" permettrait de
+-- lister TOUS les devis via l'API REST directe, pas seulement celui du
+-- lien. La sécurité repose sur le caractère non-devinable de l'UUID du
+-- devis (aucune énumération possible : il faut connaître p_devis_id).
+create or replace function obtenir_devis_public(p_devis_id uuid)
+returns table (
+  numero text,
+  lignes jsonb,
+  sous_total_ht numeric,
+  deplacement numeric,
+  marge_pct numeric,
+  tva_pct numeric,
+  montant_tva numeric,
+  total_estime numeric,
+  commentaires text,
+  mention_tva_reduite text,
+  created_at timestamptz,
+  devis_statut text,
+  signe_le timestamptz,
+  demande_statut text,
+  accepte_le timestamptz,
+  nom_client text,
+  nom_entreprise text,
+  logo_url text,
+  adresse text,
+  telephone text,
+  email text
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    d.numero, d.lignes, d.sous_total_ht, d.deplacement, d.marge_pct,
+    d.tva_pct, d.montant_tva, d.total_estime, d.commentaires, d.mention_tva_reduite,
+    d.created_at, d.statut, d.signe_le,
+    dem.statut, dem.accepte_le,
+    dem.nom_client,
+    pe.nom_entreprise, pe.logo_url, pe.adresse, pe.telephone, pe.email
+  from devis d
+  join demandes dem on dem.id = d.demande_id
+  left join parametres_entreprise pe on pe.organisation_id = d.organisation_id
+  where d.id = p_devis_id
+    and d.statut in ('envoye', 'refuse')
+  limit 1;
+end;
+$$;
+
+-- Écriture publique (accepter/refuser + signature) — même logique de
+-- sécurité que ci-dessus : toute la validation d'état (devis déjà envoyé,
+-- pas déjà répondu, nom du signataire requis pour accepter) vit DANS la
+-- fonction, jamais confiée au code appelant. Trace le nom, le tracé signé
+-- (peut être vide si le client tape juste son nom), l'IP et le user-agent —
+-- c'est la combinaison de ces éléments, pas un seul isolé, qui donne sa
+-- valeur probante à une signature électronique "simple" au sens eIDAS.
+create or replace function repondre_devis_public(
+  p_devis_id uuid,
+  p_reponse text,
+  p_nom_signataire text,
+  p_signature_data text,
+  p_ip text,
+  p_user_agent text
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_devis devis%rowtype;
+  v_demande demandes%rowtype;
+begin
+  if p_reponse not in ('accepte', 'refuse') then
+    raise exception 'Réponse invalide';
+  end if;
+
+  select * into v_devis from devis where id = p_devis_id;
+  if not found then
+    raise exception 'Devis introuvable';
+  end if;
+
+  if v_devis.statut != 'envoye' then
+    raise exception 'Ce devis ne peut plus recevoir de réponse';
+  end if;
+
+  select * into v_demande from demandes where id = v_devis.demande_id;
+  if v_demande.statut in ('accepte', 'en_cours', 'termine') then
+    raise exception 'Ce projet a déjà avancé, la réponse ne peut plus être enregistrée ici';
+  end if;
+
+  if p_reponse = 'accepte' then
+    if p_nom_signataire is null or trim(p_nom_signataire) = '' then
+      raise exception 'Le nom du signataire est requis';
+    end if;
+
+    update devis set
+      signature_nom = trim(p_nom_signataire),
+      signature_data = p_signature_data,
+      signature_ip = p_ip,
+      signature_user_agent = p_user_agent,
+      signe_le = now()
+    where id = p_devis_id;
+
+    update demandes set
+      statut = 'accepte',
+      accepte_le = now()
+    where id = v_devis.demande_id;
+
+    insert into evenements_projet (demande_id, artisan_id, organisation_id, type, titre, detail)
+    values (v_devis.demande_id, v_devis.artisan_id, v_devis.organisation_id, 'devis_accepte', 'Devis accepté et signé en ligne par le client', trim(p_nom_signataire));
+  else
+    update devis set statut = 'refuse' where id = p_devis_id;
+
+    insert into evenements_projet (demande_id, artisan_id, organisation_id, type, titre)
+    values (v_devis.demande_id, v_devis.artisan_id, v_devis.organisation_id, 'devis_refuse', 'Devis refusé en ligne par le client');
+  end if;
+
+  return true;
+end;
+$$;

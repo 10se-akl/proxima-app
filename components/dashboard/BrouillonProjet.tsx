@@ -52,6 +52,7 @@ const TYPES_CHANTIER: TypeChantier[] = [
   "carrelage",
   "amenagement_exterieur",
   "climatisation",
+  "piscine",
   "autre",
 ];
 

@@ -144,6 +144,12 @@ export function FacturePreview({
           </div>
         )}
 
+        {m.mention_tva_reduite && (
+          <p className="px-5 py-3 border-t border-ink/10 text-[11px] text-ink/50 leading-relaxed">
+            {m.mention_tva_reduite}
+          </p>
+        )}
+
         {!estAvoir && (
           <p className="px-5 py-3 border-t border-ink/10 text-[10.5px] text-ink/40 leading-relaxed">
             En cas de retard de paiement, une pénalité au taux d&apos;intérêt légal en vigueur majoré de 10 points est

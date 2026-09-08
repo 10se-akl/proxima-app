@@ -155,6 +155,14 @@ export const CHECKLISTS_METIER: Record<TypeChantier, string[]> = {
     "Installation électrique existante suffisante",
     "Contrat d'entretien déjà existant ?",
   ],
+  // Revue métier (08/09) — 19ème métier, voir types/index.ts.
+  piscine: [
+    "Type de bassin (enterré, hors-sol, coque, béton)",
+    "Dimensions et volume approximatifs",
+    "Type de filtration et de traitement de l'eau souhaité",
+    "Accès chantier pour livraison de matériaux/engins",
+    "Entretien récurrent souhaité (hivernage, remise en route) ou intervention ponctuelle",
+  ],
 };
 
 // Sprint Beta Final (27/08), mise à jour Revue métier (06/09) —
@@ -245,6 +253,13 @@ export const CHECKLISTS_PAR_METIER: Record<string, string[]> = {
     "Emplacement souhaité pour l'unité extérieure",
     "Installation électrique existante suffisante",
     "Contrat d'entretien déjà existant ?",
+  ],
+  "Pisciniste": [
+    "Type de bassin (enterré, hors-sol, coque, béton)",
+    "Dimensions et volume approximatifs",
+    "Type de filtration et de traitement de l'eau souhaité",
+    "Accès chantier pour livraison de matériaux/engins",
+    "Entretien récurrent souhaité (hivernage, remise en route) ou intervention ponctuelle",
   ],
 };
 

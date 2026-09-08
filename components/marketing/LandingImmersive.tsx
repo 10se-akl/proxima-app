@@ -414,6 +414,158 @@ const METIERS: Metier[] = [
       </svg>
     ),
   },
+  // Revue métier (08/09) — passage de 10 à 17 métiers illustrés (sur 19,
+  // "Entreprise de rénovation" et "Autre" exclus : ce ne sont pas des
+  // corps de métier avec une identité visuelle propre, contrairement aux
+  // 17 ci-dessous) — pour que chaque artisan couvert par Compyo se
+  // reconnaisse sur l'accueil, pas seulement un échantillon.
+  {
+    id: "terrassier",
+    nom: "Terrassier",
+    accent: "#B5652E",
+    phrase: "Le terrain préparé, chiffré avant même de sortir l'engin.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        {[0, 1, 2].map((row) => (
+          <rect
+            key={row}
+            x={60 - row * 6}
+            y={128 - row * 22}
+            width={80 + row * 12}
+            height="18"
+            rx="3"
+            fill={accent}
+            fillOpacity={0.85 - row * 0.22}
+          />
+        ))}
+      </svg>
+    ),
+  },
+  {
+    id: "facadier",
+    nom: "Façadier",
+    accent: "#C9A876",
+    phrase: "Le ravalement suivi de bout en bout, façade par façade.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <rect x="56" y="50" width="88" height="100" rx="4" fill="none" stroke={accent} strokeWidth="6" opacity="0.5" />
+        <path
+          d="M56 78h88M56 104h88M56 130h88"
+          stroke={accent}
+          strokeWidth="9"
+          strokeLinecap="round"
+          opacity="0.85"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "climaticien",
+    nom: "Climaticien",
+    accent: "#5BA8C4",
+    phrase: "Le contrat d'entretien qui se rappelle à vous tout seul.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <rect x="54" y="70" width="92" height="34" rx="8" fill={accent} fillOpacity="0.85" />
+        <path
+          d="M66 118q8 14 0 28M100 118q8 14 0 28M134 118q8 14 0 28"
+          stroke={accent}
+          strokeWidth="7"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.5"
+        />
+      </svg>
+    ),
+  },
+  {
+    id: "vitrier",
+    nom: "Vitrier",
+    accent: "#8FC1D9",
+    phrase: "Un bris de glace mesuré, chiffré et envoyé depuis le trottoir.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <rect x="58" y="58" width="84" height="84" rx="4" fill="none" stroke={accent} strokeWidth="7" opacity="0.85" />
+        <path d="M100 58v84M58 100h84" stroke={accent} strokeWidth="4" opacity="0.4" />
+        <path d="M78 78l18 18-8 26" stroke={accent} strokeWidth="3" fill="none" opacity="0.6" />
+      </svg>
+    ),
+  },
+  {
+    id: "charpentier",
+    nom: "Charpentier",
+    accent: "#7A4E2E",
+    phrase: "La charpente chiffrée pièce par pièce, sans se perdre en route.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <path
+          d="M100 52 46 140h20l34-58 34 58h20L100 52Z"
+          fill={accent}
+          fillOpacity="0.85"
+        />
+        <path d="M70 122h60" stroke={accent} strokeWidth="7" strokeLinecap="round" opacity="0.5" />
+      </svg>
+    ),
+  },
+  {
+    id: "plaquiste",
+    nom: "Plaquiste",
+    accent: "#A8A296",
+    phrase: "Les surfaces et cloisons calculées, sans repasser le mètre.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        {[0, 1, 2].map((i) => (
+          <rect
+            key={i}
+            x={58 + i * 10}
+            y={56 + i * 10}
+            width="70"
+            height="92"
+            rx="4"
+            fill={i === 2 ? accent : "none"}
+            fillOpacity="0.85"
+            stroke={accent}
+            strokeWidth={i === 2 ? 0 : 5}
+            opacity={i === 2 ? 1 : 0.4}
+          />
+        ))}
+      </svg>
+    ),
+  },
+  {
+    id: "pisciniste",
+    nom: "Pisciniste",
+    accent: "#2E9FB8",
+    phrase: "L'hivernage et la remise en route programmés d'une saison à l'autre.",
+    illustration: (accent) => (
+      <svg viewBox="0 0 200 200" className="h-full w-full">
+        <circle cx="100" cy="100" r="72" fill="none" stroke={accent} strokeOpacity="0.18" strokeWidth="1.5" />
+        <rect x="50" y="70" width="100" height="62" rx="14" fill={accent} fillOpacity="0.18" stroke={accent} strokeWidth="6" opacity="0.85" />
+        <path
+          d="M62 100q9-8 18 0t18 0 18 0 18 0 18 0"
+          stroke={accent}
+          strokeWidth="6"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.85"
+        />
+        <path
+          d="M62 116q9-8 18 0t18 0 18 0 18 0 18 0"
+          stroke={accent}
+          strokeWidth="6"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.5"
+        />
+      </svg>
+    ),
+  },
 ];
 
 // ----------------------------------------------------------------------------

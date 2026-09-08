@@ -1662,3 +1662,15 @@ begin
   return true;
 end;
 $$;
+
+-- ============================================================
+-- Module 32 (08/09) — Bilan mensuel. "date d'émission" (date_emission) ne
+-- suffit pas pour savoir combien a été RÉELLEMENT encaissé sur une période
+-- donnée : un artisan peut émettre une facture fin de mois et être payé le
+-- mois suivant. Sans cette colonne, un bilan "combien encaissé ce mois-ci"
+-- serait construit sur la mauvaise date et afficherait un chiffre faux
+-- (repéré en revue avant tout développement du bilan, voir lib/bilan-
+-- mensuel.ts).
+-- ============================================================
+alter table factures add column if not exists payee_le timestamptz;
+$$;

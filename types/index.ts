@@ -421,5 +421,10 @@ export type Facture = {
   mentions_legales: MentionsLegalesFacture;
   date_emission: string;
   date_echeance: string | null;
+  // Bilan mensuel (08/09) — distincte de date_emission : une facture peut
+  // être émise fin de mois et payée le mois suivant. "Combien encaissé ce
+  // mois-ci" doit se baser sur CETTE date, jamais date_emission (voir
+  // lib/bilan-mensuel.ts). Null tant que statut != "payee".
+  payee_le: string | null;
   created_at: string;
 };

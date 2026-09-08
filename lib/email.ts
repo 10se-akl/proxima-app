@@ -1,4 +1,5 @@
 import type { Candidature } from "@/types";
+import type { BilanMensuel } from "@/lib/bilan-mensuel";
 
 // Notification optionnelle : si RESEND_API_KEY n'est pas configurée,
 // la candidature est quand même enregistrée, seul l'email est sauté.
@@ -43,6 +44,71 @@ Pour accepter ou refuser : ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/admin/candi
   // HTTP en erreur mais SANS lever d'exception. Sans cette vérification,
   // ce genre d'échec est invisible dans les logs, ce qui rend le problème
   // impossible à diagnostiquer depuis l'extérieur.
+  if (!res.ok) {
+    const corpsErreur = await res.text().catch(() => "(corps illisible)");
+    throw new Error(`Resend a répondu ${res.status} : ${corpsErreur}`);
+  }
+}
+
+// Bilan mensuel (08/09) — contrairement à notifierNouvelleCandidature (qui
+// envoie toujours à l'adresse du COMPTE Resend lui-même), cet email doit
+// atteindre l'adresse de CHAQUE artisan — impossible avec le domaine de
+// test "onboarding@resend.dev" (voir commentaire au-dessus de
+// notifierNouvelleCandidature). RESEND_FROM_EMAIL n'existe que pour ça :
+// tant qu'aucun domaine n'est vérifié sur Resend (ce qui suppose de
+// posséder le domaine — voir compyo.fr, prévu séparément), cette variable
+// reste vide et l'envoi est sauté silencieusement — le bilan reste
+// consultable dans l'app, voir app/dashboard/bilan/page.tsx.
+function texteBilanMensuel(bilan: BilanMensuel, prenom: string, urlBilan: string): string {
+  const periode = new Date(bilan.debut).toLocaleDateString("fr-FR", {
+    month: "long",
+    year: "numeric",
+  });
+  const lignesDetail = bilan.detailHeures
+    .map((d) => `  - ${d.libelle} : ${d.occurrences} × ${Math.round(d.minutes / d.occurrences)} min`)
+    .join("\n");
+
+  return `Bonjour ${prenom},
+
+Voici votre relevé Compyo pour ${periode} :
+
+Montant encaissé via les factures Compyo : ${bilan.montantEncaisse.toFixed(2)} €
+Devis envoyés : ${bilan.devisEnvoyes}
+Devis acceptés : ${bilan.devisAcceptes}
+Temps estimé gagné : ${bilan.heuresGagnees} h
+${lignesDetail ? `\nDétail du calcul :\n${lignesDetail}` : ""}
+
+Voir le détail : ${urlBilan}`;
+}
+
+export async function envoyerBilanMensuel(params: {
+  destinataire: string;
+  prenom: string;
+  bilan: BilanMensuel;
+  urlBilan: string;
+}) {
+  const expediteur = process.env.RESEND_FROM_EMAIL;
+  if (!process.env.RESEND_API_KEY || !expediteur) return;
+
+  const periode = new Date(params.bilan.debut).toLocaleDateString("fr-FR", {
+    month: "long",
+    year: "numeric",
+  });
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: expediteur,
+      to: params.destinataire,
+      subject: `Votre bilan Compyo — ${periode}`,
+      text: texteBilanMensuel(params.bilan, params.prenom, params.urlBilan),
+    }),
+  });
+
   if (!res.ok) {
     const corpsErreur = await res.text().catch(() => "(corps illisible)");
     throw new Error(`Resend a répondu ${res.status} : ${corpsErreur}`);

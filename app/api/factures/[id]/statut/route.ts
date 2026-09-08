@@ -36,7 +36,10 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
 
   const { data: facture, error } = await supabase
     .from("factures")
-    .update({ statut: corps.statut })
+    // payee_le (08/09) — distinct de date_emission, voir types/index.ts :
+    // sans cette date, le bilan mensuel n'aurait aucun moyen de savoir
+    // QUAND l'argent a réellement été encaissé.
+    .update({ statut: corps.statut, payee_le: new Date().toISOString() })
     .eq("id", params.id)
     .eq("organisation_id", organisationId)
     .eq("statut", "emise") // seule une facture encore "émise" peut passer "payée"

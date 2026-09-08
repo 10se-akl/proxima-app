@@ -2,6 +2,14 @@
 
 Notes de travail, pas des décisions figées — à reprendre et affiner quand le moment sera venu (après la bêta, une fois la structure juridique en place). Rien ici n'est codé ni actif.
 
+## Bilan mensuel (08/09) — construit, mais l'email ne partira pas tout de suite
+
+Architecture revue par Cowork puis codée : `lib/bilan-mensuel.ts`, page `/dashboard/bilan`, cron `app/api/cron/bilan-mensuel/route.ts`, colonne `factures.payee_le` ajoutée (manquait pour calculer "combien encaissé CE mois-ci" correctement).
+
+**Dépendance découverte en codant, à ajouter à la liste de samedi** : l'email du bilan doit partir vers l'adresse de CHAQUE artisan, pas seulement celle d'Axel — le domaine de test Resend (`onboarding@resend.dev`) ne peut envoyer qu'à l'adresse du compte Resend lui-même. Il faudra, en plus d'acheter `compyo.fr` et de le brancher sur Vercel : **vérifier ce même domaine sur Resend aussi** (DNS séparés de ceux de Vercel), puis renseigner `RESEND_FROM_EMAIL`. Tant que ce n'est pas fait, l'envoi est sauté automatiquement sans erreur — le bilan reste consultable dans l'app.
+
+Cron pas encore programmé côté cron-job.org (même service externe que les rappels) — à faire une fois `CRON_SECRET` en place.
+
 ## Structure juridique — décision (08/09)
 
 Axel a choisi de ne PAS attendre ses 18 ans (risque qu'un concurrent prenne le même positionnement entre-temps). Voie retenue : SASU, avec un parent comme représentant légal tant qu'Axel est mineur non émancipé (à confirmer précisément avec LegalPlace — détails de procédure non garantis par Claude, sujet juridique spécialisé).

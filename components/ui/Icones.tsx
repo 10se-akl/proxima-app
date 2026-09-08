@@ -56,6 +56,18 @@ export function IconeFacture({ className, taille = 18 }: Props) {
   );
 }
 
+// Bilan mensuel (08/09) — barres croissantes plutôt qu'un signe euro
+// (déjà pris par IconeFacture) : distinct au premier coup d'œil dans la
+// navigation.
+export function IconeBilan({ className, taille = 18 }: Props) {
+  return (
+    <svg {...base(taille)} className={className}>
+      <path d="M5 20V13M12 20V7M19 20v-9" />
+      <path d="M3.5 20.5h17" />
+    </svg>
+  );
+}
+
 export function IconeCalendrier({ className, taille = 18 }: Props) {
   return (
     <svg {...base(taille)} className={className}>

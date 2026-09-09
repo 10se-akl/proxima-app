@@ -20,7 +20,7 @@ type Extrait = {
   capture_illisible: boolean;
 };
 
-type Correspondance = { id: string; nomClient: string };
+type Correspondance = { id: string; nomClient: string; matchFort: boolean };
 
 type Ligne = {
   index: number;
@@ -106,7 +106,35 @@ export default function ImporterCapturePage() {
     controleurIARef.current = controleur;
 
     try {
-      const images = await Promise.all(Array.from(fichiers).map(compresserImage));
+      // Audit pré-bêta (09/09), point 🟡 n°17 — Promise.all() faisait
+      // échouer TOUT le lot dès qu'une seule image posait problème (fichier
+      // corrompu, format non supporté), sans jamais dire laquelle, ni
+      // garder les autres pourtant valides. Promise.allSettled() isole
+      // chaque échec individuellement — les images valides partent quand
+      // même à l'analyse, celles en échec sont nommées explicitement.
+      const fichiersTableau = Array.from(fichiers);
+      const resultatsCompression = await Promise.allSettled(fichiersTableau.map(compresserImage));
+
+      const images: { base64: string; mediaType: string }[] = [];
+      const nomsEnEchec: string[] = [];
+      resultatsCompression.forEach((resultat, i) => {
+        if (resultat.status === "fulfilled") {
+          images.push(resultat.value);
+        } else {
+          nomsEnEchec.push(fichiersTableau[i].name);
+        }
+      });
+
+      if (images.length === 0) {
+        setErreurGlobale(
+          nomsEnEchec.length === 1
+            ? `L'image "${nomsEnEchec[0]}" n'a pas pu être traitée (fichier corrompu ou format non supporté).`
+            : `Aucune de ces images n'a pu être traitée (fichiers corrompus ou format non supporté) : ${nomsEnEchec.join(", ")}.`
+        );
+        setAnalyseEnCours(false);
+        if (inputRef.current) inputRef.current.value = "";
+        return;
+      }
 
       const res = await fetch("/api/ai/analyser-captures", {
         method: "POST",
@@ -134,21 +162,38 @@ export default function ImporterCapturePage() {
           extrait: r.extrait,
           erreur: r.erreur,
           correspondances: r.correspondances,
-          // Pré-sélection : s'il y a exactement une correspondance
-          // probable, on la propose déjà — l'artisan n'a plus qu'à
-          // confirmer ou changer. Sinon, "nouveau projet" par défaut.
+          // Pré-sélection UNIQUEMENT sur une correspondance forte (même
+          // téléphone, ou nom identique) — audit pré-bêta (09/09) : un nom
+          // simplement "proche" (Martin ⊂ Jean Martin) reste proposé dans
+          // la liste déroulante mais ne doit jamais être choisi à la place
+          // de l'artisan, trop de risque de faux positif sur un homonyme
+          // qu'il ne prendrait pas le temps de vérifier. "Nouveau projet"
+          // par défaut dans tous les autres cas.
           destination:
-            r.correspondances?.length === 1 ? r.correspondances[0].id : "nouveau",
+            r.correspondances?.length === 1 && r.correspondances[0].matchFort
+              ? r.correspondances[0].id
+              : "nouveau",
         })
       );
       setLignes(nouvellesLignes);
+
+      // Succès partiel : les images valides ont bien été analysées
+      // ci-dessus, mais on le dit quand même plutôt que de laisser croire
+      // que TOUT le lot est passé.
+      if (nomsEnEchec.length > 0) {
+        setErreurGlobale(
+          nomsEnEchec.length === 1
+            ? `L'image "${nomsEnEchec[0]}" n'a pas pu être traitée et a été ignorée — les autres ont bien été analysées.`
+            : `${nomsEnEchec.length} images n'ont pas pu être traitées et ont été ignorées (${nomsEnEchec.join(", ")}) — les autres ont bien été analysées.`
+        );
+      }
     } catch (err) {
       // AbortError = la page a été quittée pendant l'analyse (cleanup
       // ci-dessus) : pas d'erreur à afficher, personne ne la lira.
       if ((err as Error).name !== "AbortError") {
         console.error(err);
         setErreurGlobale(
-          "Une des images n'a pas pu être traitée (fichier corrompu ou format non supporté). Réessayez sans elle."
+          "L'analyse des captures a échoué (connexion ou serveur). Réessayez."
         );
       }
     } finally {
@@ -299,6 +344,7 @@ export default function ImporterCapturePage() {
                       {(l.correspondances ?? []).map((c) => (
                         <option key={c.id} value={c.id}>
                           Ajouter au projet existant : {c.nomClient}
+                          {c.matchFort ? "" : " (nom proche seulement — vérifiez)"}
                         </option>
                       ))}
                       <option value="">Ne pas importer cette capture</option>

@@ -23,6 +23,14 @@
   --c-signal-fonce: 168 86 58;
   --c-anthracite: 31 41 55; /* fixe, ne s'inverse jamais avec le mode */
   --c-surface: 255 255 255; /* blanc pur, cartes/panneaux élevés */
+  /* Audit pré-bêta (09/09), point 🟡 n°23 — statuts sémantiques (succès,
+     avertissement) jusqu'ici en hex brut (#2F8F5B, #D9861A) directement
+     dans les composants : jamais recalibrés pour le mode sombre, rendu
+     parfois peu lisible. Même logique que --c-signal juste au-dessus :
+     couleur sémantique, volontairement IDENTIQUE dans les deux modes
+     (pas redéfinie dans .dark ci-dessous) plutôt qu'une surface neutre. */
+  --c-succes: 47 143 91; /* vert — ex. message de succès */
+  --c-alerte-orange: 217 134 26; /* orange — ex. "devis périmé" */
 }
 
 .dark {

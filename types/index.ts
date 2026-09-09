@@ -364,6 +364,14 @@ export type Devis = {
   signature_ip: string | null;
   signature_user_agent: string | null;
   signe_le: string | null;
+  // Audit pré-bêta (09/09) — true si l'artisan avait déjà configuré ses
+  // paramètres d'entreprise (tarif horaire, marge, TVA) au moment où CE
+  // devis a été chiffré ; false s'il a été calculé avec les valeurs par
+  // défaut (voir PARAMETRES_PAR_DEFAUT, lib/moteur-metier/calculerDevis.ts).
+  // Null pour les devis créés avant ce correctif (état inconnu, jamais
+  // affiché comme un avertissement rétroactif). Fige l'état AU MOMENT de
+  // la génération — ne se met jamais à jour tout seul après coup.
+  parametres_configures: boolean | null;
 };
 
 // ============================================================

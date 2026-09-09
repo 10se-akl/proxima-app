@@ -11,17 +11,21 @@ import { getOrganisationId } from "@/lib/organisation";
 // rattachées à un projet existant (voir app/api/ai/confirmer-import-
 // captures/route.ts). Ajustable après retours bêta si des artisans
 // loupent une urgence dans ce cas précis (voir rapport de cycle).
+//
+// Audit pré-bêta (09/09), point 🔴 n°1 — `texte` accepté en plus de
+// `partageId`, même raison que app/api/partage/matcher/route.ts : le
+// collage manuel (iPhone) n'a pas de ligne `partages_entrants` à lire.
 // ============================================================
 
 export async function POST(request: NextRequest) {
-  let corps: { projetId?: string; partageId?: string };
+  let corps: { projetId?: string; partageId?: string; texte?: string };
   try {
     corps = await request.json();
   } catch {
     return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
   }
-  const { projetId, partageId } = corps;
-  if (!projetId || !partageId) {
+  const { projetId, partageId, texte: texteDirect } = corps;
+  if (!projetId || (!partageId && !texteDirect)) {
     return NextResponse.json({ error: "Paramètres manquants" }, { status: 400 });
   }
 
@@ -38,13 +42,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
   }
 
-  const { data: partage } = await supabase
-    .from("partages_entrants")
-    .select("texte")
-    .eq("id", partageId)
-    .single();
+  let texteMessage: string | null;
+  if (partageId) {
+    const { data: partage } = await supabase
+      .from("partages_entrants")
+      .select("texte")
+      .eq("id", partageId)
+      .single();
+    texteMessage = partage?.texte ?? null;
+  } else {
+    texteMessage = texteDirect?.trim() || null;
+  }
 
-  if (!partage?.texte) {
+  if (!texteMessage) {
     return NextResponse.json({ error: "Message partagé introuvable" }, { status: 404 });
   }
 
@@ -59,7 +69,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
   }
 
-  const noteAjoutee = `--- Message partagé ---\n${partage.texte}`;
+  const noteAjoutee = `--- Message partagé ---\n${texteMessage}`;
   const notesMisesAJour = projetExistant.notes
     ? `${projetExistant.notes}\n\n${noteAjoutee}`
     : noteAjoutee;
@@ -79,12 +89,15 @@ export async function POST(request: NextRequest) {
     organisationId,
     type: "message_importe",
     titre: "Message partagé ajouté au projet",
-    detail: partage.texte,
+    detail: texteMessage,
   });
 
   // Même ménage best-effort que creer-depuis-brouillon : ne bloque jamais
-  // l'action principale si la suppression échoue.
-  await supabase.from("partages_entrants").delete().eq("id", partageId);
+  // l'action principale si la suppression échoue. Rien à nettoyer côté
+  // collage manuel (pas de ligne partages_entrants créée pour ce parcours).
+  if (partageId) {
+    await supabase.from("partages_entrants").delete().eq("id", partageId);
+  }
 
   return NextResponse.json({ projetId });
 }

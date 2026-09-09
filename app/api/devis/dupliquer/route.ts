@@ -86,6 +86,10 @@ export async function POST(request: NextRequest) {
         total_estime: devisOriginal.total_estime,
         commentaires: devisOriginal.commentaires,
         statut: "brouillon",
+        // Reprend l'état du devis d'origine plutôt que de le recalculer :
+        // ce drapeau reflète les paramètres au moment où CE CONTENU a été
+        // chiffré la première fois, une duplication ne rechiffre rien.
+        parametres_configures: devisOriginal.parametres_configures,
       })
       .select()
       .single();

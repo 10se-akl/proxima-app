@@ -125,11 +125,13 @@ export async function POST(request: NextRequest) {
   // Le rapprochement avec les captures se fait ensuite par une comparaison
   // de texte simple, PAS par l'IA : plus prévisible, moins cher, et
   // l'artisan garde la décision finale de toute façon.
-  const { data: projetsActifs } = await supabase
+  type ProjetActifLeger = { id: string; nom_client: string; telephone_client: string | null };
+  const { data: projetsActifsBrut } = await supabase
     .from("demandes")
     .select("id, nom_client, telephone_client")
     .eq("organisation_id", organisationId)
     .neq("statut", "termine");
+  const projetsActifs = (projetsActifsBrut as ProjetActifLeger[] | null) ?? [];
 
   const dateDuJour = new Date().toLocaleDateString("fr-FR", {
     weekday: "long",
@@ -138,27 +140,43 @@ export async function POST(request: NextRequest) {
     day: "numeric",
   });
 
-  function rapprocher(extrait: Extrait) {
-    // Rapprochement déterministe : correspondance sur le nom (sans tenir
-    // compte de la casse) ou sur le téléphone si les deux le mentionnent.
-    // Plusieurs correspondances possibles → toutes proposées, l'artisan
-    // choisit.
+  // Audit pré-bêta (09/09), point 🟠 — un simple `includes()` sur le nom
+  // rapprochait "Martin" de "Jean Martin" ET de "Martine Dupuis" avec la
+  // même confiance qu'un téléphone identique (signal fiable, voir la même
+  // règle dans lib/clients/index.ts : "jamais par nom seul... trop de faux
+  // positifs"). Distinction "fort" (téléphone identique, ou nom identique
+  // une fois normalisé) vs "faible" (nom seulement contenu dans l'autre) :
+  // une correspondance faible reste PROPOSÉE (jamais supprimée, l'artisan
+  // peut avoir raison), mais n'est plus jamais pré-sélectionnée
+  // automatiquement côté écran de revue (voir importer-capture/page.tsx).
+  type Correspondance = { projet: ProjetActifLeger; matchFort: boolean };
+
+  function rapprocher(extrait: Extrait): Correspondance[] {
     const nomNormalise = extrait.nom_client.trim().toLowerCase();
     const telNormalise = extrait.telephone_client?.replace(/\s+/g, "");
-    return (projetsActifs ?? []).filter((p) => {
-      const memeNom =
-        nomNormalise.length > 2 && p.nom_client.toLowerCase().includes(nomNormalise);
+    const trouvees: Correspondance[] = [];
+    for (const p of projetsActifs) {
+      const nomProjet = p.nom_client.toLowerCase();
       const memeTel =
-        telNormalise &&
-        p.telephone_client &&
+        !!telNormalise &&
+        !!p.telephone_client &&
         p.telephone_client.replace(/\s+/g, "") === telNormalise;
-      return memeNom || memeTel;
-    });
+      const nomIdentique = nomNormalise.length > 2 && nomProjet === nomNormalise;
+      const nomProche = nomNormalise.length > 2 && nomProjet.includes(nomNormalise);
+      if (memeTel || nomIdentique || nomProche) {
+        trouvees.push({ projet: p, matchFort: memeTel || nomIdentique });
+      }
+    }
+    return trouvees;
   }
 
   let resultats: Array<
     | { index: number; erreur: string }
-    | { index: number; extrait: Extrait; correspondances: { id: string; nomClient: string }[] }
+    | {
+        index: number;
+        extrait: Extrait;
+        correspondances: { id: string; nomClient: string; matchFort: boolean }[];
+      }
   >;
 
   const debutAppel = Date.now();
@@ -185,7 +203,11 @@ export async function POST(request: NextRequest) {
       return {
         index,
         extrait,
-        correspondances: correspondances.map((c) => ({ id: c.id, nomClient: c.nom_client })),
+        correspondances: correspondances.map((c) => ({
+          id: c.projet.id,
+          nomClient: c.projet.nom_client,
+          matchFort: c.matchFort,
+        })),
       };
     });
   } catch (err) {

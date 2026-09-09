@@ -44,6 +44,8 @@ const config: Config = {
         // mode sombre (même logique de relief, inversée). Remplace les
         // bg-white codés en dur qui restaient blancs même en mode sombre.
         surface: "rgb(var(--c-surface) / <alpha-value>)",
+        succes: "rgb(var(--c-succes) / <alpha-value>)",
+        "alerte-orange": "rgb(var(--c-alerte-orange) / <alpha-value>)",
       },
       fontFamily: {
         display: ["Manrope", "ui-sans-serif", "system-ui"],

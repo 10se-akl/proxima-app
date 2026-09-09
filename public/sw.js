@@ -112,6 +112,121 @@ self.addEventListener("message", (event) => {
   }
 });
 
+// Audit pré-bêta (09/09), point 🔴 n°2 — compression du partage natif
+// Android AVANT que la requête ne quitte l'appareil.
+//
+// Rappel du problème : le partage natif (WhatsApp/Galerie → Partager →
+// Compyo, voir app/manifest.ts "share_target" et app/api/partage/
+// route.ts) est un vrai POST HTML fait par l'OS/Chrome, pas un fetch()
+// piloté par notre JS de page — impossible à intercepter ou compresser
+// depuis une page normale. Vercel refuse tout corps de requête au-delà de
+// 4,5 Mo AVANT même que notre route ne s'exécute (limite d'infrastructure,
+// non contournable depuis le code applicatif), donc une photo un peu
+// lourde faisait échouer tout le partage sans qu'aucun code à nous ne
+// puisse réagir.
+//
+// Le service worker, lui, intercepte bien CETTE requête via son event
+// "fetch" (les Service Workers reçoivent tous les fetch, POST compris —
+// seule LA LOGIQUE ci-dessous choisit de les ignorer d'habitude, voir plus
+// bas). C'est donc le SEUL endroit du code où une compression avant envoi
+// est techniquement possible sur ce parcours précis.
+//
+// Exception volontaire et étroite à la règle de fond du fichier ("jamais
+// intercepter /api/*") : ce bloc ne met JAMAIS rien en cache, ne lit ni ne
+// modifie aucune donnée métier, et transmet la requête (avec les photos
+// éventuellement redimensionnées) au MÊME endpoint /api/partage, qui
+// applique exactement la même authentification et les mêmes policies RLS
+// qu'avant — cette étape ne fait que réduire le poids du corps envoyé sur
+// le réseau, rien d'autre.
+const CIBLE_PARTAGE = "/api/partage";
+// Cible volontairement bien en dessous des 4,5 Mo Vercel : un partage peut
+// contenir plusieurs photos (voir getAll("fichiers") côté route), donc
+// chaque image doit laisser de la marge aux autres.
+const TAILLE_CIBLE_PHOTO_PARTAGE = 900 * 1024;
+const LARGEUR_MAX_PHOTO_PARTAGE = 1600;
+
+// Redimensionne et recompresse une image trop lourde via OffscreenCanvas
+// (disponible dans un service worker, contrairement à <canvas> classique).
+// Deux passes maximum : la plupart des photos de téléphone (JPEG, quelques
+// Mo) tiennent dès la première ; une photo particulièrement détaillée a une
+// seconde chance, plus agressive, avant d'abandonner et de renvoyer le
+// fichier tel quel (mieux vaut retenter l'envoi brut, comme avant ce
+// correctif, que de bloquer tout le partage sur une erreur de compression).
+async function compresserPhotoPartage(fichier) {
+  if (!fichier.type || !fichier.type.startsWith("image/")) return fichier;
+  if (fichier.size <= TAILLE_CIBLE_PHOTO_PARTAGE) return fichier;
+
+  const passes = [
+    { largeur: LARGEUR_MAX_PHOTO_PARTAGE, qualite: 0.72 },
+    { largeur: 1000, qualite: 0.55 },
+  ];
+
+  try {
+    const bitmap = await createImageBitmap(fichier);
+    let resultat = fichier;
+    for (const passe of passes) {
+      const ratio = Math.min(1, passe.largeur / bitmap.width);
+      const largeur = Math.max(1, Math.round(bitmap.width * ratio));
+      const hauteur = Math.max(1, Math.round(bitmap.height * ratio));
+      const canvas = new OffscreenCanvas(largeur, hauteur);
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(bitmap, 0, 0, largeur, hauteur);
+      const blob = await canvas.convertToBlob({ type: "image/jpeg", quality: passe.qualite });
+      resultat = new File(
+        [blob],
+        fichier.name.replace(/\.\w+$/, "") + ".jpg",
+        { type: "image/jpeg" }
+      );
+      if (resultat.size <= TAILLE_CIBLE_PHOTO_PARTAGE) break;
+    }
+    bitmap.close?.();
+    return resultat;
+  } catch {
+    // Format non décodable ici (HEIC non converti, fichier corrompu...) :
+    // best-effort, on retente l'envoi tel quel plutôt que de perdre le
+    // partage — au pire, même résultat qu'avant ce correctif.
+    return fichier;
+  }
+}
+
+async function gererPartageEntrant(requete) {
+  const requeteBrute = requete.clone();
+  try {
+    const donneesOrigine = await requete.formData();
+    const nouvellesDonnees = new FormData();
+    for (const [cle, valeur] of donneesOrigine.entries()) {
+      if (cle === "fichiers" && valeur instanceof File) {
+        nouvellesDonnees.append("fichiers", await compresserPhotoPartage(valeur));
+      } else {
+        nouvellesDonnees.append(cle, valeur);
+      }
+    }
+    // Auto-relecture (09/09) — "redirect: manual" est INDISPENSABLE ici :
+    // app/api/partage/route.ts répond TOUJOURS par une redirection 303
+    // (succès comme échec). Sans ce réglage, ce fetch() suivrait la
+    // redirection tout seul et la renverrait comme une réponse 200 déjà
+    // résolue — la barre d'adresse du navigateur resterait alors bloquée
+    // sur /api/partage au lieu de la vraie page de revue, et un
+    // rechargement de cette page échouerait (cette route n'a pas de
+    // handler GET). En renvoyant la redirection "opaque" telle quelle à
+    // event.respondWith(), c'est le NAVIGATEUR lui-même qui effectue la
+    // navigation vers l'URL finale, exactement comme sans service worker.
+    return await fetch(CIBLE_PARTAGE, {
+      method: "POST",
+      body: nouvellesDonnees,
+      redirect: "manual",
+    });
+  } catch {
+    // Lecture/compression impossible : on retente l'envoi brut plutôt que
+    // d'afficher une erreur du service worker lui-même — app/api/partage/
+    // route.ts gère déjà un form-data illisible proprement (voir son
+    // try/catch), et un échec Vercel 413 reste, dans le pire des cas,
+    // identique à avant ce correctif. Même raison ci-dessus pour
+    // "redirect: manual".
+    return fetch(requeteBrute, { redirect: "manual" });
+  }
+}
+
 function estApiOuSupabase(url) {
   if (url.pathname.startsWith("/api/")) return true;
   // Tout domaine Supabase (API + Storage) ne doit jamais être mis en
@@ -241,6 +356,15 @@ self.addEventListener("notificationclick", (event) => {
 
 self.addEventListener("fetch", (event) => {
   const requete = event.request;
+
+  // Exception étroite et documentée en tête de fichier (voir
+  // gererPartageEntrant plus haut) : SEULE cette requête POST précise est
+  // interceptée, uniquement pour compresser une photo trop lourde avant
+  // qu'elle ne quitte l'appareil — jamais de cache, jamais d'autre route.
+  if (requete.method === "POST" && new URL(requete.url).pathname === CIBLE_PARTAGE) {
+    event.respondWith(gererPartageEntrant(requete));
+    return;
+  }
 
   // On ne touche jamais aux méthodes qui modifient des données (POST,
   // PUT, PATCH, DELETE) : la Cache API ne sait de toute façon caching

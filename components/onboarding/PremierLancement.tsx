@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { ExempleDevisModal } from "@/components/onboarding/ExempleDevisModal";
 import {
   declencherInstallation,
   estDejaInstallee,
@@ -54,6 +55,7 @@ export function PremierLancement() {
   const [modeIOS, setModeIOS] = useState(false);
   const [etapeFlux, setEtapeFlux] = useState(0);
   const [installationEnCours, setInstallationEnCours] = useState(false);
+  const [exempleOuvert, setExempleOuvert] = useState(false);
 
   useEffect(() => {
     initialiserEcouteInstallation();
@@ -137,10 +139,21 @@ export function PremierLancement() {
             <h2 className="mt-5 font-display text-xl font-semibold text-ink">
               Bienvenue sur Compyo
             </h2>
+            {/* Audit pré-bêta (09/09), point 🟠 n°16 — cet écran restait
+                abstrait ("vous gagnez du temps") alors que l'écran 3, plus
+                tard, est concret ("un brouillon est prêt en quelques
+                secondes"). Même promesse, rendue concrète dès les
+                premières secondes plutôt que reportée à l'écran 3. */}
             <p className="mt-2 text-sm text-ink/60 leading-relaxed">
-              L&apos;administratif se fait tout seul en arrière-plan. Vous gagnez du
-              temps sur chaque nouvelle demande, sans rien changer à vos habitudes.
+              Un message client comme « Bonjour, je voudrais refaire ma salle de bain »
+              devient un devis chiffré, prêt en quelques secondes.
             </p>
+            <button
+              onClick={() => setExempleOuvert(true)}
+              className="mt-3 text-xs text-signal underline underline-offset-2 hover:text-signal/80 transition-colors"
+            >
+              Voir un exemple de devis
+            </button>
           </div>
         )}
 
@@ -254,6 +267,7 @@ export function PremierLancement() {
           </div>
         )}
       </div>
+      {exempleOuvert && <ExempleDevisModal onFermer={() => setExempleOuvert(false)} />}
     </div>
   );
 }

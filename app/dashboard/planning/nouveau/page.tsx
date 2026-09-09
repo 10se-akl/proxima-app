@@ -197,6 +197,16 @@ function NouvelEvenementForm() {
       return;
     }
 
+    // Audit pré-bêta (09/09), point 🟡 n°22 — aucune validation sur la
+    // durée : 0, une valeur négative, ou un champ vidé (Number("") = 0)
+    // passaient tous silencieusement, produisant un rendez-vous "instantané"
+    // sur le planning.
+    if (type === "rendez_vous" && (!Number.isFinite(dureeMinutes) || dureeMinutes <= 0)) {
+      setErreur("La durée doit être supérieure à 0 minute.");
+      setChargement(false);
+      return;
+    }
+
     // Un artisan ne peut pas être à deux chantiers en même temps — on
     // exclut l'événement en cours d'édition de cette vérification.
     if (type === "rendez_vous") {
@@ -261,6 +271,18 @@ function NouvelEvenementForm() {
           .insert({ ...donnees, artisan_id: user.id, organisation_id: organisationId });
 
     if (error) {
+      // Audit pré-bêta (09/09), point 🟠 n°11 — la vérification de conflit
+      // ci-dessus reste utile pour un message immédiat, mais seule la
+      // contrainte d'exclusion côté base (voir supabase/schema.sql, Module
+      // 35) empêche réellement un double rendez-vous en cas de validation
+      // quasi simultanée par deux membres — code Postgres 23P01
+      // (exclusion_violation) dans ce cas précis, message aussi clair que
+      // celui du contrôle côté client ci-dessus.
+      if (error.code === "23P01") {
+        setErreur("Ce créneau vient d'être pris par quelqu'un d'autre de votre équipe. Choisissez un autre horaire.");
+        setChargement(false);
+        return;
+      }
       // Sprint Robustesse (30/08) — 🔴 `setChargement(false)` était appelé
       // ici inconditionnellement, avant l'enregistrement dans la timeline
       // et avant la redirection : le bouton redevenait cliquable pendant
@@ -437,6 +459,8 @@ function NouvelEvenementForm() {
             <Field
               label="Durée (minutes)"
               type="number"
+              min={1}
+              required
               value={dureeMinutes}
               onChange={(e) => setDureeMinutes(Number(e.target.value))}
             />

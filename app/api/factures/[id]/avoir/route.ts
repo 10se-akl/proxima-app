@@ -17,6 +17,16 @@ import type { Facture } from "@/types";
 // pas d'avoir partiel dans cette première version — couvre le cas réel le
 // plus fréquent (erreur de saisie, chantier annulé) sans complexifier la
 // saisie pour l'artisan.
+//
+// Audit pré-bêta (09/09), points 🟠 n°9 et n°10 — l'insertion de l'avoir
+// PUIS la mise à jour du statut de la facture d'origine se faisaient
+// jusqu'ici en deux écritures séparées, non transactionnelles (et le
+// résultat du second appel n'était même pas vérifié). Les deux checks
+// ci-dessous restent ici pour un message d'erreur rapide et clair sans
+// aller-retour DB inutile, mais l'atomicité réelle (et la protection
+// contre une double annulation concurrente) vit désormais dans la
+// fonction Postgres creer_avoir_et_annuler() — voir supabase/schema.sql,
+// Module 34.
 // ============================================================
 
 export async function POST(_request: NextRequest, { params }: { params: { id: string } }) {
@@ -64,37 +74,26 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
   }
   const numero = formaterNumeroFacture(annee, numeroSequentiel);
 
-  const { data: avoir, error: erreurInsertion } = await supabase
-    .from("factures")
-    .insert({
-      organisation_id: organisationId,
-      demande_id: factureOriginale.demande_id,
-      devis_id: factureOriginale.devis_id,
-      client_id: factureOriginale.client_id,
-      artisan_id: user.id,
-      type: "avoir",
-      numero,
-      statut: "emise",
-      lignes,
-      sous_total_ht: totaux.sous_total_ht,
-      tva_pct,
-      montant_tva: totaux.montant_tva,
-      total_ttc: totaux.total_ttc,
-      facture_liee_id: factureOriginale.id,
-      mentions_legales: factureOriginale.mentions_legales,
-    })
-    .select()
-    .single();
+  // Pas de .single() ici : creer_avoir_et_annuler() renvoie un seul "row
+  // type" (factures), pas un ensemble — même convention que
+  // prochain_numero_facture ci-dessus (retour scalaire direct, déjà un
+  // objet unique côté PostgREST, jamais un tableau à désenvelopper).
+  const { data: avoir, error: erreurTransaction } = await supabase.rpc("creer_avoir_et_annuler", {
+    p_facture_id: factureOriginale.id,
+    p_organisation_id: organisationId,
+    p_artisan_id: user.id,
+    p_numero: numero,
+    p_lignes: lignes,
+    p_sous_total_ht: totaux.sous_total_ht,
+    p_tva_pct: tva_pct,
+    p_montant_tva: totaux.montant_tva,
+    p_total_ttc: totaux.total_ttc,
+  });
 
-  if (erreurInsertion || !avoir) {
-    console.error(erreurInsertion);
+  if (erreurTransaction || !avoir) {
+    console.error(erreurTransaction);
     return NextResponse.json({ error: "Avoir non enregistré. Réessayez." }, { status: 500 });
   }
-
-  // La facture d'origine passe "annulee" seulement une fois l'avoir bien
-  // enregistré — jamais l'inverse, pour ne pas se retrouver avec une
-  // facture marquée annulée sans qu'aucun avoir n'existe réellement.
-  await supabase.from("factures").update({ statut: "annulee" }).eq("id", factureOriginale.id);
 
   await enregistrerEvenement(supabase, {
     demandeId: factureOriginale.demande_id,

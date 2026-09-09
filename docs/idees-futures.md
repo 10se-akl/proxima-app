@@ -24,19 +24,31 @@ Prochaine étape côté Axel (pas du code) : en parler avec un parent (rôle de 
 
 - **Bêta actuelle** : gratuite, tant qu'il n'y a pas de société (obligation légale).
 - **Tarif fondateur** (bêta-testeurs actuels) : tarif à vie, en dessous du prix de lancement — récompense d'avoir testé un produit jeune sans garantie. Montant exact à définir (piste : 9-12€/mois, ou quelques mois offerts).
-- **Prix de lancement** : ~20€/mois pendant les 3 premiers mois d'ouverture au public.
-- **Prix "normal"** : ~35-40€/mois, à partir de 3-6 mois après le lancement.
-- **Règle non négociable** : jamais augmenter le prix de quelqu'un déjà abonné à un tarif inférieur — un tarif obtenu est gardé tant que l'abonnement continue. Seuls les nouveaux arrivants paient le tarif du moment.
+- **Rampe de lancement en 3 paliers** (révisée le 09/09 — remplace l'ancien saut unique 20€→40€, jugé trop brutal pour un client qui compare son prix à celui d'un nouvel arrivant 1 an plus tard) :
+  1. Mois 1-3 d'ouverture au public : **29,99€/mois**.
+  2. Mois 4-6 : **34,99€/mois**.
+  3. Mois 7+ : **39,99€/mois** — devient le tarif normal permanent.
+- **Règle non négociable, inchangée** : quel que soit le palier où quelqu'un s'inscrit, il garde CE tarif à vie tant qu'il reste abonné — jamais de hausse rétroactive. Seuls les nouveaux arrivants paient le tarif du palier en cours. Écarts entre paliers volontairement resserrés (+17% puis +14%, contre +100% dans l'ancienne version) pour limiter l'effet "mon pote payait deux fois moins que moi".
 
 ### Palier "Entreprise" (idée de la prof d'Axel, 08/09) — pour plus tard
 
 Principe économique : une structure avec plusieurs salariés tire une valeur ABSOLUE bien plus grande de Compyo (plus de devis, plus d'heures gagnées, plus d'argent) qu'un solo — elle a donc une disposition à payer plus élevée, et un prix unique pour tout le monde laisse de la valeur sur la table pour les grosses structures tout en pesant trop lourd pour les petites. Solution classique en SaaS B2B (Obat le fait déjà : 25€ pour un auto-entrepreneur, jusqu'à 85€ pour les fonctionnalités complètes) : un palier "Entreprise" plus cher.
 
-**Pas pertinent MAINTENANT** : Compyo est aujourd'hui pensé et construit pour le solo/petite équipe (pas de vraies fonctionnalités de gestion d'équipe — attribution de tâches à des employés, écarté précédemment comme hors cible). Ne changer le prix de lancement (20€→40€) que pour la cible actuelle. Ce palier "Entreprise" a du sens le jour où de vraies fonctionnalités équipe sont construites, pas avant.
+**Pas pertinent MAINTENANT** : Compyo est aujourd'hui pensé et construit pour le solo/petite équipe (pas de vraies fonctionnalités de gestion d'équipe — attribution de tâches à des employés, écarté précédemment comme hors cible). La rampe de lancement (voir section Tarification) ne concerne que cette cible actuelle. Ce palier "Entreprise" a du sens le jour où de vraies fonctionnalités équipe sont construites, pas avant.
 
 **Argument de vente lié, à garder pour la communication** (idée d'Axel) : Compyo consolide ce que plusieurs outils séparés font chez la concurrence (devis, facturation, planning, signature électronique...) — un artisan qui paierait plusieurs abonnements séparés pour obtenir tout ça ailleurs (potentiellement ~100€/mois cumulés) peut tout avoir avec un seul abonnement Compyo à 40€. Un vrai argument de consolidation/coût total, pas juste "moins cher à l'unité".
 
 **Confirmé le 08/09** : pas maintenant, priorité au solo/petite équipe. Reste ici pour plus tard.
+
+**Idée d'Axel (09/09), à garder pour ce palier plus tard** : IA qui répond au téléphone quand l'artisan est sur un chantier — "Dupont est sur un chantier, décrivez votre demande à l'oral", puis un nouveau dossier/projet se crée automatiquement dans Compyo à partir de la transcription, visible à la réouverture de l'app ("Dupont vous a appelé et voulait ça"). Prolonge le mécanisme d'import de message déjà existant (WhatsApp/email → projet), appliqué cette fois à un appel.
+
+Pas réinventé de zéro : la brique existe déjà côté tiers — Twilio (téléphonie programmable, la référence), ou des plateformes plus spécialisées "agent vocal IA" (Vapi, Bland.ai, Retell AI), et Vocode comme framework open-source si on veut le construire soi-même plus tard.
+
+**Pas pour maintenant, pour deux raisons** :
+- Coût : facturé à la minute d'appel (voix temps réel), un ordre de grandeur au-dessus du coût actuel des fonctionnalités IA texte (devis, notes) — risque de dérapage sur le budget serré actuel.
+- Complexité : redirection réelle de la ligne pro de chaque artisan, voix assez naturelle pour ne pas faire raccrocher, gestion des urgences (appelant qui veut absolument un humain tout de suite) — bien plus de terrain que l'import de message texte déjà en place.
+
+Piste envisagée avec Axel : en faire un argument du futur palier "Entreprise" plus cher plutôt qu'une fonctionnalité de base, une fois Compyo rentable.
 
 ## Petites équipes (08/09) — construit, et ce qui reste écarté
 
@@ -48,15 +60,16 @@ Recherche concurrentielle rapide (Obat, Batikko, BTPBip, Kaliti) sur ce que prop
 - **Pointage horaire par employé** (BTPBip) — écarté : hors du périmètre actuel de Compyo (devis/facturation/planning/suivi de chantier), ajouterait une fonctionnalité entière pour un besoin non exprimé par les bêta-testeurs actuels.
 
 À revisiter si de vrais retours d'artisans en équipe (pas juste solo) le demandent explicitement — ne pas construire par anticipation.
-- **Affichage du prix de lancement** : éviter un "~~40€~~ 20€ (-50%)" barré — juridiquement risqué pour un produit jamais vendu à 40€ avant (pratique commerciale trompeuse potentielle). Préférer : "Prix de lancement : 20€/mois — passera à 40€/mois à partir du [date]. Verrouillez ce tarif maintenant." Mettre une vraie limite (date précise, ou nombre de places) pour que l'offre reste crédible.
+- **Affichage du prix de lancement** : éviter un "~~39,99€~~ 29,99€ (-25%)" barré — juridiquement risqué pour un produit jamais vendu à 39,99€ avant (pratique commerciale trompeuse potentielle). Préférer : "Prix de lancement : 29,99€/mois — passera à 34,99€ puis 39,99€/mois. Verrouillez ce tarif maintenant." Mettre une vraie limite (date précise, ou nombre de places) pour que l'offre reste crédible.
 - **Accès sans paiement** : ne jamais bloquer la lecture des données existantes (projets, devis, factures, planning, notes) même si l'abonnement s'arrête — seul l'accès aux fonctionnalités IA doit être coupé (c'est la seule chose qui coûte réellement de l'argent à l'usage).
 
 ## Parrainage
 
 Principe validé : donner un code, la personne parrainée l'entre à l'inscription.
-- Filleul : -10% (récurrent tant qu'il reste abonné, sur le prix en vigueur à son inscription).
-- Parrain : -20% sur son propre abonnement (récurrent), déclenché **seulement quand le filleul devient réellement payant** — pas à la simple inscription, pour éviter les faux comptes créés pour se faire des réductions soi-même.
-- Si le parrain est encore en bêta gratuite au moment où son filleul devient payant : le crédit de -20% doit être mis de côté et s'appliquer automatiquement dès que le parrain passe payant à son tour.
+- Filleul : -10% **limité aux 3 premiers mois de son abonnement** (révisé le 09/09 — était récurrent tant qu'abonné ; changé en même temps que la rampe de lancement en 3 paliers ci-dessus, pour rester cohérent avec une logique "avantage limité dans le temps").
+- Parrain : -20% sur son propre abonnement, **limité aux 3 premiers mois** (confirmé le 09/09 — même durée que le -10% du filleul, plus récurrent à vie comme avant).
+- Déclenché **seulement quand le filleul devient réellement payant** — pas à la simple inscription, pour éviter les faux comptes créés pour se faire des réductions soi-même.
+- Si le parrain est encore en bêta gratuite au moment où son filleul devient payant : le crédit doit être mis de côté et s'appliquer automatiquement dès que le parrain passe payant à son tour.
 - Cumul de plusieurs parrainages : à plafonner (proposition : -60% max) pour ne pas se retrouver avec des comptes à 0€ si quelqu'un parraine beaucoup de monde — décision finale à prendre par Axel.
 
 ## Marketing / acquisition

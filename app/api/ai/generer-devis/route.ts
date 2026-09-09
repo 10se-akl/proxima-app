@@ -300,6 +300,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
           montant_tva: devisCalcule.montant_tva,
           total_estime: devisCalcule.total_ttc,
           suggestions_oublis: lignesSuggerees.length > 0 ? lignesSuggerees : null,
+          parametres_configures: parametresConfigures,
         })
         .select()
         .single();

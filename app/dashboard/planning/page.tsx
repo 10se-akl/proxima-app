@@ -121,6 +121,14 @@ export default async function PlanningPage({
         )}
       </div>
 
+      {/* Audit pré-bêta (09/09), point 🟡 n°24 — convention calendrier
+          standard : sans ce message, une semaine vide donnait une grille
+          totalement nue sans confirmer que c'est bien "rien de prévu" et
+          pas un chargement raté. */}
+      {evenements.length === 0 && (
+        <p className="mt-4 text-sm text-ink/40">Rien de prévu cette semaine.</p>
+      )}
+
       <div className="mt-4">
         <GrilleAgenda jours={jours} evenements={evenements} meteoParJour={alertesMeteo} />
       </div>

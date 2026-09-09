@@ -551,6 +551,17 @@ export default function DetailDemandePage({
 
   async function marquerDevisEnvoye() {
     if (!devis || !demande || actionEnCours) return;
+    // Audit pré-bêta (09/09), point 🟡 n°21 — avertissement non bloquant :
+    // marquer un devis "envoyé" pour un client sans aucune coordonnée
+    // (ni téléphone, ni email) n'a probablement pas de sens (comment
+    // l'a-t-on vraiment envoyé ?) — mais reste la décision de l'artisan
+    // (il a pu le remettre en main propre), jamais un blocage.
+    if (!demande.telephone_client?.trim() && !demande.email_client?.trim()) {
+      const continuer = window.confirm(
+        "Ce client n'a ni téléphone ni email enregistré — vérifiez que le devis lui a bien été transmis. Continuer ?"
+      );
+      if (!continuer) return;
+    }
     setActionEnCours(true);
     try {
       const { data: d1, error: err1 } = await supabase
@@ -1169,7 +1180,7 @@ export default function DetailDemandePage({
               </button>
             ))}
             {rappelRecurrentCree !== null && (
-              <span className="text-xs text-[#2F8F5B]">
+              <span className="text-xs text-succes">
                 ✓ Rappel programmé, {PRESETS_RAPPEL_RECURRENT.find((p) => p.mois === rappelRecurrentCree)?.libelle.toLowerCase()}
               </span>
             )}
@@ -1360,7 +1371,7 @@ export default function DetailDemandePage({
           )}
 
           {devisPerime && devis?.statut !== "brouillon" && (
-            <Card className="mt-4 p-4 border-[#D9861A]/40 bg-[#D9861A]/5">
+            <Card className="mt-4 p-4 border-alerte-orange/40 bg-alerte-orange/5">
               <p className="text-sm text-ink/80">
                 Le projet a changé depuis le dernier devis (nouvelle note, photo ou note
                 vocale). Voulez-vous le régénérer en tenant compte de ces changements ?
@@ -1376,7 +1387,7 @@ export default function DetailDemandePage({
               haut) — seulement une duplication explicite, qui laisse le
               devis accepté intact et n'écrase pas le statut du projet. */}
           {devisPerimeProjetEngage && (
-            <Card className="mt-4 p-4 border-[#D9861A]/40 bg-[#D9861A]/5">
+            <Card className="mt-4 p-4 border-alerte-orange/40 bg-alerte-orange/5">
               <p className="text-sm text-ink/80">
                 Le projet a changé depuis ce devis {demande.statut === "accepte" ? "accepté" : "en cours"}
                 . Le devis d&apos;origine reste inchangé — dupliquez-le si vous devez ajuster le

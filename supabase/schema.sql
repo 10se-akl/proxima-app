@@ -1544,6 +1544,15 @@ alter table devis add column if not exists signe_le timestamptz;
 -- lister TOUS les devis via l'API REST directe, pas seulement celui du
 -- lien. La sécurité repose sur le caractère non-devinable de l'UUID du
 -- devis (aucune énumération possible : il faut connaître p_devis_id).
+-- Audit pré-bêta (09/09), point 🟠 n°8 — siret/forme_juridique ajoutés au
+-- retour de cette fonction (SIRET manquait sur le devis, présent
+-- uniquement sur la facture, voir FacturePreview.tsx) : "create or replace
+-- function" ne peut pas changer la liste des colonnes retournées d'une
+-- fonction existante côté Postgres — un "drop" explicite avant est
+-- nécessaire pour que ce fichier reste rejouable tel quel sur une base où
+-- Module 31 a déjà été appliqué.
+drop function if exists obtenir_devis_public(uuid);
+
 create or replace function obtenir_devis_public(p_devis_id uuid)
 returns table (
   numero text,
@@ -1566,7 +1575,9 @@ returns table (
   logo_url text,
   adresse text,
   telephone text,
-  email text
+  email text,
+  siret text,
+  forme_juridique text
 )
 language plpgsql
 security definer
@@ -1580,7 +1591,8 @@ begin
     d.created_at, d.statut, d.signe_le,
     dem.statut, dem.accepte_le,
     dem.nom_client,
-    pe.nom_entreprise, pe.logo_url, pe.adresse, pe.telephone, pe.email
+    pe.nom_entreprise, pe.logo_url, pe.adresse, pe.telephone, pe.email,
+    pe.siret, pe.forme_juridique
   from devis d
   join demandes dem on dem.id = d.demande_id
   left join parametres_entreprise pe on pe.organisation_id = d.organisation_id
@@ -1673,4 +1685,157 @@ $$;
 -- mensuel.ts).
 -- ============================================================
 alter table factures add column if not exists payee_le timestamptz;
+
+-- ============================================================
+-- Module 33 (09/09) — Audit pré-bêta : avertissement "paramètres non
+-- configurés" sur le devis. app/api/ai/generer-devis/route.ts calculait
+-- déjà ce booléen à la génération (PARAMETRES_PAR_DEFAUT utilisés si
+-- l'artisan n'avait encore rien configuré) mais ne le persistait que dans
+-- les logs (details.parametres_configures) — injoignable depuis l'écran de
+-- validation (ValiderDevis.tsx) après un rechargement de page, alors qu'un
+-- devis part avec des chiffres potentiellement faux (tarif horaire 45€/h,
+-- marge 15%, TVA 20%) sans que l'artisan le sache. Une vraie colonne, fixée
+-- une seule fois au moment de la génération/création : reflète l'état AU
+-- MOMENT du calcul, ne se recalcule jamais toute seule après coup (cohérent
+-- avec le reste du moteur, déterministe et jamais réévalué en silence).
+-- ============================================================
+alter table devis add column if not exists parametres_configures boolean;
+
+-- ============================================================
+-- Module 34 (09/09) — Audit pré-bêta, points 🟠 n°9 et n°10.
+--
+-- n°9 : rien n'empêchait, au niveau base de données, qu'une facture passe
+-- au statut "annulee" SANS qu'un avoir ne la référence — la policy RLS
+-- "update" (voir plus haut) autorise tout changement de statut d'une
+-- facture non déjà annulée, quel que soit le client qui appelle (notre
+-- route serveur fait bien les choses dans l'ordre, mais rien n'empêchait
+-- un appel direct depuis le navigateur, une future route, un script). Le
+-- trigger ci-dessous ferme cette fenêtre au niveau base, comme
+-- verrouiller_facture_emise_trigger le fait déjà pour le contenu.
+--
+-- n°10 : app/api/factures/[id]/avoir/route.ts faisait l'insertion de
+-- l'avoir PUIS la mise à jour du statut de la facture d'origine en deux
+-- écritures séparées, non transactionnelles — un échec réseau/serveur
+-- entre les deux (ou même juste l'update qui échoue silencieusement,
+-- jamais vérifié dans le code d'origine) pouvait laisser un avoir créé
+-- sans que la facture d'origine ne soit jamais marquée "annulee". La
+-- fonction creer_avoir_et_annuler() ci-dessous fait les deux dans le corps
+-- d'UNE SEULE fonction plpgsql : Postgres l'exécute dans une transaction
+-- implicite, tout échec (y compris le trigger du point n°9 ci-dessus, qui
+-- s'applique aussi ici) annule les DEUX écritures, jamais une seule.
+-- "for update" verrouille la ligne source pendant la transaction :
+-- empêche aussi qu'une double annulation concurrente (deux clics, deux
+-- membres de l'équipe) ne crée deux avoirs pour la même facture.
+-- "security invoker" (par défaut, pas "security definer") : les policies
+-- RLS de la table factures continuent de s'appliquer normalement, cette
+-- fonction ne contourne rien — juste une transaction, jamais un
+-- élargissement de droits.
+-- ============================================================
+create or replace function verifier_avoir_avant_annulation()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.statut = 'annulee' and old.statut != 'annulee' then
+    if not exists (
+      select 1 from factures where facture_liee_id = old.id and type = 'avoir'
+    ) then
+      raise exception 'Une facture ne peut passer "annulee" que si un avoir la référence déjà (facture_liee_id)';
+    end if;
+  end if;
+  return new;
+end;
 $$;
+
+drop trigger if exists verifier_avoir_avant_annulation_trigger on factures;
+create trigger verifier_avoir_avant_annulation_trigger
+  before update on factures
+  for each row execute function verifier_avoir_avant_annulation();
+
+create or replace function creer_avoir_et_annuler(
+  p_facture_id uuid,
+  p_organisation_id uuid,
+  p_artisan_id uuid,
+  p_numero text,
+  p_lignes jsonb,
+  p_sous_total_ht numeric,
+  p_tva_pct numeric,
+  p_montant_tva numeric,
+  p_total_ttc numeric
+)
+returns factures
+language plpgsql
+as $$
+declare
+  v_facture_originale factures%rowtype;
+  v_avoir factures%rowtype;
+begin
+  select * into v_facture_originale
+  from factures
+  where id = p_facture_id and organisation_id = p_organisation_id
+  for update;
+
+  if not found then
+    raise exception 'Facture introuvable';
+  end if;
+  if v_facture_originale.statut = 'annulee' then
+    raise exception 'Cette facture est déjà annulée';
+  end if;
+  if v_facture_originale.type = 'avoir' then
+    raise exception 'Un avoir ne peut pas lui-même être annulé par un avoir';
+  end if;
+
+  insert into factures (
+    organisation_id, demande_id, devis_id, client_id, artisan_id,
+    type, numero, statut, lignes, sous_total_ht, tva_pct, montant_tva,
+    total_ttc, facture_liee_id, mentions_legales
+  ) values (
+    p_organisation_id, v_facture_originale.demande_id, v_facture_originale.devis_id,
+    v_facture_originale.client_id, p_artisan_id,
+    'avoir', p_numero, 'emise', p_lignes, p_sous_total_ht, p_tva_pct, p_montant_tva,
+    p_total_ttc, v_facture_originale.id, v_facture_originale.mentions_legales
+  )
+  returning * into v_avoir;
+
+  update factures set statut = 'annulee' where id = v_facture_originale.id;
+
+  return v_avoir;
+end;
+$$;
+
+-- ============================================================
+-- Module 35 (09/09) — Audit pré-bêta, point 🟠 n°11. La seule protection
+-- contre un double rendez-vous était une vérification côté client (lire
+-- les événements du jour, chercher un chevauchement en JS) juste avant
+-- l'insertion — deux membres de la même organisation qui valident un
+-- créneau à quelques centaines de millisecondes d'écart passent tous les
+-- deux ce contrôle avant qu'aucun des deux n'ait encore écrit en base
+-- (classique race condition lire-puis-écrire). Seule une vraie contrainte
+-- côté base de données empêche ça réellement, quel que soit le nombre de
+-- requêtes concurrentes.
+--
+-- "periode" (colonne générée, jamais écrite directement) transforme
+-- date_heure + duree_minutes en intervalle comparable ; l'extension
+-- btree_gist est nécessaire pour qu'un index GiST sache comparer des uuid
+-- par égalité (organisation_id) en plus des intervalles qui se
+-- chevauchent (periode && periode). La contrainte ne porte QUE sur les
+-- rendez-vous non annulés (where ...) — même filtre exact que la
+-- vérification côté client qu'elle vient renforcer : une tâche libre ne
+-- bloque jamais un créneau, et annuler un rendez-vous libère bien le
+-- sien.
+-- ============================================================
+create extension if not exists btree_gist;
+
+alter table evenements_planning
+  add column if not exists periode tstzrange generated always as (
+    tstzrange(date_heure, date_heure + make_interval(mins => coalesce(duree_minutes, 60)), '[)')
+  ) stored;
+
+alter table evenements_planning
+  drop constraint if exists evenements_planning_pas_de_chevauchement;
+alter table evenements_planning
+  add constraint evenements_planning_pas_de_chevauchement
+  exclude using gist (
+    organisation_id with =,
+    periode with &&
+  ) where (type = 'rendez_vous' and statut != 'annule');

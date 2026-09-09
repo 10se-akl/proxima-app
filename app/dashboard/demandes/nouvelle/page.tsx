@@ -109,6 +109,22 @@ function detecterTypeChantier(texte: string): string {
   return "autre";
 }
 
+// Audit pré-bêta (09/09), point 🟠 n°4 — deux échecs du partage entrant
+// (form-data illisible, échec d'insertion en base, voir app/api/partage/
+// route.ts et app/dashboard/demandes/partage/[id]/page.tsx) redirigeaient
+// ici sans aucune explication : l'artisan atterrissait sur ce formulaire
+// vide en pensant avoir raté sa manipulation. Le paramètre `erreur`
+// explique ce qui s'est passé ; ce formulaire, déjà la porte de secours
+// manuelle, sert alors directement de "moyen de continuer".
+const MESSAGES_ERREUR_PARTAGE: Record<string, string> = {
+  partage_illisible:
+    "Le message partagé n'a pas pu être lu. Créez le projet ci-dessous, ou repartagez-le depuis WhatsApp/SMS/Mail.",
+  partage_echec_serveur:
+    "Le message partagé n'a pas pu être enregistré (problème temporaire). Créez le projet ci-dessous, ou réessayez le partage.",
+  partage_vide:
+    "Le partage ne contenait rien d'exploitable. Créez le projet ci-dessous.",
+};
+
 export default function NouveauProjetPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -123,7 +139,53 @@ export default function NouveauProjetPage() {
   const [anciensProjets, setAnciensProjets] = useState<
     { id: string; type_chantier: string; statut: string; created_at: string }[]
   >([]);
+  const [brouillonRestaure, setBrouillonRestaure] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+
+  const messageErreurPartage = MESSAGES_ERREUR_PARTAGE[searchParams.get("erreur") ?? ""] ?? null;
+
+  // Audit pré-bêta (09/09), point 🔴 n°3 — même filet de sécurité que
+  // components/notes/FormulaireNote.tsx et components/dashboard/
+  // NotesVocales.tsx : la description dictée depuis ce formulaire ("Nouveau
+  // projet" > "Dictée vocale", voir components/dashboard/NouveauProjetMenu.tsx)
+  // n'avait aucune protection contre une fermeture accidentelle en pleine
+  // dictée. Clé générique (pas de projet créé à ce stade) : un seul
+  // brouillon de nouveau projet en cours à la fois.
+  const CLE_BROUILLON = "compyo_brouillon_nouveau_projet";
+
+  useEffect(() => {
+    try {
+      const brouillon = window.localStorage.getItem(CLE_BROUILLON);
+      if (brouillon && brouillon.trim()) {
+        setDescription(brouillon);
+        setBrouillonRestaure(true);
+      }
+    } catch {
+      // localStorage indisponible : filet de sécurité simplement absent.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (description.trim()) {
+        window.localStorage.setItem(CLE_BROUILLON, description);
+      } else {
+        window.localStorage.removeItem(CLE_BROUILLON);
+      }
+    } catch {
+      // best effort, ne doit jamais faire planter la saisie.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [description]);
+
+  function effacerBrouillonDescription() {
+    try {
+      window.localStorage.removeItem(CLE_BROUILLON);
+    } catch {
+      // best effort
+    }
+  }
 
   // Vérification par nom ET par téléphone — pas de vraie fiche client
   // (voir échange sur le sujet), juste de quoi éviter qu'un artisan
@@ -319,6 +381,7 @@ export default function NouveauProjetPage() {
       detail: description,
     });
 
+    effacerBrouillonDescription();
     router.push(`/dashboard/demandes/${data.id}`);
   }
 
@@ -329,6 +392,12 @@ export default function NouveauProjetPage() {
         Juste l&apos;essentiel — le reste (adresse, type de chantier, email...) se
         complète plus tard, directement depuis le projet.
       </p>
+
+      {messageErreurPartage && (
+        <div className="mt-4 rounded-xl border border-signal/25 bg-signal/5 px-4 py-3">
+          <p className="text-sm text-signal">{messageErreurPartage}</p>
+        </div>
+      )}
 
       <Card className="mt-6 p-6">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -401,6 +470,11 @@ export default function NouveauProjetPage() {
                 </button>
               )}
             </div>
+            {brouillonRestaure && (
+              <p className="mb-1.5 text-xs text-steel">
+                Description non enregistrée retrouvée — relisez-la avant de créer le projet.
+              </p>
+            )}
             <textarea
               required
               rows={3}

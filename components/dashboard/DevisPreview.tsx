@@ -64,6 +64,20 @@ export function DevisPreview({
                   {[entreprise?.telephone, entreprise?.email].filter(Boolean).join(" · ")}
                 </p>
               )}
+              {/* Audit pré-bêta (09/09), point 🟠 — SIRET absent du devis
+                  (présent uniquement sur la facture, voir FacturePreview.tsx)
+                  donnait l'impression d'un document "pas tout à fait
+                  officiel" pour un premier envoi à un client. Pas une
+                  obligation légale sur un devis (contrairement à une
+                  facture), mais un vrai gain de crédibilité — mêmes champs,
+                  même formulation que la facture. */}
+              {(entreprise?.forme_juridique || entreprise?.siret) && (
+                <p className="text-[11px] text-ink/50 mt-1">
+                  {[entreprise?.forme_juridique, entreprise?.siret ? `SIRET ${entreprise.siret}` : null]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              )}
               <p className="font-mono text-[11px] text-ink/50 mt-0.5">
                 DEVIS N° {devis.numero}
               </p>

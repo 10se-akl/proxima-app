@@ -7,6 +7,10 @@ import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
 import { ConfirmationRdv } from "@/components/dashboard/ConfirmationRdv";
+import {
+  CorrespondanceProjetExistant,
+  type ProjetOuvertMatch,
+} from "@/components/dashboard/CorrespondanceProjetExistant";
 import type { BrouillonProjet } from "@/types";
 
 type RdvPropose = { date: string; heure: string };
@@ -21,6 +25,15 @@ type RdvPropose = { date: string; heure: string };
 // "Importer un message", conservée sur iPhone/desktop — voir
 // app/dashboard/demandes/page.tsx pour la logique qui décide de son
 // affichage selon la plateforme.
+//
+// Audit pré-bêta (09/09), point 🔴 n°1 — AVANT tout appel IA, on cherche
+// désormais un client/projet existant (numéro de téléphone dans le
+// message), exactement comme le parcours de partage natif Android (voir
+// app/dashboard/demandes/partage/[id]/page.tsx et app/api/partage/matcher/
+// route.ts). Sans ce correctif, un artisan sur iPhone (Web Share Target
+// non supporté par iOS — c'est justement pour ça que cet écran de collage
+// manuel existe) créait un nouveau projet en double à chaque message d'un
+// client déjà connu.
 // ============================================================
 
 export default function ImporterMessagePage() {
@@ -28,9 +41,12 @@ export default function ImporterMessagePage() {
 
   const [message, setMessage] = useState("");
   const [brouillon, setBrouillon] = useState<BrouillonProjet | null>(null);
+  const [rechercheEnCours, setRechercheEnCours] = useState(false);
   const [chargement, setChargement] = useState(false);
   const [creationEnCours, setCreationEnCours] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [correspondances, setCorrespondances] = useState<ProjetOuvertMatch[]>([]);
+  const [attachementEnCours, setAttachementEnCours] = useState(false);
 
   // Une fois le projet créé, si l'IA a détecté un créneau proposé par le
   // client, on affiche cet écran de confirmation plutôt que de l'ajouter
@@ -49,8 +65,7 @@ export default function ImporterMessagePage() {
     return () => controleurIARef.current?.abort();
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function lancerAnalyseIA(texte: string) {
     setErreur(null);
     setChargement(true);
 
@@ -61,7 +76,7 @@ export default function ImporterMessagePage() {
       res = await fetch("/api/ai/preparer-brouillon", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ texte: message }),
+        body: JSON.stringify({ texte }),
         signal: controleur.signal,
       });
     } catch (err) {
@@ -82,6 +97,69 @@ export default function ImporterMessagePage() {
 
     const data = await res.json();
     setBrouillon(data.brouillon);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErreur(null);
+    setRechercheEnCours(true);
+
+    // Point 🔴 n°1 de l'audit pré-bêta : SQL + regex AVANT tout appel IA,
+    // même logique que le parcours de partage Android — voir
+    // app/api/partage/matcher/route.ts (aucun appel Claude ici).
+    try {
+      const reponseMatch = await fetch("/api/partage/matcher", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ texte: message }),
+      });
+      const donneesMatch = await reponseMatch.json();
+      setRechercheEnCours(false);
+
+      if (reponseMatch.ok && donneesMatch.statut === "un") {
+        setCorrespondances([donneesMatch.projet]);
+        return; // attend le choix explicite de l'artisan
+      }
+      if (reponseMatch.ok && donneesMatch.statut === "plusieurs") {
+        setCorrespondances(donneesMatch.projets);
+        return;
+      }
+    } catch {
+      // Échec du matching (réseau) : pas grave, on continue avec le
+      // parcours normal plutôt que de bloquer l'artisan sur cette étape
+      // secondaire — le pire cas est un brouillon complet au lieu d'un
+      // rattachement, jamais un blocage.
+      setRechercheEnCours(false);
+    }
+
+    lancerAnalyseIA(message);
+  }
+
+  async function ajouterAuProjet(projetId: string) {
+    setAttachementEnCours(true);
+    setErreur(null);
+    try {
+      const reponse = await fetch("/api/demandes/ajouter-note-depuis-partage", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projetId, texte: message }),
+      });
+      const donnees = await reponse.json();
+      if (!reponse.ok) {
+        setAttachementEnCours(false);
+        setErreur(donnees.error || "Impossible d'ajouter le message au projet.");
+        return;
+      }
+      router.push(`/dashboard/demandes/${donnees.projetId}`);
+    } catch {
+      setAttachementEnCours(false);
+      setErreur("Impossible de contacter le serveur pour le moment.");
+    }
+  }
+
+  function creerNouveauProjetQuandMeme() {
+    setCorrespondances([]);
+    lancerAnalyseIA(message);
   }
 
   async function creerProjet(valeurs: BrouillonProjet) {
@@ -133,6 +211,24 @@ export default function ImporterMessagePage() {
     );
   }
 
+  // Correspondance(s) trouvée(s) : choix explicite, jamais de rattachement
+  // silencieux (même composant que le parcours de partage Android).
+  if (correspondances.length > 0) {
+    return (
+      <div className="p-8 max-w-2xl">
+        <Card className="p-6">
+          <CorrespondanceProjetExistant
+            correspondances={correspondances}
+            onChoisir={ajouterAuProjet}
+            onCreerNouveau={creerNouveauProjetQuandMeme}
+            enCours={attachementEnCours}
+            erreur={erreur}
+          />
+        </Card>
+      </div>
+    );
+  }
+
   if (brouillon) {
     return (
       <div className="p-8 max-w-2xl">
@@ -181,8 +277,12 @@ export default function ImporterMessagePage() {
 
           {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
-          <Button type="submit" disabled={chargement} className="self-start">
-            {chargement ? "Analyse en cours…" : "Préparer le brouillon"}
+          <Button type="submit" disabled={chargement || rechercheEnCours} className="self-start">
+            {rechercheEnCours
+              ? "Recherche d'un projet en cours…"
+              : chargement
+                ? "Analyse en cours…"
+                : "Préparer le brouillon"}
           </Button>
         </form>
       </Card>

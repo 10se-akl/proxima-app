@@ -43,6 +43,16 @@ export function ValiderDevis({
   const supabase = createClient();
 
   const [lignes, setLignes] = useState<LigneDevisCalculee[]>(devis.lignes);
+  // Audit pré-bêta (09/09), point 🟡 n°19 — aucun repère ne distinguait un
+  // poste généré par l'IA (déjà là au chargement, ou accepté depuis
+  // "Postes probablement oubliés" — même origine, juste accepté un instant
+  // plus tard) d'un poste ajouté par l'artisan lui-même (ligne vide, ou
+  // repris de ses postes fréquents). Tableau parallèle à `lignes`, TOUJOURS
+  // mis à jour aux mêmes endroits (ajout/suppression) — jamais sur
+  // modifierLigne, qui ne change ni la longueur ni l'ordre du tableau.
+  // Purement un repère visuel côté client, jamais persisté (voir
+  // validerDevis, qui n'écrit que `lignes`).
+  const [origineManuelle, setOrigineManuelle] = useState<boolean[]>(() => devis.lignes.map(() => false));
   const [deplacement, setDeplacement] = useState(devis.deplacement);
   const [margePct, setMargePct] = useState(devis.marge_pct);
   const [tvaPct, setTvaPct] = useState(devis.tva_pct);
@@ -115,12 +125,17 @@ export function ValiderDevis({
         detail_calcul: `Prix repris de votre dernière utilisation — à ajuster si besoin`,
       },
     ]);
+    setOrigineManuelle((prev) => [...prev, true]);
   }
 
   function ajouterSuggestion(index: number) {
     setSuggestionsRestantes((prev) => {
       const suggestion = prev[index];
       setLignes((l) => [...l, suggestion]);
+      // Origine IA, pas manuelle : cette ligne vient de l'anti-oubli
+      // (postes_oublies_probables), simplement acceptée un instant après
+      // la génération plutôt qu'au premier chargement.
+      setOrigineManuelle((o) => [...o, false]);
       return prev.filter((_, i) => i !== index);
     });
   }
@@ -155,6 +170,7 @@ export function ValiderDevis({
 
   function supprimerLigne(index: number) {
     setLignes((prev) => prev.filter((_, i) => i !== index));
+    setOrigineManuelle((prev) => prev.filter((_, i) => i !== index));
   }
 
   function ajouterLigne() {
@@ -170,6 +186,7 @@ export function ValiderDevis({
         detail_calcul: "Ligne ajoutée manuellement",
       },
     ]);
+    setOrigineManuelle((prev) => [...prev, true]);
   }
 
   async function validerDevis() {
@@ -245,6 +262,27 @@ export function ValiderDevis({
         n&apos;est pas validé.
       </p>
 
+      {devis.parametres_configures === false && (
+        <div className="mb-5 rounded-xl border border-signal/25 bg-signal/5 px-4 py-3">
+          <p className="text-sm font-medium text-signal">
+            Paramètres d&apos;entreprise non configurés
+          </p>
+          <p className="mt-1 text-xs text-ink/60">
+            Ce devis a été chiffré avec des valeurs par défaut (tarif horaire, marge, TVA) —
+            vérifiez qu&apos;elles correspondent bien aux vôtres avant de l&apos;envoyer, ou{" "}
+            <a
+              href="/dashboard/parametres"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2 hover:text-signal"
+            >
+              configurez votre entreprise
+            </a>{" "}
+            puis régénérez-le.
+          </p>
+        </div>
+      )}
+
       <div className="flex flex-col gap-3">
         {lignes.map((ligne, i) => (
           <div
@@ -252,6 +290,31 @@ export function ValiderDevis({
             className="rounded-xl border border-ink/10 p-3 transition-colors hover:border-ink/20"
           >
             <div className="flex items-start gap-2">
+              {/* Audit pré-bêta (09/09), point 🟡 n°19 — badge discret,
+                  affiché uniquement sur les postes générés par l'IA (les
+                  seuls qui méritent vraiment une relecture attentive) plutôt
+                  que sur les deux catégories, pour rester lisible. */}
+              {!origineManuelle[i] && (
+                <span
+                  title="Poste généré par l'IA — à relire"
+                  className="shrink-0 mt-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-medium bg-signal/10 text-signal"
+                >
+                  IA
+                </span>
+              )}
+              {/* Audit pré-bêta (09/09), point 🟡 n°20 — le basculement
+                  heures→jour (voir SEUIL_HEURES_JOURNEE, calculerDevis.ts)
+                  n'était mentionné que dans le petit texte gris de
+                  detail_calcul, facile à ne pas lire en diagonale. Repère
+                  visuel au même endroit que le badge IA ci-dessus. */}
+              {ligne.unite === "jour" && (
+                <span
+                  title="Poste facturé au tarif journalier plutôt qu'horaire"
+                  className="shrink-0 mt-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-medium bg-steel/10 text-steel"
+                >
+                  JOUR
+                </span>
+              )}
               <input
                 value={ligne.description}
                 onChange={(e) => modifierLigne(i, "description", e.target.value)}

@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
     .select("*")
     .eq("organisation_id", organisationId)
     .maybeSingle();
+  const parametresConfigures = Boolean(parametresBrutes);
   const parametres: ParametresEntreprise = parametresBrutes
     ? (parametresBrutes as ParametresEntreprise)
     : { id: "defaut", artisan_id: userId, organisation_id: organisationId, ...PARAMETRES_PAR_DEFAUT };
@@ -104,6 +105,7 @@ export async function POST(request: NextRequest) {
         montant_tva: 0,
         total_estime: 0,
         statut: "brouillon",
+        parametres_configures: parametresConfigures,
       })
       .select()
       .single();

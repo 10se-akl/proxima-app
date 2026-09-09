@@ -126,7 +126,16 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
 
     if (error) {
       setTraitementRdv(false);
-      setErreur("Impossible d'enregistrer le rendez-vous. Réessayez.");
+      // Audit pré-bêta (09/09), point 🟠 n°11 — même contrainte d'exclusion
+      // côté base que app/dashboard/planning/nouveau/page.tsx (voir
+      // supabase/schema.sql, Module 35) : la vérification ci-dessus reste
+      // utile pour un message immédiat, mais ne protège pas seule contre
+      // une validation quasi simultanée par deux membres de l'équipe.
+      setErreur(
+        error.code === "23P01"
+          ? "Ce créneau vient d'être pris par quelqu'un d'autre de votre équipe. Choisissez un autre horaire."
+          : "Impossible d'enregistrer le rendez-vous. Réessayez."
+      );
       return;
     }
 

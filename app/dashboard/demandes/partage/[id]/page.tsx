@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/Button";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
 import { ConfirmationRdv } from "@/components/dashboard/ConfirmationRdv";
-import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
+import {
+  CorrespondanceProjetExistant,
+  type ProjetOuvertMatch,
+} from "@/components/dashboard/CorrespondanceProjetExistant";
 import type { BrouillonProjet } from "@/types";
 
 // ============================================================
@@ -34,15 +37,8 @@ import type { BrouillonProjet } from "@/types";
 // - une photo partagée SEULE (sans texte) était perdue silencieusement.
 // ============================================================
 
-type EtapeChargement =
-  | "chargement"
-  | "correspondance"
-  | "analyse"
-  | "revue"
-  | "creation"
-  | "erreur";
+type EtapeChargement = "chargement" | "analyse" | "revue" | "creation" | "erreur";
 type RdvPropose = { date: string; heure: string };
-type ProjetOuvert = { id: string; nom_client: string; type_chantier: string; statut: string };
 
 export default function RevuePartagePage() {
   const params = useParams<{ id: string }>();
@@ -57,7 +53,7 @@ export default function RevuePartagePage() {
   // ce message partagé (SMS/message client) est le contenu le plus important à
   // ne jamais perdre silencieusement en cas de coupure réseau.
   const [erreurChargement, setErreurChargement] = useState(false);
-  const [correspondances, setCorrespondances] = useState<ProjetOuvert[]>([]);
+  const [correspondances, setCorrespondances] = useState<ProjetOuvertMatch[]>([]);
   const [attachementEnCours, setAttachementEnCours] = useState(false);
   const [propositionEnCours, setPropositionEnCours] = useState<{
     projetId: string;
@@ -99,12 +95,36 @@ export default function RevuePartagePage() {
 
   async function charger() {
     setErreurChargement(false);
+    setEtape("chargement");
     try {
-      const { data: partage, error } = await supabase
+      // Audit pré-bêta (09/09), point 🟠 n°6 — la lecture du message partagé
+      // et la recherche de correspondance (voir app/api/partage/matcher/
+      // route.ts, qui refait elle-même sa propre lecture de
+      // partages_entrants par partageId, indépendamment de celle-ci) sont
+      // deux lectures indépendantes : les lancer en parallèle plutôt qu'en
+      // séquence économise un aller-retour réseau complet. Le matching ne
+      // coûte rien (aucun appel IA, voir son commentaire) — le lancer même
+      // avant de savoir s'il y a du texte n'est jamais un gaspillage
+      // notable, et son résultat est simplement ignoré dans le cas
+      // "photo seule" ci-dessous.
+      const requetePartage = supabase
         .from("partages_entrants")
         .select("id, texte, images")
         .eq("id", params.id)
         .single();
+
+      const requeteMatch = fetch("/api/partage/matcher", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ partageId: params.id }),
+      })
+        .then(async (reponse) => ({ ok: reponse.ok, donnees: await reponse.json() }))
+        .catch(() => null); // échec réseau du matching : pas grave, voir plus bas
+
+      const [{ data: partage, error }, resultatMatch] = await Promise.all([
+        requetePartage,
+        requeteMatch,
+      ]);
 
       if (annuleRef.current) return;
 
@@ -114,15 +134,19 @@ export default function RevuePartagePage() {
       const imagesPartage: string[] = Array.isArray(partage?.images) ? partage.images : [];
 
       if (error || !partage || (!partage.texte && imagesPartage.length === 0)) {
-        router.replace("/dashboard/demandes/nouvelle");
+        // Audit pré-bêta (09/09), point 🟠 n°4 — même raison que
+        // app/api/partage/route.ts : expliquer plutôt que rediriger en
+        // silence vers un formulaire vide.
+        router.replace("/dashboard/demandes/nouvelle?erreur=partage_vide");
         return;
       }
 
       setImages(imagesPartage);
 
-      // Pas de texte à analyser (photo(s) seule(s)) : pas de matching
-      // possible (rien à chercher), pas la peine d'appeler l'IA sur une
-      // chaîne vide — brouillon vierge que l'artisan complète à la main.
+      // Pas de texte à analyser (photo(s) seule(s)) : le résultat du
+      // matching (lancé en parallèle ci-dessus) ne s'applique pas — rien à
+      // chercher, pas la peine d'appeler l'IA sur une chaîne vide —
+      // brouillon vierge que l'artisan complète à la main.
       if (!partage.texte) {
         setBrouillon({
           nomClient: { valeur: null, confiance: "absent" },
@@ -139,31 +163,15 @@ export default function RevuePartagePage() {
         return;
       }
 
-      // Point 2 du brief : SQL + regex AVANT tout appel IA. Voir
-      // app/api/partage/matcher/route.ts — aucun appel Claude ici.
-      setEtape("correspondance");
-      try {
-        const reponseMatch = await fetch("/api/partage/matcher", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ partageId: params.id }),
-        });
-        const donneesMatch = await reponseMatch.json();
-        if (annuleRef.current) return;
-
-        if (reponseMatch.ok && donneesMatch.statut === "un") {
-          setCorrespondances([donneesMatch.projet]);
-          return; // reste sur l'étape "correspondance", attend le choix de l'artisan
-        }
-        if (reponseMatch.ok && donneesMatch.statut === "plusieurs") {
-          setCorrespondances(donneesMatch.projets);
-          return;
-        }
-      } catch {
-        // Échec du matching (réseau) : pas grave, on continue avec le
-        // parcours normal plutôt que de bloquer l'artisan sur cette étape
-        // secondaire — le pire cas est un brouillon complet au lieu d'un
-        // rattachement, jamais une perte de contenu.
+      // Point 2 du brief : SQL + regex AVANT tout appel IA — déjà fait en
+      // parallèle ci-dessus, on utilise directement son résultat.
+      if (resultatMatch?.ok && resultatMatch.donnees.statut === "un") {
+        setCorrespondances([resultatMatch.donnees.projet]);
+        return; // attend le choix explicite de l'artisan
+      }
+      if (resultatMatch?.ok && resultatMatch.donnees.statut === "plusieurs") {
+        setCorrespondances(resultatMatch.donnees.projets);
+        return;
       }
 
       // Aucune correspondance (ou matching indisponible) : parcours normal.
@@ -284,37 +292,13 @@ export default function RevuePartagePage() {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8">
         <Card className="p-6">
-          <h2 className="text-base font-semibold text-ink">
-            {correspondances.length === 1
-              ? "Ce client a déjà un projet ouvert"
-              : "Ce client a plusieurs projets ouverts"}
-          </h2>
-          <p className="mt-1 text-sm text-ink/60">
-            Le numéro trouvé dans ce message correspond à un client déjà connu. À quel projet ce
-            message se rapporte-t-il ?
-          </p>
-          <div className="mt-4 flex flex-col gap-2">
-            {correspondances.map((projet) => (
-              <button
-                key={projet.id}
-                onClick={() => ajouterAuProjet(projet.id)}
-                disabled={attachementEnCours}
-                className="rounded-xl border border-ink/10 bg-paper-warm px-4 py-3 text-left text-sm text-ink/80 transition-colors hover:border-signal/40 hover:bg-signal/5 disabled:opacity-60"
-              >
-                <span className="font-medium text-ink">{projet.nom_client}</span>
-                {" — "}
-                {LABEL_TYPE_CHANTIER[projet.type_chantier] || "Chantier"}
-              </button>
-            ))}
-          </div>
-          <button
-            onClick={creerNouveauProjetQuandMeme}
-            disabled={attachementEnCours}
-            className="mt-4 text-sm text-ink/50 underline underline-offset-2 hover:text-ink transition-colors disabled:opacity-60"
-          >
-            Ce n&apos;est pas ça — créer un nouveau projet quand même
-          </button>
-          {erreur && <p className="mt-3 text-sm text-signal">{erreur}</p>}
+          <CorrespondanceProjetExistant
+            correspondances={correspondances}
+            onChoisir={ajouterAuProjet}
+            onCreerNouveau={creerNouveauProjetQuandMeme}
+            enCours={attachementEnCours}
+            erreur={erreur}
+          />
         </Card>
       </div>
     );
@@ -323,15 +307,13 @@ export default function RevuePartagePage() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <Card className="p-6">
-        {(etape === "chargement" || etape === "correspondance" || etape === "analyse") && (
+        {(etape === "chargement" || etape === "analyse") && (
           <div className="py-10 text-center">
             <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-signal border-t-transparent" />
             <p className="mt-4 text-sm text-ink/60">
               {etape === "analyse"
                 ? "L'IA prépare le brouillon…"
-                : etape === "correspondance"
-                  ? "Recherche d'un projet en cours…"
-                  : "Récupération du message partagé…"}
+                : "Récupération du message partagé…"}
             </p>
           </div>
         )}

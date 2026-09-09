@@ -18,18 +18,25 @@ import { rechercherClientParTelephone, rechercherProjetsOuvertsClient } from "@/
 // rattachement silencieux — risque de faux positif identifié à l'audit
 // (numéro partagé dans un foyer, deux chantiers différents chez le même
 // client) plus coûteux à corriger qu'un simple doublon.
+//
+// Audit pré-bêta (09/09), point 🔴 n°1 — `texte` accepté en plus de
+// `partageId` : le parcours de collage manuel (app/dashboard/demandes/
+// importer/page.tsx, utilisé sur iPhone où Web Share Target n'existe pas)
+// n'a jamais de ligne `partages_entrants` à lire — le message n'existe
+// qu'en mémoire côté client. Même logique de matching ensuite, à
+// l'identique : seule la SOURCE du texte change.
 // ============================================================
 
 export async function POST(request: NextRequest) {
-  let corps: { partageId?: string };
+  let corps: { partageId?: string; texte?: string };
   try {
     corps = await request.json();
   } catch {
     return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
   }
-  const { partageId } = corps;
-  if (!partageId) {
-    return NextResponse.json({ error: "partageId manquant" }, { status: 400 });
+  const { partageId, texte: texteDirect } = corps;
+  if (!partageId && !texteDirect) {
+    return NextResponse.json({ error: "partageId ou texte manquant" }, { status: 400 });
   }
 
   const supabase = createClient();
@@ -45,17 +52,23 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Aucune organisation associée à ce compte" }, { status: 400 });
   }
 
-  const { data: partage } = await supabase
-    .from("partages_entrants")
-    .select("texte")
-    .eq("id", partageId)
-    .single();
+  let texte: string | null;
+  if (partageId) {
+    const { data: partage } = await supabase
+      .from("partages_entrants")
+      .select("texte")
+      .eq("id", partageId)
+      .single();
+    texte = partage?.texte ?? null;
+  } else {
+    texte = texteDirect?.trim() || null;
+  }
 
-  if (!partage?.texte) {
+  if (!texte) {
     return NextResponse.json({ statut: "aucun" });
   }
 
-  const telephone = extraireTelephone(partage.texte);
+  const telephone = extraireTelephone(texte);
   if (!telephone) {
     return NextResponse.json({ statut: "aucun" });
   }

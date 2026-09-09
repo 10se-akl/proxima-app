@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
@@ -64,14 +64,67 @@ export function FormulaireNote({
   const [dicteeEnCours, setDicteeEnCours] = useState(false);
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  const [brouillonRestaure, setBrouillonRestaure] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
-  function dicter() {
-    const ClasseReconnaissance = obtenirClasseReconnaissance();
-    if (!ClasseReconnaissance) {
-      setErreur("La dictée vocale n'est pas disponible sur ce navigateur — écrivez directement.");
-      return;
+  // Audit pré-bêta (09/09), point 🔴 n°3 — même filet de sécurité que celui
+  // déjà en place sur les notes vocales liées à un projet (voir
+  // components/dashboard/NotesVocales.tsx, cleBrouillon) : ce formulaire
+  // n'en avait aucun, alors qu'il sert AUSSI bien depuis /dashboard/notes/
+  // nouvelle que depuis la fiche projet (voir onCree/projetIdFixe
+  // ci-dessus) — un artisan interrompu en pleine dictée perdait tout, sans
+  // avertissement. Clé par projet quand la note est liée à une fiche
+  // (comportement identique à NotesVocales) ; clé générique sinon (note
+  // générale, un seul brouillon en cours à la fois dans ce cas).
+  const cleBrouillon = `compyo_brouillon_note_${projetIdFixe ?? "generale"}`;
+
+  useEffect(() => {
+    try {
+      const brut = window.localStorage.getItem(cleBrouillon);
+      if (!brut) return;
+      const brouillon = JSON.parse(brut) as { titre?: string; description?: string };
+      if (brouillon.titre?.trim() || brouillon.description?.trim()) {
+        setTitre(brouillon.titre ?? "");
+        setDescription(brouillon.description ?? "");
+        setBrouillonRestaure(true);
+      }
+    } catch {
+      // localStorage indisponible ou contenu corrompu : filet de sécurité
+      // simplement absent, jamais bloquant pour la saisie.
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    try {
+      if (titre.trim() || description.trim()) {
+        window.localStorage.setItem(cleBrouillon, JSON.stringify({ titre, description }));
+      } else {
+        window.localStorage.removeItem(cleBrouillon);
+      }
+    } catch {
+      // Idem — best effort, ne doit jamais faire planter la saisie.
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titre, description]);
+
+  function effacerBrouillon() {
+    try {
+      window.localStorage.removeItem(cleBrouillon);
+    } catch {
+      // best effort
+    }
+  }
+
+  // Point 🟠 (audit pré-bêta 09/09) — sur un navigateur sans reconnaissance
+  // vocale (Safari iOS, Firefox), l'affordance de dictée n'est même pas
+  // affichée (voir plus bas, `!!ClasseReconnaissance`) : aligné sur le
+  // comportement de NotesVocales.tsx, qui bascule aussi silencieusement en
+  // saisie manuelle sans jamais montrer d'erreur.
+  const ClasseReconnaissance = obtenirClasseReconnaissance();
+
+  function dicter() {
+    if (!ClasseReconnaissance) return;
     setErreur(null);
 
     const recognition = new ClasseReconnaissance();
@@ -178,6 +231,8 @@ export function FormulaireNote({
       return;
     }
 
+    effacerBrouillon();
+
     if (demandeId) {
       await enregistrerEvenement(supabase, {
         demandeId,
@@ -235,25 +290,32 @@ export function FormulaireNote({
 
         <div className="flex items-center justify-between gap-3">
           <p className="text-xs font-medium text-ink/70">Titre, description...</p>
-          {!enregistrement ? (
-            <button
-              type="button"
-              onClick={dicter}
-              disabled={dicteeEnCours}
-              className="text-xs text-ink/50 hover:text-ink underline transition-colors disabled:opacity-50"
-            >
-              {dicteeEnCours ? "Analyse…" : "🎙 Dicter plutôt que taper"}
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={arreterDictee}
-              className="text-xs text-signal underline animate-pulse"
-            >
-              ⏹ Arrêter l'écoute
-            </button>
-          )}
+          {ClasseReconnaissance &&
+            (!enregistrement ? (
+              <button
+                type="button"
+                onClick={dicter}
+                disabled={dicteeEnCours}
+                className="text-xs text-ink/50 hover:text-ink underline transition-colors disabled:opacity-50"
+              >
+                {dicteeEnCours ? "Analyse…" : "🎙 Dicter plutôt que taper"}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={arreterDictee}
+                className="text-xs text-signal underline animate-pulse"
+              >
+                ⏹ Arrêter l'écoute
+              </button>
+            ))}
         </div>
+
+        {brouillonRestaure && (
+          <p className="text-xs text-steel -mt-2">
+            Note non enregistrée retrouvée — relisez-la avant de l&apos;enregistrer.
+          </p>
+        )}
 
         <Field
           label="Titre"

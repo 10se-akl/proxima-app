@@ -51,15 +51,21 @@ export async function POST(request: NextRequest) {
   //   galerie ; `get()` ne renvoyait que la première, les autres étaient
   //   perdues silencieusement. Chaque fichier est uploadé individuellement,
   //   un échec sur l'un n'empêche pas les autres (Promise.allSettled).
-  // - Limite connue et non corrigeable depuis ce code : Vercel refuse tout
-  //   corps de requête au-delà de sa limite de plan (par défaut 4,5 Mo sur
-  //   Hobby) AVANT même que cette route ne s'exécute — une photo de
-  //   téléphone dépassant cette taille ne déclenche jamais ce bloc, la
-  //   requête échoue au niveau de la plateforme (413). Aucun try/catch ici
-  //   ne peut intercepter ce cas ; seule une vraie compression côté client
-  //   avant l'envoi le résoudrait, impossible ici car le partage natif est
-  //   un POST HTML fait par l'OS, pas par notre JS (voir le commentaire en
-  //   tête de fichier). Documenté dans le rapport de cycle, pas un oubli.
+  // - Limite de plateforme, non contournable DEPUIS CE FICHIER : Vercel
+  //   refuse tout corps de requête au-delà de 4,5 Mo AVANT même que cette
+  //   route ne s'exécute — une photo trop lourde ne déclenche jamais ce
+  //   bloc, la requête échoue au niveau de la plateforme (413), aucun
+  //   try/catch ici ne peut l'intercepter.
+  //   Audit pré-bêta (09/09) : la compression avant envoi n'est pas
+  //   impossible dans l'absolu, seulement depuis une page classique — le
+  //   partage natif est un POST HTML fait par l'OS, pas par du JS de page
+  //   pilotable. Elle est faite un cran plus tôt, dans le service worker
+  //   (voir public/sw.js, gererPartageEntrant/compresserPhotoPartage), le
+  //   seul endroit qui intercepte réellement cette requête avant qu'elle ne
+  //   quitte l'appareil. Ce fichier n'a rien à faire de plus : une photo
+  //   compressée par le service worker arrive ici déjà sous la limite dans
+  //   l'immense majorité des cas ; le rare cas non compressible (format non
+  //   décodable) retombe sur le même 413 qu'avant ce correctif, jamais pire.
   try {
     const donnees = await request.formData();
     titre = String(donnees.get("titre") ?? "");
@@ -87,12 +93,20 @@ export async function POST(request: NextRequest) {
     }
   } catch (err) {
     // form-data illisible (partage sans contenu, format inattendu, ou
-    // corps rejeté par la plateforme avant même d'atteindre ce code) : on
-    // continue quand même vers la page de revue avec un texte vide plutôt
-    // que d'échouer — l'artisan pourra compléter à la main. On trace
-    // l'échec côté serveur (jamais visible par l'artisan) pour garder une
-    // trace en cas de plainte répétée sur des partages "perdus".
+    // corps rejeté par la plateforme avant même d'atteindre ce code) : rien
+    // n'est récupérable dans ce bloc (texte ET images sont perdus, voir le
+    // try englobant), donc pas la peine de créer une ligne partages_entrants
+    // vide pour la perdre une deuxième fois côté page de revue. Audit
+    // pré-bêta (09/09), point 🟠 n°4 : redirection directe avec une raison
+    // explicite plutôt qu'un aller-retour silencieux vers un écran vide —
+    // voir MESSAGES_ERREUR_PARTAGE dans app/dashboard/demandes/nouvelle/
+    // page.tsx. On trace aussi l'échec côté serveur (jamais visible par
+    // l'artisan) pour garder une trace en cas de plainte répétée.
     console.error("Échec de lecture du partage entrant :", err);
+    return NextResponse.redirect(
+      new URL("/dashboard/demandes/nouvelle?erreur=partage_illisible", request.url),
+      303
+    );
   }
 
   // Le texte partagé arrive dans des champs différents selon l'app source
@@ -113,7 +127,12 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (insertError || !partage) {
-    return NextResponse.redirect(new URL("/dashboard/demandes/nouvelle", request.url), 303);
+    // Audit pré-bêta (09/09), point 🟠 n°4 — même raison que le catch
+    // ci-dessus : raison explicite plutôt qu'un écran vide silencieux.
+    return NextResponse.redirect(
+      new URL("/dashboard/demandes/nouvelle?erreur=partage_echec_serveur", request.url),
+      303
+    );
   }
 
   return NextResponse.redirect(

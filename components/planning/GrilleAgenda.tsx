@@ -59,14 +59,75 @@ function estPasse(jour: Date) {
   return jour.getTime() < debutAujourdhui.getTime();
 }
 
+// Audit pré-bêta (09/09), point 🟠 n°12 — un rendez-vous et une tâche au
+// même horaire se superposaient totalement (chaque bloc en `left-1
+// right-1`, pleine largeur), celui rendu en dernier dans le DOM (z-10 sur
+// les deux) rendait l'autre injoignable au clic, sans jamais être
+// "annulé". Algorithme de calendrier classique : regrouper les événements
+// d'une même journée par "cluster" de chevauchement en chaîne (A
+// chevauche B, B chevauche C → même cluster même si A et C, eux, ne se
+// touchent pas directement), puis attribuer une colonne à chacun dans son
+// cluster — largeur et position calculées à partir du nombre de colonnes
+// du cluster, jamais de la journée entière (un cluster de 2 ne doit pas
+// rétrécir un événement isolé ailleurs dans la même journée).
+type PlacementEvenement = { colonne: number; totalColonnes: number };
+
+function disposerEvenementsDuJour(evenements: EvenementAvecProjet[]): Map<string, PlacementEvenement> {
+  const bornes = evenements
+    .map((e) => {
+      const debut = new Date(e.date_heure).getTime();
+      return { id: e.id, debut, fin: debut + (e.duree_minutes ?? 30) * 60000 };
+    })
+    .sort((a, b) => a.debut - b.debut || a.fin - b.fin);
+
+  const placements = new Map<string, PlacementEvenement>();
+  let clusterActuel: typeof bornes = [];
+  let finMaxCluster = -Infinity;
+
+  function clorreCluster() {
+    if (clusterActuel.length === 0) return;
+    const finColonnes: number[] = [];
+    const colonneParId = new Map<string, number>();
+    for (const ev of clusterActuel) {
+      let colonne = finColonnes.findIndex((fin) => fin <= ev.debut);
+      if (colonne === -1) {
+        colonne = finColonnes.length;
+        finColonnes.push(ev.fin);
+      } else {
+        finColonnes[colonne] = ev.fin;
+      }
+      colonneParId.set(ev.id, colonne);
+    }
+    const totalColonnes = finColonnes.length;
+    for (const ev of clusterActuel) {
+      placements.set(ev.id, { colonne: colonneParId.get(ev.id)!, totalColonnes });
+    }
+    clusterActuel = [];
+    finMaxCluster = -Infinity;
+  }
+
+  for (const ev of bornes) {
+    if (clusterActuel.length > 0 && ev.debut >= finMaxCluster) {
+      clorreCluster();
+    }
+    clusterActuel.push(ev);
+    finMaxCluster = Math.max(finMaxCluster, ev.fin);
+  }
+  clorreCluster();
+
+  return placements;
+}
+
 function BlocEvenement({
   evenement,
   heureDebut,
   meteo,
+  placement,
 }: {
   evenement: EvenementAvecProjet;
   heureDebut: number;
   meteo?: RisqueMeteoJour;
+  placement: PlacementEvenement;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -78,7 +139,13 @@ function BlocEvenement({
   const minutesDepuisDebut = (date.getHours() - heureDebut) * 60 + date.getMinutes();
   const top = (minutesDepuisDebut / 60) * HAUTEUR_HEURE;
   const dureeMin = evenement.duree_minutes ?? 30;
-  const hauteur = Math.max((dureeMin / 60) * HAUTEUR_HEURE, 22);
+  // Audit pré-bêta (09/09), point 🟠 n°13 — un RDV de 15-25 min descendait à
+  // ~22px de hauteur, bien sous les 44px recommandés (Apple/Google) pour
+  // une cible tactile fiable au doigt, avec des gants, sur chantier. Le
+  // bloc peut désormais visuellement déborder un peu sur le créneau
+  // suivant pour un rendez-vous très court — préférable à un bloc
+  // impossible à toucher précisément.
+  const hauteur = Math.max((dureeMin / 60) * HAUTEUR_HEURE, 44);
 
   const couleur = evenement.demandes?.priorite
     ? COULEUR_PRIORITE[evenement.demandes.priorite]
@@ -159,8 +226,21 @@ function BlocEvenement({
     router.refresh();
   }
 
+  const { colonne, totalColonnes } = placement;
+  const style =
+    totalColonnes > 1
+      ? {
+          top,
+          left: `calc(${(100 / totalColonnes) * colonne}% + 2px)`,
+          width: `calc(${100 / totalColonnes}% - 4px)`,
+        }
+      : { top };
+
   return (
-    <div className="absolute left-1 right-1 z-10" style={{ top }}>
+    <div
+      className={totalColonnes > 1 ? "absolute z-10" : "absolute left-1 right-1 z-10"}
+      style={style}
+    >
       <button
         onClick={(e) => {
           e.stopPropagation();
@@ -328,34 +408,37 @@ export function GrilleAgenda({
             ))}
           </div>
 
-          {jours.map((jour) => (
-            <div
-              key={jour.toISOString()}
-              className={`relative border-l border-ink/10 ${
-                estPasse(jour) ? "bg-ink/[0.02]" : ""
-              }`}
-              style={{ height: HAUTEUR_HEURE * heures.length }}
-            >
-              {heures.map((h) => (
-                <div
-                  key={h}
-                  className="border-t border-ink/5"
-                  style={{ height: HAUTEUR_HEURE }}
-                />
-              ))}
+          {jours.map((jour) => {
+            const evenementsJour = evenements.filter((e) => estMemeJour(new Date(e.date_heure), jour));
+            const placements = disposerEvenementsDuJour(evenementsJour);
+            return (
+              <div
+                key={jour.toISOString()}
+                className={`relative border-l border-ink/10 ${
+                  estPasse(jour) ? "bg-ink/[0.02]" : ""
+                }`}
+                style={{ height: HAUTEUR_HEURE * heures.length }}
+              >
+                {heures.map((h) => (
+                  <div
+                    key={h}
+                    className="border-t border-ink/5"
+                    style={{ height: HAUTEUR_HEURE }}
+                  />
+                ))}
 
-              {evenements
-                .filter((e) => estMemeJour(new Date(e.date_heure), jour))
-                .map((e) => (
+                {evenementsJour.map((e) => (
                   <BlocEvenement
                     key={e.id}
                     evenement={e}
                     heureDebut={heureDebut}
                     meteo={meteoParJour?.[cleDateLocale(jour)]}
+                    placement={placements.get(e.id) ?? { colonne: 0, totalColonnes: 1 }}
                   />
                 ))}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

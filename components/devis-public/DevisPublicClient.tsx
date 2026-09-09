@@ -42,6 +42,8 @@ type DevisPublic = {
   adresse: string | null;
   telephone: string | null;
   email: string | null;
+  siret: string | null;
+  forme_juridique: string | null;
 };
 
 function formatEuros(n: number) {
@@ -241,6 +243,13 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                     {(devis.telephone || devis.email) && (
                       <p className="text-xs text-ink/50">
                         {[devis.telephone, devis.email].filter(Boolean).join(" · ")}
+                      </p>
+                    )}
+                    {(devis.forme_juridique || devis.siret) && (
+                      <p className="text-[11px] text-ink/50 mt-0.5">
+                        {[devis.forme_juridique, devis.siret ? `SIRET ${devis.siret}` : null]
+                          .filter(Boolean)
+                          .join(" · ")}
                       </p>
                     )}
                     <p className="font-mono text-[11px] text-ink/50 mt-0.5">DEVIS N° {devis.numero}</p>

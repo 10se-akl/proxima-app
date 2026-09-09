@@ -78,6 +78,8 @@ const DEVIS_EXEMPLE: Devis = {
   signature_user_agent: null,
   signe_le: null,
   parametres_configures: true,
+  notifie_relance_j5_le: null,
+  notifie_relance_j10_le: null,
 };
 
 const ENTREPRISE_EXEMPLE: ParametresEntreprise = {

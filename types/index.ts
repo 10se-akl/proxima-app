@@ -372,6 +372,11 @@ export type Devis = {
   // affiché comme un avertissement rétroactif). Fige l'état AU MOMENT de
   // la génération — ne se met jamais à jour tout seul après coup.
   parametres_configures: boolean | null;
+  // Notification de relance (10/09) — voir app/api/cron/relance-devis/
+  // route.ts. Non-null une fois le palier notifié, pour ne jamais
+  // renotifier deux fois le même palier au fil des passages du cron.
+  notifie_relance_j5_le: string | null;
+  notifie_relance_j10_le: string | null;
 };
 
 // ============================================================

@@ -10,6 +10,14 @@ Architecture revue par Cowork puis codée : `lib/bilan-mensuel.ts`, page `/dashb
 
 Cron pas encore programmé côté cron-job.org (même service externe que les rappels) — à faire une fois `CRON_SECRET` en place.
 
+## Notification de relance devis (10/09) — construit, deux prérequis de déploiement
+
+Suite à une recherche terrain (baromètre ARTISANTÉ CAPEB/IRIS-ST : l'administratif est la 3e source de stress des artisans BTP, juste derrière la charge de travail) : la détection des devis sans réponse (résumé de fin de journée) et la rédaction de la relance par IA (bouton "Suggérer une relance", fiche projet) existaient déjà — ce qui manquait, c'était un déclencheur PROACTIF plutôt que de dépendre de l'artisan qui pense à ouvrir l'app. `app/api/cron/relance-devis/route.ts` notifie l'artisan (jamais le client) à J+5 puis J+10 qu'un devis envoyé traîne sans réponse, via l'infrastructure push déjà construite pour les rappels de notes (`lib/notifications/push.ts`).
+
+**Deux prérequis de déploiement, à ajouter à la liste de samedi** :
+1. **Clés VAPID** — générer une paire avec `npx web-push generate-vapid-keys` (aucun compte externe requis), renseigner `NEXT_PUBLIC_VAPID_CLE_PUBLIQUE` et `VAPID_CLE_PRIVEE`. Sans ça, aucune notification push ne part jamais (rappels de notes compris — cette dépendance existait déjà avant ce module, juste jamais documentée dans `.env.local.example`, corrigé au passage).
+2. **Cron externe** — même service que les rappels (cron-job.org), même `CRON_SECRET`, mais une URL séparée à programmer pour `/api/cron/relance-devis` (une fois par jour suffit, les deux paliers J+5/J+10 sont calculés à chaque passage).
+
 ## Structure juridique — décision (08/09)
 
 Axel a choisi de ne PAS attendre ses 18 ans (risque qu'un concurrent prenne le même positionnement entre-temps). Voie retenue : SASU, avec un parent comme représentant légal tant qu'Axel est mineur non émancipé (à confirmer précisément avec LegalPlace — détails de procédure non garantis par Claude, sujet juridique spécialisé).

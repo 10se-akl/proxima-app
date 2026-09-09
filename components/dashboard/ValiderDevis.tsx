@@ -262,6 +262,20 @@ export function ValiderDevis({
         n&apos;est pas validé.
       </p>
 
+      {/* Passe visuelle (10/09), guidée par la recherche terrain sur la
+          charge mentale des artisans BTP : le Total TTC — le chiffre le
+          plus important de tout cet écran, celui qui permet un premier
+          "ça a l'air correct" — était auparavant tout en bas, après
+          chaque ligne éditable. Un artisan fatigué qui relit un devis le
+          soir doit pouvoir le voir en un coup d'œil AVANT de dérouler le
+          détail, sans que ce détail (le vrai garde-fou anti-erreur) soit
+          raccourci ou retiré pour autant — il reste identique plus bas.
+          Recalculé en direct (useMemo totaux) à chaque modification. */}
+      <div className="mb-5 rounded-2xl border border-ink/10 bg-paper-warm px-4 py-3.5 flex items-center justify-between">
+        <span className="text-xs text-ink/50">Total TTC (mis à jour en direct)</span>
+        <span className="font-mono text-xl font-semibold">{formatEuros(totaux.total_ttc)}</span>
+      </div>
+
       {devis.parametres_configures === false && (
         <div className="mb-5 rounded-xl border border-signal/25 bg-signal/5 px-4 py-3">
           <p className="text-sm font-medium text-signal">

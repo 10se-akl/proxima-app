@@ -1839,3 +1839,20 @@ alter table evenements_planning
     organisation_id with =,
     periode with &&
   ) where (type = 'rendez_vous' and statut != 'annule');
+
+-- ============================================================
+-- Module 36 (10/09) — Notification de relance sur un devis sans réponse.
+-- Le résumé de fin de journée (app/api/ai/resume-journee/route.ts) et le
+-- bouton "Suggérer une relance" (fiche projet) existaient déjà, mais tout
+-- ça restait PASSIF : rien ne poussait l'info vers l'artisan, il fallait
+-- qu'il ouvre l'app pour la voir. Ce module ajoute juste de quoi éviter de
+-- notifier le même devis en boucle chaque jour où le cron tourne — deux
+-- colonnes, une par palier (J+5, J+10, voir app/api/cron/relance-devis/
+-- route.ts), jamais plus de deux notifications par devis, jamais
+-- insistant au-delà. Aucune notification n'est envoyée AU CLIENT ici :
+-- uniquement à l'artisan, qui reste seul décideur d'envoyer une relance ou
+-- non (même principe que partout ailleurs — l'IA/l'automatisation propose
+-- un rappel, jamais une action au nom de l'artisan).
+-- ============================================================
+alter table devis add column if not exists notifie_relance_j5_le timestamptz;
+alter table devis add column if not exists notifie_relance_j10_le timestamptz;

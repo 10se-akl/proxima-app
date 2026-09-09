@@ -254,6 +254,18 @@ export function Header({
               </Link>
             ))}
             <div className="mt-2 pt-3 border-t border-ink/10 flex flex-col gap-3">
+              {/* Repéré (10/09) : le bouton mode sombre/clair de la barre
+                  (juste au-dessus) est en "hidden sm:inline-block" — invisible
+                  sur un téléphone en portrait — et n'avait jamais été repris
+                  ici, dans le panneau qui, lui, est justement fait pour le
+                  mobile. Résultat : totalement injoignable sur téléphone,
+                  seul moyen de le voir était un écran large. */}
+              {!masquerToggleTheme && (
+                <div className="flex items-center justify-between py-1">
+                  <span className="text-sm font-medium text-ink/80">Thème</span>
+                  <ThemeToggle className="text-lg leading-none text-ink/70 hover:text-ink transition-colors" />
+                </div>
+              )}
               {connecte ? (
                 <Link
                   href="/dashboard"

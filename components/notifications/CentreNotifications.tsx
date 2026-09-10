@@ -94,7 +94,12 @@ export function CentreNotifications() {
       </button>
 
       {ouvert && (
-        <div className="absolute right-0 bottom-full mb-2 z-30 w-80 max-h-96 overflow-y-auto rounded-xl border border-ink/10 bg-surface shadow-lg shadow-ink/10">
+        // Bug remonté (10/09) : le bouton vit tout en bas à gauche de la
+        // sidebar (voir Sidebar.tsx, BlocCompteSidebar) — un panneau ancré
+        // en "right-0" s'ouvre donc vers la GAUCHE du bouton, c'est-à-dire
+        // hors de l'écran, puisque le bouton est déjà collé au bord gauche.
+        // "left-0" ouvre vers la droite, dans la zone de contenu visible.
+        <div className="absolute left-0 bottom-full mb-2 z-30 w-80 max-h-96 overflow-y-auto rounded-xl border border-ink/10 bg-surface shadow-lg shadow-ink/10">
           <p className="px-4 pt-3.5 pb-2 font-mono text-[10px] tracking-[0.2em] uppercase text-steel">
             Notifications
           </p>

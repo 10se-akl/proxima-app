@@ -280,6 +280,7 @@ export function calculerDevis(
     sous_total_ht: sousTotalHT,
     deplacement,
     marge_pct: margePct,
+    montant_marge: montantMarge,
     total_ht: totalHT,
     tva_pct: tvaPct,
     montant_tva: montantTVA,
@@ -349,6 +350,23 @@ export const PARAMETRES_PAR_DEFAUT: Omit<ParametresEntreprise, "id" | "artisan_i
 // l'artisan a lui-même ajustés. C'est la même logique de calcul, jamais
 // une nouvelle estimation.
 // ============================================================
+// Audit "vérification systématique" (10/09) — trouvé par un agent de
+// recherche : DevisPreview.tsx recalculait ce montant par SOUSTRACTION
+// (total_ttc - montant_tva - sous_total_ht - deplacement) plutôt que de
+// reprendre la formule d'origine — fragile (résidu flottant théorique sur
+// une chaîne de soustractions) et incohérent avec la seule vraie source de
+// vérité pour ce calcul (recalculerDevis, juste en dessous). Exportée ici
+// pour que tout composant qui doit reconstruire ce montant à partir des
+// champs déjà stockés sur un devis (sous_total_ht, deplacement, marge_pct)
+// utilise exactement la même formule, jamais une reconstruction séparée.
+export function calculerMontantMarge(
+  sousTotalHt: number,
+  deplacement: number,
+  margePct: number
+): number {
+  return arrondir((sousTotalHt + deplacement) * (margePct / 100));
+}
+
 export function recalculerDevis(
   lignes: LigneDevisCalculee[],
   deplacement: number,
@@ -368,6 +386,7 @@ export function recalculerDevis(
     sous_total_ht: sousTotalHT,
     deplacement: arrondir(deplacement),
     marge_pct: margePct,
+    montant_marge: montantMarge,
     total_ht: totalHT,
     tva_pct: tvaPct,
     montant_tva: montantTVA,

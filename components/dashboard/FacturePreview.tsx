@@ -103,9 +103,13 @@ export function FacturePreview({
         <div className="divide-y divide-ink/5">
           {facture.lignes.map((ligne, i) => (
             <div key={i} className="px-5 py-3 text-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-ink/80">{ligne.description}</p>
-                <span className="font-mono">{formatEuros(ligne.total)}</span>
+              {/* Audit "vérification systématique" (10/09) — même correctif
+                  que DevisPreview.tsx : min-w-0/shrink-0 pour enrouler le
+                  texte au lieu d'un débordement invisible sous
+                  overflow-hidden. */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-ink/80 min-w-0">{ligne.description}</p>
+                <span className="font-mono shrink-0 whitespace-nowrap">{formatEuros(ligne.total)}</span>
               </div>
               {ligne.detail_calcul && <p className="text-xs text-ink/40 font-mono mt-0.5">{ligne.detail_calcul}</p>}
             </div>

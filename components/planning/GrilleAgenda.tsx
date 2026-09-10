@@ -156,7 +156,30 @@ function BlocEvenement({
   // bloc peut désormais visuellement déborder un peu sur le créneau
   // suivant pour un rendez-vous très court — préférable à un bloc
   // impossible à toucher précisément.
-  const hauteur = Math.max((dureeMin / 60) * HAUTEUR_HEURE, 44);
+  // Audit "vérification systématique" (10/09) — trouvé par un agent de
+  // recherche : aucun plafond ici (la validation à la saisie, ajoutée dans
+  // app/dashboard/planning/nouveau/page.tsx, ne protège pas une valeur déjà
+  // en base avant ce correctif, ni un futur chemin d'écriture qui la
+  // contournerait). On plafonne la hauteur du bloc à l'espace RÉELLEMENT
+  // disponible sous son point de départ dans la grille visible, plutôt
+  // qu'à une valeur fixe — un rendez-vous démarrant tard dans la journée a
+  // moins de marge qu'un qui démarre tôt.
+  //
+  // Relecture indépendante (10/09) — repéré à raison : le "Math.max(…, 44)"
+  // ci-dessous replafonne l'espace disponible à 44px même quand il en
+  // reste moins (un événement commençant dans les toutes dernières minutes
+  // de la grille affichée). Ce n'est PAS un oubli : les deux contraintes
+  // (jamais déborder / toujours au moins 44px, cible tactile) sont
+  // mathématiquement incompatibles quand il reste moins de 44px sous le
+  // point de départ — impossible de garantir les deux à la fois. Même
+  // arbitrage déjà assumé juste au-dessus pour un rendez-vous très court
+  // (déborde plutôt que d'être intouchable) : ici, le débordement résiduel
+  // est borné à 44px maximum, dans le cas le plus rare possible (dernières
+  // minutes de la grille), contre plusieurs centaines de px n'importe où
+  // dans la journée avant ce correctif — net progrès, pas une élimination
+  // totale du débordement.
+  const hauteurMaxDisponible = Math.max(nombreHeures * HAUTEUR_HEURE - top, 44);
+  const hauteur = Math.min(Math.max((dureeMin / 60) * HAUTEUR_HEURE, 44), hauteurMaxDisponible);
 
   const couleur = evenement.demandes?.priorite
     ? COULEUR_PRIORITE[evenement.demandes.priorite]

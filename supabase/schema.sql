@@ -1856,3 +1856,26 @@ alter table evenements_planning
 -- ============================================================
 alter table devis add column if not exists notifie_relance_j5_le timestamptz;
 alter table devis add column if not exists notifie_relance_j10_le timestamptz;
+
+-- ============================================================
+-- Module 37 (10/09) — Audit "vérification systématique" : durcissement +
+-- index manquants, repérés en vérifiant les requêtes déjà en place plutôt
+-- qu'après avoir trouvé un nouveau bug. Aucun n'est urgent avant la bêta
+-- (volumes actuels quasi nuls), mais coûtent rien à ajouter maintenant
+-- plutôt que de découvrir une requête lente une fois de vraies données en
+-- base.
+--
+-- app/api/cron/relance-devis/route.ts (Module 36 ci-dessus) filtre TOUS
+-- les devis "envoyé", toutes organisations confondues (c'est un cron, pas
+-- une route par artisan) — devis_organisation_id_statut_idx existant ne
+-- sert à rien ici, il commence par organisation_id qui n'est justement
+-- pas filtré par cette requête précise.
+create index if not exists devis_statut_envoye_le_idx
+  on devis (statut, envoye_le) where statut = 'envoye';
+
+-- lib/bilan-mensuel.ts filtre factures par (organisation_id, type, statut,
+-- payee_le) chaque mois pour chaque organisation — payee_le n'était couvert
+-- par aucun index existant (factures_organisation_id_date_idx couvre
+-- date_emission, une colonne différente).
+create index if not exists factures_organisation_statut_payee_le_idx
+  on factures (organisation_id, statut, payee_le) where type = 'facture';

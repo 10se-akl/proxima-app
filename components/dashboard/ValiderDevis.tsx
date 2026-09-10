@@ -471,6 +471,16 @@ export function ValiderDevis({
           <span>Déplacement</span>
           <span className="font-mono">{formatEuros(totaux.deplacement)}</span>
         </div>
+        {/* Audit "vérification systématique" (10/09) — cette ligne
+            manquait ici alors que DevisPreview.tsx l'affiche déjà : sans
+            elle, Sous-total HT + Déplacement + TVA ne fait PAS le Total
+            TTC affiché juste en dessous (l'écart, c'est la marge) — un
+            artisan qui vérifie le calcul à la main sur cet écran précis
+            tombait sur un total qu'il ne pouvait pas reconstituer. */}
+        <div className="flex items-center justify-between text-ink/60">
+          <span>Marge ({totaux.marge_pct}%)</span>
+          <span className="font-mono">{formatEuros(totaux.montant_marge)}</span>
+        </div>
         <div className="flex items-center justify-between text-ink/60">
           <span>TVA ({totaux.tva_pct}%)</span>
           <span className="font-mono">{formatEuros(totaux.montant_tva)}</span>

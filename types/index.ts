@@ -188,6 +188,12 @@ export type DevisCalcule = {
   sous_total_ht: number;
   deplacement: number;
   marge_pct: number;
+  // Audit "vérification systématique" (10/09) — déjà calculé en interne par
+  // recalculerDevis() mais jamais exposé jusqu'ici : ValiderDevis.tsx et
+  // DevisPublicClient.tsx affichaient Sous-total HT/Déplacement/TVA/Total
+  // TTC SANS la ligne Marge (contrairement à DevisPreview.tsx), rendant
+  // impossible de vérifier le total à la main sur ces deux écrans.
+  montant_marge: number;
   total_ht: number;
   tva_pct: number;
   montant_tva: number;

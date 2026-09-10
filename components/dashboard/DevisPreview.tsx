@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/Button";
+import { calculerMontantMarge } from "@/lib/moteur-metier/calculerDevis";
 import type { Devis, ParametresEntreprise } from "@/types";
 
 function formatEuros(n: number) {
@@ -42,8 +43,10 @@ export function DevisPreview({
   entreprise?: ParametresEntreprise | null;
   logoUrl?: string | null;
 }) {
-  const totalHT = devis.total_estime - devis.montant_tva;
-  const montantMarge = totalHT - devis.sous_total_ht - devis.deplacement;
+  // Audit "vérification systématique" (10/09) — voir calculerMontantMarge :
+  // reconstruit directement à partir des champs stockés (sous_total_ht,
+  // deplacement, marge_pct), jamais par soustraction du total final.
+  const montantMarge = calculerMontantMarge(devis.sous_total_ht, devis.deplacement, devis.marge_pct);
 
   return (
     <div>
@@ -96,9 +99,18 @@ export function DevisPreview({
         <div className="divide-y divide-ink/5">
           {devis.lignes.map((ligne, i) => (
             <div key={i} className="px-5 py-3 text-sm">
-              <div className="flex items-center justify-between">
-                <p className="text-ink/80">{ligne.description}</p>
-                <span className="font-mono">{formatEuros(ligne.total)}</span>
+              {/* Audit "vérification systématique" (10/09) — trouvé par un
+                  agent de recherche : sans min-w-0 sur la description ni
+                  shrink-0 sur le montant, un enfant flex ne rétrécit
+                  jamais sous sa largeur intrinsèque. Une description
+                  longue + un montant à 5-6 chiffres sur petit écran
+                  dépassait le conteneur (overflow-hidden), coupant le
+                  texte SANS aucun signe visible qu'il en manque. min-w-0
+                  autorise l'enroulement du texte au lieu d'un débordement
+                  invisible. */}
+              <div className="flex items-start justify-between gap-3">
+                <p className="text-ink/80 min-w-0">{ligne.description}</p>
+                <span className="font-mono shrink-0 whitespace-nowrap">{formatEuros(ligne.total)}</span>
               </div>
               <p className="text-xs text-ink/40 font-mono mt-0.5">{ligne.detail_calcul}</p>
             </div>

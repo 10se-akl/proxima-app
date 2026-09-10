@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
+import { Button } from "@/components/ui/Button";
 
 // ============================================================
 // Signature électronique en ligne (08/09) — voir Module 31,
@@ -230,7 +231,16 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
 
         {devis && !erreurChargement && (
           <>
-            <div className="rounded-2xl border border-ink/10 bg-surface overflow-hidden">
+            {/* Audit "vérification systématique" (10/09) — trouvé en
+                vérifiant le mécanisme d'export PDF (window.print() + règles
+                @media print ciblant #devis-imprimable/#facture-imprimable/
+                .doc-imprimable, voir app/globals.css) : cette page, la
+                SEULE des trois que le CLIENT de l'artisan ouvre réellement,
+                n'avait ni bouton d'export ni la classe qui active la mise
+                en forme papier — un Ctrl+P manuel aurait imprimé toute la
+                page (en-tête, bouton, pavé de signature compris) au lieu
+                d'un document propre. */}
+            <div id="devis-imprimable" className="doc-imprimable rounded-2xl border border-ink/10 bg-surface overflow-hidden">
               <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-ink/10">
                 <div className="flex items-start gap-3">
                   {devis.logo_url && (
@@ -266,9 +276,13 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
               <div className="divide-y divide-ink/5">
                 {devis.lignes.map((ligne, i) => (
                   <div key={i} className="px-5 py-3 text-sm">
-                    <div className="flex items-center justify-between">
-                      <p className="text-ink/80">{ligne.description}</p>
-                      <span className="font-mono">{formatEuros(ligne.total)}</span>
+                    {/* Audit "vérification systématique" (10/09) — même
+                        correctif que DevisPreview.tsx/FacturePreview.tsx :
+                        cette page est celle que le CLIENT ouvre depuis son
+                        téléphone, l'endroit où ce risque compte le plus. */}
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="text-ink/80 min-w-0">{ligne.description}</p>
+                      <span className="font-mono shrink-0 whitespace-nowrap">{formatEuros(ligne.total)}</span>
                     </div>
                     <p className="text-xs text-ink/40 font-mono mt-0.5">{ligne.detail_calcul}</p>
                   </div>
@@ -316,6 +330,10 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                 </p>
               )}
             </div>
+
+            <Button variant="ghost" className="mt-4" onClick={() => window.print()}>
+              Imprimer / Enregistrer en PDF
+            </Button>
 
             <div className="mt-6">
               {(reponseEnregistree || devis.devis_statut === "refuse" || devis.demande_statut === "accepte") ? (

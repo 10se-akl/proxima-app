@@ -21,6 +21,24 @@ const COULEUR_PRIORITE: Record<Priorite, string> = {
 
 type ProjetLeger = { id: string; nom_client: string; priorite: Priorite };
 
+// Audit "vérification systématique" (10/09) — trouvé par un agent de
+// recherche : les deux endroits qui préremplissaient date/heure à partir
+// d'un `Date` (édition d'un événement existant, ou reprise du dernier RDV
+// du projet choisi) utilisaient `toISOString()` (UTC) pour la date mais
+// `toTimeString()` (heure locale du navigateur) pour l'heure — deux
+// fuseaux différents dans le même formulaire. Pour un événement entre
+// minuit et ~2h heure de Paris, la date UTC est encore celle de la veille :
+// le champ "date" affichait alors le mauvais jour. Même logique locale
+// pour les deux champs, cohérente avec l'heure réellement affichée à
+// l'artisan (voir même idiome dans components/planning/GrilleAgenda.tsx,
+// cleDateLocale).
+function dateLocaleAAAAMMJJ(d: Date): string {
+  const annee = d.getFullYear();
+  const mois = String(d.getMonth() + 1).padStart(2, "0");
+  const jour = String(d.getDate()).padStart(2, "0");
+  return `${annee}-${mois}-${jour}`;
+}
+
 // Next.js exige que tout composant utilisant useSearchParams() soit
 // entouré d'une frontière <Suspense> — sinon le pré-rendu statique échoue
 // au build (visible seulement au déploiement, pas en dev local).
@@ -103,7 +121,7 @@ function NouvelEvenementForm() {
         setType(data.type);
         setTitre(data.titre);
         const d = new Date(data.date_heure);
-        setDate(d.toISOString().slice(0, 10));
+        setDate(dateLocaleAAAAMMJJ(d));
         setHeure(d.toTimeString().slice(0, 5));
         setDureeMinutes(data.duree_minutes ?? 60);
         setDemandeId(data.demande_id ?? "");
@@ -139,7 +157,7 @@ function NouvelEvenementForm() {
 
       if (data?.date_heure) {
         const d = new Date(data.date_heure);
-        setDate(d.toISOString().slice(0, 10));
+        setDate(dateLocaleAAAAMMJJ(d));
         setHeure(d.toTimeString().slice(0, 5));
       }
     }
@@ -203,6 +221,19 @@ function NouvelEvenementForm() {
     // sur le planning.
     if (type === "rendez_vous" && (!Number.isFinite(dureeMinutes) || dureeMinutes <= 0)) {
       setErreur("La durée doit être supérieure à 0 minute.");
+      setChargement(false);
+      return;
+    }
+    // Audit "vérification systématique" (10/09) — trouvé par un agent de
+    // recherche : aucun plafond, donc un rendez-vous saisi par erreur en
+    // minutes au lieu d'heures (ou un simple faux clic) produisait un bloc
+    // dont la hauteur (voir GrilleAgenda.tsx, HAUTEUR_HEURE * dureeMin/60)
+    // dépassait largement la grille et débordait visuellement sur le reste
+    // de la page. 1440 min = 24h, largement suffisant pour une intervention
+    // exceptionnelle sur un seul jour ; au-delà, ça ressemble à une erreur
+    // de saisie plutôt qu'à un vrai rendez-vous.
+    if (type === "rendez_vous" && dureeMinutes > 1440) {
+      setErreur("La durée d'un rendez-vous ne peut pas dépasser 24h (1440 minutes).");
       setChargement(false);
       return;
     }
@@ -442,7 +473,7 @@ function NouvelEvenementForm() {
               label="Date"
               type="date"
               required
-              min={enModeEdition ? undefined : new Date().toISOString().slice(0, 10)}
+              min={enModeEdition ? undefined : dateLocaleAAAAMMJJ(new Date())}
               value={date}
               onChange={(e) => setDate(e.target.value)}
             />

@@ -56,8 +56,21 @@ export default async function BilanMensuelPage({
 
   const bilan = await calculerBilanMensuel(supabase, organisationId, debut, fin);
 
+  // Audit "vérification systématique" (10/09) — trouvé par un agent de
+  // recherche : devisEnvoyes compte par devis.envoye_le, devisAcceptes
+  // compte par la date de l'ÉVÉNEMENT d'acceptation (lib/bilan-mensuel.ts)
+  // — deux fenêtres réellement différentes. Un devis envoyé fin du mois
+  // précédent et accepté ce mois-ci compte dans devisAcceptes sans avoir
+  // compté dans devisEnvoyes, et le "taux" peut alors dépasser 100% — un
+  // chiffre qui se contredit lui-même, à l'opposé du "relevé bancaire"
+  // digne de confiance visé par cet écran (voir commentaire en tête de
+  // lib/bilan-mensuel.ts). On n'affiche donc la proportion que quand elle
+  // reste mathématiquement cohérente (jamais > 100%) — les deux nombres
+  // bruts, eux, restent toujours affichés, jamais masqués.
   const tauxTransformation =
-    bilan.devisEnvoyes > 0 ? Math.round((bilan.devisAcceptes / bilan.devisEnvoyes) * 100) : null;
+    bilan.devisEnvoyes > 0 && bilan.devisAcceptes <= bilan.devisEnvoyes
+      ? Math.round((bilan.devisAcceptes / bilan.devisEnvoyes) * 100)
+      : null;
 
   return (
     <div className="p-8 max-w-2xl mx-auto">

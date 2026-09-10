@@ -121,13 +121,17 @@ function disposerEvenementsDuJour(evenements: EvenementAvecProjet[]): Map<string
 function BlocEvenement({
   evenement,
   heureDebut,
+  nombreHeures,
   meteo,
   placement,
+  alignMenuADroite,
 }: {
   evenement: EvenementAvecProjet;
   heureDebut: number;
+  nombreHeures: number;
   meteo?: RisqueMeteoJour;
   placement: PlacementEvenement;
+  alignMenuADroite: boolean;
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -138,6 +142,13 @@ function BlocEvenement({
   const date = new Date(evenement.date_heure);
   const minutesDepuisDebut = (date.getHours() - heureDebut) * 60 + date.getMinutes();
   const top = (minutesDepuisDebut / 60) * HAUTEUR_HEURE;
+  // Même chasse que alignMenuADroite (10/09) : le menu contextuel ouvrait
+  // toujours vers le BAS ("mt-1") — jusqu'à 6 actions possibles (météo,
+  // ouvrir, modifier, terminé, annuler, supprimer), soit ~270px, qui peut
+  // dépasser le bas de la grille visible pour un rendez-vous tard dans la
+  // journée. On ouvre vers le haut à la place pour les 3 dernières heures
+  // affichées, même geste de vérification que pour le bord droit.
+  const alignMenuEnHaut = minutesDepuisDebut / 60 >= nombreHeures - 3;
   const dureeMin = evenement.duree_minutes ?? 30;
   // Audit pré-bêta (09/09), point 🟠 n°13 — un RDV de 15-25 min descendait à
   // ~22px de hauteur, bien sous les 44px recommandés (Apple/Google) pour
@@ -275,7 +286,11 @@ function BlocEvenement({
               (44px, norme tactile Apple/Google) avec le texte centré
               verticalement via flex, pour absorber l'imprécision du doigt
               sur un écran de chantier. */}
-          <div className="relative z-30 mt-1 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-xs w-44">
+          <div
+            className={`absolute z-30 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-xs w-44 ${
+              alignMenuADroite ? "right-0" : "left-0"
+            } ${alignMenuEnHaut ? "bottom-full mb-1" : "top-full mt-1"}`}
+          >
             {alerteMeteo && (
               <button
                 onClick={prevenirClientMeteo}
@@ -408,9 +423,20 @@ export function GrilleAgenda({
             ))}
           </div>
 
-          {jours.map((jour) => {
+          {jours.map((jour, indexJour) => {
             const evenementsJour = evenements.filter((e) => estMemeJour(new Date(e.date_heure), jour));
             const placements = disposerEvenementsDuJour(evenementsJour);
+            // Trouvé pendant la chasse aux "frères" du bug CentreNotifications
+            // (10/09) : le menu contextuel d'un bloc RDV (voir BlocEvenement,
+            // menuOuvert) était toujours en flux normal ("relative"), donc
+            // toujours ouvert vers la DROITE du bloc — invisible ou hors
+            // écran pour un événement dans une des dernières colonnes du
+            // planning (jeudi-dimanche selon la largeur de fenêtre). Pas
+            // "toujours cassé" comme le bug notifications, juste pour les
+            // colonnes proches du bord droit — ce qui explique qu'il soit
+            // passé inaperçu. Les deux dernières colonnes ouvrent désormais
+            // leur menu vers la gauche à la place (voir alignMenuADroite).
+            const alignMenuADroite = indexJour >= jours.length - 2;
             return (
               <div
                 key={jour.toISOString()}
@@ -432,8 +458,10 @@ export function GrilleAgenda({
                     key={e.id}
                     evenement={e}
                     heureDebut={heureDebut}
+                    nombreHeures={heures.length}
                     meteo={meteoParJour?.[cleDateLocale(jour)]}
                     placement={placements.get(e.id) ?? { colonne: 0, totalColonnes: 1 }}
+                    alignMenuADroite={alignMenuADroite}
                   />
                 ))}
               </div>

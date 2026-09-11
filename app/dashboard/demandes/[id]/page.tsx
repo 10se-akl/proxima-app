@@ -1119,6 +1119,7 @@ export default function DetailDemandePage({
           demandeId={demande.id}
           notes={notesVocales}
           telephoneClient={demande.telephone_client}
+          prioriteActuelle={demande.priorite}
           onNouvelleNote={async () => {
             await signalerModification();
             await chargerDonnees();

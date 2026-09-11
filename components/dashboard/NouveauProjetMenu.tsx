@@ -20,7 +20,7 @@ import { detecterPlateforme } from "@/lib/pwa/plateforme";
 //   onboarding-mobile-pwa-faisabilite.md).
 // ============================================================
 
-export function NouveauProjetMenu() {
+export function NouveauProjetMenu({ libelle = "+ Nouveau projet" }: { libelle?: string }) {
   const [ouvert, setOuvert] = useState(false);
   // Sprint Beta Final (27/08) — 🔴I : le menu apparaissait/disparaissait
   // d'un coup sec ({ouvert && (...)}), seul élément de l'app sans
@@ -76,7 +76,7 @@ export function NouveauProjetMenu() {
 
   return (
     <div ref={conteneurRef} className="relative">
-      <Button onClick={() => setOuvert((v) => !v)}>+ Nouveau projet</Button>
+      <Button onClick={() => setOuvert((v) => !v)}>{libelle}</Button>
       {monte && (
         <div
           className={`absolute right-0 z-20 mt-2 w-56 overflow-hidden rounded-xl border border-ink/10 bg-surface shadow-lg shadow-ink/10 transition-all duration-150 ease-out ${

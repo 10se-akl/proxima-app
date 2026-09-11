@@ -1879,3 +1879,22 @@ create index if not exists devis_statut_envoye_le_idx
 -- date_emission, une colonne différente).
 create index if not exists factures_organisation_statut_payee_le_idx
   on factures (organisation_id, statut, payee_le) where type = 'facture';
+
+-- ============================================================
+-- Module 38 (11/09) — Détection d'urgence par l'IA sur une note vocale de
+-- chantier (voir app/api/ai/interpreter-note-vocale/route.ts). Discuté
+-- avec Cowork avant implémentation : scope volontairement restreint à une
+-- action interne, réversible, jamais visible du client et jamais liée à
+-- un prix ou un message envoyé — c'est ce qui rend le mode "auto"
+-- compatible avec "l'IA propose, l'artisan valide toujours".
+--
+-- Par défaut (false), chaque détection affiche une pop-up de confirmation
+-- (Oui / Non / "Laisser l'IA faire ce choix seule la prochaine fois").
+-- Cette troisième option passe cette colonne à true : les détections
+-- suivantes appliquent alors directement `priorite = 'urgent'` sans
+-- redemander, mais restent TOUJOURS visibles après coup dans la timeline
+-- du projet (evenements_projet, type 'priorite_changee') — jamais un
+-- changement silencieux. Réglable aussi manuellement depuis "Mon compte"
+-- (voir components/dashboard/MonCompte.tsx), pas seulement via la pop-up.
+-- ============================================================
+alter table profils add column if not exists urgence_auto_ia boolean not null default false;

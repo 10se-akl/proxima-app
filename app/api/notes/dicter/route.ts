@@ -22,10 +22,57 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour :
 {
   "titre": "titre court (5-8 mots max) qui résume la note",
   "description": "le reste du contenu utile, ou une chaîne vide si le titre suffit déjà à tout dire",
-  "importance": "verte | orange | rouge — verte par défaut pour une note ordinaire, orange si ça semble mériter attention avant peu, rouge UNIQUEMENT si le texte évoque une urgence explicite (fuite, sécurité, client mécontent, délai serré)"
+  "importance": "verte | orange | rouge — verte par défaut pour une note ordinaire, orange si ça semble mériter attention avant peu, rouge UNIQUEMENT si le texte évoque une urgence explicite (fuite, sécurité, client mécontent, délai serré)",
+  "nom_client_mentionne": "nom de famille ou nom complet explicitement cité dans le texte (ex: \\"chez Dupont\\", \\"pour M. Martin\\", \\"le chantier Lefebvre\\"), sinon null — ne jamais déduire un nom depuis un lieu, un matériau ou un mot générique"
 }`;
 
-type ReponseStructuree = { titre: string; description: string; importance: ImportanceNote };
+type ReponseStructuree = {
+  titre: string;
+  description: string;
+  importance: ImportanceNote;
+  nom_client_mentionne?: unknown;
+};
+
+// Gap 2 (11/09, voir prompt-cowork-ia-notes-urgence.md) — rapprochement
+// automatique d'une note générale avec un projet ouvert, à partir d'un nom
+// cité dans le texte dicté. Le choix du projet reste toujours DÉTERMINISTE
+// (comparaison de mots normalisés côté code), jamais laissé à l'IA : en
+// cas d'ambiguïté (plusieurs projets ouverts au nom proche, ex. deux
+// "Martin"), on ne devine jamais — l'artisan choisit lui-même dans le
+// menu déroulant, comme avant. Pas de mode "auto" ici (contrairement au
+// gap 1 / urgence) : le risque d'homonyme est réel, on attend de vraies
+// données de bêta avant d'y penser (voir échange avec Cowork).
+const DIACRITIQUES_COMBINANTS = /[̀-ͯ]/g;
+
+function normaliserNom(s: string): string {
+  return s
+    .normalize("NFD")
+    .replace(DIACRITIQUES_COMBINANTS, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .trim();
+}
+
+function motsSignificatifs(s: string): string[] {
+  return normaliserNom(s)
+    .split(/\s+/)
+    .filter((mot) => mot.length >= 3);
+}
+
+function trouverProjetCorrespondant(
+  nomMentionne: string,
+  projets: { id: string; nom_client: string }[]
+): { id: string; nom_client: string } | null {
+  const motsMentionnes = motsSignificatifs(nomMentionne);
+  if (motsMentionnes.length === 0) return null;
+
+  const correspondances = projets.filter((p) => {
+    const motsProjet = motsSignificatifs(p.nom_client);
+    return motsMentionnes.some((m) => motsProjet.includes(m));
+  });
+
+  return correspondances.length === 1 ? correspondances[0] : null;
+}
 
 // Sprint Beta Final (27/08) — voir même commentaire dans preparer-brouillon.
 export const maxDuration = 60;
@@ -73,6 +120,29 @@ export async function POST(request: NextRequest) {
     )
       ? structure.importance
       : "verte";
+    const nomClientMentionne =
+      typeof structure.nom_client_mentionne === "string" && structure.nom_client_mentionne.trim()
+        ? structure.nom_client_mentionne.trim()
+        : null;
+
+    // Gap 2 — un nom a été cité : on cherche une correspondance sans faire
+    // confiance à l'IA pour choisir l'id elle-même (voir
+    // trouverProjetCorrespondant plus haut). Aucune requête supplémentaire
+    // si aucun nom n'a été détecté, cas le plus fréquent.
+    let demandeIdSuggere: string | null = null;
+    let nomClientSuggere: string | null = null;
+    if (nomClientMentionne) {
+      const { data: projetsOuverts } = await supabase
+        .from("demandes")
+        .select("id, nom_client")
+        .eq("organisation_id", organisationId)
+        .neq("statut", "termine");
+      const correspondance = trouverProjetCorrespondant(nomClientMentionne, projetsOuverts ?? []);
+      if (correspondance) {
+        demandeIdSuggere = correspondance.id;
+        nomClientSuggere = correspondance.nom_client;
+      }
+    }
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
@@ -84,6 +154,8 @@ export async function POST(request: NextRequest) {
       titre: structure.titre.trim(),
       description: structure.description?.trim() || "",
       importance: importanceValide,
+      demandeIdSuggere,
+      nomClientSuggere,
     });
   } catch (err) {
     const dureeMs = Date.now() - debutAppel;

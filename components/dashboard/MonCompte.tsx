@@ -15,6 +15,14 @@ export function MonCompte() {
   const [metier, setMetier] = useState("");
   const [notificationsActives, setNotificationsActives] = useState(true);
   const [enregistrementNotifications, setEnregistrementNotifications] = useState(false);
+  // Gap 1 (11/09, voir supabase/schema.sql Module 38) — même interrupteur
+  // que celui proposable depuis la pop-up "Laisser l'IA faire ce choix
+  // seule la prochaine fois" (components/dashboard/NotesVocales.tsx) :
+  // réglable ici aussi, pour pouvoir le désactiver sans attendre une
+  // nouvelle détection.
+  const [urgenceAutoIA, setUrgenceAutoIA] = useState(false);
+  const [enregistrementUrgenceAuto, setEnregistrementUrgenceAuto] = useState(false);
+  const [erreurUrgenceAuto, setErreurUrgenceAuto] = useState<string | null>(null);
   const [chargement, setChargement] = useState(true);
   // Sprint Robustesse (30/08) — le chargement initial n'avait aucun état
   // d'échec : sur coupure réseau, `chargement` restait bloqué à `true` pour
@@ -49,7 +57,7 @@ export function MonCompte() {
       }
       const { data, error } = await supabase
         .from("profils")
-        .select("nom, metier, notifications_push_actives")
+        .select("nom, metier, notifications_push_actives, urgence_auto_ia")
         .eq("id", user.id)
         .single();
       if (error) throw error;
@@ -57,6 +65,7 @@ export function MonCompte() {
         setNom(data.nom ?? "");
         setMetier(data.metier ?? "");
         setNotificationsActives(data.notifications_push_actives ?? true);
+        setUrgenceAutoIA(data.urgence_auto_ia ?? false);
       }
     } catch {
       // Coupure réseau ou erreur Supabase : avant ce correctif, `chargement`
@@ -137,6 +146,31 @@ export function MonCompte() {
     if (error) {
       setNotificationsActives(valeurPrecedente);
       setErreurNotifications("Impossible d'enregistrer ce réglage. Réessayez.");
+    }
+  }
+
+  async function basculerUrgenceAuto(actif: boolean) {
+    const valeurPrecedente = urgenceAutoIA;
+    setUrgenceAutoIA(actif);
+    setErreurUrgenceAuto(null);
+    setEnregistrementUrgenceAuto(true);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) {
+      setUrgenceAutoIA(valeurPrecedente);
+      setErreurUrgenceAuto("Session expirée, reconnectez-vous.");
+      setEnregistrementUrgenceAuto(false);
+      return;
+    }
+    const { error } = await supabase
+      .from("profils")
+      .update({ urgence_auto_ia: actif })
+      .eq("id", user.id);
+    setEnregistrementUrgenceAuto(false);
+    if (error) {
+      setUrgenceAutoIA(valeurPrecedente);
+      setErreurUrgenceAuto("Impossible d'enregistrer ce réglage. Réessayez.");
     }
   }
 
@@ -228,6 +262,27 @@ export function MonCompte() {
           Autoriser les notifications de rappel
         </label>
         {erreurNotifications && <p className="mt-2 text-sm text-signal">{erreurNotifications}</p>}
+      </Card>
+
+      <Card className="p-6">
+        <h2 className="text-sm font-semibold text-ink/70 mb-2">Automatisations IA</h2>
+        <p className="text-sm text-ink/60 mb-4">
+          Quand vous dictez un compte-rendu vocal sur un projet et que l&apos;IA y détecte une
+          urgence, elle vous demande normalement confirmation avant de passer le projet en
+          urgent. Cet interrupteur la laisse le faire directement, sans redemander — le
+          changement reste toujours visible dans l&apos;historique du projet.
+        </p>
+        <label className="flex items-center gap-2.5 text-sm text-ink/80 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={urgenceAutoIA}
+            disabled={enregistrementUrgenceAuto}
+            onChange={(e) => basculerUrgenceAuto(e.target.checked)}
+            className="w-4 h-4 rounded border-ink/30 accent-signal"
+          />
+          Laisser l&apos;IA passer un projet en urgent automatiquement
+        </label>
+        {erreurUrgenceAuto && <p className="mt-2 text-sm text-signal">{erreurUrgenceAuto}</p>}
       </Card>
 
       <Card className="p-6">

@@ -65,6 +65,12 @@ export function FormulaireNote({
   const [chargement, setChargement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [brouillonRestaure, setBrouillonRestaure] = useState(false);
+  // Gap 2 (11/09) — nom du projet détecté automatiquement par la dictée
+  // (voir /api/notes/dicter). Purement informatif : le menu déroulant
+  // "Projet concerné" ci-dessous reste la seule source de vérité et reste
+  // modifiable normalement — cette mention disparaît dès que l'artisan
+  // touche au menu lui-même.
+  const [projetSuggereNom, setProjetSuggereNom] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
   // Audit pré-bêta (09/09), point 🔴 n°3 — même filet de sécurité que celui
@@ -126,6 +132,7 @@ export function FormulaireNote({
   function dicter() {
     if (!ClasseReconnaissance) return;
     setErreur(null);
+    setProjetSuggereNom(null);
 
     const recognition = new ClasseReconnaissance();
     recognition.lang = "fr-FR";
@@ -154,6 +161,13 @@ export function FormulaireNote({
           setTitre(data.titre);
           setDescription(data.description || "");
           setImportance(data.importance);
+          // Gap 2 — ne propose une pré-sélection que si le menu "Projet
+          // concerné" est bien affiché (projetIdFixe absent) : sur la
+          // fiche projet, le projet est déjà fixé, rien à suggérer.
+          if (data.demandeIdSuggere && !projetIdFixe) {
+            setDemandeId(data.demandeIdSuggere);
+            setProjetSuggereNom(data.nomClientSuggere ?? null);
+          }
         } else {
           // Repli : le texte brut dicté reste utilisable tel quel dans le
           // titre plutôt que de tout perdre si l'IA échoue.
@@ -275,7 +289,10 @@ export function FormulaireNote({
             <label className="block text-xs font-medium text-ink/70 mb-1.5">Projet concerné</label>
             <select
               value={demandeId}
-              onChange={(e) => setDemandeId(e.target.value)}
+              onChange={(e) => {
+                setDemandeId(e.target.value);
+                setProjetSuggereNom(null);
+              }}
               className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
             >
               <option value="">Aucun projet (note générale)</option>
@@ -285,6 +302,13 @@ export function FormulaireNote({
                 </option>
               ))}
             </select>
+            {projetSuggereNom && (
+              <p className="mt-1.5 text-xs text-steel">
+                Projet détecté automatiquement d&apos;après votre note :{" "}
+                <span className="font-medium">{projetSuggereNom}</span> — changez la sélection
+                ci-dessus si ce n&apos;est pas le bon.
+              </p>
+            )}
           </div>
         )}
 

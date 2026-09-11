@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { DemandeCard } from "@/components/dashboard/DemandeCard";
 import { AConfirmer } from "@/components/dashboard/AConfirmer";
 import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureProjet";
 import { ResumeJournee } from "@/components/dashboard/ResumeJournee";
 import { ConseilsCompagnon } from "@/components/dashboard/ConseilsCompagnon";
 import { MiniApercu } from "@/components/dashboard/MiniApercu";
+import { NouveauProjetMenu } from "@/components/dashboard/NouveauProjetMenu";
 import { NotesRappelsAujourdhui } from "@/components/notes/NotesRappelsAujourdhui";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconeCoeur, IconeDossier } from "@/components/ui/Icones";
@@ -347,9 +347,7 @@ export default async function DashboardHome() {
               contacte — trente secondes suffisent, le reste se complète plus tard.
             </p>
             <div className="relative mt-6 flex items-center justify-center gap-3">
-              <Link href="/dashboard/demandes/nouvelle">
-                <Button>+ Créer mon premier projet</Button>
-              </Link>
+              <NouveauProjetMenu libelle="+ Créer mon premier projet" />
             </div>
           </Card>
         </div>
@@ -365,9 +363,7 @@ export default async function DashboardHome() {
     <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
       <div className="max-w-2xl flex-1 min-w-0">
       <EnTeteAccueil dateDuJour={dateDuJour} premierPrenom={premierPrenom}>
-        <Link href="/dashboard/demandes/nouvelle">
-          <Button>+ Nouveau projet</Button>
-        </Link>
+        <NouveauProjetMenu />
       </EnTeteAccueil>
 
       <ProchaineAction action={prochaineAction} />

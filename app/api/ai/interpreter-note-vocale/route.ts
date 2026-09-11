@@ -22,6 +22,7 @@ type ReponseInterpretation = {
   brouillon_message_client?: unknown;
   rappel_lendemain?: unknown;
   chantier_semble_termine?: unknown;
+  urgence_detectee?: unknown;
 };
 
 const MAX_TACHES = 5;
@@ -35,14 +36,16 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
   "taches_restantes": ["...", "..."],
   "brouillon_message_client": "..." ou null,
   "rappel_lendemain": true ou false,
-  "chantier_semble_termine": true ou false
+  "chantier_semble_termine": true ou false,
+  "urgence_detectee": true ou false
 }
 
 Règles :
 - "taches_restantes" : 0 à ${MAX_TACHES} tâches courtes et concrètes qui restent à faire sur CE chantier d'après le texte. Liste vide si rien de nouveau n'est à faire.
 - "brouillon_message_client" : un court message à envoyer au client, UNIQUEMENT si le texte contient une information que le client attend probablement (avancement, contretemps, date de retour). Sinon null. Jamais de prix, jamais d'engagement de délai qui n'est pas mentionné explicitement dans le texte.
 - "rappel_lendemain" : vrai uniquement si le texte indique explicitement ou clairement qu'une suite est prévue le lendemain.
-- "chantier_semble_termine" : vrai UNIQUEMENT si le texte indique clairement que l'intervention est terminée, pas juste une étape franchie. En cas de doute, réponds false.`;
+- "chantier_semble_termine" : vrai UNIQUEMENT si le texte indique clairement que l'intervention est terminée, pas juste une étape franchie. En cas de doute, réponds false.
+- "urgence_detectee" : vrai UNIQUEMENT si le texte indique clairement que ce chantier doit désormais être traité en priorité (le client insiste explicitement, la situation s'aggrave, conséquence financière ou de sécurité clairement liée à la rapidité d'intervention). Faux par défaut, y compris en cas de doute.`;
 
 export const maxDuration = 60;
 
@@ -109,13 +112,18 @@ Compte-rendu dicté : "${transcription.trim()}"`;
         : null;
     const rappelLendemain = brut.rappel_lendemain === true;
     const chantierSembleTermine = brut.chantier_semble_termine === true;
+    const urgenceDetectee = brut.urgence_detectee === true;
 
     await enregistrerLog(supabase, {
       artisanId: user.id,
       organisationId,
       type: "journal_chantier_interprete",
       contexte: demandeId,
-      details: { nb_taches: tachesRestantes.length, chantier_semble_termine: chantierSembleTermine },
+      details: {
+        nb_taches: tachesRestantes.length,
+        chantier_semble_termine: chantierSembleTermine,
+        urgence_detectee: urgenceDetectee,
+      },
     });
 
     return NextResponse.json({
@@ -123,6 +131,7 @@ Compte-rendu dicté : "${transcription.trim()}"`;
       brouillonMessageClient,
       rappelLendemain,
       chantierSembleTermine,
+      urgenceDetectee,
     });
   } catch (err) {
     const dureeMs = Date.now() - debutAppel;

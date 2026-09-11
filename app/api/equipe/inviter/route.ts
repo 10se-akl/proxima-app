@@ -43,10 +43,49 @@ export async function POST(request: NextRequest) {
     .eq("email", email)
     .maybeSingle();
   if (profilExistant) {
-    return NextResponse.json(
-      { error: "Un compte Compyo existe déjà pour cet email" },
-      { status: 409 }
-    );
+    // Audit (11/09) — 🟠 avant ce correctif, ce blocage était inconditionnel
+    // dès qu'un profil existait pour cet email, y compris pour un compte
+    // retiré d'une équipe via /api/equipe/retirer — qui, lui, supprime
+    // volontairement SEULEMENT le membership (pas le profil ni le compte
+    // Auth) explicitement pour permettre une ré-invitation plus tard (voir
+    // le commentaire de ce fichier). Un profil sans AUCUN membership actif
+    // n'est donc pas "déjà pris" : on réactive directement l'accès plutôt
+    // que de bloquer un cas que le code de retrait prévoyait pourtant.
+    // Pas de .maybeSingle() ici : il lèverait une erreur (et renverrait
+    // data = null, donc "aucun membership" à tort) si le compte appartenait
+    // à plusieurs organisations. On compte les lignes, et on considère une
+    // erreur de lecture comme "membership peut-être présent" — jamais
+    // réactiver un accès sur la foi d'une requête qui a échoué.
+    const { data: membershipsExistants, error: erreurMemberships } = await admin
+      .from("memberships")
+      .select("id")
+      .eq("user_id", profilExistant.id);
+
+    if (erreurMemberships) {
+      console.error(erreurMemberships);
+      return NextResponse.json(
+        { error: "Impossible de vérifier ce compte. Réessayez." },
+        { status: 500 }
+      );
+    }
+
+    if ((membershipsExistants ?? []).length > 0) {
+      return NextResponse.json(
+        { error: "Un compte Compyo existe déjà pour cet email" },
+        { status: 409 }
+      );
+    }
+
+    const { error: reactivationError } = await admin.from("memberships").insert({
+      organisation_id: membership.organisationId,
+      user_id: profilExistant.id,
+      role: "employe",
+    });
+    if (reactivationError) {
+      console.error(reactivationError);
+      return NextResponse.json({ error: "Impossible de réactiver ce membre" }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
   }
 
   // On récupère le métier/l'entreprise du propriétaire pour préremplir le

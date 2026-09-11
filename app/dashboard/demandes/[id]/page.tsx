@@ -127,7 +127,18 @@ export default function DetailDemandePage({
     // réussit doit repartir sur un état propre.
     setErreurChargement(null);
     try {
-      // Ces cinq appels sont indépendants les uns des autres (aucun ne dépend
+      // Audit performance (11/09) — auth.getUser() sorti du Promise.all
+      // ci-dessous et attendu en premier (résout depuis la session déjà
+      // connue, quasi immédiat, jamais un aller-retour aussi lent que les
+      // requêtes de contenu) pour pouvoir lancer getOrganisationId() EN
+      // PARALLÈLE de ces requêtes plutôt qu'après leur avoir toutes
+      // attendu — avant ce correctif, une requête indépendante (memberships)
+      // attendait inutilement la fin des 5 autres avant même de démarrer.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      // Ces six appels sont indépendants les uns des autres (aucun ne dépend
       // du résultat d'un autre) : les lancer en parallèle plutôt qu'en série
       // réduit d'autant le temps de chargement de la fiche projet — sensible
       // sur un chantier avec un réseau mobile faible.
@@ -137,9 +148,7 @@ export default function DetailDemandePage({
         { data: notesData },
         { data: evenementsData },
         notesProjet,
-        {
-          data: { user },
-        },
+        orgId,
       ] = await Promise.all([
         supabase.from("demandes").select("*").eq("id", params.id).maybeSingle(),
         supabase
@@ -162,7 +171,7 @@ export default function DetailDemandePage({
         // Notes professionnelles (29/08, voir lib/notes/index.ts) — point 2
         // du brief : section dédiée dans la fiche projet.
         listerNotesProjet(supabase, params.id),
-        supabase.auth.getUser(),
+        user ? getOrganisationId(supabase, user.id) : Promise.resolve(null),
       ]);
 
       if (!demandeData) {
@@ -177,7 +186,6 @@ export default function DetailDemandePage({
 
       if (user) {
         setArtisanId(user.id);
-        const orgId = await getOrganisationId(supabase, user.id);
         setOrganisationId(orgId);
 
         // Ces trois-là dépendent de l'utilisateur (donc après le lot

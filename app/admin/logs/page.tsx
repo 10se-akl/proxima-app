@@ -42,7 +42,7 @@ export default async function AdminLogsPage() {
       <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-2">
         Administration
       </p>
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="font-display text-2xl font-semibold">
           Logs (100 derniers événements)
         </h1>

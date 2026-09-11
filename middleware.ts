@@ -34,9 +34,15 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next({ request: { headers: request.headers } });
   const pathname = request.nextUrl.pathname;
   const besoinSession = pathname.startsWith("/dashboard");
-  // Jamais de bascule sur la page de maintenance elle-même : sinon elle se
-  // réécrirait indéfiniment sur elle-même.
-  const maintenancePossible = pathname !== "/maintenance";
+  // Jamais de bascule sur la page de maintenance elle-même (boucle infinie
+  // sur elle-même) NI sur /login (audit 11/09 — 🔴 sans cette exclusion, un
+  // admin dont la session n'est plus valide sur l'appareil utilisé
+  // (déconnexion, autre navigateur/téléphone, cookies effacés) voyait
+  // l'écran de maintenance à la place du formulaire de connexion pendant
+  // une maintenance active : aucun moyen de se ré-authentifier pour
+  // atteindre /admin/maintenance et la désactiver, sans intervenir
+  // directement en base).
+  const maintenancePossible = pathname !== "/maintenance" && pathname !== "/login";
 
   let userEmail: string | null = null;
 

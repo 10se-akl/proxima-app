@@ -1898,3 +1898,91 @@ create index if not exists factures_organisation_statut_payee_le_idx
 -- (voir components/dashboard/MonCompte.tsx), pas seulement via la pop-up.
 -- ============================================================
 alter table profils add column if not exists urgence_auto_ia boolean not null default false;
+
+-- ============================================================
+-- Module 39 (11/09) — Audit "renforcement" : bugs et performance.
+--
+-- 39a — 🔴 double facture de solde. Le garde-fou dans app/api/factures/
+-- creer/route.ts (SELECT "existe déjà ?" puis INSERT) est une lecture-
+-- puis-écriture, pas atomique : deux membres de la même organisation qui
+-- cliquent chacun "+ Facture (solde)" sur le même devis à quelques
+-- centaines de ms d'écart passent tous les deux ce contrôle avant qu'aucun
+-- des deux INSERT n'ait committé, créant deux factures de solde distinctes
+-- pour le même devis — le client facturé deux fois. Même famille de bug
+-- que le double rendez-vous déjà corrigé au Module 35, même remède : une
+-- vraie contrainte côté base, pas juste une vérification applicative.
+-- Un index unique partiel suffit ici (contrairement au Module 35) : pas de
+-- chevauchement d'intervalle à comparer, juste "au plus une facture de
+-- solde non annulée par devis".
+create unique index if not exists factures_devis_solde_unique_idx
+  on factures (devis_id)
+  where type = 'facture' and statut != 'annulee';
+
+-- 39a-bis — conséquence directe du correctif "montant encaissé" de
+-- lib/bilan-mensuel.ts (les acomptes payés étaient exclus du total
+-- encaissé) : la requête filtre désormais `type != 'avoir'` au lieu de
+-- `type = 'facture'`, donc l'index partiel posé au Module 37
+-- (factures_organisation_statut_payee_le_idx, `where type = 'facture'`) ne
+-- la couvre plus du tout. Corriger un bug d'affichage ne doit pas
+-- introduire en douce une requête non indexée : voici le même index, avec
+-- la condition partielle alignée sur la nouvelle requête. L'ancien reste en
+-- place (il ne gêne pas, et d'autres requêtes peuvent encore l'utiliser).
+create index if not exists factures_organisation_statut_payee_le_hors_avoir_idx
+  on factures (organisation_id, statut, payee_le) where type != 'avoir';
+
+-- 39b — perf. evenements_projet n'avait qu'un index (demande_id,
+-- created_at) — or app/dashboard/page.tsx filtre par (organisation_id,
+-- type, created_at) À CHAQUE CHARGEMENT DU TABLEAU DE BORD, ainsi que
+-- lib/bilan-mensuel.ts (3 requêtes/mois/organisation). Sans index adapté,
+-- ce sera un scan complet de la table dès qu'elle grossira.
+create index if not exists evenements_projet_organisation_id_type_created_at_idx
+  on evenements_projet (organisation_id, type, created_at desc);
+
+-- 39c — perf. Même défaut que celui corrigé au Module 37 pour "devis" :
+-- app/api/cron/rappels/route.ts interroge "notes" sur TOUTES les
+-- organisations (pas de eq(organisation_id)) — l'index existant
+-- notes_organisation_rappel_idx, qui COMMENCE par organisation_id, ne sert
+-- à rien pour cette requête précise.
+create index if not exists notes_rappel_a_envoyer_idx
+  on notes (rappel_a)
+  where statut = 'active' and rappel_a is not null and notifie_a is null;
+
+-- 39d — 🟠 perte silencieuse de photos en cas d'upload concurrent. Depuis
+-- que la policy storage "photos" a été ouverte à toute l'équipe (voir plus
+-- haut), deux membres peuvent légitimement photographier le même chantier
+-- en même temps. components/dashboard/PhotosProjet.tsx faisait jusqu'ici
+-- `photos: [...chemins_deja_connus_du_navigateur, ...nouveaux]` puis un
+-- simple UPDATE : un cycle lecture-modification-écriture classique, sans
+-- verrou. Si les deux envois se chevauchent, le second écrase le tableau
+-- écrit par le premier — la première photo reste bien dans le stockage
+-- (fichier envoyé avec succès) mais disparaît du projet, sans aucune
+-- erreur affichée à personne. Le concat "photos || p_nouveaux_chemins" se
+-- fait ici, DANS l'UPDATE lui-même : Postgres sérialise les écritures
+-- concurrentes sur une même ligne, la seconde repart donc bien de la
+-- valeur déjà mise à jour par la première, jamais d'écrasement possible.
+-- "security invoker" (par défaut) : les policies RLS de "demandes"
+-- continuent de s'appliquer normalement, filtre organisation_id explicite
+-- en plus pour la défense en profondeur habituelle de ce projet.
+create or replace function ajouter_photos_projet(
+  p_demande_id uuid,
+  p_organisation_id uuid,
+  p_nouveaux_chemins jsonb
+)
+returns jsonb
+language plpgsql
+as $$
+declare
+  v_photos jsonb;
+begin
+  update demandes
+  set photos = photos || p_nouveaux_chemins
+  where id = p_demande_id and organisation_id = p_organisation_id
+  returning photos into v_photos;
+
+  if not found then
+    raise exception 'Projet introuvable';
+  end if;
+
+  return v_photos;
+end;
+$$;

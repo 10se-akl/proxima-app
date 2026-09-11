@@ -4,6 +4,7 @@ import { appelerClaude, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
+import { listerNotesActivesProjet, formaterNotesPourPromptIA } from "@/lib/notes";
 
 // Important : cette route ne fait QUE proposer un texte. Rien n'est jamais
 // envoyé au client automatiquement — l'artisan copie, ajuste, et envoie
@@ -46,22 +47,45 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: limite.message }, { status: 429 });
   }
 
-  // Filtre organisation_id explicite en plus de la RLS : défense en
-  // profondeur (relevé lors de l'audit du 12/08).
-  const { data: projet, error: fetchError } = await supabase
-    .from("demandes")
-    .select("nom_client, description, informations_disponibles, questions_manquantes")
-    .eq("id", demandeId)
-    .eq("organisation_id", organisationId)
-    .single();
+  // Audit IA (11/09) — manquait le même contexte que /api/ai/analyser-demande
+  // et /api/ai/generer-devis (notes libres, notes vocales, notes
+  // structurées) : sans ça, un brouillon de réponse au client pouvait
+  // ignorer une info communiquée depuis (un contretemps dicté en note
+  // vocale, une consigne enregistrée) — la route la moins bien informée des
+  // trois alors que c'est justement celle dont le texte part vers un vrai
+  // client. Les 3 requêtes sont indépendantes, lancées en parallèle.
+  const [{ data: projet, error: fetchError }, { data: notesVocales }, notesActives] = await Promise.all([
+    // Filtre organisation_id explicite en plus de la RLS : défense en
+    // profondeur (relevé lors de l'audit du 12/08).
+    supabase
+      .from("demandes")
+      .select("nom_client, description, informations_disponibles, notes, questions_manquantes")
+      .eq("id", demandeId)
+      .eq("organisation_id", organisationId)
+      .single(),
+    supabase
+      .from("notes_vocales")
+      .select("transcription, created_at")
+      .eq("demande_id", demandeId)
+      .order("created_at", { ascending: true }),
+    listerNotesActivesProjet(supabase, demandeId),
+  ]);
 
   if (fetchError || !projet) {
     return NextResponse.json({ error: "Projet introuvable" }, { status: 404 });
   }
 
+  const blocNotesVocales = (notesVocales ?? [])
+    .map((n, i) => `Note vocale ${i + 1} : "${n.transcription}"`)
+    .join("\n");
+
   const messageUtilisateur = `Client : ${projet.nom_client}
 Projet : "${projet.description}"
 Informations disponibles : "${projet.informations_disponibles ?? "aucune"}"
+Notes libres de l'artisan : "${projet.notes ?? "aucune"}"
+Notes importantes enregistrées par l'artisan pour ce projet :
+${formaterNotesPourPromptIA(notesActives)}
+${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récentes reflètent l'état actuel du chantier) :\n${blocNotesVocales}` : ""}
 ${
   projet.questions_manquantes
     ? `Questions à poser au client : ${(projet.questions_manquantes.questions_suggerees ?? []).join(", ")}`

@@ -39,14 +39,23 @@ export default async function PlanningPage({
 
   const organisationId = await getOrganisationId(supabase, user?.id ?? "");
 
-  const { data: evenementsBrut } = await supabase
-    .from("evenements_planning")
-    .select("*, demandes(nom_client, priorite, type_chantier, telephone_client)")
-    .eq("organisation_id", organisationId)
-    .gte("date_heure", lundi.toISOString())
-    .lte("date_heure", dimanche.toISOString())
-    .neq("statut", "annule")
-    .order("date_heure", { ascending: true });
+  // Audit performance (11/09) — les deux requêtes ci-dessous sont
+  // indépendantes (seule l'appel météo, plus bas, dépend du résultat de la
+  // seconde) : lancées en parallèle plutôt qu'en série, un aller-retour
+  // réseau économisé à chaque ouverture du planning.
+  const [{ data: evenementsBrut }, { data: parametres }] = await Promise.all([
+    supabase
+      .from("evenements_planning")
+      .select("*, demandes(nom_client, priorite, type_chantier, telephone_client)")
+      .eq("organisation_id", organisationId)
+      .gte("date_heure", lundi.toISOString())
+      .lte("date_heure", dimanche.toISOString())
+      .neq("statut", "annule")
+      .order("date_heure", { ascending: true }),
+    // Alerte météo (06/09) — approximation par la ville du siège de
+    // l'entreprise, voir lib/meteo.ts pour le raisonnement.
+    supabase.from("parametres_entreprise").select("adresse").eq("organisation_id", organisationId).maybeSingle(),
+  ]);
 
   // Supabase type "demandes(...)" comme un tableau (relation jointe), même
   // si demande_id ne pointe jamais vers plus d'un projet — on aplatit pour
@@ -57,13 +66,6 @@ export default async function PlanningPage({
     demandes: Array.isArray(e.demandes) ? e.demandes[0] ?? null : e.demandes,
   }));
 
-  // Alerte météo (06/09) — approximation par la ville du siège de
-  // l'entreprise, voir lib/meteo.ts pour le raisonnement.
-  const { data: parametres } = await supabase
-    .from("parametres_entreprise")
-    .select("adresse")
-    .eq("organisation_id", organisationId)
-    .maybeSingle();
   const alertesMeteoBrut = await recupererAlertesMeteoSemaine(parametres?.adresse);
   const alertesMeteo = Object.fromEntries(alertesMeteoBrut);
 

@@ -123,6 +123,17 @@ const MESSAGES_ERREUR_PARTAGE: Record<string, string> = {
     "Le message partagé n'a pas pu être enregistré (problème temporaire). Créez le projet ci-dessous, ou réessayez le partage.",
   partage_vide:
     "Le partage ne contenait rien d'exploitable. Créez le projet ci-dessous.",
+  // Vérification (11/09) — la compression côté service worker (voir
+  // public/sw.js, point 🔴 n°2 de l'audit pré-bêta) réduit déjà fortement
+  // les photos partagées, mais elle reste best-effort : navigateur sans
+  // OffscreenCanvas, ou simplement trop de photos d'un coup, et la requête
+  // dépasse encore la limite de taille du serveur. Dans ce cas l'échec se
+  // produit AVANT que le code de l'app ne s'exécute (rejet au niveau de
+  // l'hébergeur) — c'est donc le service worker qui redirige ici, pour
+  // qu'un message clair et une porte de sortie remplacent l'erreur brute
+  // illisible que voyait l'artisan jusqu'ici.
+  partage_trop_lourd:
+    "Les photos partagées sont trop lourdes pour être envoyées d'un coup. Créez le projet ci-dessous, puis ajoutez les photos depuis la fiche projet (elles y sont compressées automatiquement) — ou repartagez-les une par une.",
 };
 
 export default function NouveauProjetPage() {

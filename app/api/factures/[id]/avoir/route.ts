@@ -60,6 +60,33 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
     return NextResponse.json({ error: "Un avoir ne peut pas lui-même être annulé par un avoir" }, { status: 400 });
   }
 
+  // Audit (11/09) — 🟠 un acompte annulé APRÈS qu'une facture de solde l'a
+  // déjà déduit (genererLignesFactureComplete) laissait cette facture de
+  // solde afficher, de façon immuable (verrouillage à l'émission), une
+  // ligne de déduction pour un acompte désormais annulé — deux documents
+  // fiscaux finalisés mutuellement incohérents, sans qu'aucune facture de
+  // solde correcte ne puisse être réémise tant que l'ancienne reste active.
+  // On bloque ce cas à la racine plutôt que de tenter de réconcilier après
+  // coup : annuler d'abord la facture de solde (elle redeviendra
+  // réémettable, cette fois sans la déduction), ensuite seulement l'acompte.
+  if (factureOriginale.type === "acompte") {
+    const { data: soldeActif } = await supabase
+      .from("factures")
+      .select("id, numero")
+      .eq("devis_id", factureOriginale.devis_id)
+      .eq("type", "facture")
+      .neq("statut", "annulee")
+      .maybeSingle();
+    if (soldeActif) {
+      return NextResponse.json(
+        {
+          error: `Impossible d'annuler cet acompte : la facture de solde n° ${soldeActif.numero} l'a déjà déduit. Annulez d'abord cette facture de solde (avoir), puis réessayez.`,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const { lignes, tva_pct } = genererLignesAvoir(factureOriginale as Facture);
   const totaux = calculerTotauxFacture(lignes, tva_pct);
 

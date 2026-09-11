@@ -72,6 +72,13 @@ export function PhotosProjet({
       return;
     }
 
+    const organisationId = await getOrganisationId(supabase, user.id);
+    if (!organisationId) {
+      setErreur("Aucune organisation associée à ce compte, reconnectez-vous.");
+      setEnvoi(false);
+      return;
+    }
+
     // Sprint Beta Final (27/08) — 🔴E : compression avant envoi (voir
     // lib/images/compresserPhoto.ts), et surtout distinction claire entre
     // "tout a échoué" et "une partie a échoué" — avant, un échec partiel
@@ -103,13 +110,21 @@ export function PhotosProjet({
       return;
     }
 
-    const cheminsMisAJour = [...chemins, ...nouveauxChemins];
-    const { error: updateError } = await supabase
-      .from("demandes")
-      .update({ photos: cheminsMisAJour })
-      .eq("id", demandeId);
+    // Audit (11/09) — 🟠 remplace l'ancien cycle lecture-modification-
+    // écriture ([...chemins, ...nouveaux] puis update()), qui perdait des
+    // photos en silence si deux membres de l'équipe envoyaient des photos
+    // sur le même projet à quelques secondes d'écart (le second update
+    // écrasait le tableau écrit par le premier). Le concat se fait
+    // maintenant DANS la mise à jour elle-même côté base (voir
+    // ajouter_photos_projet, supabase/schema.sql Module 39), donc toujours
+    // sérialisé correctement même en cas d'écriture concurrente.
+    const { data: photosMisesAJour, error: updateError } = await supabase.rpc("ajouter_photos_projet", {
+      p_demande_id: demandeId,
+      p_organisation_id: organisationId,
+      p_nouveaux_chemins: nouveauxChemins,
+    });
 
-    if (updateError) {
+    if (updateError || !photosMisesAJour) {
       // Les fichiers sont bien envoyés dans le stockage à ce stade, mais
       // le projet ne les référence pas encore : sans ce message, l'artisan
       // croirait ses photos perdues alors qu'elles existent, juste non
@@ -117,7 +132,7 @@ export function PhotosProjet({
       // chemins horodatés à chaque tentative).
       setErreur("Photos envoyées mais non enregistrées sur le projet. Réessayez.");
     } else {
-      onChemins(cheminsMisAJour);
+      onChemins(photosMisesAJour as string[]);
       // Échec partiel (ex : 2 photos sur 5 envoyées) : message explicite
       // plutôt qu'un silence qui laisserait croire que tout est passé.
       if (nbEchecs > 0) {
@@ -127,19 +142,16 @@ export function PhotosProjet({
             : `${nbEchecs} photos n'ont pas pu être envoyées. Les autres sont bien enregistrées — réessayez juste celles-ci.`
         );
       }
-      const organisationId = await getOrganisationId(supabase, user.id);
-      if (organisationId) {
-        await enregistrerEvenement(supabase, {
-          demandeId,
-          artisanId: user.id,
-          organisationId,
-          type: "photo_ajoutee",
-          titre:
-            nouveauxChemins.length > 1
-              ? `${nouveauxChemins.length} photos ajoutées`
-              : "Photo ajoutée",
-        });
-      }
+      await enregistrerEvenement(supabase, {
+        demandeId,
+        artisanId: user.id,
+        organisationId,
+        type: "photo_ajoutee",
+        titre:
+          nouveauxChemins.length > 1
+            ? `${nouveauxChemins.length} photos ajoutées`
+            : "Photo ajoutée",
+      });
     }
 
     if (inputRef.current) inputRef.current.value = "";

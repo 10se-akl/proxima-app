@@ -57,11 +57,20 @@ export async function calculerBilanMensuel(
     { count: importsCount },
     { data: logsDevisGenere },
   ] = await Promise.all([
+    // Audit (11/09) — 🟠 ce filtre excluait les acomptes payés : un acompte
+    // marqué "payée" est pourtant de l'argent réellement encaissé (voir
+    // FacturesProjet.tsx, "Marquer payée" n'est proposé que pour type
+    // facture/acompte, jamais pour un avoir — filtrer par statut suffit
+    // déjà, ".neq avoir" reste une défense en profondeur explicite plutôt
+    // qu'implicite). Un acompte encaissé en cours de mois sans facture de
+    // solde émise ce même mois affichait "Montant encaissé : 0,00 €",
+    // contredisant le texte affiché à l'écran (bilan/page.tsx : "correspond
+    // aux factures que vous avez marquées comme payées").
     supabase
       .from("factures")
       .select("total_ttc")
       .eq("organisation_id", organisationId)
-      .eq("type", "facture")
+      .neq("type", "avoir")
       .eq("statut", "payee")
       .gte("payee_le", debutISO)
       .lt("payee_le", finISO),

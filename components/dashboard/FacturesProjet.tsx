@@ -88,6 +88,27 @@ export function FacturesProjet({
       setErreur("Indiquez un montant d'acompte valide.");
       return;
     }
+    // Audit (11/09) — 🟡 aucune limite haute n'existait : une erreur de
+    // saisie (3000 au lieu de 300) créait une vraie facture d'acompte pour
+    // plus que le total du devis, sans le moindre avertissement — seul un
+    // avoir permettait ensuite de corriger. Bloqué avant l'envoi comme les
+    // autres garde-fous de ce module (double solde, montant nul...) ; si un
+    // acompte doit vraiment dépasser le devis initial (travaux
+    // supplémentaires convenus oralement), la bonne voie reste de mettre le
+    // devis à jour d'abord.
+    if (type === "acompte" && montantAcompteTTC) {
+      const montantAcomptesExistants = factures
+        .filter((f) => f.type === "acompte" && f.statut !== "annulee")
+        .reduce((s, f) => s + f.total_ttc, 0);
+      if (montantAcomptesExistants + montantAcompteTTC > devis.total_estime + 0.01) {
+        setErreur(
+          `Ce montant dépasse le total du devis (${formatEuros(devis.total_estime)}${
+            montantAcomptesExistants > 0 ? `, dont ${formatEuros(montantAcomptesExistants)} déjà en acompte` : ""
+          }). Vérifiez avant de confirmer.`
+        );
+        return;
+      }
+    }
     setCreationEnCours(type);
     try {
       const res = await fetch("/api/factures/creer", {

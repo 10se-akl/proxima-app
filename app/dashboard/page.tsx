@@ -333,11 +333,15 @@ export default async function DashboardHome() {
       <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
         <div className="max-w-2xl flex-1 min-w-0">
           <EnTeteAccueil dateDuJour={dateDuJour} premierPrenom={premierPrenom} />
-          <Card className="relative mt-6 p-8 text-center overflow-hidden">
+          {/* Même raison qu'en en-tête (voir EnTeteAccueil) : le découpage
+              du halo ne doit pas rogner le menu déroulant du bouton. */}
+          <Card className="relative mt-6 p-8 text-center">
             <span
               aria-hidden
-              className="pointer-events-none absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-signal/10 blur-3xl"
-            />
+              className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
+            >
+              <span className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-signal/10 blur-3xl" />
+            </span>
             <span className="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-signal/10 mb-4">
               <IconeCoeur taille={24} className="text-signal" />
             </span>
@@ -672,11 +676,23 @@ function EnTeteAccueil({
   children?: React.ReactNode;
 }) {
   return (
-    <div className="relative overflow-hidden rounded-3xl border border-ink/10 bg-surface px-6 py-6 sm:px-8 sm:py-7">
+    <div className="relative rounded-3xl border border-ink/10 bg-surface px-6 py-6 sm:px-8 sm:py-7">
+      {/*
+        Vérification positionnement (11/09) — "overflow-hidden" était posé
+        sur la carte entière pour découper le halo décoratif ci-dessous.
+        Sans conséquence tant que l'en-tête ne contenait qu'un bouton-lien,
+        mais depuis que "+ Nouveau projet" y ouvre un vrai menu déroulant
+        (voir NouveauProjetMenu), ce même overflow rognait le menu, qui
+        s'ouvre vers le BAS, donc hors de la carte. Le découpage est
+        désormais porté par un calque dédié au halo seul : le visuel est
+        identique, le menu n'est plus rogné.
+      */}
       <span
         aria-hidden
-        className="pointer-events-none absolute -right-14 -top-16 w-56 h-56 rounded-full bg-signal/10 blur-3xl"
-      />
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
+      >
+        <span className="absolute -right-14 -top-16 w-56 h-56 rounded-full bg-signal/10 blur-3xl" />
+      </span>
       <div className="relative flex items-center justify-between flex-wrap gap-4">
         <div>
           <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel capitalize">

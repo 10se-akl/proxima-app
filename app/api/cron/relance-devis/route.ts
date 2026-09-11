@@ -79,50 +79,67 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ envoyees: 0 });
   }
 
+  // Le palier le plus élevé déjà atteint et pas encore notifié gagne — si
+  // le cron n'a pas tourné depuis un moment et qu'on saute directement à
+  // J+12, on envoie UNE notification (le palier 10, le plus pertinent),
+  // jamais un rattrapage des deux à la suite. Calculé ici pour ne garder,
+  // avant le parallélisme ci-dessous, que les devis qui ont réellement
+  // quelque chose à notifier.
+  const aNotifier = devisEnAttente
+    .map((devis) => {
+      const joursDepuis = Math.floor(
+        (maintenant - new Date(devis.envoye_le as string).getTime()) / 86400000
+      );
+      let palier: 5 | 10 | null = null;
+      if (joursDepuis >= JOURS_PALIER_2 && !devis.notifie_relance_j10_le) {
+        palier = 10;
+      } else if (joursDepuis >= JOURS_PALIER_1 && !devis.notifie_relance_j5_le) {
+        palier = 5;
+      }
+      return palier ? { devis, joursDepuis, palier } : null;
+    })
+    .filter((item): item is { devis: (typeof devisEnAttente)[number]; joursDepuis: number; palier: 5 | 10 } => item !== null);
+
+  // Audit performance (11/09) — même correctif que app/api/cron/rappels/
+  // route.ts : un for...of séquentiel ici fait dépasser maxDuration bien
+  // avant "des milliers de lignes" (une trentaine d'organisations avec
+  // chacune un devis à relancer au même tick suffit). Les devis sont
+  // indépendants les uns des autres : Promise.allSettled fait dépendre le
+  // temps total du plus lent des envois, pas de leur somme.
+  const resultats = await Promise.allSettled(
+    aNotifier.map(async ({ devis, joursDepuis, palier }) => {
+      const nomClient = nomClientDe(devis);
+      try {
+        await envoyerPush(supabase, {
+          artisanId: devis.artisan_id,
+          titre: "Devis toujours sans réponse",
+          corps: nomClient
+            ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Une relance ?`
+            : `Un devis envoyé il y a ${joursDepuis} jours reste sans réponse.`,
+          url: `/dashboard/demandes/${devis.demande_id}`,
+        });
+      } finally {
+        // Marqué comme notifié même en cas d'échec d'envoi (abonnement
+        // absent, erreur réseau...) — même raisonnement que rappels/route.ts :
+        // le devis reste de toute façon visible dans le résumé de fin de
+        // journée, seule la notification push ne se retente pas en boucle.
+        const colonne = palier === 5 ? "notifie_relance_j5_le" : "notifie_relance_j10_le";
+        await supabase
+          .from("devis")
+          .update({ [colonne]: new Date().toISOString() })
+          .eq("id", devis.id);
+      }
+    })
+  );
+
   let envoyees = 0;
-  for (const devis of devisEnAttente) {
-    const joursDepuis = Math.floor(
-      (maintenant - new Date(devis.envoye_le as string).getTime()) / 86400000
-    );
-
-    // Le palier le plus élevé déjà atteint et pas encore notifié gagne —
-    // si le cron n'a pas tourné depuis un moment et qu'on saute
-    // directement à J+12, on envoie UNE notification (le palier 10, le
-    // plus pertinent), jamais un rattrapage des deux à la suite.
-    let palier: 5 | 10 | null = null;
-    if (joursDepuis >= JOURS_PALIER_2 && !devis.notifie_relance_j10_le) {
-      palier = 10;
-    } else if (joursDepuis >= JOURS_PALIER_1 && !devis.notifie_relance_j5_le) {
-      palier = 5;
-    }
-    if (!palier) continue;
-
-    const nomClient = nomClientDe(devis);
-
-    try {
-      await envoyerPush(supabase, {
-        artisanId: devis.artisan_id,
-        titre: "Devis toujours sans réponse",
-        corps: nomClient
-          ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Une relance ?`
-          : `Un devis envoyé il y a ${joursDepuis} jours reste sans réponse.`,
-        url: `/dashboard/demandes/${devis.demande_id}`,
-      });
+  resultats.forEach((resultat, i) => {
+    if (resultat.status === "fulfilled") {
       envoyees += 1;
-    } catch (err) {
-      console.error("Échec d'envoi de la relance pour le devis", devis.id, err);
-    } finally {
-      // Marqué comme notifié même en cas d'échec d'envoi (abonnement
-      // absent, erreur réseau...) — même raisonnement que rappels/route.ts :
-      // le devis reste de toute façon visible dans le résumé de fin de
-      // journée, seule la notification push ne se retente pas en boucle.
-      const colonne = palier === 5 ? "notifie_relance_j5_le" : "notifie_relance_j10_le";
-      await supabase
-        .from("devis")
-        .update({ [colonne]: new Date().toISOString() })
-        .eq("id", devis.id);
+    } else {
+      console.error("Échec d'envoi de la relance pour le devis", aNotifier[i].devis.id, resultat.reason);
     }
-  }
+  });
 
   return NextResponse.json({ envoyees });
 }

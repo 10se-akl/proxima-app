@@ -42,6 +42,11 @@ import { envoyerPush } from "@/lib/notifications/push";
 // n'est utilisée qu'ici, côté serveur, jamais dans un fichier "use client".
 // ============================================================
 
+// Audit performance (11/09) — absent jusqu'ici (défaut Vercel, souvent 10s
+// en Hobby), alors que les deux autres crons du même projet le déclarent
+// déjà à 60. Avec l'envoi désormais parallélisé ci-dessous, une seule
+// itération lente ne devrait plus jamais s'approcher de cette limite, mais
+// autant rester cohérent avec relance-devis/bilan-mensuel.
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {
@@ -79,31 +84,49 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ envoyees: 0 });
   }
 
-  let envoyees = 0;
-  for (const note of notesAEnvoyer) {
-    const nomClient = Array.isArray(note.demandes)
-      ? note.demandes[0]?.nom_client
-      : (note.demandes as { nom_client?: string } | null)?.nom_client;
+  // Audit performance (11/09) — un for...of séquentiel ici (chaque note
+  // attendant la précédente, et envoyerPush() fait déjà 2 requêtes
+  // séquentielles à elle seule) fait dépasser maxDuration bien avant "des
+  // milliers de lignes" : avec ne serait-ce que 30-50 organisations ayant
+  // chacune un rappel en attente au même tick de cron, le temps cumulé
+  // approche 60s — au-delà, certains rappels ne sont simplement jamais
+  // traités par cette exécution, sans erreur visible nulle part. Les notes
+  // sont indépendantes les unes des autres : Promise.allSettled (pas
+  // Promise.all, un échec sur une note ne doit jamais empêcher les autres
+  // d'être traitées) fait dépendre le temps total du plus lent des envois,
+  // pas de leur somme.
+  const resultats = await Promise.allSettled(
+    notesAEnvoyer.map(async (note) => {
+      const nomClient = Array.isArray(note.demandes)
+        ? note.demandes[0]?.nom_client
+        : (note.demandes as { nom_client?: string } | null)?.nom_client;
 
-    try {
-      await envoyerPush(supabase, {
-        artisanId: note.artisan_id,
-        titre: note.titre,
-        corps: nomClient ? `Projet : ${nomClient}` : note.description || "Rappel Compyo",
-        url: note.demande_id ? `/dashboard/demandes/${note.demande_id}` : "/dashboard/notes",
-      });
+      try {
+        await envoyerPush(supabase, {
+          artisanId: note.artisan_id,
+          titre: note.titre,
+          corps: nomClient ? `Projet : ${nomClient}` : note.description || "Rappel Compyo",
+          url: note.demande_id ? `/dashboard/demandes/${note.demande_id}` : "/dashboard/notes",
+        });
+      } finally {
+        // Marqué "notifié" même en cas d'échec d'envoi (abonnement absent,
+        // erreur réseau...) : la note reste visible dans "Rappels"/"En
+        // retard" sur Aujourd'hui et le centre de notifications de toute
+        // façon — seule la notification push, elle, ne se retente pas en
+        // boucle indéfiniment.
+        await supabase.from("notes").update({ notifie_a: new Date().toISOString() }).eq("id", note.id);
+      }
+    })
+  );
+
+  let envoyees = 0;
+  resultats.forEach((resultat, i) => {
+    if (resultat.status === "fulfilled") {
       envoyees += 1;
-    } catch (err) {
-      console.error("Échec d'envoi du rappel pour la note", note.id, err);
-    } finally {
-      // Marqué "notifié" même en cas d'échec d'envoi (abonnement absent,
-      // erreur réseau...) : la note reste visible dans "Rappels"/"En
-      // retard" sur Aujourd'hui et le centre de notifications de toute
-      // façon — seule la notification push, elle, ne se retente pas en
-      // boucle indéfiniment.
-      await supabase.from("notes").update({ notifie_a: new Date().toISOString() }).eq("id", note.id);
+    } else {
+      console.error("Échec d'envoi du rappel pour la note", notesAEnvoyer[i].id, resultat.reason);
     }
-  }
+  });
 
   return NextResponse.json({ envoyees });
 }

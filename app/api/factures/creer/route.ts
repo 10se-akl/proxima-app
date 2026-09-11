@@ -125,6 +125,22 @@ export async function POST(request: NextRequest) {
   let lignesEtTva: { lignes: ReturnType<typeof genererLignesFactureAcompte>["lignes"]; tva_pct: number };
 
   if (type === "acompte") {
+    // Audit (11/09) — 🟡 défense en profondeur du même garde-fou que
+    // FacturesProjet.tsx (contrôle client) : aucune limite haute n'existait
+    // côté serveur non plus.
+    const { data: acomptesExistants } = await supabase
+      .from("factures")
+      .select("total_ttc")
+      .eq("devis_id", devisId)
+      .eq("type", "acompte")
+      .neq("statut", "annulee");
+    const montantAcomptesExistants = (acomptesExistants ?? []).reduce((s, f) => s + f.total_ttc, 0);
+    if (montantAcomptesExistants + montantAcompteTTC! > devis.total_estime + 0.01) {
+      return NextResponse.json(
+        { error: "Ce montant d'acompte dépasse le total du devis." },
+        { status: 400 }
+      );
+    }
     lignesEtTva = genererLignesFactureAcompte(devis, montantAcompteTTC!);
   } else {
     // Garde-fou anti double-facturation : une seule facture de solde
@@ -219,6 +235,25 @@ export async function POST(request: NextRequest) {
 
   if (erreurInsertion || !facture) {
     console.error(erreurInsertion);
+    // Audit (11/09) — 🔴 la vérification "soldeExistant" un peu plus haut
+    // est une lecture-puis-écriture, pas atomique : deux membres de la même
+    // organisation qui cliquent chacun "+ Facture (solde)" sur le même
+    // devis à quelques centaines de ms d'écart passaient tous les deux ce
+    // contrôle avant qu'aucun des deux INSERT n'ait committé, créant deux
+    // factures de solde pour le même devis (le client facturé deux fois).
+    // La contrainte réelle est désormais posée en base (index unique
+    // partiel, voir supabase/schema.sql Module 39) — ce garde-fou capte sa
+    // violation (23505) pour renvoyer le même message clair que le
+    // pré-contrôle, plutôt qu'une erreur générique.
+    if (erreurInsertion?.code === "23505") {
+      return NextResponse.json(
+        {
+          error:
+            "Une facture de solde existe déjà pour ce devis (créée entre-temps, peut-être par un autre membre de l'équipe). Rechargez la page.",
+        },
+        { status: 409 }
+      );
+    }
     // Le numéro a déjà été consommé par prochain_numero_facture() à ce
     // stade — c'est un trou dans la séquence si l'insertion échoue
     // ensuite. Assumé : la seule alternative (numéroter APRÈS l'insertion)

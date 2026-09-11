@@ -6,6 +6,7 @@ import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
+import { listerNotesActivesProjet, formaterNotesPourPromptIA } from "@/lib/notes";
 import type { PosteTravailIA, ParametresEntreprise, LigneDevisCalculee } from "@/types";
 
 // Anti-oubli (06/09) — validation partagée entre "postes" (bloquant si
@@ -110,6 +111,7 @@ export async function POST(request: NextRequest) {
     { data: notesVocales },
     { data: profil },
     { data: parametresBrutes },
+    notesActives,
   ] = await Promise.all([
     // Filtre organisation_id explicite en plus de la RLS : défense en
     // profondeur, pour ne pas dépendre uniquement d'une policy qui pourrait
@@ -137,6 +139,12 @@ export async function POST(request: NextRequest) {
     // porte une mention invitant l'artisan à les configurer. Partagés par
     // toute l'équipe (une ligne par organisation, pas par personne).
     supabase.from("parametres_entreprise").select("*").eq("organisation_id", organisationId).maybeSingle(),
+    // Audit IA (11/09) — manquait ici alors que /api/ai/analyser-demande les
+    // inclut déjà : une note structurée ("accès par la cour uniquement", "le
+    // client veut du carrelage grand format"...) n'atteignait l'IA que si
+    // elle avait déjà été digérée dans questions_manquantes.resume par une
+    // analyse antérieure encore à jour — invisible sinon.
+    listerNotesActivesProjet(supabase, demandeId),
   ]);
 
   if (fetchError || !projet) {
@@ -194,6 +202,8 @@ ${
     ? `Résumé déjà établi par l'IA : "${projet.questions_manquantes.resume}"`
     : ""
 }
+Notes importantes enregistrées par l'artisan pour ce projet :
+${formaterNotesPourPromptIA(notesActives)}
 ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récentes reflètent l'état actuel du chantier, y compris d'éventuels changements) :\n${blocNotesVocales}` : ""}${blocChecklist}`;
 
   const debutAppel = Date.now();

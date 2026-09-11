@@ -211,11 +211,12 @@ async function gererPartageEntrant(requete) {
     // handler GET). En renvoyant la redirection "opaque" telle quelle à
     // event.respondWith(), c'est le NAVIGATEUR lui-même qui effectue la
     // navigation vers l'URL finale, exactement comme sans service worker.
-    return await fetch(CIBLE_PARTAGE, {
+    const reponse = await fetch(CIBLE_PARTAGE, {
       method: "POST",
       body: nouvellesDonnees,
       redirect: "manual",
     });
+    return reponseAvecReplisSiRejet(reponse);
   } catch {
     // Lecture/compression impossible : on retente l'envoi brut plutôt que
     // d'afficher une erreur du service worker lui-même — app/api/partage/
@@ -223,8 +224,35 @@ async function gererPartageEntrant(requete) {
     // try/catch), et un échec Vercel 413 reste, dans le pire des cas,
     // identique à avant ce correctif. Même raison ci-dessus pour
     // "redirect: manual".
-    return fetch(requeteBrute, { redirect: "manual" });
+    const reponseBrute = await fetch(requeteBrute, { redirect: "manual" });
+    return reponseAvecReplisSiRejet(reponseBrute);
   }
+}
+
+// Vérification (11/09) — la compression ci-dessus est best-effort : sur un
+// navigateur sans OffscreenCanvas, ou avec assez de photos partagées d'un
+// coup, la requête peut ENCORE dépasser la limite de taille de
+// l'hébergeur. Ce rejet se produit avant que app/api/partage/route.ts ne
+// s'exécute : aucune redirection propre n'est alors renvoyée, et l'artisan
+// se retrouve devant une page d'erreur brute illisible, sans rien pour
+// continuer. On traduit ce cas dans la même convention d'erreur que le
+// reste du parcours (voir MESSAGES_ERREUR_PARTAGE dans app/dashboard/
+// demandes/nouvelle/page.tsx) : un message clair + le formulaire manuel
+// comme porte de sortie immédiate.
+//
+// Une redirection (type "opaqueredirect" à cause de redirect:"manual") a un
+// status de 0 : c'est le cas NORMAL de succès ici, à ne surtout pas
+// confondre avec une erreur.
+function reponseAvecReplisSiRejet(reponse) {
+  if (reponse.type === "opaqueredirect" || reponse.status < 400) {
+    return reponse;
+  }
+  const cle = reponse.status === 413 ? "partage_trop_lourd" : "partage_echec_serveur";
+  // URL ABSOLUE obligatoire : Response.redirect() lève une TypeError sur un
+  // chemin relatif — ce qui, ici, transformerait le message d'erreur qu'on
+  // essaie d'afficher en plantage du service worker lui-même.
+  const destination = new URL(`/dashboard/demandes/nouvelle?erreur=${cle}`, self.location.origin);
+  return Response.redirect(destination.toString(), 303);
 }
 
 function estApiOuSupabase(url) {

@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { envoyerPush } from "@/lib/notifications/push";
+import { creerNote } from "@/lib/notes";
+import {
+  messageRelanceDevisJ5,
+  messageRelanceDevisJ10,
+  AVERTISSEMENT_BROUILLON,
+} from "@/lib/relances/templates";
 
 // ============================================================
 // Cron de relance sur les devis envoyés sans réponse — voir Module 36,
@@ -68,7 +74,9 @@ export async function GET(request: NextRequest) {
   // largement raisonnable pour ça.
   const { data: devisEnAttente, error } = await supabase
     .from("devis")
-    .select("id, artisan_id, demande_id, envoye_le, notifie_relance_j5_le, notifie_relance_j10_le, demandes(nom_client)")
+    .select(
+      "id, artisan_id, organisation_id, demande_id, numero, envoye_le, notifie_relance_j5_le, notifie_relance_j10_le, demandes(nom_client)"
+    )
     .eq("statut", "envoye")
     .not("envoye_le", "is", null);
 
@@ -76,7 +84,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Erreur de lecture des devis" }, { status: 500 });
   }
   if (!devisEnAttente || devisEnAttente.length === 0) {
-    return NextResponse.json({ envoyees: 0 });
+    return NextResponse.json({ proposees: 0 });
   }
 
   // Le palier le plus élevé déjà atteint et pas encore notifié gagne — si
@@ -100,6 +108,16 @@ export async function GET(request: NextRequest) {
     })
     .filter((item): item is { devis: (typeof devisEnAttente)[number]; joursDepuis: number; palier: 5 | 10 } => item !== null);
 
+  // Le brouillon est signé au nom de l'artisan : on récupère nom/entreprise
+  // en UNE requête pour tous les artisans concernés, plutôt qu'une par
+  // devis (voir l'audit performance du 11/09 sur les crons).
+  const artisanIds = Array.from(new Set(aNotifier.map((a) => a.devis.artisan_id)));
+  const { data: profils } = await supabase
+    .from("profils")
+    .select("id, nom, entreprise")
+    .in("id", artisanIds);
+  const profilParId = new Map((profils ?? []).map((p) => [p.id, p]));
+
   // Audit performance (11/09) — même correctif que app/api/cron/rappels/
   // route.ts : un for...of séquentiel ici fait dépasser maxDuration bien
   // avant "des milliers de lignes" (une trentaine d'organisations avec
@@ -109,37 +127,99 @@ export async function GET(request: NextRequest) {
   const resultats = await Promise.allSettled(
     aNotifier.map(async ({ devis, joursDepuis, palier }) => {
       const nomClient = nomClientDe(devis);
+      const profil = profilParId.get(devis.artisan_id);
+
+      // Le brouillon est un TEXTE FIXE à trous (voir lib/relances/
+      // templates.ts) — aucun appel IA, donc aucun montant ni délai ne peut
+      // être inventé dans un message destiné à un client.
+      const brouillon =
+        palier === 5
+          ? messageRelanceDevisJ5({
+              nomClient: nomClient ?? "",
+              numeroDevis: devis.numero,
+              joursDepuis,
+              nomArtisan: profil?.nom ?? "",
+              entreprise: profil?.entreprise ?? null,
+            })
+          : messageRelanceDevisJ10({
+              nomClient: nomClient ?? "",
+              numeroDevis: devis.numero,
+              joursDepuis,
+              nomArtisan: profil?.nom ?? "",
+              entreprise: profil?.entreprise ?? null,
+            });
+
+      // La note EST la notification : elle apparaît dans "Notes", sur la
+      // fiche projet et dans le centre de notifications, elle survit à un
+      // téléphone éteint (contrairement au push seul), et elle contient le
+      // brouillon complet, modifiable. Rien n'est envoyé au client ici.
+      //
+      // rappelA VOLONTAIREMENT null : renseigner rappel_a ferait repartir
+      // cette note dans app/api/cron/rappels/route.ts, qui enverrait une
+      // SECONDE notification push pour la même chose.
+      const { note, erreur: erreurNote } = await creerNote(supabase, {
+        organisationId: devis.organisation_id,
+        artisanId: devis.artisan_id,
+        demandeId: devis.demande_id,
+        titre: nomClient
+          ? `Relancer ${nomClient} — devis n° ${devis.numero} sans réponse`
+          : `Relancer un devis sans réponse (n° ${devis.numero})`,
+        description: `${AVERTISSEMENT_BROUILLON}\n\n${brouillon}`,
+        importance: "orange",
+        rappelA: null,
+      });
+
+      // Note non créée = notification inexistante : on NE MARQUE PAS la
+      // colonne, pour que le prochain passage du cron réessaie. Mieux vaut
+      // une relance proposée avec un jour de retard qu'un devis oublié.
+      if (!note) {
+        throw new Error(erreurNote ?? "Note de relance non créée");
+      }
+
+      // Push = simple rappel vers la note qui existe déjà. Son échec
+      // (abonnement absent, navigateur qui a révoqué la permission...) ne
+      // doit pas faire recommencer tout le processus demain : la note,
+      // elle, est bien là.
       try {
         await envoyerPush(supabase, {
           artisanId: devis.artisan_id,
           titre: "Devis toujours sans réponse",
           corps: nomClient
-            ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Une relance ?`
+            ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Un brouillon de relance vous attend.`
             : `Un devis envoyé il y a ${joursDepuis} jours reste sans réponse.`,
           url: `/dashboard/demandes/${devis.demande_id}`,
         });
-      } finally {
-        // Marqué comme notifié même en cas d'échec d'envoi (abonnement
-        // absent, erreur réseau...) — même raisonnement que rappels/route.ts :
-        // le devis reste de toute façon visible dans le résumé de fin de
-        // journée, seule la notification push ne se retente pas en boucle.
-        const colonne = palier === 5 ? "notifie_relance_j5_le" : "notifie_relance_j10_le";
-        await supabase
-          .from("devis")
-          .update({ [colonne]: new Date().toISOString() })
-          .eq("id", devis.id);
+      } catch (err) {
+        console.error("Push de relance non envoyé (la note existe)", devis.id, err);
       }
+
+      // Marqué une fois la NOTIFICATION créée (pas un envoi au client — il
+      // n'y en a jamais ici) : garantit qu'un même devis n'est jamais
+      // proposé deux fois au même palier.
+      const colonne = palier === 5 ? "notifie_relance_j5_le" : "notifie_relance_j10_le";
+      await supabase
+        .from("devis")
+        .update({ [colonne]: new Date().toISOString() })
+        .eq("id", devis.id);
     })
   );
 
-  let envoyees = 0;
+  // "proposees" et non "envoyees" : ce cron ne peut, par construction, rien
+  // envoyer à un client — il prépare des brouillons que l'artisan décide
+  // d'envoyer ou non. Le nom du compteur doit dire la vérité, y compris
+  // dans les logs d'un service de cron externe.
+  let proposees = 0;
   resultats.forEach((resultat, i) => {
     if (resultat.status === "fulfilled") {
-      envoyees += 1;
+      proposees += 1;
     } else {
-      console.error("Échec d'envoi de la relance pour le devis", aNotifier[i].devis.id, resultat.reason);
+      console.error(
+        "Relance de devis non proposée (réessai au prochain passage)",
+        aNotifier[i].devis.id,
+        resultat.reason
+      );
     }
   });
 
-  return NextResponse.json({ envoyees });
+  return NextResponse.json({ proposees });
 }

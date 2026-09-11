@@ -14,6 +14,8 @@ type DevisAvecClient = {
   total_estime: number;
   envoye_le: string | null;
   created_at: string;
+  notifie_relance_j5_le?: string | null;
+  notifie_relance_j10_le?: string | null;
   demandes?: { nom_client?: string; statut?: string } | null;
 };
 
@@ -37,6 +39,18 @@ function statutAffiche(d: DevisAvecClient): { texte: string; classe: string } {
   const statutProjet = d.demandes?.statut;
   if (statutProjet === "accepte" || statutProjet === "en_cours" || statutProjet === "termine") {
     return { texte: "Accepté", classe: "bg-[#2F8F5B]/15 text-[#2F8F5B]" };
+  }
+  // Relance (11/09) — le devis est toujours en attente, mais l'artisan a
+  // déjà reçu une proposition de relance (voir app/api/cron/relance-devis).
+  // Le badge dit juste où on en est, sans compteur ni couleur alarmante :
+  // même nuance neutre que "en attente", seul le texte change. "Relancé"
+  // signifie ici "relance proposée à l'artisan" — Compyo n'envoie jamais
+  // rien de lui-même au client.
+  if (d.notifie_relance_j10_le) {
+    return { texte: "Relancé J+10", classe: "bg-steel/15 text-steel" };
+  }
+  if (d.notifie_relance_j5_le) {
+    return { texte: "Relancé J+5", classe: "bg-steel/15 text-steel" };
   }
   return { texte: "Envoyé — en attente", classe: "bg-steel/15 text-steel" };
 }

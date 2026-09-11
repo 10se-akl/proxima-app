@@ -14,7 +14,9 @@ export default async function FacturesPage() {
 
   const { data: facturesBrutes } = await supabase
     .from("factures")
-    .select("id, demande_id, type, numero, statut, total_ttc, date_emission, demandes(nom_client)")
+    .select(
+      "id, demande_id, type, numero, statut, total_ttc, date_emission, notifie_relance_le, demandes(nom_client)"
+    )
     .eq("organisation_id", organisationId)
     .order("date_emission", { ascending: false });
 

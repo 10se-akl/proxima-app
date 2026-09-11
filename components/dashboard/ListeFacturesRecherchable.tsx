@@ -11,6 +11,7 @@ type FactureAvecClient = Pick<
   Facture,
   "id" | "demande_id" | "type" | "numero" | "statut" | "total_ttc" | "date_emission"
 > & {
+  notifie_relance_le?: string | null;
   demandes?: { nom_client?: string } | null;
 };
 
@@ -30,6 +31,11 @@ const LABEL_STATUT_FILTRE = [
 function statutAffiche(f: FactureAvecClient): { texte: string; classe: string } {
   if (f.statut === "payee") return { texte: "Payée", classe: "bg-[#2F8F5B]/15 text-[#2F8F5B]" };
   if (f.statut === "annulee") return { texte: "Annulée", classe: "bg-ink/10 text-ink/40" };
+  // Module 40 (11/09) — une relance a déjà été PROPOSÉE à l'artisan pour
+  // cette facture (voir app/api/cron/relance-factures). Même nuance neutre
+  // que "Émise", seul le texte change : pas de rouge, pas de compteur de
+  // retard — ce badge informe, il ne met pas la pression.
+  if (f.notifie_relance_le) return { texte: "Relancée", classe: "bg-steel/15 text-steel" };
   return { texte: "Émise", classe: "bg-steel/15 text-steel" };
 }
 

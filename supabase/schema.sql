@@ -1986,3 +1986,35 @@ begin
   return v_photos;
 end;
 $$;
+
+-- ============================================================
+-- Module 40 (11/09) — Relance des factures impayées. Pendant exact du
+-- Module 36 (relance des devis sans réponse), côté facturation.
+--
+-- `date_echeance` existait déjà (voir la table factures plus haut, elle est
+-- saisie à la création d'une facture) : AUCUNE colonne d'échéance à
+-- ajouter. Seul manquait de quoi se souvenir qu'une relance a déjà été
+-- proposée, pour ne jamais la proposer deux fois pour la même facture.
+--
+-- UNE SEULE colonne, donc un seul palier — contrairement aux devis (J+5
+-- puis J+10). Choix délibéré : une facture impayée est un sujet de
+-- relation client autrement plus sensible qu'un devis sans réponse. Une
+-- mécanique qui reproposerait une relance tous les X jours pousserait
+-- l'artisan à harceler son client pour une facture peut-être déjà en cours
+-- de virement. Une proposition, puis c'est à l'artisan de gérer la suite
+-- comme il l'entend (téléphone, courrier, mise en demeure) — ces étapes-là
+-- ne s'automatisent pas.
+--
+-- Rappel de la règle produit : cette colonne trace la création d'une
+-- NOTIFICATION à l'artisan, jamais un envoi au client. Compyo n'envoie
+-- jamais rien à un client de lui-même.
+-- ============================================================
+alter table factures add column if not exists notifie_relance_le timestamptz;
+
+-- Le cron (app/api/cron/relance-factures/route.ts) balaie TOUTES les
+-- organisations d'un coup : comme pour devis_statut_envoye_le_idx au
+-- Module 37, un index commençant par organisation_id ne servirait à rien
+-- ici puisque cette colonne n'est justement pas filtrée.
+create index if not exists factures_relance_a_proposer_idx
+  on factures (date_emission)
+  where statut = 'emise' and type != 'avoir' and notifie_relance_le is null;

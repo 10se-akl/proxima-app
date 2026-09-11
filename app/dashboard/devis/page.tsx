@@ -13,7 +13,7 @@ export default async function DevisPage() {
   const { data: devisListBrut } = await supabase
     .from("devis")
     .select(
-      "id, demande_id, numero, statut, total_estime, envoye_le, created_at, demandes(nom_client, statut)"
+      "id, demande_id, numero, statut, total_estime, envoye_le, created_at, notifie_relance_j5_le, notifie_relance_j10_le, demandes(nom_client, statut)"
     )
     .eq("organisation_id", organisationId)
     .order("created_at", { ascending: false });

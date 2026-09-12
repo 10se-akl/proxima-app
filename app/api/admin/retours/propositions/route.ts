@@ -26,6 +26,11 @@ Propose 2 à 4 pistes d'amélioration concrètes et réalistes pour un développ
 
 Réponds en texte simple (pas de JSON), format liste à puces avec "-", en français, sans préambule ni conclusion.`;
 
+// Audit IA (12/09) — même correctif que app/api/retours/route.ts : appel IA
+// sans maxDuration déclaré, donc tué par la limite par défaut de l'hébergeur
+// avant d'avoir pu répondre.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const supabase = createClient();
   const {

@@ -90,13 +90,35 @@ export async function POST(request: NextRequest) {
   // Claude, sans limite de coût ni de risque de timeout côté serveur. 8 Mo
   // décodés par image est largement suffisant pour une capture d'écran de
   // conversation (WhatsApp/SMS), tout en écartant les cas dégénérés.
-  const TAILLE_MAX_IMAGE_OCTETS = 8 * 1024 * 1024;
-  const imageTropLourde = images.some(
-    (img) => img.base64.length * 0.75 > TAILLE_MAX_IMAGE_OCTETS
-  );
-  if (imageTropLourde) {
+  //
+  // Audit IA (12/09) — deux corrections sur ce garde-fou :
+  //
+  // 1. 8 Mo par image dépassait la limite réelle de l'API Claude (5 Mo par
+  //    image). Une capture entre 5 et 8 Mo passait donc notre contrôle pour
+  //    se faire refuser plus loin par Anthropic — erreur technique opaque
+  //    au lieu d'un message clair, et l'import entier échouait.
+  // 2. Surtout : AUCUNE limite sur le poids TOTAL. 20 captures sous la
+  //    limite individuelle pouvaient dépasser la taille maximale d'une
+  //    requête (32 Mo), ce qui faisait échouer tout le lot d'un coup.
+  //    C'est le cas le plus probable en usage réel, et le plus frustrant :
+  //    l'artisan a sélectionné 20 captures, attendu l'envoi, et tout casse.
+  const TAILLE_MAX_IMAGE_OCTETS = 5 * 1024 * 1024;
+  const TAILLE_MAX_TOTALE_OCTETS = 25 * 1024 * 1024; // < 32 Mo, avec marge
+  const octetsDecodes = (base64: string) => base64.length * 0.75;
+
+  if (images.some((img) => octetsDecodes(img.base64) > TAILLE_MAX_IMAGE_OCTETS)) {
     return NextResponse.json(
-      { error: "Une des captures est trop lourde (max 8 Mo par image). Réessayez avec une capture d'écran classique plutôt qu'un scan haute résolution." },
+      { error: "Une des captures est trop lourde (max 5 Mo par image). Réessayez avec une capture d'écran classique plutôt qu'un scan haute résolution." },
+      { status: 400 }
+    );
+  }
+
+  const poidsTotal = images.reduce((total, img) => total + octetsDecodes(img.base64), 0);
+  if (poidsTotal > TAILLE_MAX_TOTALE_OCTETS) {
+    return NextResponse.json(
+      {
+        error: `Ces ${images.length} captures sont trop lourdes au total. Importez-les en deux fois.`,
+      },
       { status: 400 }
     );
   }

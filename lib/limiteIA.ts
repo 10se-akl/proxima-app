@@ -20,8 +20,20 @@ const TYPES_APPELS_IA = [
   "journal_chantier_interprete",
 ] as const;
 
-const PLAFOND_PAR_HEURE = 40;
-const PLAFOND_PAR_JOUR = 150;
+// Audit IA (12/09) — relevés après calcul du coût réel. Ces plafonds
+// existent pour couper une boucle d'abus, pas pour gêner un usage intensif
+// légitime : or 40 appels/heure, c'est très facile à atteindre en une
+// session de test un peu poussée (essayer chaque fonctionnalité, refaire un
+// devis, réimporter des captures...), et l'artisan se retrouvait alors
+// bloqué par son propre outil, ce qui ressemble à une panne.
+//
+// Coût maximal si un plafond est réellement atteint (Sonnet 5, ~$2/$10 par
+// million de tokens) : un appel texte revient à moins d'un centime, un
+// appel avec captures d'écran à quelques centimes. Le pire cas reste donc
+// de l'ordre de quelques euros par jour — une protection qui borne le
+// risque sans transformer un usage normal en panne.
+const PLAFOND_PAR_HEURE = 80;
+const PLAFOND_PAR_JOUR = 300;
 
 export async function verifierLimiteIA(
   supabase: SupabaseClient,

@@ -141,6 +141,14 @@ export async function GET() {
   return NextResponse.json({ problemes: resultats });
 }
 
+// Audit IA (12/09) — cette route appelle Claude mais ne déclarait aucun
+// maxDuration : elle héritait donc de la limite par défaut de l'hébergeur
+// (souvent 10s), alors qu'un appel IA peut légitimement prendre plus
+// longtemps. La fonction était tuée en plein appel et renvoyait un 504 brut,
+// au lieu du message d'erreur soigné que la route sait déjà produire. Aligné
+// sur les autres routes IA du projet.
+export const maxDuration = 60;
+
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const importance = Number(body.importance);

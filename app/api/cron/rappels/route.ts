@@ -78,6 +78,13 @@ export async function GET(request: NextRequest) {
     .is("notifie_a", null);
 
   if (error) {
+    // Constaté le 12/09 : un 500 "Erreur de lecture des rappels" en prod
+    // (après un 200 deux minutes plus tôt, même requête) était impossible à
+    // diagnostiquer, l'erreur Supabase réelle n'étant journalisée nulle
+    // part. Le message renvoyé à l'appelant reste volontairement générique
+    // (c'est une route publique), mais la cause part désormais dans les
+    // logs Vercel.
+    console.error("Cron rappels — lecture des notes échouée :", error);
     return NextResponse.json({ error: "Erreur de lecture des rappels" }, { status: 500 });
   }
   if (!notesAEnvoyer || notesAEnvoyer.length === 0) {

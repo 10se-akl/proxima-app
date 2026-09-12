@@ -115,10 +115,10 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ============================================================
-// En-tête — refonte "site à plusieurs pages" : 7 pages dans la nav
+// En-tête — refonte "site à plusieurs pages" : 8 pages dans la nav
 // (Accueil, Fonctionnalités, Comment ça fonctionne, Pourquoi Compyo,
-// Bêta, À propos, Contact) plutôt que des ancres vers des sections d'une
-// page unique. Tous les liens sont en chemin absolu (/xxx), ce Header
+// Carte mentale, Bêta, À propos, Contact) plutôt que des ancres vers des
+// sections d'une page unique. Tous les liens sont en chemin absolu (/xxx), ce Header
 // étant maintenant rendu sur toutes les pages du site, pas seulement
 // l'accueil.
 //
@@ -169,7 +169,13 @@ export function Header({
 
   return (
     <header className="sticky top-0 z-40 bg-paper/90 backdrop-blur-md border-b border-ink/10">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+      {/* Conteneur volontairement plus large (7xl) que le contenu des pages
+          (6xl) : avec 8 liens de nav + logo + Connexion + CTA, l'ensemble
+          dépassait la largeur 6xl au breakpoint xl. Un flex en overflow n'a
+          plus d'espace à répartir, et justify-between collait alors le logo
+          au premier lien ("CompyoAccueil") et "Contact" à "Connexion"
+          (constaté en prod le 12/09). */}
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-6">
         {/* id ciblé par IntroAnimation.tsx : au terme de l'animation d'entrée,
             le logo de l'overlay se réduit et se déplace exactement jusqu'à
             cet endroit (mesuré via getBoundingClientRect), pour donner
@@ -180,7 +186,7 @@ export function Header({
           <span className="font-display font-semibold tracking-tight">Compyo</span>
         </Link>
 
-        <nav className="hidden xl:flex items-center gap-6">
+        <nav className="hidden xl:flex items-center gap-5">
           {LIENS_NAV.map((lien) => (
             <Link
               key={lien.href}
@@ -192,7 +198,7 @@ export function Header({
           ))}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           {!masquerToggleTheme && (
             <ThemeToggle className="hidden sm:inline-block text-base leading-none hover:scale-110 transition-transform" />
           )}

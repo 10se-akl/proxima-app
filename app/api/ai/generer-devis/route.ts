@@ -328,15 +328,43 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     }
 
     if (insertError || !devis) {
+      // Constaté le 13/09 en production : la génération de devis échouait
+      // à 100%, et ce bloc rendait la cause introuvable — l'erreur
+      // Postgres réelle n'était journalisée NULLE PART, seulement
+      // "echec_enregistrement". La cause était en fait triviale : la
+      // colonne `suggestions_oublis` (Module 29) n'avait jamais été
+      // appliquée sur la base de production, donc l'INSERT était rejeté.
+      // Des heures de diagnostic pour une information que la base donnait
+      // dès la première seconde.
+      console.error("Échec d'enregistrement du devis :", insertError);
       await enregistrerLog(supabase, {
         artisanId: user.id,
         organisationId,
         type: "erreur_ia",
         contexte: demandeId,
-        details: { etape: "devis", erreur: "echec_enregistrement" },
+        details: {
+          etape: "devis",
+          erreur: "echec_enregistrement",
+          code: insertError?.code,
+          message: insertError?.message,
+        },
       });
+
+      // 42703 = colonne inexistante, PGRST204 = colonne inconnue du cache
+      // PostgREST. Dans les deux cas, le code attend une colonne que la
+      // base n'a pas : c'est une migration non appliquée, jamais une
+      // erreur passagère. Le dire explicitement évite de chercher du côté
+      // de l'IA (qui a parfaitement fait son travail à ce stade) et de
+      // réessayer en boucle une opération qui échouera à l'identique.
+      const migrationManquante =
+        insertError?.code === "42703" || insertError?.code === "PGRST204";
+
       return NextResponse.json(
-        { error: "Devis généré mais non enregistré" },
+        {
+          error: migrationManquante
+            ? "Base de données pas à jour : une colonne attendue par l'application est absente. Rejouez supabase/schema.sql dans l'éditeur SQL Supabase."
+            : "Devis généré mais non enregistré",
+        },
         { status: 500 }
       );
     }

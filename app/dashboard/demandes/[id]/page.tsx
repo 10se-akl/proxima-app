@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
@@ -59,7 +59,31 @@ export default function DetailDemandePage({
   const [brouillonReponse, setBrouillonReponse] = useState("");
   const [copie, setCopie] = useState(false);
   const [lienCopie, setLienCopie] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
+  // Constaté le 13/09 sur un vrai projet : un seul échec (génération de
+  // devis) affichait le même message d'erreur QUATRE fois sur la page —
+  // sous "Cadrer le besoin", sous "Générer un devis", sous "Préparer une
+  // réponse", et en bas de page. L'intention d'origine était bonne (que
+  // l'erreur reste visible sans avoir à scroller), mais dupliquer
+  // l'affichage d'un état partagé la montre partout à la fois, ce qui
+  // donne l'impression que tout est cassé alors qu'une seule action a
+  // échoué.
+  //
+  // On retient donc AUSSI la section qui a produit l'erreur. Les appels
+  // existants `setErreur("…")` continuent de fonctionner tels quels (pas
+  // de section => bandeau de bas de page, comme avant) ; seules les trois
+  // actions IA précisent leur section pour s'afficher au bon endroit.
+  const [erreurDetaillee, setErreurDetaillee] = useState<{
+    message: string;
+    section: "analyse" | "devis" | "reponse" | null;
+  } | null>(null);
+  const erreur = erreurDetaillee?.message ?? null;
+  const sectionErreur = erreurDetaillee?.section ?? null;
+  const setErreur = useCallback(
+    (message: string | null, section: "analyse" | "devis" | "reponse" | null = null) => {
+      setErreurDetaillee(message ? { message, section } : null);
+    },
+    []
+  );
   const [notesVocales, setNotesVocales] = useState<NoteVocale[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [formulaireNoteOuvert, setFormulaireNoteOuvert] = useState(false);
@@ -277,7 +301,7 @@ export default function DetailDemandePage({
       // AbortError = la page a été quittée entre-temps (cleanup ci-dessus) :
       // pas d'erreur à afficher, il n'y a plus personne pour la lire.
       if ((err as Error).name !== "AbortError") {
-        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.", "analyse");
       }
       return;
     }
@@ -286,7 +310,7 @@ export default function DetailDemandePage({
 
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      setErreur(data?.error ?? "L'analyse a échoué. Réessayez.");
+      setErreur(data?.error ?? "L'analyse a échoué. Réessayez.", "analyse");
       return;
     }
     if (artisanId && organisationId) {
@@ -337,7 +361,7 @@ export default function DetailDemandePage({
       controleursIARef.current.delete(controleur);
       setChargementDevis(false);
       if ((err as Error).name !== "AbortError") {
-        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.", "devis");
       }
       return;
     }
@@ -346,7 +370,7 @@ export default function DetailDemandePage({
 
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      setErreur(data?.error ?? "La génération du devis a échoué. Réessayez.");
+      setErreur(data?.error ?? "La génération du devis a échoué. Réessayez.", "devis");
       return;
     }
     if (artisanId && organisationId) {
@@ -435,7 +459,7 @@ export default function DetailDemandePage({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setErreur(data?.error ?? "Impossible de créer le devis express. Réessayez.");
+        setErreur(data?.error ?? "Impossible de créer le devis express. Réessayez.", "devis");
         return;
       }
       if (artisanId && organisationId) {
@@ -449,7 +473,7 @@ export default function DetailDemandePage({
       }
       await chargerDonnees();
     } catch {
-      setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+      setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.", "devis");
     } finally {
       setChargementDevis(false);
     }
@@ -473,7 +497,7 @@ export default function DetailDemandePage({
       controleursIARef.current.delete(controleur);
       setChargementReponse(false);
       if ((err as Error).name !== "AbortError") {
-        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.", "reponse");
       }
       return;
     }
@@ -482,7 +506,7 @@ export default function DetailDemandePage({
 
     if (!res.ok) {
       const data = await res.json().catch(() => null);
-      setErreur(data?.error ?? "La préparation de la réponse a échoué. Réessayez.");
+      setErreur(data?.error ?? "La préparation de la réponse a échoué. Réessayez.", "reponse");
       return;
     }
     const data = await res.json();
@@ -1274,7 +1298,9 @@ export default function DetailDemandePage({
             chacun des 3 boutons concernés (celui-ci reste aussi en bas, en
             filet de sécurité pour les autres mutations qui utilisent le
             même état, ex. dupliquerDevis). */}
-        {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
+        {erreur && sectionErreur === "analyse" && (
+          <p className="mt-2 text-sm text-signal">{erreur}</p>
+        )}
 
         {demande.questions_manquantes && (
           <Card className="mt-4 p-6">
@@ -1357,9 +1383,11 @@ export default function DetailDemandePage({
           </div>
 
           {/* Sprint Robustesse (30/08) — voir commentaire identique plus
-              haut sous le bouton "Analyser avec l'IA" : même état `erreur`
-              partagé, dupliqué ici pour rester visible sans scroller. */}
-          {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
+              haut sous le bouton "Analyser avec l'IA" : l'erreur s'affiche
+              désormais UNIQUEMENT sous l'action qui l'a produite. */}
+          {erreur && sectionErreur === "devis" && (
+            <p className="mt-2 text-sm text-signal">{erreur}</p>
+          )}
 
           {devis?.statut === "refuse" && (
             <Card className="mt-4 p-4 border-signal/30 bg-signal/5">
@@ -1537,9 +1565,11 @@ export default function DetailDemandePage({
           </div>
 
           {/* Sprint Robustesse (30/08) — voir les deux commentaires
-              identiques plus haut : même état `erreur` partagé, dupliqué
-              ici pour rester visible sans scroller. */}
-          {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
+              identiques plus haut : l'erreur s'affiche désormais
+              UNIQUEMENT sous l'action qui l'a produite. */}
+          {erreur && sectionErreur === "reponse" && (
+            <p className="mt-2 text-sm text-signal">{erreur}</p>
+          )}
 
           {brouillonReponse && (
             <Card className="mt-4 p-6">
@@ -1583,7 +1613,12 @@ export default function DetailDemandePage({
         </div>
       </div>
 
-      {erreur && <p className="mt-4 text-sm text-signal">{erreur}</p>}
+      {/* Bandeau de repli : toutes les autres mutations de la page
+          (dupliquer un devis, marquer une visite, clôturer…) n'indiquent
+          pas de section, leur erreur s'affiche donc ici, une seule fois. */}
+      {erreur && sectionErreur === null && (
+        <p className="mt-4 text-sm text-signal">{erreur}</p>
+      )}
     </div>
   );
 }

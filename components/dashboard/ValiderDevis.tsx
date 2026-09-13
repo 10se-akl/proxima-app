@@ -379,6 +379,20 @@ export function ValiderDevis({
         ))}
       </div>
 
+      {/* Remonté et rendu visible le 13/09 — c'était un minuscule lien gris
+          souligné, placé APRÈS les raccourcis, alors que les suggestions de
+          l'IA, elles, avaient de vrais boutons. Axel en a conclu qu'on ne
+          pouvait pas ajouter sa propre ligne et qu'on ne pouvait
+          qu'accepter ce que l'IA proposait — exactement l'inverse de ce que
+          doit faire cet écran, où l'artisan décide. */}
+      <button
+        type="button"
+        onClick={ajouterLigne}
+        className="mt-3 w-full rounded-xl border border-dashed border-ink/25 px-4 py-3 text-sm font-medium text-ink/70 transition-colors hover:border-signal hover:text-signal"
+      >
+        + Ajouter une ligne
+      </button>
+
       {postesFrequents.length > 0 && (
         <div className="mt-4">
           <p className="text-[11px] font-medium text-ink/40 uppercase tracking-wider mb-2">
@@ -399,14 +413,6 @@ export function ValiderDevis({
           </div>
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={ajouterLigne}
-        className="mt-3 text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 transition-colors hover:text-signal hover:decoration-signal/40"
-      >
-        + Ajouter une ligne
-      </button>
 
       <div className="mt-6 pt-5 border-t border-ink/10 grid sm:grid-cols-3 gap-4">
         <Field

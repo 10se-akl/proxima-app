@@ -82,6 +82,7 @@ export default function DetailDemandePage({
   // actions IA précisent leur section pour s'afficher au bon endroit.
   const [urgenceProposee, setUrgenceProposee] = useState(false);
   const [tachesProposees, setTachesProposees] = useState<string[] | null>(null);
+  const [infosAConfirmer, setInfosAConfirmer] = useState<string[] | null>(null);
   const [ajoutTachesEnCours, setAjoutTachesEnCours] = useState(false);
   const [erreurDetaillee, setErreurDetaillee] = useState<{
     message: string;
@@ -437,15 +438,21 @@ export default function DetailDemandePage({
     const infosManquantes = (demande.questions_manquantes?.informations_manquantes ?? []).filter(
       (info) => !(/photo/i.test(info) && (demande.photos?.length ?? 0) > 0)
     );
+    // Remplacé le 13/09 : c'était une fenêtre window.confirm, celle grise du
+    // navigateur, qui affichait cette liste sans aucune mise en forme, avec
+    // "compyo.fr indique" en titre et des boutons OK/Annuler. Pour un écran
+    // où l'artisan s'apprête à chiffrer plusieurs milliers d'euros, ça
+    // faisait bricolage. La question est la même, posée dans l'interface.
     if (infosManquantes.length > 0) {
-      const continuer = window.confirm(
-        `Il manque peut-être encore :\n\n${infosManquantes
-          .map((i) => `• ${i}`)
-          .join("\n")}\n\nGénérer le devis quand même ?`
-      );
-      if (!continuer) return;
+      setInfosAConfirmer(infosManquantes);
+      return;
     }
 
+    await lancerGenerationDevis();
+  }
+
+  async function lancerGenerationDevis() {
+    setInfosAConfirmer(null);
     setErreur(null);
     setChargementDevis(true);
     const devisExistaitDeja = Boolean(devis) && devis?.statut !== "refuse";
@@ -1399,6 +1406,44 @@ export default function DetailDemandePage({
             chacun des 3 boutons concernés (celui-ci reste aussi en bas, en
             filet de sécurité pour les autres mutations qui utilisent le
             même état, ex. dupliquerDevis). */}
+        {infosAConfirmer && infosAConfirmer.length > 0 && (
+          <div
+            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-ink/40 backdrop-blur-sm p-0 sm:p-6"
+            role="alertdialog"
+            aria-modal="true"
+            aria-label="Informations manquantes"
+          >
+            <div className="w-full sm:max-w-md bg-paper rounded-t-3xl sm:rounded-3xl border border-ink/10 shadow-2xl p-6 [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:[padding-bottom:1.5rem]">
+              <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-1.5">
+                Avant de chiffrer
+              </p>
+              <p className="font-display text-lg font-semibold text-ink leading-snug">
+                Il manque peut-être encore quelques informations
+              </p>
+              <ul className="mt-3 flex flex-col gap-1.5 text-sm text-ink/70">
+                {infosAConfirmer.map((info) => (
+                  <li key={info} className="flex gap-2">
+                    <span className="text-signal shrink-0" aria-hidden="true">
+                      •
+                    </span>
+                    <span>{info}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-3 text-xs text-ink/45 leading-relaxed">
+                Vous pouvez générer le devis quand même — il restera modifiable ligne par ligne
+                avant envoi.
+              </p>
+              <div className="mt-5 flex flex-wrap gap-3">
+                <Button onClick={lancerGenerationDevis}>Générer quand même</Button>
+                <Button variant="ghost" onClick={() => setInfosAConfirmer(null)}>
+                  Compléter d&apos;abord
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {tachesProposees && tachesProposees.length > 0 && (
           <Card className="mt-3 p-4">
             <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-2">

@@ -337,15 +337,45 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
 
             <div className="mt-6">
               {(reponseEnregistree || devis.devis_statut === "refuse" || devis.demande_statut === "accepte") ? (
+                // Retravaillé le 13/09 : ce bloc est le dernier écran que
+                // voit le client après avoir engagé plusieurs milliers
+                // d'euros. Une phrase grise dans un cadre, sans le montant
+                // ni la moindre indication de la suite, faisait douter que
+                // la validation soit bien passée. On confirme désormais
+                // clairement, on rappelle ce qui a été accepté, et on dit
+                // ce qu'il se passe ensuite.
                 <div className="rounded-2xl border border-ink/10 bg-surface p-6 text-center">
                   {reponseEnregistree === "accepte" || devis.demande_statut === "accepte" ? (
-                    <p className="text-sm text-ink/80">
-                      ✓ Vous avez accepté ce devis
-                      {devis.accepte_le ? ` le ${new Date(devis.accepte_le).toLocaleDateString("fr-FR")}` : ""}.
-                      L&apos;artisan a été prévenu.
-                    </p>
+                    <>
+                      <span className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-[#2F8F5B]/12 text-[#2F8F5B] text-xl">
+                        ✓
+                      </span>
+                      <p className="mt-3 font-display text-lg font-semibold text-ink">
+                        Devis accepté, merci !
+                      </p>
+                      <p className="mt-1.5 text-sm text-ink/60">
+                        Vous avez validé le devis n° {devis.numero} d&apos;un montant de{" "}
+                        <span className="font-medium text-ink/80">{formatEuros(devis.total_estime)} TTC</span>
+                        {devis.accepte_le
+                          ? `, le ${new Date(devis.accepte_le).toLocaleDateString("fr-FR")}`
+                          : ""}
+                        .
+                      </p>
+                      <p className="mt-3 text-sm text-ink/60">
+                        {devis.nom_entreprise ?? "L'artisan"} en a été prévenu et vous recontactera
+                        pour convenir de la date des travaux. Vous pouvez conserver ce devis en PDF
+                        avec le bouton ci-dessus.
+                      </p>
+                    </>
                   ) : (
-                    <p className="text-sm text-ink/80">Vous avez refusé ce devis. L&apos;artisan a été prévenu.</p>
+                    <>
+                      <p className="font-display text-lg font-semibold text-ink">Devis refusé</p>
+                      <p className="mt-1.5 text-sm text-ink/60">
+                        {devis.nom_entreprise ?? "L'artisan"} en a été prévenu. Si c&apos;est une
+                        erreur, ou si vous souhaitez faire modifier quelque chose, contactez-le
+                        directement : il peut vous envoyer un nouveau devis.
+                      </p>
+                    </>
                   )}
                 </div>
               ) : (

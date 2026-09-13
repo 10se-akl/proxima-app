@@ -139,7 +139,13 @@ export function DevisPreview({
               <span className="font-mono">{formatEuros(devis.deplacement)}</span>
             </div>
           )}
-          <div className="flex items-center justify-between text-ink/60">
+          {/* 🔴 Constaté le 13/09 : cette ligne était IMPRIMÉE sur le PDF
+              remis au client — il découvrait donc votre marge. La page
+              publique de signature, elle, ne l'a jamais affichée : c'est
+              bien la preuve que ce n'était pas voulu. Conservée à l'écran
+              (l'info est utile à l'artisan), retirée de l'impression via
+              .masquer-impression (voir app/globals.css). */}
+          <div className="flex items-center justify-between text-ink/60 masquer-impression">
             <span>Marge ({devis.marge_pct}%)</span>
             <span className="font-mono">{formatEuros(montantMarge)}</span>
           </div>
@@ -170,6 +176,34 @@ export function DevisPreview({
             {entreprise.conditions_generales}
           </p>
         )}
+
+        {/* Ajouté le 13/09 — le devis imprimé n'avait AUCUN endroit où
+            signer. Or un devis remis en main propre ou envoyé en PDF
+            s'accepte traditionnellement en écrivant "Bon pour accord", la
+            date et la signature : sans cette zone, l'artisan n'avait aucune
+            trace d'acceptation sur le document papier, et devait la
+            demander par un autre moyen. Uniquement à l'impression (voir
+            .bloc-signature) : à l'écran, l'artisan dispose déjà du lien de
+            signature en ligne, qui reste la voie la plus simple. */}
+        <div className="bloc-signature px-5 py-6 border-t border-ink/10">
+          <p className="text-[11px] text-ink/50 leading-relaxed">
+            Pour accepter ce devis, retournez-le signé avec la mention manuscrite
+            «&nbsp;Bon pour accord&nbsp;», ou signez-le en ligne depuis le lien qui vous a été
+            transmis.
+          </p>
+          <div className="mt-5 flex gap-10">
+            <div className="flex-1">
+              <p className="text-[11px] text-ink/50">Date</p>
+              <div className="mt-6 border-b border-ink/30" />
+            </div>
+            <div className="flex-[2]">
+              <p className="text-[11px] text-ink/50">
+                Signature du client précédée de «&nbsp;Bon pour accord&nbsp;»
+              </p>
+              <div className="mt-6 border-b border-ink/30" />
+            </div>
+          </div>
+        </div>
       </div>
 
       <Button

@@ -436,6 +436,28 @@
   .mode-nuit::after {
     display: none;
   }
+
+  /* Visible à l'écran pour l'artisan, absent du document remis au client.
+     Ajouté le 13/09 après avoir constaté que la ligne "Marge" du devis
+     partait telle quelle dans le PDF envoyé au client. "display: none"
+     plutôt que "visibility: hidden" : il faut que la ligne disparaisse
+     vraiment, sans laisser un blanc au milieu des totaux. Déclaré APRÈS la
+     règle qui rend tout le document visible, sinon elle l'emporterait. */
+  .masquer-impression,
+  .masquer-impression * {
+    display: none !important;
+  }
+}
+
+/* Zone "Bon pour accord" : n'a de sens que sur le document imprimé/PDF,
+   jamais à l'écran (où l'artisan a déjà le lien de signature en ligne). */
+.bloc-signature {
+  display: none;
+}
+@media print {
+  .bloc-signature {
+    display: block;
+  }
 }
 
 /* ============================================================

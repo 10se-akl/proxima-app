@@ -81,6 +81,8 @@ export default function DetailDemandePage({
   // de section => bandeau de bas de page, comme avant) ; seules les trois
   // actions IA précisent leur section pour s'afficher au bon endroit.
   const [urgenceProposee, setUrgenceProposee] = useState(false);
+  const [tachesProposees, setTachesProposees] = useState<string[] | null>(null);
+  const [ajoutTachesEnCours, setAjoutTachesEnCours] = useState(false);
   const [erreurDetaillee, setErreurDetaillee] = useState<{
     message: string;
     section: "analyse" | "devis" | "reponse" | null;
@@ -359,30 +361,13 @@ export default function DetailDemandePage({
         metadata: { chantier_semble_termine: donneesAnalyse?.chantierSembleTermine === true },
       });
 
+      // (13/09) — On ne crée plus la note tout seul : l'artisan voit
+      // d'abord ce que l'IA propose et décide. Même principe que la
+      // proposition d'urgence, et même raison : tant qu'il ne sait pas
+      // encore si ces listes lui conviennent, mieux vaut demander que
+      // remplir ses notes à sa place.
       if (tachesRestantes.length > 0) {
-        // UNE seule note "Tâches restantes" par projet, remplacée à chaque
-        // analyse au lieu d'en empiler une de plus. C'est ce qui produisait
-        // quatre notes quasi identiques sur un même chantier.
-        const description = tachesRestantes.map((t) => `- ${t}`).join("\n");
-        const existante = notes.find(
-          (n) => n.statut === "active" && n.titre.startsWith(TITRE_NOTE_TACHES)
-        );
-        if (existante) {
-          await supabase
-            .from("notes")
-            .update({ description, updated_at: new Date().toISOString() })
-            .eq("id", existante.id);
-        } else {
-          await creerNote(supabase, {
-            organisationId,
-            artisanId,
-            demandeId: params.id,
-            titre: TITRE_NOTE_TACHES,
-            description,
-            importance: "verte",
-            rappelA: null,
-          });
-        }
+        setTachesProposees(tachesRestantes);
       }
 
       // L'IA propose, l'artisan valide : on n'applique jamais l'urgence
@@ -409,6 +394,36 @@ export default function DetailDemandePage({
         }
       }
     }
+    await chargerDonnees();
+  }
+
+  // Crée (ou remplace) l'unique note "Tâches restantes" du projet, après
+  // accord explicite de l'artisan.
+  async function accepterTaches() {
+    if (!tachesProposees || !artisanId || !organisationId) return;
+    setAjoutTachesEnCours(true);
+    const description = tachesProposees.map((t) => `- ${t}`).join("\n");
+    const existante = notes.find(
+      (n) => n.statut === "active" && n.titre.startsWith(TITRE_NOTE_TACHES)
+    );
+    if (existante) {
+      await supabase
+        .from("notes")
+        .update({ description, updated_at: new Date().toISOString() })
+        .eq("id", existante.id);
+    } else {
+      await creerNote(supabase, {
+        organisationId,
+        artisanId,
+        demandeId: params.id,
+        titre: TITRE_NOTE_TACHES,
+        description,
+        importance: "verte",
+        rappelA: null,
+      });
+    }
+    setAjoutTachesEnCours(false);
+    setTachesProposees(null);
     await chargerDonnees();
   }
 
@@ -1384,6 +1399,31 @@ export default function DetailDemandePage({
             chacun des 3 boutons concernés (celui-ci reste aussi en bas, en
             filet de sécurité pour les autres mutations qui utilisent le
             même état, ex. dupliquerDevis). */}
+        {tachesProposees && tachesProposees.length > 0 && (
+          <Card className="mt-3 p-4">
+            <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-2">
+              Tâches repérées — les ajouter à vos notes ?
+            </p>
+            <ul className="text-sm text-ink/80 list-disc pl-5">
+              {tachesProposees.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+            <div className="mt-3 flex gap-3">
+              <Button onClick={accepterTaches} disabled={ajoutTachesEnCours}>
+                {ajoutTachesEnCours ? "Ajout…" : "Ajouter à mes notes"}
+              </Button>
+              <Button
+                variant="ghost"
+                onClick={() => setTachesProposees(null)}
+                disabled={ajoutTachesEnCours}
+              >
+                Non merci
+              </Button>
+            </div>
+          </Card>
+        )}
+
         {urgenceProposee && artisanId && organisationId && (
           <PropositionUrgence
             demandeId={params.id}

@@ -32,7 +32,17 @@ const MODELE = "claude-sonnet-5";
 // est la vraie garantie : on ne démarre jamais une tentative qui ne peut pas
 // finir avant la fin du budget, et chaque tentative est plafonnée au temps
 // qu'il reste.
-const BUDGET_TOTAL_MS = 50_000; // < maxDuration (60s) avec de la marge
+//
+// Corrigé le 13/09 — 50s était encore trop : la génération de devis a
+// échoué en production sur un "Gateway Timeout" côté base. Le budget IA
+// n'est PAS le budget de la route : après la réponse de Claude, il reste à
+// insérer le devis, écrire l'événement de timeline, mettre à jour le projet
+// et journaliser — plusieurs allers-retours base. À 50s d'IA sur 60s
+// autorisées, il ne restait que 10s pour tout ça, et l'hébergeur coupait la
+// fonction en plein enregistrement. L'appel type prend 7 à 8s : 35s laissent
+// donc une marge très large pour l'IA, tout en garantissant ~25s pour le
+// travail en base.
+const BUDGET_TOTAL_MS = 35_000; // l'IA ne prend jamais plus de la moitié des 60s
 const DELAI_MAX_MS = 25_000; // plafond par tentative
 const MARGE_MINIMALE_MS = 4_000; // en dessous, inutile de retenter
 const TENTATIVES_MAX = 3; // 1 essai + 2 retries

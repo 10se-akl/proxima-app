@@ -2018,3 +2018,68 @@ alter table factures add column if not exists notifie_relance_le timestamptz;
 create index if not exists factures_relance_a_proposer_idx
   on factures (date_emission)
   where statut = 'emise' and type != 'avoir' and notifie_relance_le is null;
+
+-- ============================================================
+-- Module 41 (13/09) — 🔴 Le cycle de vie du devis était bloqué net après
+-- validation.
+--
+-- Constaté sur un vrai devis : "Marquer comme envoyé au client" ne faisait
+-- rien. La policy d'UPDATE sur devis exigeait `statut = 'brouillon'` dans
+-- son USING. Or valider un devis le fait passer à 'a_valider' (voir
+-- components/dashboard/ValiderDevis.tsx) — à partir de là, PLUS AUCUNE
+-- mise à jour n'était autorisée : ni "envoyé", ni "refusé". L'UPDATE ne
+-- levait pas d'erreur, il ne touchait simplement aucune ligne, donc
+-- l'artisan voyait un bouton sans effet, sans explication.
+--
+-- L'intention derrière cette policy était juste : un devis validé, dont le
+-- montant a pu être communiqué au client, ne doit plus voir son CONTENU
+-- changer en douce. Mais une policy RLS ne sait pas comparer l'ancienne et
+-- la nouvelle version d'une ligne — elle ne pouvait donc qu'interdire tout
+-- en bloc, y compris les changements de statut légitimes.
+--
+-- Même remède que pour les factures émises (voir verrouiller_facture_emise
+-- plus haut, Module 28) : la policy autorise l'organisation à mettre à jour
+-- ses devis, et un TRIGGER refuse précisément ce qui doit rester figé. Les
+-- colonnes de cycle de vie (statut, envoye_le), de signature en ligne et de
+-- suivi des relances restent modifiables — sans quoi la signature
+-- électronique et le cron de relance casseraient à leur tour.
+-- ============================================================
+drop policy if exists "un membre modifie un devis encore brouillon" on devis;
+drop policy if exists "un membre met à jour les devis de son organisation" on devis;
+create policy "un membre met à jour les devis de son organisation"
+  on devis for update
+  using (organisation_id in (select mes_organisations()))
+  with check (organisation_id in (select mes_organisations()));
+
+create or replace function verrouiller_devis_valide()
+returns trigger
+language plpgsql
+as $$
+begin
+  -- Tant que le devis est un brouillon, tout reste librement modifiable :
+  -- c'est exactement le but de l'écran de validation.
+  if old.statut = 'brouillon' then
+    return new;
+  end if;
+
+  if new.lignes is distinct from old.lignes
+     or new.sous_total_ht is distinct from old.sous_total_ht
+     or new.deplacement is distinct from old.deplacement
+     or new.marge_pct is distinct from old.marge_pct
+     or new.tva_pct is distinct from old.tva_pct
+     or new.montant_tva is distinct from old.montant_tva
+     or new.total_estime is distinct from old.total_estime
+     or new.numero is distinct from old.numero
+     or new.mention_tva_reduite is distinct from old.mention_tva_reduite
+  then
+    raise exception 'Un devis validé ne peut plus changer de contenu — dupliquez-le pour en établir une nouvelle version';
+  end if;
+
+  return new;
+end;
+$$;
+
+drop trigger if exists verrouiller_devis_valide_trigger on devis;
+create trigger verrouiller_devis_valide_trigger
+  before update on devis
+  for each row execute function verrouiller_devis_valide();

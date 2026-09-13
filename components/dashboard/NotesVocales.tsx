@@ -12,31 +12,17 @@ import {
 } from "@/lib/dictee";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import type { NoteVocale, Priorite } from "@/types";
-
-// Journal chantier vocal (06/09) — résultat ÉPHÉMÈRE affiché juste après la
-// dictée, même logique que le brouillon de réponse client ailleurs dans
-// l'app (app/dashboard/demandes/[id]/page.tsx, brouillonReponse) : pas
-// persisté tel quel, il disparaît à la fermeture/au rechargement de la
-// page. Ce qui doit survivre (tâches restantes, signal de fin de chantier)
-// est déjà enregistré en base à ce moment-là (note + événement timeline),
-// donc rien n'est perdu — seul l'AFFICHAGE du brouillon de message est
-// éphémère, comme partout ailleurs dans le produit.
-type InterpretationNote = {
-  brouillonMessageClient: string | null;
-};
+import type { NoteVocale } from "@/types";
 
 export function NotesVocales({
   demandeId,
   notes,
   telephoneClient,
-  prioriteActuelle,
   onNouvelleNote,
 }: {
   demandeId: string;
   notes: NoteVocale[];
   telephoneClient?: string | null;
-  prioriteActuelle?: Priorite;
   onNouvelleNote: () => void;
 }) {
   const supabase = createClient();
@@ -45,18 +31,8 @@ export function NotesVocales({
   const [editionManuelle, setEditionManuelle] = useState(false);
   const [sauvegarde, setSauvegarde] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const [interpretation, setInterpretation] = useState<InterpretationNote | null>(null);
-  const [copie, setCopie] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
 
-  // Gap 1 (11/09, voir supabase/schema.sql Module 38) — détection
-  // d'urgence par l'IA sur un compte-rendu vocal. Contexte (artisan +
-  // organisation) mémorisé le temps que l'artisan réponde à la pop-up,
-  // sans le remettre dans un state React (jamais affiché, pas besoin de
-  // déclencher de re-render).
-  const [urgencePropose, setUrgencePropose] = useState(false);
-  const [urgenceEnCours, setUrgenceEnCours] = useState(false);
-  const contexteUrgenceRef = useRef<{ userId: string; organisationId: string } | null>(null);
 
   const ClasseReconnaissance = obtenirClasseReconnaissance();
 
@@ -115,7 +91,6 @@ export function NotesVocales({
     // à tort au-dessus d'une toute nouvelle dictée, laissant croire que le
     // nouveau texte était l'ancien brouillon restauré.
     setBrouillonRestaure(false);
-    setInterpretation(null);
     if (!ClasseReconnaissance) {
       // Pas de dictée sur ce navigateur : on ouvre directement la saisie
       // manuelle plutôt que de laisser un message d'erreur sans issue.
@@ -160,7 +135,6 @@ export function NotesVocales({
 
   function ecrireManuel() {
     setBrouillonRestaure(false);
-    setInterpretation(null);
     setErreur(null);
     setTranscription("");
     setEditionManuelle(true);
@@ -172,159 +146,6 @@ export function NotesVocales({
   // volontairement non "await"é dans le flux principal ni signalé par une
   // erreur visible en cas d'échec) — un compte-rendu mal interprété reste
   // quand même une note vocale correctement sauvegardée.
-  // Gap 1 — applique le passage en urgent et le trace dans la timeline du
-  // projet. Jamais silencieux même en mode auto : c'est cette trace qui
-  // rend le mode auto acceptable au regard de "l'IA propose, l'artisan
-  // valide" (voir Module 38, supabase/schema.sql).
-  async function passerEnUrgent(userId: string, orgId: string, detail: string) {
-    const { error } = await supabase
-      .from("demandes")
-      .update({ priorite: "urgent" })
-      .eq("id", demandeId);
-    if (error) return false;
-    await enregistrerEvenement(supabase, {
-      demandeId,
-      artisanId: userId,
-      organisationId: orgId,
-      type: "priorite_changee",
-      titre: "Priorité changée : Urgent",
-      detail,
-    });
-    return true;
-  }
-
-  async function traiterReponseUrgence(reponse: "oui" | "non" | "auto") {
-    if (reponse === "non") {
-      setUrgencePropose(false);
-      return;
-    }
-    const contexte = contexteUrgenceRef.current;
-    if (!contexte) {
-      setUrgencePropose(false);
-      return;
-    }
-    setUrgenceEnCours(true);
-    const ok = await passerEnUrgent(
-      contexte.userId,
-      contexte.organisationId,
-      reponse === "auto"
-        ? "Urgence détectée par l'IA sur une note vocale — mode auto activé à votre demande."
-        : "Urgence détectée par l'IA sur une note vocale, confirmée par vous."
-    );
-    if (ok && reponse === "auto") {
-      await supabase.from("profils").update({ urgence_auto_ia: true }).eq("id", contexte.userId);
-    }
-    if (ok) onNouvelleNote();
-    setUrgenceEnCours(false);
-    setUrgencePropose(false);
-  }
-
-  async function interpreterNote(texte: string, userId: string, orgId: string) {
-    try {
-      const res = await fetch("/api/ai/interpreter-note-vocale", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ demandeId, transcription: texte }),
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      const tachesRestantes: string[] = Array.isArray(data.tachesRestantes) ? data.tachesRestantes : [];
-      const brouillonMessageClient: string | null = data.brouillonMessageClient ?? null;
-      const rappelLendemain: boolean = Boolean(data.rappelLendemain);
-      const chantierSembleTermine: boolean = Boolean(data.chantierSembleTermine);
-      const urgenceDetectee: boolean = Boolean(data.urgenceDetectee);
-
-      // Tâches restantes (06/09) — regroupées dans UNE seule note plutôt
-      // qu'une par tâche : réutilise tel quel le système de notes déjà
-      // coché/décoché existant (voir lib/notes/index.ts), sans créer de
-      // nouvelle mécanique de liste à cocher. Choix de conception : une
-      // note consolidée reste plus simple à lire qu'une rafale de 3-5
-      // petites notes séparées pour un artisan qui n'a pas le temps.
-      if (tachesRestantes.length > 0) {
-        const demain = new Date();
-        demain.setDate(demain.getDate() + 1);
-        demain.setHours(8, 0, 0, 0);
-        await creerNote(supabase, {
-          organisationId: orgId,
-          artisanId: userId,
-          demandeId,
-          titre: `Tâches restantes — ${new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`,
-          description: tachesRestantes.map((t) => `- ${t}`).join("\n"),
-          importance: "verte",
-          rappelA: rappelLendemain ? demain.toISOString() : null,
-        });
-      }
-
-      // Trace toujours un événement, même sans tâche détectée — sert de
-      // signal pour la détection de fin de chantier (voir
-      // app/dashboard/page.tsx, plusieurs signaux "chantier_semble_termine"
-      // consécutifs) en plus de garder l'historique complet sur la fiche
-      // projet.
-      await enregistrerEvenement(supabase, {
-        demandeId,
-        artisanId: userId,
-        organisationId: orgId,
-        type: "journal_chantier_interprete",
-        titre: "Compte-rendu interprété",
-        detail:
-          tachesRestantes.length > 0
-            ? `${tachesRestantes.length} tâche${tachesRestantes.length > 1 ? "s" : ""} restante${tachesRestantes.length > 1 ? "s" : ""} détectée${tachesRestantes.length > 1 ? "s" : ""}`
-            : "Rien de particulier détecté",
-        metadata: {
-          chantier_semble_termine: chantierSembleTermine,
-          rappel_lendemain: rappelLendemain,
-          nb_taches: tachesRestantes.length,
-        },
-      });
-
-      if (brouillonMessageClient) {
-        setInterpretation({ brouillonMessageClient });
-      }
-
-      // Gap 1 — jamais de proposition si le projet est déjà urgent : rien
-      // à ajouter, l'artisan le sait déjà.
-      if (urgenceDetectee && prioriteActuelle !== "urgent") {
-        const { data: profil } = await supabase
-          .from("profils")
-          .select("urgence_auto_ia")
-          .eq("id", userId)
-          .single();
-        if (profil?.urgence_auto_ia) {
-          await passerEnUrgent(
-            userId,
-            orgId,
-            "Détecté automatiquement par l'IA sur une note vocale (mode auto activé dans vos réglages)."
-          );
-        } else {
-          contexteUrgenceRef.current = { userId, organisationId: orgId };
-          setUrgencePropose(true);
-        }
-      }
-
-      onNouvelleNote();
-    } catch {
-      // Best-effort — la note vocale elle-même est déjà en sécurité, voir
-      // commentaire au-dessus de la fonction.
-    }
-  }
-
-  async function envoyerMessageParSms() {
-    if (!interpretation?.brouillonMessageClient) return;
-    if (telephoneClient) {
-      const numero = telephoneClient.replace(/[^\d+]/g, "");
-      window.open(`sms:${numero}?body=${encodeURIComponent(interpretation.brouillonMessageClient)}`, "_self");
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(interpretation.brouillonMessageClient);
-      setCopie(true);
-      setTimeout(() => setCopie(false), 2000);
-    } catch {
-      // Copie best-effort — le texte reste de toute façon affiché et
-      // sélectionnable manuellement.
-    }
-  }
-
   async function enregistrerNote() {
     if (!transcription.trim()) return;
     setSauvegarde(true);
@@ -386,10 +207,18 @@ export function NotesVocales({
       setBrouillonRestaure(false);
       onNouvelleNote();
 
-      // Volontairement non "await"é : l'artisan n'a pas à attendre ce
-      // second appel IA pour reprendre la main, la note est déjà en
-      // sécurité (voir commentaire sur interpreterNote plus haut).
-      interpreterNote(texteNote, user.id, organisationId);
+      // (13/09) — Plus AUCUN appel IA ici. Chaque note vocale déclenchait
+      // auparavant une interprétation immédiate : quatre dictées sur un
+      // chantier = quatre appels facturés, et quatre notes "Tâches
+      // restantes" empilées, parfois identiques mot pour mot. L'extraction
+      // des tâches et la détection d'urgence se font désormais en UNE fois,
+      // quand l'artisan demande explicitement "Analyser avec l'IA" (voir
+      // app/api/ai/analyser-demande/route.ts) : moins cher, moins bruyant,
+      // et plus juste — l'IA voit alors toutes les notes ensemble, donc
+      // elle dédoublonne et retire ce qui a été fait entre-temps.
+      //
+      // La dictée elle-même reste évidemment intacte : la transcription est
+      // enregistrée telle quelle, immédiatement, sans dépendre de l'IA.
     } catch {
       setSauvegarde(false);
       setErreur("Connexion perdue. Votre texte est conservé — réessayez dès que le réseau revient.");
@@ -454,56 +283,7 @@ export function NotesVocales({
         </Card>
       )}
 
-      {interpretation?.brouillonMessageClient && (
-        <Card className="mt-3 p-4">
-          <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-2">
-            Message client suggéré — relisez avant d&apos;envoyer
-          </p>
-          <p className="text-sm text-ink/80 whitespace-pre-line">
-            {interpretation.brouillonMessageClient}
-          </p>
-          <div className="mt-3 flex items-center gap-3">
-            <Button variant="ghost" onClick={envoyerMessageParSms}>
-              {telephoneClient ? "📱 Envoyer par SMS" : copie ? "✓ Copié" : "Copier le message"}
-            </Button>
-            <button
-              onClick={() => setInterpretation(null)}
-              className="text-xs text-ink/40 hover:text-ink/60 underline transition-colors"
-            >
-              Ignorer
-            </button>
-          </div>
-        </Card>
-      )}
 
-      {urgencePropose && (
-        <Card className="mt-3 p-4 border-signal/30">
-          <p className="text-xs font-medium text-signal uppercase tracking-wider mb-2">
-            Urgence détectée
-          </p>
-          <p className="text-sm text-ink/80">
-            Votre compte-rendu laisse penser que ce chantier doit être traité en priorité. Voulez-vous
-            passer ce projet en urgent ?
-          </p>
-          <div className="mt-3 flex flex-col gap-2">
-            <div className="flex gap-3">
-              <Button onClick={() => traiterReponseUrgence("oui")} disabled={urgenceEnCours}>
-                Oui, passer en urgent
-              </Button>
-              <Button variant="ghost" onClick={() => traiterReponseUrgence("non")} disabled={urgenceEnCours}>
-                Non
-              </Button>
-            </div>
-            <button
-              onClick={() => traiterReponseUrgence("auto")}
-              disabled={urgenceEnCours}
-              className="text-left text-xs text-ink/50 hover:text-ink underline transition-colors disabled:opacity-50"
-            >
-              Laisser l&apos;IA faire ce choix seule la prochaine fois
-            </button>
-          </div>
-        </Card>
-      )}
 
       {notes.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">

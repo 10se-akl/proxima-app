@@ -14,6 +14,7 @@ import { DevisPreview } from "@/components/dashboard/DevisPreview";
 import { ValiderDevis } from "@/components/dashboard/ValiderDevis";
 import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
+import { PropositionUrgence } from "@/components/dashboard/PropositionUrgence";
 import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
 import { Timeline, type TimelineItem } from "@/components/dashboard/Timeline";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
@@ -21,6 +22,7 @@ import { obtenirChecklist } from "@/lib/checklistsMetier";
 import {
   listerNotesProjet,
   marquerNoteTerminee,
+  creerNote,
   creerRappelRecurrentClient,
   TYPES_CHANTIER_RAPPEL_RECURRENT,
   PRESETS_RAPPEL_RECURRENT,
@@ -41,6 +43,12 @@ import type { Projet, Devis, NoteVocale, EvenementProjet, ParametresEntreprise, 
 const TYPES_CHANTIER: { value: string; label: string }[] = Object.entries(LABEL_TYPE_CHANTIER).map(
   ([value, label]) => ({ value, label: label || "Autre" })
 );
+
+// Titre unique de la note de tâches restantes : sert de clé pour la
+// retrouver et la remplacer à chaque analyse, au lieu d'empiler une note de
+// plus à chaque fois (quatre notes quasi identiques sur un même chantier,
+// constaté le 13/09).
+const TITRE_NOTE_TACHES = "Tâches restantes";
 
 export default function DetailDemandePage({
   params,
@@ -72,6 +80,7 @@ export default function DetailDemandePage({
   // existants `setErreur("…")` continuent de fonctionner tels quels (pas
   // de section => bandeau de bas de page, comme avant) ; seules les trois
   // actions IA précisent leur section pour s'afficher au bon endroit.
+  const [urgenceProposee, setUrgenceProposee] = useState(false);
   const [erreurDetaillee, setErreurDetaillee] = useState<{
     message: string;
     section: "analyse" | "devis" | "reponse" | null;
@@ -313,6 +322,17 @@ export default function DetailDemandePage({
       setErreur(data?.error ?? "L'analyse a échoué. Réessayez.", "analyse");
       return;
     }
+
+    // (13/09) — Les tâches restantes et la détection d'urgence viennent
+    // désormais de CETTE analyse, et plus d'un appel IA par note vocale
+    // dictée. Voir app/api/ai/analyser-demande/route.ts pour le
+    // raisonnement : un seul appel au lieu d'un par note, et un meilleur
+    // résultat puisque l'IA voit toutes les notes ensemble.
+    const donneesAnalyse = await res.json().catch(() => null);
+    const tachesRestantes: string[] = Array.isArray(donneesAnalyse?.tachesRestantes)
+      ? donneesAnalyse.tachesRestantes
+      : [];
+
     if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: params.id,
@@ -321,6 +341,73 @@ export default function DetailDemandePage({
         type: "analyse_ia",
         titre: demande?.questions_manquantes ? "Résumé mis à jour par l'IA" : "Projet analysé avec l'IA",
       });
+
+      // Signal de clôture consommé par le tableau de bord (voir
+      // app/dashboard/page.tsx) : il venait de l'interprétation note par
+      // note, désormais supprimée. Sans cet événement, la détection
+      // "chantier probablement terminé" cesserait de fonctionner en silence.
+      await enregistrerEvenement(supabase, {
+        demandeId: params.id,
+        artisanId,
+        organisationId,
+        type: "journal_chantier_interprete",
+        titre: "Analyse du chantier",
+        detail:
+          tachesRestantes.length > 0
+            ? `${tachesRestantes.length} tâche${tachesRestantes.length > 1 ? "s" : ""} restante${tachesRestantes.length > 1 ? "s" : ""}`
+            : "Aucune tâche restante détectée",
+        metadata: { chantier_semble_termine: donneesAnalyse?.chantierSembleTermine === true },
+      });
+
+      if (tachesRestantes.length > 0) {
+        // UNE seule note "Tâches restantes" par projet, remplacée à chaque
+        // analyse au lieu d'en empiler une de plus. C'est ce qui produisait
+        // quatre notes quasi identiques sur un même chantier.
+        const description = tachesRestantes.map((t) => `- ${t}`).join("\n");
+        const existante = notes.find(
+          (n) => n.statut === "active" && n.titre.startsWith(TITRE_NOTE_TACHES)
+        );
+        if (existante) {
+          await supabase
+            .from("notes")
+            .update({ description, updated_at: new Date().toISOString() })
+            .eq("id", existante.id);
+        } else {
+          await creerNote(supabase, {
+            organisationId,
+            artisanId,
+            demandeId: params.id,
+            titre: TITRE_NOTE_TACHES,
+            description,
+            importance: "verte",
+            rappelA: null,
+          });
+        }
+      }
+
+      // L'IA propose, l'artisan valide : on n'applique jamais l'urgence
+      // directement ici — sauf si l'artisan a lui-même activé le mode auto
+      // (voir components/dashboard/PropositionUrgence.tsx et Mon compte).
+      if (donneesAnalyse?.urgenceDetectee === true && demande?.priorite !== "urgent") {
+        const { data: profil } = await supabase
+          .from("profils")
+          .select("urgence_auto_ia")
+          .eq("id", artisanId)
+          .single();
+        if (profil?.urgence_auto_ia) {
+          await supabase.from("demandes").update({ priorite: "urgent" }).eq("id", params.id);
+          await enregistrerEvenement(supabase, {
+            demandeId: params.id,
+            artisanId,
+            organisationId,
+            type: "priorite_changee",
+            titre: "Priorité changée : Urgent",
+            detail: "Détecté automatiquement par l'IA lors de l'analyse (mode auto activé dans vos réglages).",
+          });
+        } else {
+          setUrgenceProposee(true);
+        }
+      }
     }
     await chargerDonnees();
   }
@@ -1151,7 +1238,6 @@ export default function DetailDemandePage({
           demandeId={demande.id}
           notes={notesVocales}
           telephoneClient={demande.telephone_client}
-          prioriteActuelle={demande.priorite}
           onNouvelleNote={async () => {
             await signalerModification();
             await chargerDonnees();
@@ -1298,6 +1384,18 @@ export default function DetailDemandePage({
             chacun des 3 boutons concernés (celui-ci reste aussi en bas, en
             filet de sécurité pour les autres mutations qui utilisent le
             même état, ex. dupliquerDevis). */}
+        {urgenceProposee && artisanId && organisationId && (
+          <PropositionUrgence
+            demandeId={params.id}
+            artisanId={artisanId}
+            organisationId={organisationId}
+            onTraite={async () => {
+              setUrgenceProposee(false);
+              await chargerDonnees();
+            }}
+          />
+        )}
+
         {erreur && sectionErreur === "analyse" && (
           <p className="mt-2 text-sm text-signal">{erreur}</p>
         )}

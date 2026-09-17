@@ -74,6 +74,15 @@ En plus de cette liste principale, identifie séparément les postes ADDITIONNEL
 
 LOTS (facultatif) : si — et seulement si — le chantier couvre plusieurs pièces, zones ou corps d'état bien distincts (par exemple cuisine ET salle de bain, ou démolition, plomberie et carrelage sur une rénovation), range chaque poste dans un lot avec "lot": "<nom court>" ("Salle de bain", "Cuisine", "Électricité"). Entre 2 et ${MAX_LOTS} lots, et alors TOUS les postes ont un lot. Pour une intervention simple ou une seule pièce, n'utilise aucun lot : omets "lot" partout.
 
+ADAPTE LA PRÉSENTATION AU MÉTIER, c'est ce qu'attend le client :
+- cuisine, salle de bain, rénovation complète : découpe en lots (une pièce ou une étape par lot).
+- électricité : détaille le matériel posé (tableau, disjoncteurs, points lumineux, prises) avec des quantités, pas un forfait global.
+- peinture, plâtrerie, carrelage, sols : exprime les quantités en m² de surface réellement traitée quand elle est connue, plutôt qu'en "forfait".
+- plomberie, chauffage : un poste par équipement (chaudière, radiateur, robinetterie), plus la main-d'œuvre associée.
+- dépannage, petite intervention : reste simple — trois postes suffisent, aucun lot.
+
+EXPLICATION CLIENT : pour un poste technique dont le nom ne parle pas de lui-même (ex. "Réalisation d'une chape liquide", "Pose d'un pare-vapeur"), ajoute "explication" : une phrase de 12 mots maximum, en français simple, qui dit à quoi ça sert — jamais de prix, jamais de jargon. Pour un poste évident ("Peinture des murs"), omets "explication" : une évidence expliquée donne l'impression de prendre le client pour un idiot.
+
 Rédige aussi l'OBJET des travaux : une seule phrase, en français simple, qui dit au client ce qui va être fait — pas une liste, pas de jargon, pas de prix, pas de délai. Exemple : "Rénovation de la salle de bain avec remplacement de la baignoire par une douche à l'italienne."
 
 Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exacte :
@@ -86,7 +95,8 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
       "quantite": 0,
       "unite": "m² | unité | forfait | heure",
       "temps_estime_heures": 0,
-      "lot": "..."
+      "lot": "...",
+      "explication": "..."
     }
   ],
   "postes_oublies_probables": [
@@ -288,9 +298,18 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // calculerDevis garde l'ordre des postes (une éventuelle ligne de
     // complément d'heures minimum s'ajoute à la fin, hors lot).
     const { lots, lotParPoste } = decouperEnLots(postes);
-    const lignesAvecLots: LigneDevisCalculee[] = devisCalcule.lignes.map((ligne, i) =>
-      i < lotParPoste.length && lotParPoste[i] ? { ...ligne, lot_id: lotParPoste[i] } : ligne
-    );
+    const lignesEnrichies: LigneDevisCalculee[] = devisCalcule.lignes.map((ligne, i) => {
+      const poste = i < postes.length ? postes[i] : null;
+      const explication =
+        typeof poste?.explication === "string" && poste.explication.trim()
+          ? poste.explication.trim().slice(0, 160)
+          : null;
+      return {
+        ...ligne,
+        ...(i < lotParPoste.length && lotParPoste[i] ? { lot_id: lotParPoste[i] } : {}),
+        ...(explication ? { explication } : {}),
+      };
+    });
 
     // Anti-oubli (06/09) — contrairement aux postes principaux, un item mal
     // formé ici est filtré silencieusement plutôt que de faire échouer toute
@@ -349,7 +368,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
           artisan_id: artisanId,
           organisation_id: orgId,
           numero,
-          lignes: lignesAvecLots,
+          lignes: lignesEnrichies,
           lots,
           sous_total_ht: devisCalcule.sous_total_ht,
           deplacement: devisCalcule.deplacement,

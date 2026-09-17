@@ -42,6 +42,7 @@ function lignePublique(ligne: unknown): LignePublique {
     prix_unitaire: nombre(l.prix_unitaire) ?? 0,
     total: nombre(l.total) ?? 0,
     lot_id: texte(l.lot_id),
+    explication: texte(l.explication),
   };
 }
 

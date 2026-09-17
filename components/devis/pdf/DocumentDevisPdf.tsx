@@ -95,6 +95,9 @@ const s = StyleSheet.create({
     fontSize: 10.5,
   },
   sousTotalLot: { flexDirection: "row", paddingVertical: 5, fontSize: 8.8 },
+  // L'explication d'une ligne technique : plus petite et en retrait, elle
+  // aide sans voler la vedette à la prestation elle-même.
+  explication: { marginTop: 1.5, fontSize: 8, lineHeight: 1.35, color: C.encre55 },
   colDesignation: { flex: 1, paddingRight: 8 },
   colQte: { width: 38, textAlign: "right", paddingRight: 6 },
   colUnite: { width: 52, paddingLeft: 4 },
@@ -242,7 +245,10 @@ export function DocumentDevisPdf({
               )}
               {groupe.lignes.map((ligne, i) => (
                 <View key={i} style={s.tableLigne} wrap={false}>
-                  <Text style={s.colDesignation}>{ligne.description}</Text>
+                  <View style={s.colDesignation}>
+                    <Text>{ligne.description}</Text>
+                    {ligne.explication ? <Text style={s.explication}>{ligne.explication}</Text> : null}
+                  </View>
                   <Text style={[s.colQte, { color: C.encre80 }]}>{formatQuantite(ligne.quantite)}</Text>
                   <Text style={[s.colUnite, { color: C.encre55 }]}>{ligne.unite}</Text>
                   <Text style={[s.colPu, { color: C.encre80 }]}>{formatMontant(ligne.prix_unitaire)}</Text>

@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { ValiderDevis } from "@/components/dashboard/ValiderDevis";
 import { ApercuPdf } from "@/components/devis/ApercuPdf";
 import { SuiviDevis, type ProjetDuDevis } from "@/components/devis/SuiviDevis";
+import { ScoreDevis } from "@/components/devis/ScoreDevis";
 import {
   partageDeFichierPossible,
   partagerPdfDevis,
@@ -23,6 +24,7 @@ import {
   sourceDepuisDevis,
   type SourceDocumentDevis,
 } from "@/lib/devis/modeleDocument";
+import { evaluerDevis } from "@/lib/devis/qualite";
 import { statutAffiche } from "@/lib/devis/statut";
 import type { Devis, ParametresEntreprise } from "@/types";
 
@@ -187,12 +189,24 @@ export function VueEspaceDevis({
 
   useEffect(() => setPartageFichier(partageDeFichierPossible()), []);
 
+  // Ce que le devis dit aujourd'hui : le brouillon en cours de saisie tant
+  // qu'il n'est pas validé, sinon ce qui est enregistré.
+  const source = useMemo(
+    () =>
+      donnees.devis.statut === "brouillon" && brouillon ? brouillon : sourceDepuisDevis(donnees.devis),
+    [donnees, brouillon]
+  );
+  const mentions = useMemo(
+    () => mentionsEffectives(donnees.devis, donnees.parametres),
+    [donnees]
+  );
+  const evaluation = useMemo(() => evaluerDevis(source, mentions), [source, mentions]);
+
   const modele = useMemo(() => {
-    const { devis, projet, parametres, nomArtisan, logoUrl } = donnees;
-    const source = devis.statut === "brouillon" && brouillon ? brouillon : sourceDepuisDevis(devis);
+    const { devis, projet, nomArtisan, logoUrl } = donnees;
     return construireModeleDevis({
       source,
-      mentions: mentionsEffectives(devis, parametres),
+      mentions,
       client: { nom: projet.nom_client, adresse: projet.adresse_client, telephone: projet.telephone_client },
       logoUrl,
       nomDeRepli: nomArtisan || "Votre entreprise",
@@ -200,7 +214,7 @@ export function VueEspaceDevis({
         ? { nom: devis.signature_nom, le: devis.signe_le, image: devis.signature_data }
         : null,
     });
-  }, [donnees, brouillon]);
+  }, [donnees, source, mentions]);
 
   async function actionPdf(type: "telechargement" | "partage") {
     if (!modele) return;
@@ -303,7 +317,10 @@ export function VueEspaceDevis({
       )}
 
       <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <section className={`min-w-0 ${estBrouillon && vue === "apercu" ? "hidden lg:block" : ""}`}>
+        <section className={`min-w-0 space-y-4 ${estBrouillon && vue === "apercu" ? "hidden lg:block" : ""}`}>
+          {/* Le score n'a de sens que tant qu'on peut encore corriger : une
+              fois le devis parti, il est figé (voir mentions_legales). */}
+          {(estBrouillon || devis.statut === "a_valider") && <ScoreDevis evaluation={evaluation} />}
           {estBrouillon ? (
             <ValiderDevis
               // Remonté à chaque nouvelle version chargée : l'éditeur repart
@@ -322,7 +339,7 @@ export function VueEspaceDevis({
               devis={devis}
               projet={projet}
               parametres={parametres}
-              nomEntreprise={nomEntreprise(mentionsEffectives(devis, parametres), donnees.nomArtisan || "")}
+              nomEntreprise={nomEntreprise(mentions, donnees.nomArtisan || "")}
               artisanId={artisanId}
               organisationId={organisationId}
               onChange={onRecharger}

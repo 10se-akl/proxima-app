@@ -69,10 +69,16 @@ export function EditeurLignes({
     lotId === null ? !l.lot_id || !idsLots.has(l.lot_id) : l.lot_id === lotId;
 
   // ---- lignes ----------------------------------------------------------
-  function modifier(cle: string, cleChamp: keyof LigneDevisCalculee, valeur: string) {
+  function modifier(cle: string, cleChamp: keyof LigneDevisCalculee, valeur: string | null) {
     onChange(
       lignes.map((ligne) => {
         if (ligne.cle !== cle) return ligne;
+        // null = on retire complètement le champ (explication).
+        if (valeur === null) {
+          const copie = { ...ligne };
+          delete copie[cleChamp];
+          return copie;
+        }
         if (cleChamp === "quantite" || cleChamp === "prix_unitaire") {
           const nombre = Number(valeur);
           // Jamais de quantité ou de prix négatif : la ligne "réduirait" le
@@ -271,6 +277,29 @@ export function EditeurLignes({
             />
           </div>
         </div>
+        {/* Explication proposée par l'IA : l'artisan la garde, la reformule
+            ou la retire. Rien à écrire s'il n'en veut pas. */}
+        {typeof ligne.explication === "string" && (
+          <div className="mt-2 flex items-center gap-2">
+            <span className="shrink-0 text-[11px] text-ink/40">Pour le client</span>
+            <input
+              value={ligne.explication}
+              onChange={(e) => modifier(ligne.cle, "explication", e.target.value)}
+              placeholder="Explication courte (facultative)"
+              aria-label="Explication de la ligne, visible par le client"
+              className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-paper px-2 py-1 text-xs italic text-ink/70 transition-colors focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
+            />
+            <button
+              type="button"
+              onClick={() => modifier(ligne.cle, "explication", null)}
+              className="shrink-0 text-[11px] text-ink/40 underline-offset-2 transition-colors hover:text-signal hover:underline"
+              title="Retirer cette explication du devis"
+            >
+              Retirer
+            </button>
+          </div>
+        )}
+
         <div className="mt-2 flex flex-wrap items-center gap-2">
           {nombreDansGroupe > 1 && (
             <>

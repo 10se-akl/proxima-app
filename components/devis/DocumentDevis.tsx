@@ -110,7 +110,14 @@ export function DocumentDevis({
                 )}
                 {groupe.lignes.map((ligne, i) => (
                   <tr key={i} className="break-inside-avoid border-b border-ink/10 align-top">
-                    <td className="py-2.5 pr-3 text-ink break-words">{ligne.description}</td>
+                    <td className="py-2.5 pr-3 text-ink break-words">
+                      {ligne.description}
+                      {ligne.explication && (
+                        <span className="mt-0.5 block text-[11.5px] italic leading-snug text-ink/55">
+                          {ligne.explication}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-2 py-2.5 text-right tabular-nums text-ink/80">{formatQuantite(ligne.quantite)}</td>
                     <td className="px-2 py-2.5 text-ink/60">{ligne.unite}</td>
                     <td className="px-2 py-2.5 text-right tabular-nums text-ink/80 whitespace-nowrap">
@@ -150,6 +157,9 @@ export function DocumentDevis({
                 {groupe.lignes.map((ligne, i) => (
                   <li key={i} className="py-3">
                     <p className="text-ink break-words">{ligne.description}</p>
+                    {ligne.explication && (
+                      <p className="mt-0.5 text-[11.5px] italic leading-snug text-ink/55">{ligne.explication}</p>
+                    )}
                     <div className="mt-1 flex items-baseline justify-between gap-3">
                       <p className="text-[12px] text-ink/55 tabular-nums">
                         {formatQuantite(ligne.quantite)} {ligne.unite} × {formatMontant(ligne.prix_unitaire)} HT

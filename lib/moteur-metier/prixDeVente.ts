@@ -69,6 +69,7 @@ export function lignesDeVente(
     quantite: l.quantite,
     unite: l.unite,
     ...venteDUneLigne(l, coef),
+    ...(l.lot_id ? { lot_id: l.lot_id } : {}),
   }));
 
   if (devis.deplacement > 0) {

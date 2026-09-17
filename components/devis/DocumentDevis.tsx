@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { formatMontant, formatQuantite, dateLongue, type ModeleDevis } from "@/lib/devis/modeleDocument";
 
 // ============================================================
@@ -96,37 +97,77 @@ export function DocumentDevis({
             </tr>
           </thead>
           <tbody>
-            {modele.lignes.map((ligne, i) => (
-              <tr key={i} className="break-inside-avoid border-b border-ink/10 align-top">
-                <td className="py-2.5 pr-3 text-ink break-words">{ligne.description}</td>
-                <td className="px-2 py-2.5 text-right tabular-nums text-ink/80">{formatQuantite(ligne.quantite)}</td>
-                <td className="px-2 py-2.5 text-ink/60">{ligne.unite}</td>
-                <td className="px-2 py-2.5 text-right tabular-nums text-ink/80 whitespace-nowrap">
-                  {formatMontant(ligne.prix_unitaire)}
-                </td>
-                <td className="py-2.5 pl-2 text-right font-medium tabular-nums text-ink whitespace-nowrap">
-                  {formatMontant(ligne.total)}
-                </td>
-              </tr>
+            {modele.groupes.map((groupe, g) => (
+              <Fragment key={g}>
+                {groupe.titre && (
+                  <tr className="break-inside-avoid">
+                    <td colSpan={5} className={g === 0 ? "pb-1.5 pt-3" : "pb-1.5 pt-6"}>
+                      <p className="border-l-[3px] border-signal bg-paper-warm/60 py-1.5 pl-3 font-display text-[13.5px] font-bold text-ink">
+                        {groupe.titre}
+                      </p>
+                    </td>
+                  </tr>
+                )}
+                {groupe.lignes.map((ligne, i) => (
+                  <tr key={i} className="break-inside-avoid border-b border-ink/10 align-top">
+                    <td className="py-2.5 pr-3 text-ink break-words">{ligne.description}</td>
+                    <td className="px-2 py-2.5 text-right tabular-nums text-ink/80">{formatQuantite(ligne.quantite)}</td>
+                    <td className="px-2 py-2.5 text-ink/60">{ligne.unite}</td>
+                    <td className="px-2 py-2.5 text-right tabular-nums text-ink/80 whitespace-nowrap">
+                      {formatMontant(ligne.prix_unitaire)}
+                    </td>
+                    <td className="py-2.5 pl-2 text-right font-medium tabular-nums text-ink whitespace-nowrap">
+                      {formatMontant(ligne.total)}
+                    </td>
+                  </tr>
+                ))}
+                {groupe.sousTotal !== null && (
+                  <tr className="break-inside-avoid">
+                    <td colSpan={4} className="py-2 pr-2 text-right text-[12px] text-ink/55">
+                      Sous-total {groupe.nom}
+                    </td>
+                    <td className="py-2 pl-2 text-right font-semibold tabular-nums text-ink whitespace-nowrap">
+                      {formatMontant(groupe.sousTotal)}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>
 
         {/* Sur téléphone, cinq colonnes seraient illisibles : chaque ligne
             devient un bloc, le calcul reste visible en une ligne. */}
-        <ul className="divide-y divide-ink/10 border-y border-ink/15 sm:hidden">
-          {modele.lignes.map((ligne, i) => (
-            <li key={i} className="py-3">
-              <p className="text-ink break-words">{ligne.description}</p>
-              <div className="mt-1 flex items-baseline justify-between gap-3">
-                <p className="text-[12px] text-ink/55 tabular-nums">
-                  {formatQuantite(ligne.quantite)} {ligne.unite} × {formatMontant(ligne.prix_unitaire)} HT
+        <div className="space-y-5 sm:hidden">
+          {modele.groupes.map((groupe, g) => (
+            <div key={g}>
+              {groupe.titre && (
+                <p className="mb-1 border-l-[3px] border-signal bg-paper-warm/60 py-1.5 pl-3 font-display text-[13.5px] font-bold text-ink">
+                  {groupe.titre}
                 </p>
-                <p className="shrink-0 font-medium tabular-nums text-ink">{formatMontant(ligne.total)}</p>
-              </div>
-            </li>
+              )}
+              <ul className="divide-y divide-ink/10 border-y border-ink/15">
+                {groupe.lignes.map((ligne, i) => (
+                  <li key={i} className="py-3">
+                    <p className="text-ink break-words">{ligne.description}</p>
+                    <div className="mt-1 flex items-baseline justify-between gap-3">
+                      <p className="text-[12px] text-ink/55 tabular-nums">
+                        {formatQuantite(ligne.quantite)} {ligne.unite} × {formatMontant(ligne.prix_unitaire)} HT
+                      </p>
+                      <p className="shrink-0 font-medium tabular-nums text-ink">{formatMontant(ligne.total)}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {groupe.sousTotal !== null && (
+                <p className="mt-1.5 flex justify-between gap-3 text-[12px] text-ink/55">
+                  <span>Sous-total {groupe.nom}</span>
+                  <span className="font-semibold tabular-nums text-ink">{formatMontant(groupe.sousTotal)}</span>
+                </p>
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       </section>
 
       {/* Totaux, alignés sous la colonne des montants. */}

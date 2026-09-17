@@ -12,7 +12,15 @@ import { Card } from "@/components/ui/Card";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
 import type { SourceDocumentDevis } from "@/lib/devis/modeleDocument";
-import type { Devis, LigneDevisCalculee, ParametresEntreprise } from "@/types";
+import {
+  EditeurLignes,
+  avecLotParDefaut,
+  lignesAEnregistrer,
+  nouvelleCle,
+  versLignesEditees,
+  type LigneEditee,
+} from "@/components/devis/EditeurLignes";
+import type { Devis, LigneDevisCalculee, LotDevis, ParametresEntreprise } from "@/types";
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -53,17 +61,13 @@ export function ValiderDevis({
 }) {
   const supabase = createClient();
 
-  const [lignes, setLignes] = useState<LigneDevisCalculee[]>(devis.lignes);
-  // Audit pré-bêta (09/09), point 🟡 n°19 — aucun repère ne distinguait un
-  // poste généré par l'IA (déjà là au chargement, ou accepté depuis
-  // "Postes probablement oubliés" — même origine, juste accepté un instant
-  // plus tard) d'un poste ajouté par l'artisan lui-même (ligne vide, ou
-  // repris de ses postes fréquents). Tableau parallèle à `lignes`, TOUJOURS
-  // mis à jour aux mêmes endroits (ajout/suppression) — jamais sur
-  // modifierLigne, qui ne change ni la longueur ni l'ordre du tableau.
-  // Purement un repère visuel côté client, jamais persisté (voir
-  // validerDevis, qui n'écrit que `lignes`).
-  const [origineManuelle, setOrigineManuelle] = useState<boolean[]>(() => devis.lignes.map(() => false));
+  // Chaque ligne porte une clé stable et son origine (IA ou artisan) —
+  // voir components/devis/EditeurLignes.tsx. Le badge "IA" (audit pré-bêta
+  // du 09/09, point 🟡 n°19) repose sur cette origine : les lignes déjà là
+  // au chargement viennent de la génération.
+  const [lignes, setLignes] = useState<LigneEditee[]>(() => versLignesEditees(devis.lignes, false));
+  const [lots, setLots] = useState<LotDevis[]>(devis.lots ?? []);
+  const lignesPropres = useMemo(() => lignesAEnregistrer(lignes), [lignes]);
   const [deplacement, setDeplacement] = useState(devis.deplacement);
   const [margePct, setMargePct] = useState(devis.marge_pct);
   const [tvaPct, setTvaPct] = useState(devis.tva_pct);
@@ -149,29 +153,31 @@ export function ValiderDevis({
   function ajouterPosteFrequent(poste: PosteFrequent) {
     setLignes((prev) => [
       ...prev,
-      {
-        description: poste.description,
-        categorie: poste.categorie,
-        quantite: 1,
-        unite: poste.unite,
-        prix_unitaire: poste.prix_unitaire,
-        total: poste.prix_unitaire,
-        detail_calcul: `Prix repris de votre dernière utilisation — à ajuster si besoin`,
-      },
+      avecLotParDefaut(
+        {
+          cle: nouvelleCle(),
+          manuelle: true,
+          description: poste.description,
+          categorie: poste.categorie,
+          quantite: 1,
+          unite: poste.unite,
+          prix_unitaire: poste.prix_unitaire,
+          total: poste.prix_unitaire,
+          detail_calcul: `Prix repris de votre dernière utilisation — à ajuster si besoin`,
+        },
+        lots
+      ),
     ]);
-    setOrigineManuelle((prev) => [...prev, true]);
   }
 
   function ajouterSuggestion(index: number) {
-    setSuggestionsRestantes((prev) => {
-      const suggestion = prev[index];
-      setLignes((l) => [...l, suggestion]);
-      // Origine IA, pas manuelle : cette ligne vient de l'anti-oubli
-      // (postes_oublies_probables), simplement acceptée un instant après
-      // la génération plutôt qu'au premier chargement.
-      setOrigineManuelle((o) => [...o, false]);
-      return prev.filter((_, i) => i !== index);
-    });
+    const suggestion = suggestionsRestantes[index];
+    if (!suggestion) return;
+    // Origine IA, pas manuelle : cette ligne vient de l'anti-oubli
+    // (postes_oublies_probables), simplement acceptée un instant après la
+    // génération plutôt qu'au premier chargement.
+    setLignes((l) => [...l, avecLotParDefaut({ ...suggestion, cle: nouvelleCle(), manuelle: false }, lots)]);
+    setSuggestionsRestantes((prev) => prev.filter((_, i) => i !== index));
   }
 
   function ignorerSuggestion(index: number) {
@@ -179,8 +185,8 @@ export function ValiderDevis({
   }
 
   const totaux = useMemo(
-    () => recalculerDevis(lignes, deplacement, margePct, tvaPct),
-    [lignes, deplacement, margePct, tvaPct]
+    () => recalculerDevis(lignesPropres, deplacement, margePct, tvaPct),
+    [lignesPropres, deplacement, margePct, tvaPct]
   );
 
   // Le brouillon tel qu'il serait enregistré en validant — mêmes règles
@@ -192,12 +198,13 @@ export function ValiderDevis({
     onApercu({
       numero: devis.numero,
       lignes: lignesDeVente({
-        lignes,
+        lignes: lignesPropres,
         deplacement: totaux.deplacement,
         marge_pct: totaux.marge_pct,
         total_estime: totaux.total_ttc,
         montant_tva: totaux.montant_tva,
       }),
+      lots,
       total_ht: totaux.total_ht,
       tva_pct: totaux.tva_pct,
       montant_tva: totaux.montant_tva,
@@ -219,7 +226,8 @@ export function ValiderDevis({
     devis.numero,
     devis.created_at,
     devis.envoye_le,
-    lignes,
+    lignesPropres,
+    lots,
     totaux,
     commentaires,
     mentionTvaReduite,
@@ -231,46 +239,6 @@ export function ValiderDevis({
     dureeEstimee,
     acomptePct,
   ]);
-
-  function modifierLigne(index: number, champ: keyof LigneDevisCalculee, valeur: string) {
-    setLignes((prev) =>
-      prev.map((ligne, i) => {
-        if (i !== index) return ligne;
-        if (champ === "quantite" || champ === "prix_unitaire") {
-          const nombre = Number(valeur);
-          // On refuse les valeurs négatives ou non numériques dès la saisie :
-          // une quantité ou un prix négatif produirait une ligne qui
-          // "réduit" silencieusement le devis sans aucun signalement visuel.
-          const valeurSure = !Number.isFinite(nombre) || nombre < 0 ? 0 : nombre;
-          const majee = { ...ligne, [champ]: valeurSure };
-          majee.total = Math.round(majee.quantite * majee.prix_unitaire * 100) / 100;
-          return majee;
-        }
-        return { ...ligne, [champ]: valeur };
-      })
-    );
-  }
-
-  function supprimerLigne(index: number) {
-    setLignes((prev) => prev.filter((_, i) => i !== index));
-    setOrigineManuelle((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function ajouterLigne() {
-    setLignes((prev) => [
-      ...prev,
-      {
-        description: "",
-        categorie: "forfait",
-        quantite: 1,
-        unite: "forfait",
-        prix_unitaire: 0,
-        total: 0,
-        detail_calcul: "Ligne ajoutée manuellement",
-      },
-    ]);
-    setOrigineManuelle((prev) => [...prev, true]);
-  }
 
   async function validerDevis() {
     setErreur(null);
@@ -305,6 +273,11 @@ export function ValiderDevis({
       setErreur("L'acompte doit être un pourcentage entre 0 et 100.");
       return;
     }
+    const lotsUtilises = lots.filter((lot) => lignesPropres.some((l) => l.lot_id === lot.id));
+    if (lotsUtilises.some((lot) => !lot.nom.trim())) {
+      setErreur("Donnez un nom à chaque lot — c'est le titre que lira votre client.");
+      return;
+    }
     if (chantierAilleurs && !adresseChantier.trim()) {
       setErreur("Indiquez l'adresse du chantier, ou décochez « Le chantier est à une autre adresse ».");
       return;
@@ -314,8 +287,16 @@ export function ValiderDevis({
 
     // Les lignes telles que le client les lira, figées avec le reste
     // (Module 42) : c'est tout ce que la page de signature reçoit.
+    // Un lot vide n'a rien à faire en base ; une ligne qui pointerait vers
+    // un lot disparu redevient simplement "hors lot".
+    const idsLots = new Set(lotsUtilises.map((l) => l.id));
+    const lignesFinales = lignesPropres.map((l) =>
+      l.lot_id && !idsLots.has(l.lot_id) ? { ...l, lot_id: null } : l
+    );
+    const lotsFinaux = lotsUtilises.map((l) => ({ ...l, nom: l.nom.trim() }));
+
     const lignesVente = lignesDeVente({
-      lignes,
+      lignes: lignesFinales,
       deplacement: totaux.deplacement,
       marge_pct: totaux.marge_pct,
       total_estime: totaux.total_ttc,
@@ -325,7 +306,8 @@ export function ValiderDevis({
     const { error } = await supabase
       .from("devis")
       .update({
-        lignes,
+        lignes: lignesFinales,
+        lots: lotsFinaux,
         lignes_vente: lignesVente,
         sous_total_ht: totaux.sous_total_ht,
         deplacement: totaux.deplacement,
@@ -434,101 +416,14 @@ export function ValiderDevis({
         </div>
       )}
 
-      <div className="flex flex-col gap-3">
-        {lignes.map((ligne, i) => (
-          <div
-            key={i}
-            className="rounded-xl border border-ink/10 p-3 transition-colors hover:border-ink/20"
-          >
-            <div className="flex items-start gap-2">
-              {/* Audit pré-bêta (09/09), point 🟡 n°19 — badge discret,
-                  affiché uniquement sur les postes générés par l'IA (les
-                  seuls qui méritent vraiment une relecture attentive) plutôt
-                  que sur les deux catégories, pour rester lisible. */}
-              {!origineManuelle[i] && (
-                <span
-                  title="Poste généré par l'IA — à relire"
-                  className="shrink-0 mt-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-medium bg-signal/10 text-signal"
-                >
-                  IA
-                </span>
-              )}
-              {/* Audit pré-bêta (09/09), point 🟡 n°20 — le basculement
-                  heures→jour (voir SEUIL_HEURES_JOURNEE, calculerDevis.ts)
-                  n'était mentionné que dans le petit texte gris de
-                  detail_calcul, facile à ne pas lire en diagonale. Repère
-                  visuel au même endroit que le badge IA ci-dessus. */}
-              {ligne.unite === "jour" && (
-                <span
-                  title="Poste facturé au tarif journalier plutôt qu'horaire"
-                  className="shrink-0 mt-1.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-medium bg-steel/10 text-steel"
-                >
-                  JOUR
-                </span>
-              )}
-              <input
-                value={ligne.description}
-                onChange={(e) => modifierLigne(i, "description", e.target.value)}
-                placeholder="Description du poste"
-                className="flex-1 rounded-xl border border-ink/15 bg-paper px-2.5 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-              />
-              <button
-                type="button"
-                onClick={() => supprimerLigne(i)}
-                className="shrink-0 w-8 h-8 grid place-items-center rounded-xl text-ink/40 border border-ink/10 transition-colors hover:text-signal hover:border-signal/30"
-                title="Supprimer cette ligne"
-              >
-                ✕
-              </button>
-            </div>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              <div>
-                <label className="block text-[10px] text-ink/40 mb-1">Quantité</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={ligne.quantite}
-                  onChange={(e) => modifierLigne(i, "quantite", e.target.value)}
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-ink/40 mb-1">Unité</label>
-                <input
-                  value={ligne.unite}
-                  onChange={(e) => modifierLigne(i, "unite", e.target.value)}
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] text-ink/40 mb-1">Prix unitaire (€)</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={ligne.prix_unitaire}
-                  onChange={(e) => modifierLigne(i, "prix_unitaire", e.target.value)}
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                />
-              </div>
-            </div>
-            <p className="mt-2 text-right font-mono text-sm">{formatEuros(ligne.total)}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Remonté et rendu visible le 13/09 — c'était un minuscule lien gris
-          souligné, placé APRÈS les raccourcis, alors que les suggestions de
-          l'IA, elles, avaient de vrais boutons. Axel en a conclu qu'on ne
-          pouvait pas ajouter sa propre ligne et qu'on ne pouvait
-          qu'accepter ce que l'IA proposait — exactement l'inverse de ce que
-          doit faire cet écran, où l'artisan décide. */}
-      <button
-        type="button"
-        onClick={ajouterLigne}
-        className="mt-3 w-full rounded-xl border border-dashed border-ink/25 px-4 py-3 text-sm font-medium text-ink/70 transition-colors hover:border-signal hover:text-signal"
-      >
-        + Ajouter une ligne
-      </button>
+      <EditeurLignes
+        lignes={lignes}
+        lots={lots}
+        onChange={(nouvellesLignes, nouveauxLots) => {
+          setLignes(nouvellesLignes);
+          setLots(nouveauxLots);
+        }}
+      />
 
       {postesFrequents.length > 0 && (
         <div className="mt-4">

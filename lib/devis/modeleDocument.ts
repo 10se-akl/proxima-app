@@ -8,7 +8,7 @@ import {
   nomEntreprise,
   type ConditionOffre,
 } from "@/lib/devis/mentionsLegales";
-import type { Devis, DevisPublic, LigneDeVente, MentionsLegales } from "@/types";
+import type { Devis, DevisPublic, LigneDeVente, LotDevis, MentionsLegales } from "@/types";
 
 // ============================================================
 // Modèle du document "devis" (17/09).
@@ -24,6 +24,7 @@ import type { Devis, DevisPublic, LigneDeVente, MentionsLegales } from "@/types"
 export type SourceDocumentDevis = {
   numero: string;
   lignes: LigneDeVente[];
+  lots: LotDevis[];
   total_ht: number;
   tva_pct: number;
   montant_tva: number;
@@ -60,6 +61,9 @@ export type ModeleDevis = {
   adresseChantier: string | null;
   objet: string | null;
   lignes: LigneDeVente[];
+  // Les lignes dans l'ordre d'affichage. Sans lots : un seul groupe, sans
+  // titre ni sous-total.
+  groupes: GroupeLignes[];
   sousTotaux: { libelle: string; montant: number }[];
   totaux: {
     totalHt: number;
@@ -79,6 +83,51 @@ export type ModeleDevis = {
   mentionManuscrite: string;
   signature: SignatureDocument | null;
 };
+
+export type GroupeLignes = {
+  // "2. Salle de bain" — et "Salle de bain" seul pour le sous-total.
+  titre: string | null;
+  nom: string | null;
+  lignes: LigneDeVente[];
+  sousTotal: number | null;
+};
+
+const centimes = (n: number) => Math.round(n * 100);
+
+// Lots (17/09) : chaque lot, dans l'ordre choisi par l'artisan, avec ses
+// lignes et son sous-total ; ce qui n'appartient à aucun lot (dont le
+// déplacement) ferme la marche. Un lot vide n'apparaît pas sur le devis.
+export function grouperLignes(lignes: LigneDeVente[], lots: LotDevis[]): GroupeLignes[] {
+  if (lots.length === 0) return [{ titre: null, nom: null, lignes, sousTotal: null }];
+
+  const connus = new Set(lots.map((l) => l.id));
+  const groupes: GroupeLignes[] = [];
+  let numero = 0;
+  for (const lot of lots) {
+    const lignesDuLot = lignes.filter((l) => l.lot_id === lot.id);
+    if (lignesDuLot.length === 0) continue;
+    numero += 1;
+    const nom = lot.nom.trim() || "Lot sans nom";
+    groupes.push({
+      titre: `${numero}. ${nom}`,
+      nom,
+      lignes: lignesDuLot,
+      sousTotal: lignesDuLot.reduce((s, l) => s + centimes(l.total), 0) / 100,
+    });
+  }
+  const horsLot = lignes.filter((l) => !l.lot_id || !connus.has(l.lot_id));
+  if (horsLot.length > 0) {
+    groupes.push({
+      // Un seul lot, plus le déplacement : inutile de numéroter ni de
+      // titrer ce qui reste.
+      titre: groupes.length > 0 ? "Autres prestations" : null,
+      nom: groupes.length > 0 ? "Autres prestations" : null,
+      lignes: horsLot,
+      sousTotal: groupes.length > 0 ? horsLot.reduce((s, l) => s + centimes(l.total), 0) / 100 : null,
+    });
+  }
+  return groupes;
+}
 
 const LIBELLE_CATEGORIE: Record<string, string> = {
   main_oeuvre: "Main-d'œuvre",
@@ -111,6 +160,7 @@ export function sourceDepuisDevis(devis: Devis): SourceDocumentDevis {
   return {
     numero: devis.numero,
     lignes: lignesDuDocument(devis),
+    lots: devis.lots ?? [],
     total_ht: (Math.round(devis.total_estime * 100) - Math.round(devis.montant_tva * 100)) / 100,
     tva_pct: devis.tva_pct,
     montant_tva: devis.montant_tva,
@@ -181,7 +231,10 @@ export function construireModeleDevis({
     adresseChantier,
     objet: source.objet?.trim() || null,
     lignes: source.lignes,
-    sousTotaux: sousTotauxParCategorie(source.lignes),
+    groupes: grouperLignes(source.lignes, source.lots ?? []),
+    // Avec des lots, le devis est déjà découpé : le récapitulatif par
+    // catégorie ne ferait qu'ajouter des chiffres à lire.
+    sousTotaux: (source.lots ?? []).length > 0 ? [] : sousTotauxParCategorie(source.lignes),
     totaux: {
       totalHt: source.total_ht,
       tva: sansTva

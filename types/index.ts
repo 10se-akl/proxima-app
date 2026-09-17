@@ -183,6 +183,9 @@ export type PosteTravailIA = {
   quantite: number;
   unite: string;
   temps_estime_heures?: number; // uniquement pour categorie = "main_oeuvre"
+  // Lots (17/09) — nom du lot proposé par l'IA, seulement quand le chantier
+  // couvre plusieurs zones ou corps d'état distincts.
+  lot?: string;
 };
 
 // Ce que le moteur métier calcule à partir des postes IA + des paramètres
@@ -195,6 +198,8 @@ export type LigneDevisCalculee = {
   prix_unitaire: number;
   total: number;
   detail_calcul: string; // justification lisible, affichée à l'artisan
+  // Lot auquel appartient la ligne (voir Devis.lots) ; absent = hors lot.
+  lot_id?: string | null;
 };
 
 // Ligne telle que le CLIENT la lit : marge incluse dans le prix, et le
@@ -209,6 +214,7 @@ export type LigneDeVente = {
   unite: string;
   prix_unitaire: number; // HT, marge incluse
   total: number; // HT, marge incluse
+  lot_id?: string | null;
 };
 
 export type DevisCalcule = {

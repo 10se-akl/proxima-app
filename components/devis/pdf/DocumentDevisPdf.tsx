@@ -80,6 +80,21 @@ const s = StyleSheet.create({
     color: C.encre55,
   },
   tableLigne: { flexDirection: "row", borderBottomWidth: 0.5, borderBottomColor: C.trait10, paddingVertical: 6 },
+  // Lots : un bandeau clair avec un filet de la couleur de marque, pour que
+  // le client repère d'un coup d'œil chaque partie du chantier.
+  titreLot: {
+    marginTop: 14,
+    marginBottom: 2,
+    paddingVertical: 5,
+    paddingLeft: 8,
+    borderLeftWidth: 2.5,
+    borderLeftColor: C.signal,
+    backgroundColor: C.encadre,
+    fontFamily: "Manrope",
+    fontWeight: 700,
+    fontSize: 10.5,
+  },
+  sousTotalLot: { flexDirection: "row", paddingVertical: 5, fontSize: 8.8 },
   colDesignation: { flex: 1, paddingRight: 8 },
   colQte: { width: 38, textAlign: "right", paddingRight: 6 },
   colUnite: { width: 52, paddingLeft: 4 },
@@ -216,13 +231,32 @@ export function DocumentDevisPdf({
             <Text style={s.colPu}>PU HT</Text>
             <Text style={s.colTotal}>TOTAL HT</Text>
           </View>
-          {modele.lignes.map((ligne, i) => (
-            <View key={i} style={s.tableLigne} wrap={false}>
-              <Text style={s.colDesignation}>{ligne.description}</Text>
-              <Text style={[s.colQte, { color: C.encre80 }]}>{formatQuantite(ligne.quantite)}</Text>
-              <Text style={[s.colUnite, { color: C.encre55 }]}>{ligne.unite}</Text>
-              <Text style={[s.colPu, { color: C.encre80 }]}>{formatMontant(ligne.prix_unitaire)}</Text>
-              <Text style={[s.colTotal, { fontWeight: 500 }]}>{formatMontant(ligne.total)}</Text>
+          {modele.groupes.map((groupe, g) => (
+            <View key={g}>
+              {groupe.titre && (
+                // minPresenceAhead : jamais un titre de lot seul en bas de
+                // page, séparé de ses lignes.
+                <View style={[s.titreLot, g === 0 ? { marginTop: 6 } : {}]} minPresenceAhead={40}>
+                  <Text>{groupe.titre}</Text>
+                </View>
+              )}
+              {groupe.lignes.map((ligne, i) => (
+                <View key={i} style={s.tableLigne} wrap={false}>
+                  <Text style={s.colDesignation}>{ligne.description}</Text>
+                  <Text style={[s.colQte, { color: C.encre80 }]}>{formatQuantite(ligne.quantite)}</Text>
+                  <Text style={[s.colUnite, { color: C.encre55 }]}>{ligne.unite}</Text>
+                  <Text style={[s.colPu, { color: C.encre80 }]}>{formatMontant(ligne.prix_unitaire)}</Text>
+                  <Text style={[s.colTotal, { fontWeight: 500 }]}>{formatMontant(ligne.total)}</Text>
+                </View>
+              ))}
+              {groupe.sousTotal !== null && (
+                <View style={s.sousTotalLot} wrap={false}>
+                  <Text style={{ flex: 1, textAlign: "right", paddingRight: 10, color: C.encre55 }}>
+                    Sous-total {groupe.nom}
+                  </Text>
+                  <Text style={[s.colTotal, { fontWeight: 600 }]}>{formatMontant(groupe.sousTotal)}</Text>
+                </View>
+              )}
             </View>
           ))}
         </View>

@@ -9,7 +9,8 @@ import { obtenirChecklist } from "@/lib/checklistsMetier";
 import { conditionsParDefaut } from "@/lib/devis/mentionsLegales";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
 import { listerNotesActivesProjet, formaterNotesPourPromptIA } from "@/lib/notes";
-import type { PosteTravailIA, ParametresEntreprise, LigneDevisCalculee } from "@/types";
+import { randomUUID } from "node:crypto";
+import type { PosteTravailIA, ParametresEntreprise, LigneDevisCalculee, LotDevis } from "@/types";
 
 // Anti-oubli (06/09) — validation partagée entre "postes" (bloquant si
 // invalide, voir plus bas) et "postes_oublies_probables" (filtré
@@ -25,6 +26,32 @@ function posteEstValide(p: PosteTravailIA): boolean {
   const quantiteValide = typeof quantite === "number" && Number.isFinite(quantite) && quantite > 0;
   const descriptionValide = typeof p.description === "string" && p.description.trim().length > 0;
   return categorieValide && quantiteValide && descriptionValide;
+}
+
+// Lots (17/09) — l'IA peut regrouper les postes par zone ou corps d'état,
+// dans le même appel (aucun coût en plus). On ne garde ce découpage que
+// s'il est complet et utile : au moins deux lots, chaque poste rangé. Sinon
+// le devis reste une simple liste — un lot à moitié rempli embrouillerait
+// le client plus qu'il ne l'aiderait.
+const MAX_LOTS = 5;
+
+function decouperEnLots(postes: PosteTravailIA[]): { lots: LotDevis[]; lotParPoste: (string | null)[] } {
+  const sansLot = { lots: [], lotParPoste: postes.map(() => null) };
+  const noms = postes.map((p) => (typeof p.lot === "string" ? p.lot.trim().slice(0, 60) : ""));
+  if (noms.some((n) => !n)) return sansLot;
+
+  const lots: LotDevis[] = [];
+  const idParNom = new Map<string, string>();
+  for (const nom of noms) {
+    const cle = nom.toLocaleLowerCase("fr-FR");
+    if (!idParNom.has(cle)) {
+      const lot = { id: randomUUID(), nom };
+      idParNom.set(cle, lot.id);
+      lots.push(lot);
+    }
+  }
+  if (lots.length < 2 || lots.length > MAX_LOTS) return sansLot;
+  return { lots, lotParPoste: noms.map((n) => idParNom.get(n.toLocaleLowerCase("fr-FR")) ?? null) };
 }
 
 // Nombre max de suggestions affichées à l'artisan — au-delà, ce n'est plus
@@ -45,6 +72,8 @@ RÈGLE ABSOLUE : tu ne dois JAMAIS indiquer de prix, de montant en euros, ou de 
 
 En plus de cette liste principale, identifie séparément les postes ADDITIONNELS probablement nécessaires mais absents de ta première liste — des oublis fréquents qui coûtent de l'argent à l'artisan s'ils ne sont jamais facturés : dépose de l'existant quand une pose est prévue sans dépose associée, protection du chantier (sol, mobilier), évacuation des déchets/gravats, finitions, nettoyage de fin de chantier. N'en invente jamais si rien ne manque clairement : une liste vide est la réponse correcte la plupart du temps.
 
+LOTS (facultatif) : si — et seulement si — le chantier couvre plusieurs pièces, zones ou corps d'état bien distincts (par exemple cuisine ET salle de bain, ou démolition, plomberie et carrelage sur une rénovation), range chaque poste dans un lot avec "lot": "<nom court>" ("Salle de bain", "Cuisine", "Électricité"). Entre 2 et ${MAX_LOTS} lots, et alors TOUS les postes ont un lot. Pour une intervention simple ou une seule pièce, n'utilise aucun lot : omets "lot" partout.
+
 Rédige aussi l'OBJET des travaux : une seule phrase, en français simple, qui dit au client ce qui va être fait — pas une liste, pas de jargon, pas de prix, pas de délai. Exemple : "Rénovation de la salle de bain avec remplacement de la baignoire par une douche à l'italienne."
 
 Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exacte :
@@ -56,7 +85,8 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
       "categorie": "main_oeuvre" | "fourniture" | "forfait",
       "quantite": 0,
       "unite": "m² | unité | forfait | heure",
-      "temps_estime_heures": 0
+      "temps_estime_heures": 0,
+      "lot": "..."
     }
   ],
   "postes_oublies_probables": [
@@ -71,7 +101,7 @@ Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exac
 }
 
 "temps_estime_heures" est obligatoire uniquement si categorie = "main_oeuvre" (sinon omets-le).
-Propose entre 3 et 6 postes cohérents avec le métier et la description du projet dans "postes".
+Propose entre 3 et 6 postes cohérents avec le métier et la description du projet dans "postes" (jusqu'à 10 si tu utilises des lots).
 "postes_oublies_probables" contient entre 0 et ${MAX_SUGGESTIONS_OUBLIS} éléments, jamais plus — et [] si rien ne manque.`;
 
 // Sprint Beta Final (27/08) — voir même commentaire dans preparer-brouillon.
@@ -255,6 +285,13 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // Calcul entièrement déterministe, aucun appel IA à partir d'ici.
     const devisCalcule = calculerDevis(postes, parametres);
 
+    // calculerDevis garde l'ordre des postes (une éventuelle ligne de
+    // complément d'heures minimum s'ajoute à la fin, hors lot).
+    const { lots, lotParPoste } = decouperEnLots(postes);
+    const lignesAvecLots: LigneDevisCalculee[] = devisCalcule.lignes.map((ligne, i) =>
+      i < lotParPoste.length && lotParPoste[i] ? { ...ligne, lot_id: lotParPoste[i] } : ligne
+    );
+
     // Anti-oubli (06/09) — contrairement aux postes principaux, un item mal
     // formé ici est filtré silencieusement plutôt que de faire échouer toute
     // la génération : c'est une suggestion annexe, pas le devis lui-même.
@@ -312,7 +349,8 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
           artisan_id: artisanId,
           organisation_id: orgId,
           numero,
-          lignes: devisCalcule.lignes,
+          lignes: lignesAvecLots,
+          lots,
           sous_total_ht: devisCalcule.sous_total_ht,
           deplacement: devisCalcule.deplacement,
           marge_pct: devisCalcule.marge_pct,

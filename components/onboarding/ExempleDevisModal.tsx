@@ -67,7 +67,7 @@ const DEVIS_EXEMPLE: Devis = {
   montant_tva: 322,
   total_estime: 3542,
   envoye_le: null,
-  commentaires: "Devis valable 30 jours. Début de chantier possible sous 2 semaines.",
+  commentaires: null,
   statut: "brouillon",
   created_at: new Date().toISOString(),
   suggestions_oublis: null,
@@ -80,6 +80,19 @@ const DEVIS_EXEMPLE: Devis = {
   parametres_configures: true,
   notifie_relance_j5_le: null,
   notifie_relance_j10_le: null,
+  // L'exemple montre un devis COMPLET : c'est la vitrine du produit, il doit
+  // donner à voir ce qu'un devis conforme contient — y compris les
+  // conditions qu'un artisan oublie le plus souvent.
+  objet: "Rénovation complète de la salle de bain : remplacement de la baignoire par une douche à l'italienne.",
+  adresse_chantier: null,
+  validite_jours: 30,
+  date_debut_prevue: null,
+  duree_estimee: "4 jours",
+  acompte_pct: 30,
+  mentions_legales: null,
+  lignes_vente: null,
+  lots: [],
+  photos_incluses: [],
 };
 
 const ENTREPRISE_EXEMPLE: ParametresEntreprise = {
@@ -102,10 +115,22 @@ const ENTREPRISE_EXEMPLE: ParametresEntreprise = {
   forme_juridique: "EURL",
   numero_tva_intracommunautaire: null,
   mention_tva_non_applicable: false,
-  assurance_decennale_compagnie: null,
-  assurance_decennale_police: null,
+  assurance_decennale_compagnie: "Assurances Exemple",
+  assurance_decennale_police: "123456789",
+  assurance_decennale_zone: "France métropolitaine",
+  rc_pro_compagnie: "Assurances Exemple",
+  rc_pro_zone: "France métropolitaine",
+  capital_social: 5000,
+  rcs_numero: "123 456 789",
+  rcs_ville: "Lyon",
+  rm_numero: "69 123 456 789",
+  mediateur_nom: "Médiation Bâtiment (exemple)",
+  mediateur_url: null,
+  moyens_paiement: "Virement bancaire, chèque",
   iban: null,
   bic: null,
+  devis_validite_jours: 30,
+  devis_acompte_pct: 30,
 };
 
 export function ExempleDevisModal({ onFermer }: { onFermer: () => void }) {
@@ -115,7 +140,7 @@ export function ExempleDevisModal({ onFermer }: { onFermer: () => void }) {
       onClick={onFermer}
     >
       <div
-        className="w-full sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-ink/10 bg-surface shadow-xl shadow-ink/20 p-5 sm:p-6 [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))]"
+        className="w-full sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl border border-ink/10 bg-surface shadow-xl shadow-ink/20 p-5 sm:p-6 [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between">

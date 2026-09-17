@@ -449,6 +449,33 @@
   }
 }
 
+/* Le devis (components/devis/DocumentDevis.tsx) reste un document papier
+   en mode sombre aussi : mêmes valeurs que :root, redéclarées au plus près
+   pour l'emporter sur .dark (même principe que .theme-sombre-fixe). */
+.document-papier {
+  --c-paper: 250 248 245;
+  --c-paper-warm: 243 237 230;
+  --c-ink: 31 41 55;
+  --c-steel: 92 112 128;
+  --c-gris-clair: 232 232 232;
+  --c-surface: 255 255 255;
+  color-scheme: light;
+}
+@media print {
+  /* Sans cela, le navigateur retire les fonds à l'impression : le bandeau
+     du total et les encadrés client/chantier disparaîtraient du PDF. */
+  .document-papier,
+  .document-papier * {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+  .document-papier {
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+  }
+}
+
 /* Zone "Bon pour accord" : n'a de sens que sur le document imprimé/PDF,
    jamais à l'écran (où l'artisan a déjà le lien de signature en ligne). */
 .bloc-signature {

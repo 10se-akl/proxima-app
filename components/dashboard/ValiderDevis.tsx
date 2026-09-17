@@ -5,11 +5,13 @@ import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
 import { recalculerDevis, genererMentionTvaReduite } from "@/lib/moteur-metier/calculerDevis";
+import { lignesDeVente } from "@/lib/moteur-metier/prixDeVente";
 import { obtenirPostesFrequents, type PosteFrequent } from "@/lib/postesFrequents";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field, TextareaField } from "@/components/ui/Input";
-import type { Devis, LigneDevisCalculee } from "@/types";
+import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
+import type { Devis, LigneDevisCalculee, ParametresEntreprise } from "@/types";
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -33,11 +35,15 @@ export function ValiderDevis({
   devis,
   demandeId,
   artisanId,
+  parametres,
+  adresseClient,
   onValide,
 }: {
   devis: Devis;
   demandeId: string;
   artisanId: string;
+  parametres?: ParametresEntreprise | null;
+  adresseClient?: string | null;
   onValide: () => void;
 }) {
   const supabase = createClient();
@@ -57,6 +63,29 @@ export function ValiderDevis({
   const [margePct, setMargePct] = useState(devis.marge_pct);
   const [tvaPct, setTvaPct] = useState(devis.tva_pct);
   const [commentaires, setCommentaires] = useState(devis.commentaires ?? "");
+
+  // Conditions de l'offre (Module 42). Un devis créé depuis le 17/09 arrive
+  // déjà rempli (voir conditionsParDefaut) ; pour un devis plus ancien, on
+  // retombe sur les paramètres de l'entreprise, pour que l'artisan n'ait
+  // jamais de champ vide à remplir de lui-même.
+  const [objet, setObjet] = useState(devis.objet ?? "");
+  const [validiteJours, setValiditeJours] = useState<string>(
+    String(devis.validite_jours ?? parametres?.devis_validite_jours ?? 30)
+  );
+  const [acomptePct, setAcomptePct] = useState<string>(
+    devis.acompte_pct != null
+      ? String(devis.acompte_pct)
+      : parametres?.devis_acompte_pct != null
+        ? String(parametres.devis_acompte_pct)
+        : ""
+  );
+  const [dateDebut, setDateDebut] = useState(devis.date_debut_prevue ?? "");
+  const [dureeEstimee, setDureeEstimee] = useState(devis.duree_estimee ?? "");
+  // L'adresse du chantier n'est obligatoire que si elle diffère de celle du
+  // client : le champ reste masqué tant que l'artisan ne dit pas le
+  // contraire, pour éviter une saisie inutile dans la plupart des cas.
+  const [chantierAilleurs, setChantierAilleurs] = useState(Boolean(devis.adresse_chantier));
+  const [adresseChantier, setAdresseChantier] = useState(devis.adresse_chantier ?? "");
   const [enregistrement, setEnregistrement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -212,12 +241,38 @@ export function ValiderDevis({
       return;
     }
 
+    const validite = validiteJours.trim() === "" ? null : Number(validiteJours);
+    if (validite !== null && (!Number.isInteger(validite) || validite < 1 || validite > 365)) {
+      setErreur("La durée de validité doit être un nombre de jours entre 1 et 365.");
+      return;
+    }
+    const acompte = acomptePct.trim() === "" ? null : Number(acomptePct);
+    if (acompte !== null && (!Number.isFinite(acompte) || acompte < 0 || acompte > 100)) {
+      setErreur("L'acompte doit être un pourcentage entre 0 et 100.");
+      return;
+    }
+    if (chantierAilleurs && !adresseChantier.trim()) {
+      setErreur("Indiquez l'adresse du chantier, ou décochez « Le chantier est à une autre adresse ».");
+      return;
+    }
+
     setEnregistrement(true);
+
+    // Les lignes telles que le client les lira, figées avec le reste
+    // (Module 42) : c'est tout ce que la page de signature reçoit.
+    const lignesVente = lignesDeVente({
+      lignes,
+      deplacement: totaux.deplacement,
+      marge_pct: totaux.marge_pct,
+      total_estime: totaux.total_ttc,
+      montant_tva: totaux.montant_tva,
+    });
 
     const { error } = await supabase
       .from("devis")
       .update({
         lignes,
+        lignes_vente: lignesVente,
         sous_total_ht: totaux.sous_total_ht,
         deplacement: totaux.deplacement,
         marge_pct: totaux.marge_pct,
@@ -226,6 +281,12 @@ export function ValiderDevis({
         total_estime: totaux.total_ttc,
         commentaires: commentaires || null,
         mention_tva_reduite: totaux.tva_pct !== 20 ? mentionTvaReduite.trim() || null : null,
+        objet: objet.trim() || null,
+        adresse_chantier: chantierAilleurs ? adresseChantier.trim() : null,
+        validite_jours: validite,
+        date_debut_prevue: dateDebut || null,
+        duree_estimee: dureeEstimee.trim() || null,
+        acompte_pct: acompte,
         statut: "a_valider",
       })
       .eq("id", devis.id);
@@ -233,7 +294,12 @@ export function ValiderDevis({
     setEnregistrement(false);
 
     if (error) {
-      setErreur("Impossible d'enregistrer les modifications. Réessayez.");
+      console.error("Validation du devis :", error);
+      setErreur(
+        estColonneManquante(error)
+          ? MESSAGE_BASE_PAS_A_JOUR
+          : "Impossible d'enregistrer les modifications. Réessayez."
+      );
       return;
     }
 
@@ -254,13 +320,30 @@ export function ValiderDevis({
 
   return (
     <Card className="mt-4 p-6">
+      {/* Renommé le 17/09 (audit des écarts concurrents, §6) : "Validation
+          du devis" disait "relis et confirme", pas "modifie". Axel lui-même,
+          qui a construit l'écran, en avait conclu qu'on ne pouvait rien y
+          écrire — aucun artisan ne l'aurait découvert seul. */}
       <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
-        Validation du devis
+        Modifier le devis
       </p>
       <p className="text-xs text-ink/40 mb-5">
-        Relisez et ajustez chaque ligne si besoin. Rien n&apos;est exportable tant que ce
-        n&apos;est pas validé.
+        Changez tout ce que vous voulez : lignes, prix, conditions. Rien n&apos;est envoyé au
+        client avant que vous validiez.
       </p>
+
+      <div className="mb-5">
+        <TextareaField
+          label="Objet des travaux"
+          rows={2}
+          value={objet}
+          onChange={(e) => setObjet(e.target.value)}
+          placeholder="Ex : Rénovation de la salle de bain avec pose d'une douche à l'italienne."
+        />
+        <p className="mt-1.5 text-[11px] text-ink/40">
+          La première phrase que lit votre client, avant le détail chiffré.
+        </p>
+      </div>
 
       {/* Passe visuelle (10/09), guidée par la recherche terrain sur la
           charge mentale des artisans BTP : le Total TTC — le chiffre le
@@ -441,6 +524,68 @@ export function ValiderDevis({
         />
       </div>
 
+      <div className="mt-6 pt-5 border-t border-ink/10">
+        <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
+          Conditions de l&apos;offre
+        </p>
+        <p className="text-xs text-ink/40 mb-4">
+          Reprises de vos paramètres — modifiables pour ce devis seulement.
+        </p>
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field
+            label="Validité (jours)"
+            type="number"
+            step="1"
+            min={1}
+            max={365}
+            value={validiteJours}
+            onChange={(e) => setValiditeJours(e.target.value)}
+          />
+          <Field
+            label="Acompte à la signature (%)"
+            type="number"
+            step="1"
+            min={0}
+            max={100}
+            value={acomptePct}
+            onChange={(e) => setAcomptePct(e.target.value)}
+            placeholder="Aucun"
+          />
+          <Field
+            label="Début des travaux prévu"
+            type="date"
+            value={dateDebut}
+            onChange={(e) => setDateDebut(e.target.value)}
+          />
+          <Field
+            label="Durée estimée"
+            value={dureeEstimee}
+            onChange={(e) => setDureeEstimee(e.target.value)}
+            placeholder="Ex : 3 jours"
+          />
+        </div>
+
+        <label className="mt-4 flex items-center gap-2 text-sm text-ink/70">
+          <input
+            type="checkbox"
+            checked={chantierAilleurs}
+            onChange={(e) => setChantierAilleurs(e.target.checked)}
+            className="w-4 h-4 rounded border-ink/25 accent-signal"
+          />
+          Le chantier est à une autre adresse que celle du client
+        </label>
+        {chantierAilleurs && (
+          <div className="mt-3">
+            <Field
+              label="Adresse du chantier"
+              value={adresseChantier}
+              onChange={(e) => setAdresseChantier(e.target.value)}
+              placeholder={adresseClient ? `Différente de : ${adresseClient}` : "Adresse complète"}
+            />
+          </div>
+        )}
+      </div>
+
       {tvaPct !== 20 && (
         <div className="mt-5">
           <TextareaField
@@ -495,6 +640,14 @@ export function ValiderDevis({
           <span>Total TTC</span>
           <span className="font-mono text-lg">{formatEuros(totaux.total_ttc)}</span>
         </div>
+        {/* 17/09 — les prix saisis ici sont vos prix de revient ; le
+            client, lui, lit des prix marge incluse (voir prixDeVente.ts).
+            Sans cette phrase, l'écart entre les deux écrans surprendrait. */}
+        <p className="pt-2 text-[11px] text-ink/40 leading-relaxed">
+          Vous saisissez vos prix de revient. Sur le devis du client, la marge est
+          répartie dans le prix de chaque ligne et le déplacement apparaît en ligne à
+          part : il ne voit jamais votre marge, et ses lignes tombent juste sur le total.
+        </p>
       </div>
 
       {suggestionsRestantes.length > 0 && (

@@ -8,6 +8,7 @@ import { Card } from "@/components/ui/Card";
 import { PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
 import { MonCompte } from "@/components/dashboard/MonCompte";
 import { EquipeSection } from "@/components/dashboard/EquipeSection";
+import { estEntrepreneurIndividuel } from "@/lib/devis/mentionsLegales";
 
 type FormState = typeof PARAMETRES_PAR_DEFAUT;
 type Onglet = "entreprise" | "equipe" | "compte";
@@ -37,12 +38,41 @@ const BORNES: Partial<Record<keyof FormState, { min: number; max: number; label:
   marge_defaut_pct: { min: 0, max: 500, label: "Marge par défaut" },
   heures_min_facturables: { min: 0, max: 24, label: "Heures minimum facturables" },
   forfait_deplacement: { min: 0, max: 2000, label: "Forfait déplacement" },
+  capital_social: { min: 0, max: 10_000_000_000, label: "Capital social" },
+  devis_validite_jours: { min: 1, max: 365, label: "Validité des devis" },
+  devis_acompte_pct: { min: 0, max: 100, label: "Acompte" },
 };
+
+// Liste EXPLICITE des champs numériques. Corrigé le 17/09 : on devinait
+// jusqu'ici le type d'après la valeur par défaut (typeof … === "number"),
+// or un champ facultatif comme le coût journalier vaut null par défaut —
+// typeof null vaut "object", la saisie était donc stockée comme du texte,
+// puis rejetée par validerForm ("valeur invalide"). Résultat : le coût
+// journalier ne pouvait tout simplement jamais être enregistré.
+const CHAMPS_NUMERIQUES = new Set<keyof FormState>([
+  "tva_pct",
+  "cout_horaire",
+  "cout_journalier",
+  "marge_defaut_pct",
+  "heures_min_facturables",
+  "forfait_deplacement",
+  "capital_social",
+  "devis_validite_jours",
+  "devis_acompte_pct",
+]);
+
+// Champs numériques qui ne peuvent pas rester vides (colonne NOT NULL).
+const CHAMPS_REQUIS = new Set<keyof FormState>(["devis_validite_jours"]);
 
 function validerForm(form: FormState): string | null {
   for (const [champ, bornes] of Object.entries(BORNES)) {
     const valeur = form[champ as keyof FormState];
-    if (valeur === null || valeur === undefined) continue;
+    if (valeur === null || valeur === undefined) {
+      if (CHAMPS_REQUIS.has(champ as keyof FormState)) {
+        return `${bornes.label} : ce champ est nécessaire.`;
+      }
+      continue;
+    }
     if (typeof valeur !== "number" || !Number.isFinite(valeur)) {
       return `${bornes.label} : valeur invalide.`;
     }
@@ -97,7 +127,11 @@ export default function ParametresPage() {
         .maybeSingle();
 
       if (data) {
-        setForm(data as FormState);
+        // Fusion plutôt que remplacement : un réglage ajouté récemment et
+        // encore absent de la ligne enregistrée prend sa valeur par défaut
+        // au lieu de rester vide (et de bloquer l'enregistrement s'il est
+        // obligatoire, comme la validité des devis).
+        setForm({ ...PARAMETRES_PAR_DEFAUT, ...(data as Partial<FormState>) });
       }
       setChargement(false);
     }
@@ -157,7 +191,7 @@ export default function ParametresPage() {
   function update<K extends keyof FormState>(champ: K) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
       const brut = e.target.value;
-      const estNumerique = typeof PARAMETRES_PAR_DEFAUT[champ] === "number";
+      const estNumerique = CHAMPS_NUMERIQUES.has(champ);
       setForm({
         ...form,
         [champ]: estNumerique ? (brut === "" ? null : Number(brut)) : brut,
@@ -198,7 +232,15 @@ export default function ParametresPage() {
     setEnregistrement(false);
 
     if (error) {
-      setErreur("Impossible d'enregistrer les paramètres.");
+      // Même piège que pour la génération de devis (13/09) : si la base n'a
+      // pas reçu la dernière migration, les nouveaux champs sont refusés.
+      // Le dire explicitement évite de chercher ailleurs.
+      console.error("Enregistrement des paramètres :", error);
+      setErreur(
+        error.code === "PGRST204" || error.code === "42703"
+          ? "Base de données pas à jour : rejouez supabase/schema.sql dans l'éditeur SQL Supabase, puis réessayez."
+          : "Impossible d'enregistrer les paramètres."
+      );
       return;
     }
 
@@ -288,7 +330,7 @@ export default function ParametresPage() {
             <TextareaField
               label="Conditions générales (affichées en bas du devis)"
               rows={4}
-              placeholder="Ex : Devis valable 30 jours. Acompte de 30% à la commande. TVA non applicable, art. 293B du CGI (le cas échéant)."
+              placeholder="Ex : garanties, service après-vente, conditions d'accès au chantier… (la validité, l'acompte et les mentions obligatoires sont déjà ajoutés automatiquement)"
               value={form.conditions_generales ?? ""}
               onChange={(e) => setForm({ ...form, conditions_generales: e.target.value })}
             />
@@ -318,19 +360,57 @@ export default function ParametresPage() {
             </div>
           </div>
 
+          {/* Corrigé le 17/09 : cette section annonçait "Nécessaires
+              uniquement pour émettre des factures — un devis n'en a pas
+              besoin". C'est faux, et dangereux : l'assurance décennale est
+              obligatoire sur le devis, sous peine de 75 000 € d'amende
+              (art. L243-3 du code des assurances). Ce texte poussait les
+              artisans à envoyer des devis non conformes. */}
           <div>
-            <h2 className="text-sm font-semibold text-ink/70 mb-4">Informations légales</h2>
-            <p className="text-xs text-ink/50 -mt-2 mb-4">
-              Nécessaires uniquement pour émettre des factures (Module Factures) — un devis n&apos;en a pas besoin.
-              Complétez-les avant votre première facture.
+            <h2 className="text-sm font-semibold text-ink/70 mb-1">Identité juridique</h2>
+            <p className="text-xs text-ink/50 mb-4">
+              Imprimée sur chaque devis et chaque facture. À remplir une seule fois.
             </p>
             <div className="grid sm:grid-cols-2 gap-5">
-              <Field label="SIRET" value={form.siret ?? ""} onChange={update("siret")} placeholder="123 456 789 00012" />
               <Field
                 label="Forme juridique"
                 value={form.forme_juridique ?? ""}
                 onChange={update("forme_juridique")}
-                placeholder="Ex : Auto-entrepreneur, EURL, SARL…"
+                placeholder="Ex : Micro-entrepreneur, EURL, SARL…"
+              />
+              <Field label="SIRET" value={form.siret ?? ""} onChange={update("siret")} placeholder="123 456 789 00012" />
+              {/* RCS et capital ne concernent que les sociétés : masqués pour
+                  un entrepreneur individuel, pour ne pas lui faire croire
+                  qu'il lui manque quelque chose. */}
+              {!estEntrepreneurIndividuel(form.forme_juridique) && (
+                <>
+                  <Field
+                    label="Capital social (€)"
+                    type="number"
+                    step="0.01"
+                    min={0}
+                    value={form.capital_social ?? ""}
+                    onChange={update("capital_social")}
+                  />
+                  <Field
+                    label="N° RCS"
+                    value={form.rcs_numero ?? ""}
+                    onChange={update("rcs_numero")}
+                    placeholder="123 456 789"
+                  />
+                  <Field
+                    label="Ville du greffe (RCS)"
+                    value={form.rcs_ville ?? ""}
+                    onChange={update("rcs_ville")}
+                    placeholder="Lyon"
+                  />
+                </>
+              )}
+              <Field
+                label="N° au Répertoire des Métiers"
+                value={form.rm_numero ?? ""}
+                onChange={update("rm_numero")}
+                placeholder="Si vous êtes artisan"
               />
               <Field
                 label="N° TVA intracommunautaire"
@@ -346,19 +426,112 @@ export default function ParametresPage() {
                     onChange={(e) => setForm({ ...form, mention_tva_non_applicable: e.target.checked })}
                     className="w-4 h-4 rounded border-ink/25 accent-signal"
                   />
-                  Franchise en base de TVA (auto-entrepreneur)
+                  Franchise en base de TVA (art. 293 B du CGI)
                 </label>
               </div>
+            </div>
+            {estEntrepreneurIndividuel(form.forme_juridique) && (
+              <p className="mt-3 text-xs text-ink/50">
+                Entrepreneur individuel : la mention « EI » sera ajoutée automatiquement à côté de
+                votre nom, comme la loi l&apos;exige.
+              </p>
+            )}
+          </div>
+
+          <div>
+            <h2 className="text-sm font-semibold text-ink/70 mb-1">Assurances</h2>
+            <p className="text-xs text-ink/50 mb-4">
+              Obligatoires sur vos devis et vos factures — avec l&apos;assureur <em>et</em> la zone
+              couverte. Leur absence est la mention la plus sanctionnée du bâtiment.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-5">
               <Field
-                label="Assurance décennale — compagnie"
+                label="Décennale — assureur"
                 value={form.assurance_decennale_compagnie ?? ""}
                 onChange={update("assurance_decennale_compagnie")}
               />
               <Field
-                label="Assurance décennale — n° de police"
+                label="Décennale — n° de police"
                 value={form.assurance_decennale_police ?? ""}
                 onChange={update("assurance_decennale_police")}
               />
+              <Field
+                label="Décennale — zone couverte"
+                value={form.assurance_decennale_zone ?? ""}
+                onChange={update("assurance_decennale_zone")}
+                placeholder="Ex : France métropolitaine"
+              />
+              <div className="hidden sm:block" />
+              <Field
+                label="RC Pro — assureur"
+                value={form.rc_pro_compagnie ?? ""}
+                onChange={update("rc_pro_compagnie")}
+              />
+              <Field
+                label="RC Pro — zone couverte"
+                value={form.rc_pro_zone ?? ""}
+                onChange={update("rc_pro_zone")}
+                placeholder="Ex : France métropolitaine"
+              />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-sm font-semibold text-ink/70 mb-1">Médiateur de la consommation</h2>
+            <p className="text-xs text-ink/50 mb-4">
+              Obligatoire dès que vous travaillez pour des particuliers : vous devez adhérer à un
+              médiateur et l&apos;indiquer sur vos devis. Beaucoup d&apos;artisans l&apos;ignorent — si
+              ce n&apos;est pas encore fait, votre fédération professionnelle peut vous en indiquer un.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-5">
+              <Field
+                label="Nom du médiateur"
+                value={form.mediateur_nom ?? ""}
+                onChange={update("mediateur_nom")}
+              />
+              <Field
+                label="Site internet du médiateur"
+                value={form.mediateur_url ?? ""}
+                onChange={update("mediateur_url")}
+                placeholder="www.exemple-mediation.fr"
+              />
+            </div>
+          </div>
+
+          <div>
+            <h2 className="text-sm font-semibold text-ink/70 mb-1">Vos devis par défaut</h2>
+            <p className="text-xs text-ink/50 mb-4">
+              Chaque nouveau devis part avec ces valeurs — vous pouvez toujours les changer devis
+              par devis.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-5">
+              <Field
+                label="Validité des devis (jours)"
+                type="number"
+                step="1"
+                min={BORNES.devis_validite_jours!.min}
+                max={BORNES.devis_validite_jours!.max}
+                required
+                value={form.devis_validite_jours ?? ""}
+                onChange={update("devis_validite_jours")}
+              />
+              <Field
+                label="Acompte demandé (%)"
+                type="number"
+                step="1"
+                min={BORNES.devis_acompte_pct!.min}
+                max={BORNES.devis_acompte_pct!.max}
+                value={form.devis_acompte_pct ?? ""}
+                onChange={update("devis_acompte_pct")}
+                placeholder="Ex : 30"
+              />
+              <Field
+                label="Moyens de paiement acceptés"
+                value={form.moyens_paiement ?? ""}
+                onChange={update("moyens_paiement")}
+                placeholder="Ex : virement, chèque"
+              />
+              <div className="hidden sm:block" />
               <Field
                 label="IBAN (affiché sur les factures)"
                 value={form.iban ?? ""}

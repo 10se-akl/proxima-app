@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
 import { createClient } from "@/lib/supabase/server";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
@@ -90,6 +91,19 @@ export async function POST(request: NextRequest) {
         // ce drapeau reflète les paramètres au moment où CE CONTENU a été
         // chiffré la première fois, une duplication ne rechiffre rien.
         parametres_configures: devisOriginal.parametres_configures,
+        // Une nouvelle version du MÊME chantier : mêmes conditions, mêmes
+        // lots, mêmes photos. Pas l'instantané des mentions légales, en
+        // revanche — il sera repris des paramètres actuels à l'envoi de
+        // cette nouvelle version.
+        objet: devisOriginal.objet,
+        adresse_chantier: devisOriginal.adresse_chantier,
+        validite_jours: devisOriginal.validite_jours,
+        date_debut_prevue: devisOriginal.date_debut_prevue,
+        duree_estimee: devisOriginal.duree_estimee,
+        acompte_pct: devisOriginal.acompte_pct,
+        mention_tva_reduite: devisOriginal.mention_tva_reduite,
+        lots: devisOriginal.lots ?? [],
+        photos_incluses: devisOriginal.photos_incluses ?? [],
       })
       .select()
       .single();
@@ -104,7 +118,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (insertError || !devis) {
-    return NextResponse.json({ error: "Impossible de dupliquer ce devis" }, { status: 500 });
+    // L'erreur réelle est tracée : c'est ce qui a permis de diagnostiquer
+    // en une minute les migrations manquantes des 12 et 13/09.
+    console.error("Impossible de dupliquer ce devis :", insertError);
+    return NextResponse.json(
+      { error: estColonneManquante(insertError) ? MESSAGE_BASE_PAS_A_JOUR : "Impossible de dupliquer ce devis" },
+      { status: 500 }
+    );
   }
 
   await enregistrerLog(supabase, {

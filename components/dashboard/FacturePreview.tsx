@@ -1,4 +1,6 @@
 import { Button } from "@/components/ui/Button";
+import { identiteJuridique, mentionsAssurances, nomEntreprise } from "@/lib/devis/mentionsLegales";
+import { formatQuantite } from "@/lib/devis/modeleDocument";
 import type { Facture } from "@/types";
 
 function formatEuros(n: number) {
@@ -58,22 +60,20 @@ export function FacturePreview({
               <img src={logoUrl} alt="" className="w-12 h-12 object-contain shrink-0" />
             )}
             <div>
-              <p className="font-semibold">{m.nom_entreprise || "—"}</p>
+              <p className="font-semibold">{nomEntreprise(m, "—")}</p>
               {m.adresse && <p className="text-xs text-ink/50 mt-0.5">{m.adresse}</p>}
               {(m.telephone || m.email) && (
                 <p className="text-xs text-ink/50">{[m.telephone, m.email].filter(Boolean).join(" · ")}</p>
               )}
-              <p className="text-[11px] text-ink/50 mt-1">
-                {[m.forme_juridique, m.siret ? `SIRET ${m.siret}` : null].filter(Boolean).join(" · ")}
-              </p>
-              {m.numero_tva_intracommunautaire && !m.mention_tva_non_applicable && (
-                <p className="text-[11px] text-ink/50">TVA intracommunautaire : {m.numero_tva_intracommunautaire}</p>
-              )}
-              {(m.assurance_decennale_compagnie || m.assurance_decennale_police) && (
-                <p className="text-[11px] text-ink/50 mt-0.5">
-                  Assurance décennale : {[m.assurance_decennale_compagnie, m.assurance_decennale_police].filter(Boolean).join(" — police n° ")}
+              {/* 17/09 — mêmes mentions, même formulation que le devis
+                  (lib/devis/mentionsLegales.ts) : RCS, capital, RM, RC Pro
+                  et zone de couverture de la décennale manquaient. */}
+              <p className="text-[11px] text-ink/50 mt-1">{identiteJuridique(m).join(" · ")}</p>
+              {mentionsAssurances(m).map((ligne) => (
+                <p key={ligne} className="text-[11px] text-ink/50 mt-0.5">
+                  {ligne}
                 </p>
-              )}
+              ))}
             </div>
           </div>
           <div className="text-right shrink-0">
@@ -111,7 +111,15 @@ export function FacturePreview({
                 <p className="text-ink/80 min-w-0">{ligne.description}</p>
                 <span className="font-mono shrink-0 whitespace-nowrap">{formatEuros(ligne.total)}</span>
               </div>
-              {ligne.detail_calcul && <p className="text-xs text-ink/40 font-mono mt-0.5">{ligne.detail_calcul}</p>}
+              {/* Quantité et prix unitaire HT : obligatoires sur une facture. */}
+              <p className="text-xs text-ink/50 mt-0.5 tabular-nums">
+                {formatQuantite(ligne.quantite)} {ligne.unite} × {formatEuros(ligne.prix_unitaire)} HT
+              </p>
+              {/* Note de calcul interne (anciennes factures) : visible par
+                  l'artisan, jamais imprimée pour le client. */}
+              {ligne.detail_calcul && (
+                <p className="text-xs text-ink/40 font-mono mt-0.5 masquer-impression">{ligne.detail_calcul}</p>
+              )}
             </div>
           ))}
         </div>

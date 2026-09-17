@@ -3,69 +3,25 @@
 import { useEffect, useRef, useState } from "react";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
 import { Button } from "@/components/ui/Button";
+import { DocumentDevis } from "@/components/devis/DocumentDevis";
+import {
+  construireModeleDevis,
+  formatMontant,
+  sourceDepuisDevisPublic,
+} from "@/lib/devis/modeleDocument";
+import { nomEntreprise } from "@/lib/devis/mentionsLegales";
+import type { DevisPublic } from "@/types";
 
 // ============================================================
 // Signature électronique en ligne (08/09) — voir Module 31,
 // supabase/schema.sql. Écran public, sans compte, ouvert depuis le lien
 // envoyé au client. Volontairement sobre : c'est un document à lire et une
 // décision à prendre, pas une page marketing.
+//
+// 17/09 — le devis lui-même est rendu par components/devis/DocumentDevis,
+// le même composant que l'aperçu de l'artisan : ce que le client lit ici
+// est exactement ce que l'artisan a validé.
 // ============================================================
-
-type LigneDevisPublic = {
-  description: string;
-  categorie: string;
-  quantite: number;
-  unite: string;
-  prix_unitaire: number;
-  total: number;
-  detail_calcul: string;
-};
-
-type DevisPublic = {
-  numero: string;
-  lignes: LigneDevisPublic[];
-  sous_total_ht: number;
-  deplacement: number;
-  marge_pct: number;
-  tva_pct: number;
-  montant_tva: number;
-  total_estime: number;
-  commentaires: string | null;
-  mention_tva_reduite: string | null;
-  created_at: string;
-  devis_statut: string;
-  signe_le: string | null;
-  demande_statut: string;
-  accepte_le: string | null;
-  nom_client: string;
-  nom_entreprise: string | null;
-  logo_url: string | null;
-  adresse: string | null;
-  telephone: string | null;
-  email: string | null;
-  siret: string | null;
-  forme_juridique: string | null;
-};
-
-function formatEuros(n: number) {
-  return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
-}
-
-// Sous-totaux par catégorie (08/09) — voir même logique dans
-// components/dashboard/DevisPreview.tsx.
-const LABEL_CATEGORIE: Record<string, string> = {
-  main_oeuvre: "Main d'œuvre",
-  fourniture: "Fournitures",
-  forfait: "Forfait",
-};
-
-function sousTotauxParCategorie(lignes: { categorie: string; total: number }[]) {
-  const parCategorie = new Map<string, number>();
-  for (const l of lignes) {
-    parCategorie.set(l.categorie, (parCategorie.get(l.categorie) ?? 0) + l.total);
-  }
-  return Array.from(parCategorie.entries());
-}
 
 // Pavé de signature — dessin au doigt/à la souris sur un <canvas>, sans
 // bibliothèque externe (juste des événements pointer, unifiés souris/tactile
@@ -146,6 +102,9 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
   const [envoiEnCours, setEnvoiEnCours] = useState<"accepte" | "refuse" | null>(null);
   const [erreurEnvoi, setErreurEnvoi] = useState<string | null>(null);
   const [reponseEnregistree, setReponseEnregistree] = useState<"accepte" | "refuse" | null>(null);
+  // Refus en deux temps, dans la page : la fenêtre grise du navigateur
+  // (window.confirm) faisait "bug" sur un document censé inspirer confiance.
+  const [confirmerRefus, setConfirmerRefus] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -171,12 +130,29 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
     };
   }, [devisId]);
 
+  const nomArtisan = devis ? nomEntreprise(devis.mentions_legales, "L'artisan") : "L'artisan";
+  const modele = devis
+    ? construireModeleDevis({
+        source: sourceDepuisDevisPublic(devis),
+        mentions: devis.mentions_legales,
+        client: {
+          nom: devis.nom_client,
+          adresse: devis.adresse_client,
+          telephone: devis.telephone_client,
+        },
+        logoUrl: devis.logo_url,
+        nomDeRepli: "Votre artisan",
+        signature: devis.signe_le ? { nom: null, le: devis.signe_le, image: null } : null,
+      })
+    : null;
+
   async function repondre(reponse: "accepte" | "refuse") {
     if (reponse === "accepte" && !nomSignataire.trim()) {
       setErreurEnvoi("Indiquez votre nom pour accepter et signer ce devis.");
       return;
     }
-    if (reponse === "refuse" && !window.confirm("Confirmer le refus de ce devis ?")) {
+    if (reponse === "refuse" && !confirmerRefus) {
+      setConfirmerRefus(true);
       return;
     }
 
@@ -206,6 +182,11 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
         return;
       }
       setReponseEnregistree(reponse);
+      // Le document affiché (et imprimé) porte aussitôt la mention de
+      // signature, sans attendre un rechargement.
+      if (reponse === "accepte") {
+        setDevis((d) => (d ? { ...d, signe_le: new Date().toISOString() } : d));
+      }
     } catch {
       setErreurEnvoi("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
     } finally {
@@ -215,7 +196,7 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
 
   return (
     <div className="min-h-screen bg-[radial-gradient(ellipse_1000px_500px_at_top,rgb(var(--c-signal-clair)/0.16),transparent_65%)] bg-paper py-10 px-4">
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         <div className="flex items-center justify-center gap-2 mb-8">
           <CompyoMark taille={22} />
           <p className="font-display font-semibold text-sm text-ink/60">Compyo</p>
@@ -229,107 +210,11 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
           </div>
         )}
 
-        {devis && !erreurChargement && (
+        {devis && modele && !erreurChargement && (
           <>
-            {/* Audit "vérification systématique" (10/09) — trouvé en
-                vérifiant le mécanisme d'export PDF (window.print() + règles
-                @media print ciblant #devis-imprimable/#facture-imprimable/
-                .doc-imprimable, voir app/globals.css) : cette page, la
-                SEULE des trois que le CLIENT de l'artisan ouvre réellement,
-                n'avait ni bouton d'export ni la classe qui active la mise
-                en forme papier — un Ctrl+P manuel aurait imprimé toute la
-                page (en-tête, bouton, pavé de signature compris) au lieu
-                d'un document propre. */}
-            <div id="devis-imprimable" className="doc-imprimable rounded-2xl border border-ink/10 bg-surface overflow-hidden">
-              <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-ink/10">
-                <div className="flex items-start gap-3">
-                  {devis.logo_url && (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={devis.logo_url} alt="" className="w-12 h-12 object-contain shrink-0" />
-                  )}
-                  <div>
-                    <p className="font-semibold">{devis.nom_entreprise || "Votre artisan"}</p>
-                    {devis.adresse && <p className="text-xs text-ink/50 mt-0.5">{devis.adresse}</p>}
-                    {(devis.telephone || devis.email) && (
-                      <p className="text-xs text-ink/50">
-                        {[devis.telephone, devis.email].filter(Boolean).join(" · ")}
-                      </p>
-                    )}
-                    {(devis.forme_juridique || devis.siret) && (
-                      <p className="text-[11px] text-ink/50 mt-0.5">
-                        {[devis.forme_juridique, devis.siret ? `SIRET ${devis.siret}` : null]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    )}
-                    <p className="font-mono text-[11px] text-ink/50 mt-0.5">DEVIS N° {devis.numero}</p>
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-sm text-ink/70">Pour : {devis.nom_client}</p>
-                  <p className="font-mono text-[11px] text-ink/50 mt-0.5">
-                    {new Date(devis.created_at).toLocaleDateString("fr-FR")}
-                  </p>
-                </div>
-              </div>
-
-              <div className="divide-y divide-ink/5">
-                {devis.lignes.map((ligne, i) => (
-                  <div key={i} className="px-5 py-3 text-sm">
-                    {/* Audit "vérification systématique" (10/09) — même
-                        correctif que DevisPreview.tsx/FacturePreview.tsx :
-                        cette page est celle que le CLIENT ouvre depuis son
-                        téléphone, l'endroit où ce risque compte le plus. */}
-                    <div className="flex items-start justify-between gap-3">
-                      <p className="text-ink/80 min-w-0">{ligne.description}</p>
-                      <span className="font-mono shrink-0 whitespace-nowrap">{formatEuros(ligne.total)}</span>
-                    </div>
-                    <p className="text-xs text-ink/40 font-mono mt-0.5">{ligne.detail_calcul}</p>
-                  </div>
-                ))}
-              </div>
-
-              {sousTotauxParCategorie(devis.lignes).length > 1 && (
-                <div className="px-5 py-3 border-t border-ink/10 text-xs text-ink/50 space-y-1">
-                  {sousTotauxParCategorie(devis.lignes).map(([categorie, total]) => (
-                    <div key={categorie} className="flex items-center justify-between">
-                      <span>{LABEL_CATEGORIE[categorie] ?? categorie}</span>
-                      <span className="font-mono">{formatEuros(total)}</span>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="px-5 py-4 border-t border-ink/10 bg-paper text-sm space-y-1.5">
-                <div className="flex items-center justify-between text-ink/60">
-                  <span>Sous-total HT</span>
-                  <span className="font-mono">{formatEuros(devis.sous_total_ht)}</span>
-                </div>
-                {devis.deplacement > 0 && (
-                  <div className="flex items-center justify-between text-ink/60">
-                    <span>Déplacement</span>
-                    <span className="font-mono">{formatEuros(devis.deplacement)}</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-ink/60">
-                  <span>TVA ({devis.tva_pct}%)</span>
-                  <span className="font-mono">{formatEuros(devis.montant_tva)}</span>
-                </div>
-                <div className="flex items-center justify-between font-semibold pt-2 border-t border-ink/10">
-                  <span>Total TTC</span>
-                  <span className="font-mono text-lg">{formatEuros(devis.total_estime)}</span>
-                </div>
-              </div>
-
-              {devis.commentaires && (
-                <div className="px-5 py-3 border-t border-ink/10 text-sm text-ink/70">{devis.commentaires}</div>
-              )}
-              {devis.mention_tva_reduite && (
-                <p className="px-5 py-3 border-t border-ink/10 text-[11px] text-ink/50 leading-relaxed">
-                  {devis.mention_tva_reduite}
-                </p>
-              )}
-            </div>
+            {/* Sur papier, la zone "Bon pour accord" n'apparaît que si le
+                client imprime : à l'écran, il signe juste en dessous. */}
+            <DocumentDevis modele={modele} zoneSignature="impression" />
 
             <Button variant="ghost" className="mt-4" onClick={() => window.print()}>
               Imprimer / Enregistrer en PDF
@@ -355,14 +240,14 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                       </p>
                       <p className="mt-1.5 text-sm text-ink/60">
                         Vous avez validé le devis n° {devis.numero} d&apos;un montant de{" "}
-                        <span className="font-medium text-ink/80">{formatEuros(devis.total_estime)} TTC</span>
+                        <span className="font-medium text-ink/80">{formatMontant(devis.total_estime)} TTC</span>
                         {devis.accepte_le
                           ? `, le ${new Date(devis.accepte_le).toLocaleDateString("fr-FR")}`
                           : ""}
                         .
                       </p>
                       <p className="mt-3 text-sm text-ink/60">
-                        {devis.nom_entreprise ?? "L'artisan"} en a été prévenu et vous recontactera
+                        {nomArtisan} en a été prévenu et vous recontactera
                         pour convenir de la date des travaux. Vous pouvez conserver ce devis en PDF
                         avec le bouton ci-dessus.
                       </p>
@@ -371,7 +256,7 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                     <>
                       <p className="font-display text-lg font-semibold text-ink">Devis refusé</p>
                       <p className="mt-1.5 text-sm text-ink/60">
-                        {devis.nom_entreprise ?? "L'artisan"} en a été prévenu. Si c&apos;est une
+                        {nomArtisan} en a été prévenu. Si c&apos;est une
                         erreur, ou si vous souhaitez faire modifier quelque chose, contactez-le
                         directement : il peut vous envoyer un nouveau devis.
                       </p>
@@ -401,28 +286,59 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
 
                   {erreurEnvoi && <p className="mt-3 text-sm text-signal">{erreurEnvoi}</p>}
 
-                  <div className="mt-5 flex flex-wrap items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => repondre("accepte")}
-                      disabled={envoiEnCours !== null}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-signal text-white font-medium px-5 py-3 text-sm transition-all hover:bg-signal-fonce disabled:opacity-60"
-                    >
-                      {envoiEnCours === "accepte" ? "Enregistrement…" : "✓ J'accepte ce devis"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => repondre("refuse")}
-                      disabled={envoiEnCours !== null}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/15 text-ink/70 font-medium px-5 py-3 text-sm transition-all hover:border-signal/40 hover:text-signal disabled:opacity-60"
-                    >
-                      {envoiEnCours === "refuse" ? "Enregistrement…" : "Je refuse"}
-                    </button>
-                  </div>
+                  {confirmerRefus ? (
+                    <div className="mt-5 rounded-xl border border-ink/10 bg-paper px-4 py-3">
+                      <p className="text-sm text-ink/80">Vous confirmez refuser ce devis ?</p>
+                      <p className="mt-0.5 text-xs text-ink/50">
+                        {nomArtisan} en sera prévenu. Il pourra vous proposer un nouveau devis.
+                      </p>
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => repondre("refuse")}
+                          disabled={envoiEnCours !== null}
+                          className="inline-flex items-center justify-center rounded-xl bg-ink text-paper font-medium px-4 py-2.5 text-sm transition-all hover:bg-ink/85 disabled:opacity-60"
+                        >
+                          {envoiEnCours === "refuse" ? "Enregistrement…" : "Oui, je refuse"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setConfirmerRefus(false)}
+                          disabled={envoiEnCours !== null}
+                          className="text-sm text-ink/60 hover:text-ink underline transition-colors"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => repondre("accepte")}
+                        disabled={envoiEnCours !== null}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl bg-signal text-white font-medium px-5 py-3 text-sm transition-all hover:bg-signal-fonce disabled:opacity-60"
+                      >
+                        {envoiEnCours === "accepte" ? "Enregistrement…" : "✓ J'accepte ce devis"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => repondre("refuse")}
+                        disabled={envoiEnCours !== null}
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-ink/15 text-ink/70 font-medium px-5 py-3 text-sm transition-all hover:border-signal/40 hover:text-signal disabled:opacity-60"
+                      >
+                        Je refuse
+                      </button>
+                    </div>
+                  )}
+                  {/* La mention manuscrite ("reçu avant l'exécution des
+                      travaux, bon pour accord") a ici son équivalent
+                      électronique : le client la déclare en cliquant. */}
                   <p className="mt-3 text-[11px] text-ink/40 leading-relaxed">
-                    En cliquant sur "J&apos;accepte", vous validez ce devis dans les conditions décrites
-                    ci-dessus. Votre nom, l&apos;horodatage et votre signature sont enregistrés comme preuve
-                    d&apos;acceptation.
+                    En cliquant sur « J&apos;accepte ce devis », vous déclarez l&apos;avoir reçu avant
+                    l&apos;exécution des travaux et vous l&apos;acceptez dans les conditions décrites
+                    ci-dessus (bon pour accord). Votre nom, l&apos;horodatage et votre signature sont
+                    enregistrés comme preuve d&apos;acceptation.
                   </p>
                 </div>
               )}

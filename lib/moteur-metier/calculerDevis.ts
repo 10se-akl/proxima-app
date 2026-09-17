@@ -3,7 +3,9 @@ import type {
   PosteTravailIA,
   LigneDevisCalculee,
   DevisCalcule,
+  Devis,
 } from "@/types";
+import { totalHtDeVente } from "@/lib/moteur-metier/prixDeVente";
 
 // ============================================================
 // Moteur métier — 100% TypeScript, aucun appel IA, aucun réseau.
@@ -268,9 +270,12 @@ export function calculerDevis(
 
   const avantMarge = sousTotalHT + deplacement;
   const margePct = parametres.marge_defaut_pct;
-  const montantMarge = arrondir(avantMarge * (margePct / 100));
+  // 17/09 — la marge est répartie dans le prix de chaque ligne (voir
+  // prixDeVente.ts) : le total HT est la somme de ces lignes, et le
+  // montant de marge se déduit, au centime près.
+  const totalHT = totalHtDeVente(lignes, deplacement, margePct);
+  const montantMarge = arrondir(totalHT - avantMarge);
 
-  const totalHT = arrondir(avantMarge + montantMarge);
   const tvaPct = parametres.tva_pct;
   const montantTVA = arrondir(totalHT * (tvaPct / 100));
   const totalTTC = arrondir(totalHT + montantTVA);
@@ -329,17 +334,29 @@ export const PARAMETRES_PAR_DEFAUT: Omit<ParametresEntreprise, "id" | "artisan_i
   heures_min_facturables: 1,
   logo_url: null,
   conditions_generales: null,
-  // Module 28 (06/09) — voir types/index.ts. Nécessaires uniquement pour
-  // générer une facture (jamais pour un devis) — nulles/désactivées par
-  // défaut, à compléter par l'artisan avant sa première facture.
+  // Mentions légales (Modules 28 et 42) — voir types/index.ts. Nulles par
+  // défaut : c'est l'artisan qui les renseigne, et le score qualité du devis
+  // lui signale celles qui manquent.
   siret: null,
   forme_juridique: null,
   numero_tva_intracommunautaire: null,
   mention_tva_non_applicable: false,
   assurance_decennale_compagnie: null,
   assurance_decennale_police: null,
+  assurance_decennale_zone: null,
+  rc_pro_compagnie: null,
+  rc_pro_zone: null,
+  capital_social: null,
+  rcs_numero: null,
+  rcs_ville: null,
+  rm_numero: null,
+  mediateur_nom: null,
+  mediateur_url: null,
+  moyens_paiement: null,
   iban: null,
   bic: null,
+  devis_validite_jours: 30,
+  devis_acompte_pct: null,
 };
 
 // ============================================================
@@ -350,21 +367,16 @@ export const PARAMETRES_PAR_DEFAUT: Omit<ParametresEntreprise, "id" | "artisan_i
 // l'artisan a lui-même ajustés. C'est la même logique de calcul, jamais
 // une nouvelle estimation.
 // ============================================================
-// Audit "vérification systématique" (10/09) — trouvé par un agent de
-// recherche : DevisPreview.tsx recalculait ce montant par SOUSTRACTION
-// (total_ttc - montant_tva - sous_total_ht - deplacement) plutôt que de
-// reprendre la formule d'origine — fragile (résidu flottant théorique sur
-// une chaîne de soustractions) et incohérent avec la seule vraie source de
-// vérité pour ce calcul (recalculerDevis, juste en dessous). Exportée ici
-// pour que tout composant qui doit reconstruire ce montant à partir des
-// champs déjà stockés sur un devis (sous_total_ht, deplacement, marge_pct)
-// utilise exactement la même formule, jamais une reconstruction séparée.
-export function calculerMontantMarge(
-  sousTotalHt: number,
-  deplacement: number,
-  margePct: number
+// Marge d'un devis déjà enregistré, pour l'artisan seulement. Depuis le
+// 17/09, la marge est répartie ligne par ligne (voir prixDeVente.ts) : son
+// montant exact est l'écart entre le total HT stocké et le prix de revient.
+// Calculé en centimes entiers, sans résidu flottant — et juste aussi pour
+// les devis antérieurs, dont le total HT stocké fait foi.
+export function margeDuDevis(
+  devis: Pick<Devis, "sous_total_ht" | "deplacement" | "total_estime" | "montant_tva">
 ): number {
-  return arrondir((sousTotalHt + deplacement) * (margePct / 100));
+  const c = (n: number) => Math.round(n * 100);
+  return (c(devis.total_estime) - c(devis.montant_tva) - c(devis.sous_total_ht) - c(devis.deplacement)) / 100;
 }
 
 export function recalculerDevis(
@@ -376,9 +388,9 @@ export function recalculerDevis(
   const sousTotalHT = arrondir(lignes.reduce((s, l) => s + l.total, 0));
 
   const avantMarge = sousTotalHT + deplacement;
-  const montantMarge = arrondir(avantMarge * (margePct / 100));
+  const totalHT = totalHtDeVente(lignes, deplacement, margePct);
+  const montantMarge = arrondir(totalHT - avantMarge);
 
-  const totalHT = arrondir(avantMarge + montantMarge);
   const montantTVA = arrondir(totalHT * (tvaPct / 100));
   const totalTTC = arrondir(totalHT + montantTVA);
 

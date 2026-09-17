@@ -6,6 +6,8 @@ import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
+import { conditionsParDefaut } from "@/lib/devis/mentionsLegales";
+import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
 import { listerNotesActivesProjet, formaterNotesPourPromptIA } from "@/lib/notes";
 import type { PosteTravailIA, ParametresEntreprise, LigneDevisCalculee } from "@/types";
 
@@ -43,8 +45,11 @@ RÈGLE ABSOLUE : tu ne dois JAMAIS indiquer de prix, de montant en euros, ou de 
 
 En plus de cette liste principale, identifie séparément les postes ADDITIONNELS probablement nécessaires mais absents de ta première liste — des oublis fréquents qui coûtent de l'argent à l'artisan s'ils ne sont jamais facturés : dépose de l'existant quand une pose est prévue sans dépose associée, protection du chantier (sol, mobilier), évacuation des déchets/gravats, finitions, nettoyage de fin de chantier. N'en invente jamais si rien ne manque clairement : une liste vide est la réponse correcte la plupart du temps.
 
+Rédige aussi l'OBJET des travaux : une seule phrase, en français simple, qui dit au client ce qui va être fait — pas une liste, pas de jargon, pas de prix, pas de délai. Exemple : "Rénovation de la salle de bain avec remplacement de la baignoire par une douche à l'italienne."
+
 Réponds UNIQUEMENT en JSON valide, sans texte autour, avec cette structure exacte :
 {
+  "objet": "...",
   "postes": [
     {
       "description": "...",
@@ -209,10 +214,15 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
   const debutAppel = Date.now();
   try {
     const reponseTexte = await appelerClaude(SYSTEM_PROMPT, messageUtilisateur, request.signal);
-    const { postes, postes_oublies_probables } = parserReponseJSON<{
+    const { postes, postes_oublies_probables, objet } = parserReponseJSON<{
       postes: PosteTravailIA[];
       postes_oublies_probables?: PosteTravailIA[];
+      objet?: unknown;
     }>(reponseTexte);
+    // Proposé par l'IA, modifiable par l'artisan sur l'écran de validation.
+    // Une valeur absente ou mal formée laisse simplement le champ vide.
+    const objetPropose =
+      typeof objet === "string" && objet.trim() ? objet.trim().slice(0, 300) : null;
 
     // Un devis sans aucun poste ne doit jamais atteindre l'écran de
     // validation en silence — mieux vaut un message d'erreur clair que de
@@ -311,6 +321,8 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
           total_estime: devisCalcule.total_ttc,
           suggestions_oublis: lignesSuggerees.length > 0 ? lignesSuggerees : null,
           parametres_configures: parametresConfigures,
+          objet: objetPropose,
+          ...conditionsParDefaut(parametresBrutes as Partial<ParametresEntreprise> | null),
         })
         .select()
         .single();
@@ -356,13 +368,12 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
       // erreur passagère. Le dire explicitement évite de chercher du côté
       // de l'IA (qui a parfaitement fait son travail à ce stade) et de
       // réessayer en boucle une opération qui échouera à l'identique.
-      const migrationManquante =
-        insertError?.code === "42703" || insertError?.code === "PGRST204";
+      const migrationManquante = estColonneManquante(insertError);
 
       return NextResponse.json(
         {
           error: migrationManquante
-            ? "Base de données pas à jour : une colonne attendue par l'application est absente. Rejouez supabase/schema.sql dans l'éditeur SQL Supabase."
+            ? MESSAGE_BASE_PAS_A_JOUR
             : "Devis généré mais non enregistré",
         },
         { status: 500 }

@@ -2083,3 +2083,326 @@ drop trigger if exists verrouiller_devis_valide_trigger on devis;
 create trigger verrouiller_devis_valide_trigger
   before update on devis
   for each row execute function verrouiller_devis_valide();
+
+-- ============================================================
+-- Module 42 (17/09) — Devis conforme et premium.
+--
+-- UNE SEULE migration pour tout le sprint "devis", volontairement : deux
+-- soirées ont été perdues la semaine du 12/09 sur des modules jamais
+-- appliqués en production (29, 30, 31). Moins il y a de scripts à passer,
+-- moins il y a de risque d'en oublier un.
+--
+-- Sources : cahier-des-charges-devis-compyo.md et
+-- audit-ecarts-concurrents-compyo.md (15/09).
+-- ============================================================
+
+-- 42a — Mentions obligatoires qui n'avaient nulle part où être saisies.
+--
+-- Assurance décennale : la compagnie et la police existaient, pas la
+-- COUVERTURE GÉOGRAPHIQUE, pourtant exigée au même titre (art. L243-3 du
+-- code des assurances). RC Pro : rien n'existait. RCS et capital : pour
+-- les sociétés. RM : Répertoire des Métiers, pour les artisans.
+-- Médiateur : obligatoire dès qu'on travaille pour des particuliers. La
+-- mention "EI" n'a pas de colonne : elle se déduit de forme_juridique
+-- (voir lib/devis/mentionsLegales.ts).
+alter table parametres_entreprise add column if not exists assurance_decennale_zone text;
+alter table parametres_entreprise add column if not exists rc_pro_compagnie text;
+alter table parametres_entreprise add column if not exists rc_pro_zone text;
+alter table parametres_entreprise add column if not exists capital_social numeric(14, 2);
+alter table parametres_entreprise add column if not exists rcs_numero text;
+alter table parametres_entreprise add column if not exists rcs_ville text;
+alter table parametres_entreprise add column if not exists rm_numero text;
+alter table parametres_entreprise add column if not exists mediateur_nom text;
+alter table parametres_entreprise add column if not exists mediateur_url text;
+alter table parametres_entreprise add column if not exists moyens_paiement text;
+
+-- Valeurs par défaut des nouveaux devis : l'artisan les règle UNE fois, et
+-- chaque devis part déjà rempli. 30 jours est l'usage le plus courant.
+alter table parametres_entreprise add column if not exists devis_validite_jours integer not null default 30;
+alter table parametres_entreprise add column if not exists devis_acompte_pct numeric(5, 2);
+
+-- 42b — Conditions propres à chaque devis.
+alter table devis add column if not exists objet text;
+alter table devis add column if not exists adresse_chantier text;
+alter table devis add column if not exists validite_jours integer;
+alter table devis add column if not exists date_debut_prevue date;
+alter table devis add column if not exists duree_estimee text;
+alter table devis add column if not exists acompte_pct numeric(5, 2);
+
+-- Instantané des mentions légales, figé à l'ENVOI au client — même principe
+-- que factures.mentions_legales (Module 28) : un devis déjà montré au
+-- client ne doit pas changer d'assureur ou de SIRET si l'artisan modifie
+-- ses paramètres ensuite. Tant qu'il n'est pas envoyé, ce sont les valeurs
+-- vivantes des paramètres qui s'affichent (voir le verrou plus bas).
+alter table devis add column if not exists mentions_legales jsonb;
+
+-- Lots : [{ "id": "...", "nom": "Salle de bain" }], dans l'ordre
+-- d'affichage. Chaque élément de "lignes" porte un "lot_id" facultatif.
+-- Pas de table dédiée : un lot n'existe pas en dehors de son devis.
+alter table devis add column if not exists lots jsonb not null default '[]'::jsonb;
+
+-- Photos du projet que l'artisan choisit d'inclure au devis (3 au plus,
+-- chemins du bucket "photos"). Vide par défaut : jamais de photo imposée.
+alter table devis add column if not exists photos_incluses jsonb not null default '[]'::jsonb;
+
+-- 🔴 Lignes telles que le CLIENT les lit : marge répartie dans chaque prix,
+-- déplacement en ligne à part (voir lib/moteur-metier/prixDeVente.ts).
+-- "lignes" porte le prix de REVIENT de l'artisan : la page de signature le
+-- renvoyait tel quel, avec le taux de marge — il suffisait d'ouvrir les
+-- outils du navigateur pour tout lire. Calculées par l'application à la
+-- validation du devis, puis figées comme le reste ; la page publique ne
+-- lit plus que celles-ci.
+alter table devis add column if not exists lignes_vente jsonb;
+
+do $$
+begin
+  if not exists (select 1 from pg_constraint where conname = 'devis_acompte_pct_borne') then
+    alter table devis add constraint devis_acompte_pct_borne
+      check (acompte_pct is null or (acompte_pct >= 0 and acompte_pct <= 100));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'devis_validite_jours_borne') then
+    alter table devis add constraint devis_validite_jours_borne
+      check (validite_jours is null or validite_jours between 1 and 365);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'devis_photos_incluses_max') then
+    alter table devis add constraint devis_photos_incluses_max
+      check (jsonb_array_length(photos_incluses) <= 3);
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'parametres_acompte_pct_borne') then
+    alter table parametres_entreprise add constraint parametres_acompte_pct_borne
+      check (devis_acompte_pct is null or (devis_acompte_pct >= 0 and devis_acompte_pct <= 100));
+  end if;
+  if not exists (select 1 from pg_constraint where conname = 'parametres_validite_jours_borne') then
+    alter table parametres_entreprise add constraint parametres_validite_jours_borne
+      check (devis_validite_jours between 1 and 365);
+  end if;
+end $$;
+
+-- 42c — Le verrou du Module 41 protège aussi les nouvelles conditions :
+-- une fois le devis validé, sa durée de validité, son acompte ou ses lots
+-- engagent l'artisan autant que ses prix.
+create or replace function verrouiller_devis_valide()
+returns trigger
+language plpgsql
+as $$
+begin
+  if old.statut = 'brouillon' then
+    return new;
+  end if;
+
+  if new.lignes is distinct from old.lignes
+     or new.sous_total_ht is distinct from old.sous_total_ht
+     or new.deplacement is distinct from old.deplacement
+     or new.marge_pct is distinct from old.marge_pct
+     or new.tva_pct is distinct from old.tva_pct
+     or new.montant_tva is distinct from old.montant_tva
+     or new.total_estime is distinct from old.total_estime
+     or new.numero is distinct from old.numero
+     or new.mention_tva_reduite is distinct from old.mention_tva_reduite
+     or new.objet is distinct from old.objet
+     or new.adresse_chantier is distinct from old.adresse_chantier
+     or new.validite_jours is distinct from old.validite_jours
+     or new.date_debut_prevue is distinct from old.date_debut_prevue
+     or new.duree_estimee is distinct from old.duree_estimee
+     or new.acompte_pct is distinct from old.acompte_pct
+     -- L'instantané des mentions légales se prend à l'ENVOI, pas à la
+     -- validation : entre les deux, l'artisan doit pouvoir compléter ses
+     -- paramètres (le score qualité lui signale une assurance manquante)
+     -- et voir son devis se mettre à jour. Une fois pris, en revanche, il
+     -- ne bouge plus jamais.
+     or (old.mentions_legales is not null and new.mentions_legales is distinct from old.mentions_legales)
+     -- Même règle : renseignées une fois (à la validation, ou par le
+     -- rattrapage ci-dessous pour les devis plus anciens), plus jamais.
+     or (old.lignes_vente is not null and new.lignes_vente is distinct from old.lignes_vente)
+     or new.lots is distinct from old.lots
+     or new.photos_incluses is distinct from old.photos_incluses
+  then
+    raise exception 'Un devis validé ne peut plus changer de contenu — dupliquez-le pour en établir une nouvelle version';
+  end if;
+
+  return new;
+end;
+$$;
+
+-- 42c-bis — Rattrapage des devis déjà validés avant ce module. Même
+-- calcul que prixDeVente.ts : prix unitaire × (1 + marge), arrondi au
+-- centime, déplacement en ligne, et l'écart d'arrondi éventuel reporté sur
+-- une ligne à quantité 1 pour que la somme retombe exactement sur le total
+-- HT déjà montré au client. Ne touche jamais un brouillon (recalculé à sa
+-- validation) ni un devis déjà rattrapé : rejouable sans effet.
+do $$
+declare
+  d record;
+  l jsonb;
+  coef numeric;
+  pu numeric;
+  tot numeric;
+  resultat jsonb;
+  ecart numeric;
+  cible integer;
+  nouveau_total numeric;
+begin
+  for d in
+    select id, lignes, deplacement, marge_pct, total_estime, montant_tva
+    from devis
+    where statut <> 'brouillon' and lignes_vente is null
+  loop
+    coef := 1 + coalesce(d.marge_pct, 0) / 100;
+    resultat := '[]'::jsonb;
+
+    for l in select value from jsonb_array_elements(coalesce(d.lignes, '[]'::jsonb))
+    loop
+      pu := round(coalesce((l->>'prix_unitaire')::numeric, 0) * coef, 2);
+      if abs(round(coalesce((l->>'quantite')::numeric, 0) * coalesce((l->>'prix_unitaire')::numeric, 0), 2)
+             - coalesce((l->>'total')::numeric, 0)) <= 0.01 then
+        tot := round(coalesce((l->>'quantite')::numeric, 0) * pu, 2);
+      else
+        tot := round(coalesce((l->>'total')::numeric, 0) * coef, 2);
+      end if;
+      resultat := resultat || jsonb_build_array(jsonb_build_object(
+        'description', l->>'description',
+        'categorie', l->>'categorie',
+        'quantite', coalesce((l->>'quantite')::numeric, 0),
+        'unite', l->>'unite',
+        'prix_unitaire', pu,
+        'total', tot
+      ));
+    end loop;
+
+    if coalesce(d.deplacement, 0) > 0 then
+      pu := round(d.deplacement * coef, 2);
+      resultat := resultat || jsonb_build_array(jsonb_build_object(
+        'description', 'Déplacement',
+        'categorie', 'deplacement',
+        'quantite', 1,
+        'unite', 'forfait',
+        'prix_unitaire', pu,
+        'total', pu
+      ));
+    end if;
+
+    select (d.total_estime - d.montant_tva) - coalesce(sum((x->>'total')::numeric), 0)
+      into ecart
+      from jsonb_array_elements(resultat) as x;
+
+    if ecart <> 0 and jsonb_array_length(resultat) > 0 then
+      select t.i - 1 into cible
+        from jsonb_array_elements(resultat) with ordinality as t(x, i)
+        where (t.x->>'quantite')::numeric = 1
+        order by t.i desc
+        limit 1;
+      if cible is null then
+        select t.i - 1 into cible
+          from jsonb_array_elements(resultat) with ordinality as t(x, i)
+          order by abs((t.x->>'total')::numeric) desc
+          limit 1;
+      end if;
+      nouveau_total := (resultat->cible->>'total')::numeric + ecart;
+      resultat := jsonb_set(resultat, array[cible::text, 'total'], to_jsonb(nouveau_total));
+      if (resultat->cible->>'quantite')::numeric = 1 then
+        resultat := jsonb_set(resultat, array[cible::text, 'prix_unitaire'], to_jsonb(nouveau_total));
+      end if;
+    end if;
+
+    update devis set lignes_vente = resultat where id = d.id;
+  end loop;
+end $$;
+
+-- 42d — Lecture publique du devis (lien de signature).
+--
+-- 🔴 marge_pct retirée : la page client ne l'affichait pas, mais la
+-- fonction la renvoyait dans la réponse JSON — n'importe qui ayant le lien
+-- pouvait lire la marge de l'artisan dans les outils du navigateur.
+--
+-- 🔴 lignes, sous_total_ht et deplacement retirés pour la même raison :
+-- ce sont des prix de REVIENT, d'où la marge se déduisait par simple
+-- soustraction. Le client reçoit lignes_vente (sous le nom "lignes") et le
+-- total HT.
+--
+-- Les mentions légales arrivent en un seul bloc : l'instantané figé à
+-- l'ENVOI s'il existe, sinon une LISTE BLANCHE des colonnes publiques
+-- des paramètres. Jamais to_jsonb(pe) : cette ligne contient aussi le coût
+-- horaire et la marge par défaut, qui n'ont rien à faire chez le client.
+drop function if exists obtenir_devis_public(uuid);
+create or replace function obtenir_devis_public(p_devis_id uuid)
+returns table (
+  numero text,
+  lignes jsonb,
+  lots jsonb,
+  total_ht numeric,
+  tva_pct numeric,
+  montant_tva numeric,
+  total_estime numeric,
+  commentaires text,
+  mention_tva_reduite text,
+  objet text,
+  adresse_chantier text,
+  validite_jours integer,
+  date_debut_prevue date,
+  duree_estimee text,
+  acompte_pct numeric,
+  created_at timestamptz,
+  envoye_le timestamptz,
+  devis_statut text,
+  signe_le timestamptz,
+  demande_statut text,
+  accepte_le timestamptz,
+  nom_client text,
+  telephone_client text,
+  adresse_client text,
+  type_chantier text,
+  logo_url text,
+  mentions_legales jsonb
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    d.numero, coalesce(d.lignes_vente, '[]'::jsonb), d.lots, d.total_estime - d.montant_tva,
+    d.tva_pct, d.montant_tva, d.total_estime, d.commentaires, d.mention_tva_reduite,
+    d.objet, d.adresse_chantier, d.validite_jours, d.date_debut_prevue,
+    d.duree_estimee, d.acompte_pct,
+    d.created_at, d.envoye_le, d.statut, d.signe_le,
+    dem.statut, dem.accepte_le,
+    dem.nom_client, dem.telephone_client, dem.adresse_client, dem.type_chantier,
+    pe.logo_url,
+    coalesce(
+      d.mentions_legales,
+      jsonb_build_object(
+        'nom_entreprise', pe.nom_entreprise,
+        'adresse', pe.adresse,
+        'telephone', pe.telephone,
+        'email', pe.email,
+        'siret', pe.siret,
+        'forme_juridique', pe.forme_juridique,
+        'numero_tva_intracommunautaire', pe.numero_tva_intracommunautaire,
+        'mention_tva_non_applicable', coalesce(pe.mention_tva_non_applicable, false),
+        'assurance_decennale_compagnie', pe.assurance_decennale_compagnie,
+        'assurance_decennale_police', pe.assurance_decennale_police,
+        'assurance_decennale_zone', pe.assurance_decennale_zone,
+        'rc_pro_compagnie', pe.rc_pro_compagnie,
+        'rc_pro_zone', pe.rc_pro_zone,
+        'capital_social', pe.capital_social,
+        'rcs_numero', pe.rcs_numero,
+        'rcs_ville', pe.rcs_ville,
+        'rm_numero', pe.rm_numero,
+        'mediateur_nom', pe.mediateur_nom,
+        'mediateur_url', pe.mediateur_url,
+        'moyens_paiement', pe.moyens_paiement,
+        'conditions_generales', pe.conditions_generales,
+        'iban', pe.iban,
+        'bic', pe.bic,
+        'mention_tva_reduite', d.mention_tva_reduite
+      )
+    )
+  from devis d
+  join demandes dem on dem.id = d.demande_id
+  left join parametres_entreprise pe on pe.organisation_id = d.organisation_id
+  where d.id = p_devis_id
+    and d.statut in ('envoye', 'refuse')
+  limit 1;
+end;
+$$;

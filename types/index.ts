@@ -146,17 +146,31 @@ export type ParametresEntreprise = {
   heures_min_facturables: number;
   logo_url: string | null;
   conditions_generales: string | null;
-  // Module 28 (06/09) — informations légales nécessaires à la facturation,
-  // absentes jusqu'ici (le devis n'est pas un document fiscal). Voir
-  // supabase/schema.sql pour le détail de chaque champ.
+  // Mentions légales (Module 28, complétées au Module 42). Contrairement à
+  // ce qu'indiquait ce commentaire à l'origine, elles ne concernent pas que
+  // la facture : l'assurance décennale en particulier est OBLIGATOIRE sur le
+  // devis (art. L243-3 du code des assurances). Voir supabase/schema.sql.
   siret: string | null;
   forme_juridique: string | null;
   numero_tva_intracommunautaire: string | null;
   mention_tva_non_applicable: boolean;
   assurance_decennale_compagnie: string | null;
   assurance_decennale_police: string | null;
+  assurance_decennale_zone: string | null;
+  rc_pro_compagnie: string | null;
+  rc_pro_zone: string | null;
+  capital_social: number | null;
+  rcs_numero: string | null;
+  rcs_ville: string | null;
+  rm_numero: string | null;
+  mediateur_nom: string | null;
+  mediateur_url: string | null;
+  moyens_paiement: string | null;
   iban: string | null;
   bic: string | null;
+  // Valeurs de départ de chaque nouveau devis (Module 42).
+  devis_validite_jours: number;
+  devis_acompte_pct: number | null;
 };
 
 export type CategoriePoste = "main_oeuvre" | "fourniture" | "forfait";
@@ -181,6 +195,20 @@ export type LigneDevisCalculee = {
   prix_unitaire: number;
   total: number;
   detail_calcul: string; // justification lisible, affichée à l'artisan
+};
+
+// Ligne telle que le CLIENT la lit : marge incluse dans le prix, et le
+// déplacement comme ligne à part (voir lib/moteur-metier/prixDeVente.ts).
+// Aucune note de calcul : celle-ci reste interne à l'artisan.
+export type CategorieVente = CategoriePoste | "deplacement";
+
+export type LigneDeVente = {
+  description: string;
+  categorie: CategorieVente;
+  quantite: number;
+  unite: string;
+  prix_unitaire: number; // HT, marge incluse
+  total: number; // HT, marge incluse
 };
 
 export type DevisCalcule = {
@@ -383,6 +411,55 @@ export type Devis = {
   // renotifier deux fois le même palier au fil des passages du cron.
   notifie_relance_j5_le: string | null;
   notifie_relance_j10_le: string | null;
+  // Module 42 (17/09) — conditions de l'offre, voir supabase/schema.sql.
+  objet: string | null;
+  adresse_chantier: string | null;
+  validite_jours: number | null;
+  date_debut_prevue: string | null;
+  duree_estimee: string | null;
+  acompte_pct: number | null;
+  // Figées à l'envoi au client ; null avant (ce sont alors les paramètres
+  // vivants qui s'affichent, pour qu'un oubli corrigé se voie aussitôt).
+  mentions_legales: MentionsLegales | null;
+  // Figées à la validation (voir prixDeVente.ts) ; null pour un brouillon.
+  lignes_vente: LigneDeVente[] | null;
+  lots: LotDevis[];
+  photos_incluses: string[];
+};
+
+export type LotDevis = { id: string; nom: string };
+
+// Ce que la page de signature reçoit — voir obtenir_devis_public (Module
+// 42) et app/api/devis-public/[id]/route.ts. Aucun prix de revient, aucune
+// marge, aucune note interne.
+export type DevisPublic = {
+  numero: string;
+  lignes: LigneDeVente[];
+  lots: LotDevis[];
+  total_ht: number;
+  tva_pct: number;
+  montant_tva: number;
+  total_estime: number;
+  commentaires: string | null;
+  mention_tva_reduite: string | null;
+  objet: string | null;
+  adresse_chantier: string | null;
+  validite_jours: number | null;
+  date_debut_prevue: string | null;
+  duree_estimee: string | null;
+  acompte_pct: number | null;
+  created_at: string;
+  envoye_le: string | null;
+  devis_statut: Devis["statut"];
+  signe_le: string | null;
+  demande_statut: string;
+  accepte_le: string | null;
+  nom_client: string;
+  telephone_client: string | null;
+  adresse_client: string | null;
+  type_chantier: string | null;
+  logo_url: string | null;
+  mentions_legales: MentionsLegales | null;
 };
 
 // ============================================================
@@ -399,10 +476,26 @@ export type StatutFacture = "emise" | "payee" | "annulee";
 export type LigneFacture = LigneDevisCalculee;
 
 // Instantané figé des informations légales de l'entreprise au moment de
-// l'émission — voir le commentaire sur la colonne "mentions_legales" dans
-// supabase/schema.sql. Sous-ensemble de ParametresEntreprise, uniquement
-// les champs qui doivent apparaître sur le document.
-export type MentionsLegalesFacture = {
+// l'émission (facture) ou de l'envoi au client (devis) — voir les colonnes
+// "mentions_legales" dans supabase/schema.sql. Sous-ensemble de
+// ParametresEntreprise, uniquement les champs qui doivent apparaître sur le
+// document.
+//
+// Les champs ajoutés au Module 42 sont optionnels : les instantanés pris
+// AVANT cette date ne les contiennent pas, et doivent continuer à
+// s'afficher sans erreur.
+export type MentionsLegales = {
+  assurance_decennale_zone?: string | null;
+  rc_pro_compagnie?: string | null;
+  rc_pro_zone?: string | null;
+  capital_social?: number | null;
+  rcs_numero?: string | null;
+  rcs_ville?: string | null;
+  rm_numero?: string | null;
+  mediateur_nom?: string | null;
+  mediateur_url?: string | null;
+  moyens_paiement?: string | null;
+  conditions_generales?: string | null;
   nom_entreprise: string | null;
   adresse: string | null;
   telephone: string | null;
@@ -437,7 +530,7 @@ export type Facture = {
   montant_tva: number;
   total_ttc: number;
   facture_liee_id: string | null;
-  mentions_legales: MentionsLegalesFacture;
+  mentions_legales: MentionsLegales;
   date_emission: string;
   date_echeance: string | null;
   // Bilan mensuel (08/09) — distincte de date_emission : une facture peut

@@ -18,6 +18,7 @@ import { PropositionUrgence } from "@/components/dashboard/PropositionUrgence";
 import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
 import { Timeline, type TimelineItem } from "@/components/dashboard/Timeline";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
+import { figerMentionsLegales } from "@/lib/moteur-metier/genererFacture";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
 import {
   listerNotesProjet,
@@ -707,7 +708,17 @@ export default function DetailDemandePage({
     try {
       const { data: d1, error: err1 } = await supabase
         .from("devis")
-        .update({ statut: "envoye", envoye_le: new Date().toISOString() })
+        .update({
+          statut: "envoye",
+          envoye_le: new Date().toISOString(),
+          // Module 42 — les mentions légales se figent ICI, au moment où le
+          // client reçoit le devis : c'est ce document-là qui l'engage. Avant,
+          // elles suivent les paramètres, pour qu'un oubli corrigé se voie.
+          // Jamais écrasé s'il existe déjà (le verrou en base l'interdit).
+          ...(parametres && !devis.mentions_legales
+            ? { mentions_legales: figerMentionsLegales(parametres, devis.mention_tva_reduite) }
+            : {}),
+        })
         .eq("id", devis.id)
         .select("id");
       if (err1 || !d1 || d1.length === 0) {
@@ -1632,6 +1643,8 @@ export default function DetailDemandePage({
               devis={devis}
               demandeId={demande.id}
               artisanId={artisanId}
+              parametres={parametres}
+              adresseClient={demande.adresse_client}
               onValide={chargerDonnees}
             />
           )}
@@ -1653,11 +1666,25 @@ export default function DetailDemandePage({
                   puis marquez-le comme envoyé.
                 </p>
               )}
+              {/* Audit des écarts concurrents (§0) : un devis validé devient non
+                  modifiable — volontairement, c'est un engagement — mais rien
+                  ne l'expliquait, ni ne proposait l'alternative. */}
+              <p className="mt-2 text-xs text-ink/40">
+                Ce devis est verrouillé : c&apos;est un engagement envers votre client. Pour le
+                changer, dupliquez-le en nouvelle version.
+              </p>
               <div className="mt-3 flex gap-3">
                 {devis.statut === "a_valider" && (
-                  <Button variant="ghost" onClick={marquerDevisEnvoye} disabled={actionEnCours}>
-                    Marquer comme envoyé au client
-                  </Button>
+                  <>
+                    <Button variant="ghost" onClick={marquerDevisEnvoye} disabled={actionEnCours}>
+                      Marquer comme envoyé au client
+                    </Button>
+                    {/* Le message juste au-dessus renvoie vers la duplication :
+                        l'action doit être là, pas seulement une fois envoyé. */}
+                    <Button variant="ghost" onClick={dupliquerDevis} loading={chargementDevis}>
+                      {chargementDevis ? "Duplication…" : "Modifier (nouvelle version)"}
+                    </Button>
+                  </>
                 )}
                 {devis.statut === "envoye" && demande.statut !== "accepte" && (
                   <>

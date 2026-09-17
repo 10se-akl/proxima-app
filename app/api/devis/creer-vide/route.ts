@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerLog } from "@/lib/logs";
 import { PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
+import { conditionsParDefaut } from "@/lib/devis/mentionsLegales";
+import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
 import type { ParametresEntreprise } from "@/types";
 
 // ============================================================
@@ -106,6 +108,7 @@ export async function POST(request: NextRequest) {
         total_estime: 0,
         statut: "brouillon",
         parametres_configures: parametresConfigures,
+        ...conditionsParDefaut(parametresBrutes as Partial<ParametresEntreprise> | null),
       })
       .select()
       .single();
@@ -120,7 +123,13 @@ export async function POST(request: NextRequest) {
   }
 
   if (insertError || !devis) {
-    return NextResponse.json({ error: "Impossible de créer le devis express" }, { status: 500 });
+    // L'erreur réelle est tracée : c'est ce qui a permis de diagnostiquer
+    // en une minute les migrations manquantes des 12 et 13/09.
+    console.error("Impossible de créer le devis express :", insertError);
+    return NextResponse.json(
+      { error: estColonneManquante(insertError) ? MESSAGE_BASE_PAS_A_JOUR : "Impossible de créer le devis express" },
+      { status: 500 }
+    );
   }
 
   await enregistrerLog(supabase, {

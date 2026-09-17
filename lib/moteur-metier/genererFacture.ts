@@ -1,4 +1,5 @@
-import type { Devis, Facture, LigneFacture, MentionsLegalesFacture, ParametresEntreprise } from "@/types";
+import type { Devis, Facture, LigneFacture, MentionsLegales, ParametresEntreprise } from "@/types";
+import { lignesDuDocument } from "@/lib/moteur-metier/prixDeVente";
 
 // ============================================================
 // Module 28 (06/09) — génération des lignes/montants d'une facture.
@@ -22,18 +23,31 @@ function totauxDepuisLignes(lignes: LigneFacture[], tvaPct: number) {
   return { sous_total_ht: sousTotalHT, montant_tva: montantTVA, total_ttc: totalTTC };
 }
 
-// Facture "solde" (le cas standard) : copie exacte des lignes du devis,
-// diminuée du montant TTC déjà réglé par un ou plusieurs acomptes
-// précédents — jamais recalculée depuis zéro. Le déplacement et la marge
-// du devis sont déjà inclus dans devis.lignes au moment où il a été validé
-// (voir recalculerDevis) : ici on part directement du total du devis
-// plutôt que de raisonner ligne par ligne, plus fiable qu'une
-// reconstitution manuelle des lignes copiées.
+// Facture "solde" (le cas standard) : les lignes du devis TELLES QUE LE
+// CLIENT LES A SIGNÉES, diminuées des acomptes déjà facturés.
+//
+// 🔴 Corrigé le 17/09 : cette fonction recopiait devis.lignes, qui portent
+// le prix de REVIENT — sans la marge ni le déplacement, contrairement à ce
+// qu'affirmait l'ancien commentaire. Un devis signé à 1 302,95 € TTC
+// donnait une facture de 1 100 € TTC. lignesDeVente renvoie les prix
+// marge incluse et le déplacement en ligne (celles figées à la validation
+// quand elles existent) : leur somme est exactement le
+// total HT du devis, donc la facture retombe sur son total TTC.
 export function genererLignesFactureComplete(
   devis: Devis,
   facturesAcompteLiees: Facture[]
 ): { lignes: LigneFacture[]; tva_pct: number } {
-  const lignes: LigneFacture[] = devis.lignes.map((l) => ({ ...l }));
+  const lignes: LigneFacture[] = lignesDuDocument(devis).map((l) => ({
+    description: l.description,
+    categorie: l.categorie === "deplacement" ? "forfait" : l.categorie,
+    quantite: l.quantite,
+    unite: l.unite,
+    prix_unitaire: l.prix_unitaire,
+    total: l.total,
+    // La note de calcul du devis ("14 h × 45 €/h, coût horaire configuré")
+    // est interne à l'artisan : elle n'a rien à faire sur une facture.
+    detail_calcul: "",
+  }));
 
   // Une ligne négative par acompte déjà facturé — visible et justifiée sur
   // le document, jamais une simple soustraction silencieuse du total.
@@ -108,7 +122,7 @@ export function calculerTotauxFacture(lignes: LigneFacture[], tvaPct: number) {
 export function figerMentionsLegales(
   parametres: ParametresEntreprise,
   mentionTvaReduite: string | null = null
-): MentionsLegalesFacture {
+): MentionsLegales {
   return {
     nom_entreprise: parametres.nom_entreprise,
     adresse: parametres.adresse,
@@ -120,6 +134,22 @@ export function figerMentionsLegales(
     mention_tva_non_applicable: parametres.mention_tva_non_applicable,
     assurance_decennale_compagnie: parametres.assurance_decennale_compagnie,
     assurance_decennale_police: parametres.assurance_decennale_police,
+    // Module 42 (17/09) — également obligatoires sur la facture ; figés ici
+    // pour les deux documents, qui partagent cette même fonction.
+    assurance_decennale_zone: parametres.assurance_decennale_zone,
+    rc_pro_compagnie: parametres.rc_pro_compagnie,
+    rc_pro_zone: parametres.rc_pro_zone,
+    capital_social: parametres.capital_social,
+    rcs_numero: parametres.rcs_numero,
+    rcs_ville: parametres.rcs_ville,
+    rm_numero: parametres.rm_numero,
+    mediateur_nom: parametres.mediateur_nom,
+    mediateur_url: parametres.mediateur_url,
+    moyens_paiement: parametres.moyens_paiement,
+    // Les conditions générales font partie de l'engagement : figées avec le
+    // reste, pour qu'une modification ultérieure ne réécrive pas un devis
+    // déjà envoyé.
+    conditions_generales: parametres.conditions_generales,
     iban: parametres.iban,
     bic: parametres.bic,
     // Mention TVA réduite (08/09) — reprise telle quelle du devis d'origine,

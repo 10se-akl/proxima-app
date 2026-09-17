@@ -1,5 +1,9 @@
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { DocumentDevis } from "@/components/devis/DocumentDevis";
+import { telechargerPdfDevis } from "@/components/devis/pdf/genererPdf";
 import { margeDuDevis } from "@/lib/moteur-metier/calculerDevis";
 import { mentionsEffectives } from "@/lib/devis/mentionsLegales";
 import { construireModeleDevis, formatMontant, sourceDepuisDevis } from "@/lib/devis/modeleDocument";
@@ -38,14 +42,31 @@ export function DevisPreview({
       : null,
   });
   const marge = margeDuDevis(devis);
+  const [pdfEnCours, setPdfEnCours] = useState(false);
+  const [erreurPdf, setErreurPdf] = useState(false);
+
+  // Le vrai PDF (17/09), et non plus l'impression du navigateur : numéros
+  // de page, en-tête répété, même rendu partout, téléphone compris.
+  async function telecharger() {
+    setErreurPdf(false);
+    setPdfEnCours(true);
+    try {
+      await telechargerPdfDevis(modele);
+    } catch (e) {
+      console.error("PDF du devis :", e);
+      setErreurPdf(true);
+    } finally {
+      setPdfEnCours(false);
+    }
+  }
 
   return (
     <div>
       <DocumentDevis modele={modele} />
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <Button variant="ghost" onClick={() => window.print()}>
-          Exporter en PDF
+        <Button variant="ghost" onClick={telecharger} loading={pdfEnCours}>
+          Télécharger le PDF
         </Button>
         {marge !== 0 && (
           <p className="text-xs text-ink/45">
@@ -54,6 +75,9 @@ export function DevisPreview({
           </p>
         )}
       </div>
+      {erreurPdf && (
+        <p className="mt-2 text-sm text-signal">Le PDF n&apos;a pas pu être préparé. Réessayez.</p>
+      )}
     </div>
   );
 }

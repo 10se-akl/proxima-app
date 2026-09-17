@@ -35,3 +35,8 @@ yarn-error.log*
 next-env.d.ts
 
 build.log
+
+# ressources du PDF des devis, copiées depuis node_modules
+# (scripts/copier-ressources-pdf.mjs)
+/public/pdfjs/
+/public/fonts/pdf/

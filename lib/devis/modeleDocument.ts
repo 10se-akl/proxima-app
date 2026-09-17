@@ -187,7 +187,7 @@ export function construireModeleDevis({
       tva: sansTva
         ? null
         : {
-            libelle: `TVA ${tvaPct.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %`,
+            libelle: `TVA ${tvaPct.toLocaleString("fr-FR", { maximumFractionDigits: 2 })}\u00a0%`,
             montant: Number(source.montant_tva ?? 0),
           },
       mentionTvaNonApplicable: sansTva,

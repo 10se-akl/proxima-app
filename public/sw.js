@@ -284,6 +284,10 @@ function estPageProtegee(url) {
 function estRessourceStatiqueImmuable(url) {
   return (
     url.pathname.startsWith("/_next/static/") ||
+    // PDF des devis (17/09) : moteur d'affichage et polices, pour qu'un
+    // devis déjà ouvert reste consultable sur un chantier sans réseau.
+    url.pathname.startsWith("/pdfjs/") ||
+    url.pathname.startsWith("/fonts/pdf/") ||
     url.pathname.startsWith("/icons/") ||
     url.pathname.startsWith("/splash/") ||
     url.hostname === "fonts.googleapis.com" ||
@@ -426,9 +430,14 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (estRessourceStatiqueImmuable(url)) {
-    const strategie = url.pathname.startsWith("/_next/static/")
-      ? reponseCachePuisRevalidation
-      : reponseCacheDabord;
+    // Les fichiers du PDF gardent le même nom d'une version à l'autre :
+    // servis depuis le cache, mais toujours rafraîchis en tâche de fond.
+    const strategie =
+      url.pathname.startsWith("/_next/static/") ||
+      url.pathname.startsWith("/pdfjs/") ||
+      url.pathname.startsWith("/fonts/pdf/")
+        ? reponseCachePuisRevalidation
+        : reponseCacheDabord;
     event.respondWith(
       (async () => {
         const cache = await caches.open(CACHE_STATIQUE);

@@ -40,7 +40,7 @@ export function estEntrepreneurIndividuel(forme: string | null | undefined): boo
   if (!forme) return false;
   const f = forme
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
+    .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase();
   return (
     /\bei\b/.test(f) ||
@@ -70,12 +70,15 @@ export function identiteJuridique(m: MentionsLegales | null): string[] {
     lignes.push(forme);
   }
   if (nonVide(m.siret)) lignes.push(`SIRET ${m.siret!.trim()}`);
+  // L'artisan écrit parfois déjà "RCS …" ou "RM …" dans le champ : on ne
+  // double pas le préfixe.
+  const sansPrefixe = (valeur: string, prefixe: string) =>
+    valeur.trim().replace(new RegExp(`^${prefixe}\\b\\s*`, "i"), "");
   if (nonVide(m.rcs_numero)) {
-    lignes.push(
-      nonVide(m.rcs_ville) ? `RCS ${m.rcs_ville!.trim()} ${m.rcs_numero!.trim()}` : `RCS ${m.rcs_numero!.trim()}`
-    );
+    const numero = sansPrefixe(m.rcs_numero!, "RCS");
+    lignes.push(nonVide(m.rcs_ville) ? `RCS ${m.rcs_ville!.trim()} ${numero}` : `RCS ${numero}`);
   }
-  if (nonVide(m.rm_numero)) lignes.push(`RM ${m.rm_numero!.trim()}`);
+  if (nonVide(m.rm_numero)) lignes.push(`RM ${sansPrefixe(m.rm_numero!, "RM")}`);
   if (m.mention_tva_non_applicable) {
     lignes.push("TVA non applicable, art. 293 B du CGI");
   } else if (nonVide(m.numero_tva_intracommunautaire)) {
@@ -196,7 +199,7 @@ export function conditionsOffre(
 }
 
 function formatPourcentage(pct: number): string {
-  return `${Number(pct).toLocaleString("fr-FR", { maximumFractionDigits: 2 })} %`;
+  return `${Number(pct).toLocaleString("fr-FR", { maximumFractionDigits: 2 })}\u00a0%`;
 }
 
 // Mentions de bas de document, dans l'ordre de lecture.

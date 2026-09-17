@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
+import type { SourceDocumentDevis } from "@/lib/devis/modeleDocument";
 import type { Devis, LigneDevisCalculee, ParametresEntreprise } from "@/types";
 
 function formatEuros(n: number) {
@@ -38,6 +39,7 @@ export function ValiderDevis({
   parametres,
   adresseClient,
   onValide,
+  onApercu,
 }: {
   devis: Devis;
   demandeId: string;
@@ -45,6 +47,9 @@ export function ValiderDevis({
   parametres?: ParametresEntreprise | null;
   adresseClient?: string | null;
   onValide: () => void;
+  // Espace devis (17/09) : reçoit le brouillon à chaque modification, pour
+  // que le vrai PDF affiché à côté suive en direct.
+  onApercu?: (source: SourceDocumentDevis) => void;
 }) {
   const supabase = createClient();
 
@@ -177,6 +182,55 @@ export function ValiderDevis({
     () => recalculerDevis(lignes, deplacement, margePct, tvaPct),
     [lignes, deplacement, margePct, tvaPct]
   );
+
+  // Le brouillon tel qu'il serait enregistré en validant — mêmes règles
+  // que validerDevis plus bas, pour que l'aperçu ne mente jamais.
+  useEffect(() => {
+    if (!onApercu) return;
+    const validite = Number(validiteJours);
+    const acompte = Number(acomptePct);
+    onApercu({
+      numero: devis.numero,
+      lignes: lignesDeVente({
+        lignes,
+        deplacement: totaux.deplacement,
+        marge_pct: totaux.marge_pct,
+        total_estime: totaux.total_ttc,
+        montant_tva: totaux.montant_tva,
+      }),
+      total_ht: totaux.total_ht,
+      tva_pct: totaux.tva_pct,
+      montant_tva: totaux.montant_tva,
+      total_estime: totaux.total_ttc,
+      commentaires: commentaires.trim() || null,
+      mention_tva_reduite: totaux.tva_pct !== 20 ? mentionTvaReduite.trim() || null : null,
+      objet: objet.trim() || null,
+      adresse_chantier: chantierAilleurs ? adresseChantier.trim() || null : null,
+      validite_jours:
+        validiteJours.trim() !== "" && Number.isInteger(validite) && validite >= 1 && validite <= 365 ? validite : null,
+      date_debut_prevue: dateDebut || null,
+      duree_estimee: dureeEstimee.trim() || null,
+      acompte_pct: acomptePct.trim() !== "" && Number.isFinite(acompte) && acompte > 0 && acompte <= 100 ? acompte : null,
+      created_at: devis.created_at,
+      envoye_le: devis.envoye_le,
+    });
+  }, [
+    onApercu,
+    devis.numero,
+    devis.created_at,
+    devis.envoye_le,
+    lignes,
+    totaux,
+    commentaires,
+    mentionTvaReduite,
+    objet,
+    chantierAilleurs,
+    adresseChantier,
+    validiteJours,
+    dateDebut,
+    dureeEstimee,
+    acomptePct,
+  ]);
 
   function modifierLigne(index: number, champ: keyof LigneDevisCalculee, valeur: string) {
     setLignes((prev) =>

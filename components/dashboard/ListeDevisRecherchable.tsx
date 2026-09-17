@@ -5,6 +5,8 @@ import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconeDocument } from "@/components/ui/Icones";
+import { adresseEspaceDevis } from "@/lib/devis/actions";
+import { statutAffiche } from "@/lib/devis/statut";
 
 type DevisAvecClient = {
   id: string;
@@ -26,34 +28,6 @@ const LABEL_STATUT_FILTRE = [
   { cle: "accepte", label: "Acceptés" },
   { cle: "refuse", label: "Refusés" },
 ] as const;
-
-// Le statut du devis (en base) ne distingue pas "envoyé, en attente" de
-// "envoyé, accepté" — c'est le projet qui porte l'acceptation. On combine
-// les deux pour donner une vraie photo de la situation, sans obliger
-// l'artisan à comprendre la mécanique interne.
-function statutAffiche(d: DevisAvecClient): { texte: string; classe: string } {
-  if (d.statut === "brouillon") return { texte: "Brouillon", classe: "bg-ink/10 text-ink/60" };
-  if (d.statut === "a_valider")
-    return { texte: "À valider", classe: "bg-[#D9861A]/15 text-[#D9861A]" };
-  if (d.statut === "refuse") return { texte: "Refusé", classe: "bg-signal/10 text-signal" };
-  const statutProjet = d.demandes?.statut;
-  if (statutProjet === "accepte" || statutProjet === "en_cours" || statutProjet === "termine") {
-    return { texte: "Accepté", classe: "bg-[#2F8F5B]/15 text-[#2F8F5B]" };
-  }
-  // Relance (11/09) — le devis est toujours en attente, mais l'artisan a
-  // déjà reçu une proposition de relance (voir app/api/cron/relance-devis).
-  // Le badge dit juste où on en est, sans compteur ni couleur alarmante :
-  // même nuance neutre que "en attente", seul le texte change. "Relancé"
-  // signifie ici "relance proposée à l'artisan" — Compyo n'envoie jamais
-  // rien de lui-même au client.
-  if (d.notifie_relance_j10_le) {
-    return { texte: "Relancé J+10", classe: "bg-steel/15 text-steel" };
-  }
-  if (d.notifie_relance_j5_le) {
-    return { texte: "Relancé J+5", classe: "bg-steel/15 text-steel" };
-  }
-  return { texte: "Envoyé — en attente", classe: "bg-steel/15 text-steel" };
-}
 
 function correspondFiltre(d: DevisAvecClient, filtre: string): boolean {
   if (filtre === "tous") return true;
@@ -130,9 +104,9 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
           </div>
         ) : (
           filtres.map((d) => {
-            const { texte, classe } = statutAffiche(d);
+            const { texte, classe } = statutAffiche(d, d.demandes?.statut);
             return (
-              <Link key={d.id} href={`/dashboard/demandes/${d.demande_id}`}>
+              <Link key={d.id} href={adresseEspaceDevis(d.id)}>
                 <Card className="p-3.5 flex items-center justify-between gap-3 flex-wrap transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06]">
                   <div className="flex items-center gap-3">
                     <Avatar nom={d.demandes?.nom_client ?? "?"} taille={32} />

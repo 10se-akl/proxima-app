@@ -2,23 +2,23 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
-import { SITE_URL } from "@/lib/site";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Input";
 import { Avatar } from "@/components/ui/Avatar";
-import { DevisPreview } from "@/components/dashboard/DevisPreview";
-import { ValiderDevis } from "@/components/dashboard/ValiderDevis";
 import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PropositionUrgence } from "@/components/dashboard/PropositionUrgence";
 import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
 import { Timeline, type TimelineItem } from "@/components/dashboard/Timeline";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
-import { figerMentionsLegales } from "@/lib/moteur-metier/genererFacture";
+import { adresseEspaceDevis, dupliquerDevis as creerNouvelleVersion } from "@/lib/devis/actions";
+import { statutAffiche } from "@/lib/devis/statut";
+import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
 import {
   listerNotesProjet,
@@ -57,6 +57,7 @@ export default function DetailDemandePage({
   params: { id: string };
 }) {
   const supabase = createClient();
+  const router = useRouter();
 
   const [demande, setDemande] = useState<Projet | null>(null);
   const [devis, setDevis] = useState<Devis | null>(null);
@@ -67,7 +68,6 @@ export default function DetailDemandePage({
   const [chargementReponse, setChargementReponse] = useState(false);
   const [brouillonReponse, setBrouillonReponse] = useState("");
   const [copie, setCopie] = useState(false);
-  const [lienCopie, setLienCopie] = useState(false);
   // Constaté le 13/09 sur un vrai projet : un seul échec (génération de
   // devis) affichait le même message d'erreur QUATRE fois sur la page —
   // sous "Cadrer le besoin", sous "Générer un devis", sous "Préparer une
@@ -478,8 +478,8 @@ export default function DetailDemandePage({
     controleursIARef.current.delete(controleur);
     setChargementDevis(false);
 
+    const data = await res.json().catch(() => null);
     if (!res.ok) {
-      const data = await res.json().catch(() => null);
       setErreur(data?.error ?? "La génération du devis a échoué. Réessayez.", "devis");
       return;
     }
@@ -492,6 +492,12 @@ export default function DetailDemandePage({
         titre: devisExistaitDeja ? "Devis mis à jour" : "Devis généré",
       });
     }
+    // 17/09 — demandé par Axel : le devis généré s'ouvre directement dans
+    // son espace, avec le vrai PDF à côté, au lieu de s'empiler ici.
+    if (data?.devis?.id) {
+      router.push(adresseEspaceDevis(data.devis.id));
+      return;
+    }
     await chargerDonnees();
   }
 
@@ -499,35 +505,16 @@ export default function DetailDemandePage({
     if (!devis) return;
     setErreur(null);
     setChargementDevis(true);
-    // Sprint Robustesse (30/08) — aucun try/catch ici auparavant : une
-    // exception réseau (coupure, timeout) sur ce fetch faisait rejeter la
-    // promesse sans jamais repasser chargementDevis à false, laissant le
-    // bouton bloqué sur "Duplication…" indéfiniment.
-    try {
-      const res = await fetch("/api/devis/dupliquer", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ devisId: devis.id }),
-      });
-      if (!res.ok) {
-        setErreur("Impossible de dupliquer ce devis. Réessayez.");
-        return;
-      }
-      if (artisanId && organisationId) {
-        await enregistrerEvenement(supabase, {
-          demandeId: params.id,
-          artisanId,
-          organisationId,
-          type: "devis_genere",
-          titre: "Devis dupliqué",
-        });
-      }
-      await chargerDonnees();
-    } catch {
-      setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
-    } finally {
+    const resultat = await creerNouvelleVersion(
+      { supabase, artisanId, organisationId },
+      { devisId: devis.id, demandeId: params.id }
+    );
+    if (!resultat.ok) {
       setChargementDevis(false);
+      setErreur(resultat.erreur, "devis");
+      return;
     }
+    router.push(adresseEspaceDevis(resultat.nouveauDevisId));
   }
 
   // Rappel client récurrent (06/09) — voir lib/notes/index.ts. Un clic,
@@ -567,8 +554,8 @@ export default function DetailDemandePage({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ demandeId: params.id }),
       });
+      const data = await res.json().catch(() => null);
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
         setErreur(data?.error ?? "Impossible de créer le devis express. Réessayez.", "devis");
         return;
       }
@@ -580,6 +567,10 @@ export default function DetailDemandePage({
           type: "devis_genere",
           titre: "Devis express créé",
         });
+      }
+      if (data?.devis?.id) {
+        router.push(adresseEspaceDevis(data.devis.id));
+        return;
       }
       await chargerDonnees();
     } catch {
@@ -652,20 +643,6 @@ export default function DetailDemandePage({
     setTimeout(() => setCopie(false), 2000);
   }
 
-  // Signature électronique en ligne (08/09) — voir Module 31. Le lien lui-
-  // même EST la sécurité (UUID du devis, non-devinable) : pas besoin d'un
-  // jeton séparé, voir supabase/schema.sql pour le raisonnement complet.
-  async function copierLienSignature() {
-    if (!devis) return;
-    try {
-      await navigator.clipboard.writeText(`${SITE_URL}/devis/${devis.id}`);
-      setLienCopie(true);
-      setTimeout(() => setLienCopie(false), 2000);
-    } catch {
-      setErreur("Impossible de copier le lien — copiez-le manuellement depuis la barre d'adresse après l'avoir ouvert.");
-    }
-  }
-
   async function changerPriorite(priorite: Projet["priorite"]) {
     if (!demande) return;
     const ancienneValeur = demande.priorite;
@@ -688,123 +665,6 @@ export default function DetailDemandePage({
         titre: `Priorité changée : ${labels[priorite]}`,
       });
       await chargerDonnees();
-    }
-  }
-
-  async function marquerDevisEnvoye() {
-    if (!devis || !demande || actionEnCours) return;
-    // Audit pré-bêta (09/09), point 🟡 n°21 — avertissement non bloquant :
-    // marquer un devis "envoyé" pour un client sans aucune coordonnée
-    // (ni téléphone, ni email) n'a probablement pas de sens (comment
-    // l'a-t-on vraiment envoyé ?) — mais reste la décision de l'artisan
-    // (il a pu le remettre en main propre), jamais un blocage.
-    if (!demande.telephone_client?.trim() && !demande.email_client?.trim()) {
-      const continuer = window.confirm(
-        "Ce client n'a ni téléphone ni email enregistré — vérifiez que le devis lui a bien été transmis. Continuer ?"
-      );
-      if (!continuer) return;
-    }
-    setActionEnCours(true);
-    try {
-      const { data: d1, error: err1 } = await supabase
-        .from("devis")
-        .update({
-          statut: "envoye",
-          envoye_le: new Date().toISOString(),
-          // Module 42 — les mentions légales se figent ICI, au moment où le
-          // client reçoit le devis : c'est ce document-là qui l'engage. Avant,
-          // elles suivent les paramètres, pour qu'un oubli corrigé se voie.
-          // Jamais écrasé s'il existe déjà (le verrou en base l'interdit).
-          ...(parametres && !devis.mentions_legales
-            ? { mentions_legales: figerMentionsLegales(parametres, devis.mention_tva_reduite) }
-            : {}),
-        })
-        .eq("id", devis.id)
-        .select("id");
-      if (err1 || !d1 || d1.length === 0) {
-        setErreur("Impossible de marquer le devis comme envoyé. Réessayez.");
-        return;
-      }
-      const { data: d2, error: err2 } = await supabase
-        .from("demandes")
-        .update({ statut: "devis_envoye" })
-        .eq("id", demande.id)
-        .select("id");
-      if (err2 || !d2 || d2.length === 0) {
-        setErreur(
-          "Le devis est marqué envoyé, mais le statut du projet n'a pas pu être mis à jour. Rechargez la page."
-        );
-        await chargerDonnees();
-        return;
-      }
-      if (artisanId && organisationId) {
-        await enregistrerEvenement(supabase, {
-          demandeId: demande.id,
-          artisanId,
-          organisationId,
-          type: "devis_envoye",
-          titre: "Devis envoyé au client",
-        });
-      }
-      await chargerDonnees();
-    } finally {
-      setActionEnCours(false);
-    }
-  }
-
-  async function marquerAccepte() {
-    if (!demande || actionEnCours) return;
-    setActionEnCours(true);
-    try {
-      const { data, error } = await supabase
-        .from("demandes")
-        .update({ statut: "accepte", accepte_le: new Date().toISOString() })
-        .eq("id", demande.id)
-        .select("id");
-      if (error || !data || data.length === 0) {
-        setErreur("Impossible d'enregistrer l'acceptation du devis. Réessayez.");
-        return;
-      }
-      if (artisanId && organisationId) {
-        await enregistrerEvenement(supabase, {
-          demandeId: demande.id,
-          artisanId,
-          organisationId,
-          type: "devis_accepte",
-          titre: "Devis accepté par le client",
-        });
-      }
-      await chargerDonnees();
-    } finally {
-      setActionEnCours(false);
-    }
-  }
-
-  async function marquerDevisRefuse() {
-    if (!devis || !demande || actionEnCours) return;
-    setActionEnCours(true);
-    try {
-      const { data, error } = await supabase
-        .from("devis")
-        .update({ statut: "refuse" })
-        .eq("id", devis.id)
-        .select("id");
-      if (error || !data || data.length === 0) {
-        setErreur("Impossible d'enregistrer le refus du devis. Réessayez.");
-        return;
-      }
-      if (artisanId && organisationId) {
-        await enregistrerEvenement(supabase, {
-          demandeId: demande.id,
-          artisanId,
-          organisationId,
-          type: "devis_refuse",
-          titre: "Devis refusé par le client",
-        });
-      }
-      await chargerDonnees();
-    } finally {
-      setActionEnCours(false);
     }
   }
 
@@ -1598,6 +1458,12 @@ export default function DetailDemandePage({
               >
                 {chargementDevis ? "Duplication…" : "Dupliquer ce devis pour le modifier"}
               </Button>
+              <Link
+                href={adresseEspaceDevis(devis.id)}
+                className="ml-3 text-xs text-ink/50 underline-offset-2 hover:text-ink hover:underline"
+              >
+                Revoir le devis refusé
+              </Link>
             </Card>
           )}
 
@@ -1635,92 +1501,64 @@ export default function DetailDemandePage({
             </Card>
           )}
 
-          {/* Un devis fraîchement généré (ou régénéré) doit toujours être relu
-              et validé avant d'être imprimable — jamais un export direct
-              depuis un brouillon. */}
-          {devis && devis.statut === "brouillon" && artisanId && (
-            <ValiderDevis
-              devis={devis}
-              demandeId={demande.id}
-              artisanId={artisanId}
-              parametres={parametres}
-              adresseClient={demande.adresse_client}
-              onValide={chargerDonnees}
-            />
-          )}
-
-          {devis && devis.statut !== "brouillon" && devis.statut !== "refuse" && (
-            <div className="mt-4">
-              <DevisPreview
-                devis={devis}
-                nomClient={demande.nom_client}
-                telephoneClient={demande.telephone_client}
-                adresseClient={demande.adresse_client}
-                nomArtisan={nomArtisan}
-                entreprise={parametres}
-                logoUrl={logoUrl}
-              />
-              {devis.statut === "a_valider" && (
-                <p className="mt-3 text-xs text-ink/40">
-                  Exportez-le en PDF ci-dessus pour l&apos;envoyer par email ou l&apos;imprimer,
-                  puis marquez-le comme envoyé.
-                </p>
-              )}
-              {/* Audit des écarts concurrents (§0) : un devis validé devient non
-                  modifiable — volontairement, c'est un engagement — mais rien
-                  ne l'expliquait, ni ne proposait l'alternative. */}
-              <p className="mt-2 text-xs text-ink/40">
-                Ce devis est verrouillé : c&apos;est un engagement envers votre client. Pour le
-                changer, dupliquez-le en nouvelle version.
-              </p>
-              <div className="mt-3 flex gap-3">
-                {devis.statut === "a_valider" && (
-                  <>
-                    <Button variant="ghost" onClick={marquerDevisEnvoye} disabled={actionEnCours}>
-                      Marquer comme envoyé au client
-                    </Button>
-                    {/* Le message juste au-dessus renvoie vers la duplication :
-                        l'action doit être là, pas seulement une fois envoyé. */}
-                    <Button variant="ghost" onClick={dupliquerDevis} loading={chargementDevis}>
-                      {chargementDevis ? "Duplication…" : "Modifier (nouvelle version)"}
-                    </Button>
-                  </>
-                )}
-                {devis.statut === "envoye" && demande.statut !== "accepte" && (
-                  <>
-                    <Button variant="ghost" onClick={copierLienSignature}>
-                      {lienCopie ? "✓ Lien copié" : "🔗 Copier le lien de signature"}
-                    </Button>
-                    <Button variant="ghost" onClick={marquerAccepte} disabled={actionEnCours}>
-                      Marquer comme accepté par le client
-                    </Button>
-                    {joursDepuisEnvoiDevis() !== null && (
-                      <Button variant="ghost" onClick={genererRelance} loading={chargementReponse}>
-                        {chargementReponse ? "Rédaction…" : "Suggérer une relance"}
-                      </Button>
-                    )}
-                    <Button variant="ghost" onClick={dupliquerDevis} loading={chargementDevis}>
-                      {chargementDevis ? "Duplication…" : "Dupliquer pour ajuster le prix"}
-                    </Button>
-                    <Button variant="danger" onClick={marquerDevisRefuse} disabled={actionEnCours}>
-                      Marquer comme refusé
-                    </Button>
-                  </>
-                )}
-                {demande.statut === "accepte" && (
-                  <span className="text-sm text-steel self-center">
-                    ✓ Devis accepté par le client
-                  </span>
-                )}
+          {/* 17/09 — demandé par Axel : le devis prenait toute la fiche
+              projet. Il vit désormais dans son propre espace (éditeur, vrai
+              PDF, envoi, suivi : app/dashboard/devis/[id]) ; la fiche n'en
+              garde que l'essentiel et la suite du chantier. */}
+          {devis && devis.statut !== "refuse" && (
+            <Card className="mt-4 p-5">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">Devis n° {devis.numero}</p>
+                    <span
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${statutAffiche(devis, demande.statut).classe}`}
+                    >
+                      {statutAffiche(devis, demande.statut).texte}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-sm text-ink/55">
+                    {formatMontant(devis.total_estime)} TTC
+                    {devis.envoye_le ? ` · envoyé le ${dateLongue(devis.envoye_le)}` : ""}
+                  </p>
+                  {devis.statut === "brouillon" && (
+                    <p className="mt-1 text-xs text-ink/45">
+                      À relire et valider avant de l&apos;envoyer — rien ne part sans vous.
+                    </p>
+                  )}
+                </div>
+                <Button
+                  variant={devis.statut === "brouillon" || devis.statut === "a_valider" ? "primary" : "ghost"}
+                  onClick={() => router.push(adresseEspaceDevis(devis.id))}
+                >
+                  {devis.statut === "brouillon"
+                    ? "Terminer le devis"
+                    : devis.statut === "a_valider"
+                      ? "Ouvrir et envoyer"
+                      : "Ouvrir le devis"}
+                </Button>
               </div>
 
+              {devis.statut === "envoye" && demande.statut !== "accepte" && joursDepuisEnvoiDevis() !== null && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-4">
+                  <p className="text-xs text-ink/50">
+                    Sans réponse depuis {joursDepuisEnvoiDevis()} jour{(joursDepuisEnvoiDevis() ?? 0) > 1 ? "s" : ""}.
+                  </p>
+                  <Button variant="ghost" onClick={genererRelance} loading={chargementReponse}>
+                    {chargementReponse ? "Rédaction…" : "Suggérer une relance"}
+                  </Button>
+                </div>
+              )}
+
               {demande.statut === "accepte" && (
-                <Button variant="ghost" onClick={marquerEnCours} disabled={actionEnCours} className="mt-3">
-                  Marquer le chantier comme démarré
-                </Button>
+                <div className="mt-4 border-t border-ink/10 pt-4">
+                  <Button variant="ghost" onClick={marquerEnCours} disabled={actionEnCours}>
+                    Marquer le chantier comme démarré
+                  </Button>
+                </div>
               )}
               {demande.statut === "en_cours" && (
-                <div className="mt-3 flex items-center gap-3">
+                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-ink/10 pt-4">
                   <span className="text-sm text-steel">🔨 Chantier en cours</span>
                   <Button variant="ghost" onClick={marquerTermine} disabled={actionEnCours}>
                     Marquer comme terminé
@@ -1728,26 +1566,26 @@ export default function DetailDemandePage({
                 </div>
               )}
               {demande.statut === "termine" && (
-                <span className="mt-3 inline-block text-sm text-steel">
-                  ✓ Chantier terminé
-                </span>
+                <p className="mt-4 border-t border-ink/10 pt-4 text-sm text-steel">✓ Chantier terminé</p>
               )}
-
-              {/* Module 28 (06/09) — facturation : disponible dès que le
-                  client a accepté le devis, quel que soit l'avancement du
-                  chantier ensuite (un acompte se facture souvent avant même
-                  le démarrage). */}
-              {["accepte", "en_cours", "termine"].includes(demande.statut) && (
-                <FacturesProjet
-                  devis={devis}
-                  nomClient={demande.nom_client}
-                  telephoneClient={demande.telephone_client}
-                  adresseClient={demande.adresse_client}
-                  logoUrl={logoUrl}
-                />
-              )}
-            </div>
+            </Card>
           )}
+
+          {/* Module 28 (06/09) — facturation : disponible dès que le client a
+              accepté le devis, quel que soit l'avancement du chantier (un
+              acompte se facture souvent avant même le démarrage). */}
+          {devis &&
+            devis.statut !== "brouillon" &&
+            devis.statut !== "refuse" &&
+            ["accepte", "en_cours", "termine"].includes(demande.statut) && (
+              <FacturesProjet
+                devis={devis}
+                nomClient={demande.nom_client}
+                telephoneClient={demande.telephone_client}
+                adresseClient={demande.adresse_client}
+                logoUrl={logoUrl}
+              />
+            )}
         </div>
 
       {/* Étape 3 : réponse suggérée au client — l'artisan valide toujours avant envoi.

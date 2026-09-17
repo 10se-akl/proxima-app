@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
 import { Button } from "@/components/ui/Button";
 import { DocumentDevis } from "@/components/devis/DocumentDevis";
+import { telechargerPdfDevis } from "@/components/devis/pdf/genererPdf";
 import {
   construireModeleDevis,
   formatMontant,
@@ -105,6 +106,8 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
   // Refus en deux temps, dans la page : la fenêtre grise du navigateur
   // (window.confirm) faisait "bug" sur un document censé inspirer confiance.
   const [confirmerRefus, setConfirmerRefus] = useState(false);
+  const [pdfEnCours, setPdfEnCours] = useState(false);
+  const [erreurPdf, setErreurPdf] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
@@ -145,6 +148,20 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
         signature: devis.signe_le ? { nom: null, le: devis.signe_le, image: null } : null,
       })
     : null;
+
+  async function telechargerPdf() {
+    if (!modele) return;
+    setErreurPdf(false);
+    setPdfEnCours(true);
+    try {
+      await telechargerPdfDevis(modele);
+    } catch (e) {
+      console.error("PDF du devis :", e);
+      setErreurPdf(true);
+    } finally {
+      setPdfEnCours(false);
+    }
+  }
 
   async function repondre(reponse: "accepte" | "refuse") {
     if (reponse === "accepte" && !nomSignataire.trim()) {
@@ -216,9 +233,14 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                 client imprime : à l'écran, il signe juste en dessous. */}
             <DocumentDevis modele={modele} zoneSignature="impression" />
 
-            <Button variant="ghost" className="mt-4" onClick={() => window.print()}>
-              Imprimer / Enregistrer en PDF
+            <Button variant="ghost" className="mt-4" onClick={telechargerPdf} loading={pdfEnCours}>
+              Télécharger le devis en PDF
             </Button>
+            {erreurPdf && (
+              <p className="mt-2 text-sm text-signal">
+                Le PDF n&apos;a pas pu être préparé. Vérifiez votre connexion et réessayez.
+              </p>
+            )}
 
             <div className="mt-6">
               {(reponseEnregistree || devis.devis_statut === "refuse" || devis.demande_statut === "accepte") ? (

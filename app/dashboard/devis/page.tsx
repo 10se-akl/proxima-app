@@ -31,7 +31,7 @@ export default async function DevisPage() {
     <div className="p-8 max-w-4xl">
       <h1 className="font-display text-2xl font-semibold">Devis</h1>
       <p className="mt-1.5 text-sm text-ink/50">
-        Tous vos devis, tous projets confondus. Cliquez sur un devis pour ouvrir le projet.
+        Tous vos devis, tous projets confondus. Cliquez sur un devis pour l&apos;ouvrir.
       </p>
 
       <div className="mt-8">

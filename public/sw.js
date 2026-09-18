@@ -410,6 +410,12 @@ self.addEventListener("fetch", (event) => {
   // règle de fond en tête de fichier.
   if (estApiOuSupabase(url)) return;
 
+  // Vidéo de démonstration (18/09) : elle se charge par morceaux (en-tête
+  // Range, réponses 206) qu'un cache de service worker refuse
+  // d'enregistrer, et 6 Mo n'ont rien à faire dans le cache des pages. Le
+  // navigateur la gère seul, comme toute vidéo.
+  if (requete.destination === "video" || requete.destination === "audio" || requete.headers.has("range")) return;
+
   // Cross-origin non listé explicitement ci-dessus (ex. Sentry, Vercel
   // Analytics si ajoutés un jour) : on laisse filer tel quel plutôt que
   // de risquer de mettre en cache un service tiers pas prévu pour ça.

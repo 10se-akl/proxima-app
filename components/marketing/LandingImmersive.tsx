@@ -32,6 +32,14 @@ import {
   type ReactNode,
 } from "react";
 import { Header, Footer } from "./LandingPage";
+import { VideoDemo } from "./VideoDemo";
+
+// Pour les lecteurs d'écran : la vidéo n'a ni son ni sous-titres.
+const DESCRIPTION_DEMO =
+  "Démonstration de Compyo, sans son. Une cliente écrit pour faire refaire sa salle de bain ; " +
+  "l'artisan partage son message à Compyo, qui en fait un projet. Il dicte ensuite ses notes de visite. " +
+  "Compyo propose un devis chiffré, que l'artisan valide avant de l'envoyer. Le dossier se suit ensuite " +
+  "jusqu'à la facture.";
 
 /** Signature commune à toutes les icônes inline de cette page : une icône
  * accepte toujours une classe (couleur/taille via Tailwind) et, pour les
@@ -675,146 +683,28 @@ function HeroConvergence() {
         </p>
       </div>
 
-      {/* Constellation desktop/tablette : nœud central + 4 cartes en cercle */}
-      <div className="relative mx-auto mt-16 hidden h-[420px] max-w-xl sm:block">
-        <svg className="absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-          {CARTES_HERO.map((carte) => {
-            const x = parseFloat(carte.style.left);
-            const y = parseFloat(carte.style.top);
-            // Courbe légère plutôt qu'une ligne droite : le point de
-            // contrôle est décalé perpendiculairement au segment, à une
-            // distance proportionnelle à sa longueur — donne un arc doux,
-            // jamais un schéma technique à angles droits.
-            const mx = (50 + x) / 2;
-            const my = (50 + y) / 2;
-            const dx = x - 50;
-            const dy = y - 50;
-            const longueur = Math.hypot(dx, dy) || 1;
-            const decalage = longueur * 0.12;
-            const cx = mx + (-dy / longueur) * decalage;
-            const cy = my + (dx / longueur) * decalage;
-            return (
-              <path
-                key={carte.id}
-                d={`M 50 50 Q ${cx} ${cy} ${x} ${y}`}
-                fill="none"
-                stroke="#C96B4A"
-                strokeOpacity="0.45"
-                strokeWidth="0.4"
-                strokeDasharray="2 2"
-                className="ligne-convergence"
-              />
-            );
-          })}
-        </svg>
-
-        <div
-          className="absolute left-1/2 top-1/2 flex h-24 w-24 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center gap-1 rounded-full border border-[#C96B4A]/40 bg-[#2A2019] text-center shadow-[0_0_40px_-8px_rgba(201,107,74,0.55)] noeud-central"
-          role="img"
-          aria-label="Votre entreprise se souvient"
-        >
-          <IconCheck className="h-6 w-6 text-[#E8956F]" />
-          <span className="px-2 text-[10px] font-medium leading-tight text-[#E8DCCB]">
-            Votre entreprise se souvient
-          </span>
+      {/* 18/09 — demandé par Axel : la vraie démonstration à la place des
+          deux schémas (cette constellation et l'animation au défilement
+          AvantApres, toujours utilisés par /apercu-visuel). La vidéo est
+          produite par rendu-video-demo.py (dossier compyo/).
+          Paysage à partir de sm ; en dessous, la version verticale — en
+          16:9 sur un téléphone, le devis serait illisible. Un lecteur
+          masqué (display:none) n'est jamais visible, donc jamais chargé. */}
+      <div className="relative mx-auto mt-16 hidden max-w-4xl sm:block">
+        <div className="aspect-video overflow-hidden rounded-2xl border border-white/10 bg-[#FAF8F5] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.6),0_0_60px_-20px_rgba(201,107,74,0.35)]">
+          <VideoDemo src="/compyo-demo.mp4" affiche="/compyo-demo-affiche.jpg" description={DESCRIPTION_DEMO} />
         </div>
-
-        {CARTES_HERO.map((carte) => (
-          <div
-            key={carte.id}
-            className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-2xl border border-white/10 bg-[#241C16]/90 px-3.5 py-2.5 shadow-lg shadow-black/30 backdrop-blur-sm carte-flottante"
-            style={
-              {
-                top: carte.style.top,
-                left: carte.style.left,
-                // Variables CSS custom consommées par le keyframe "flotter"
-                // ci-dessous — non typées dans CSSProperties, d'où le cast.
-                "--duree": `${carte.duree}s`,
-                "--retard": `${carte.retard}s`,
-                "--inclinaison": `${carte.inclinaison}deg`,
-              } as CSSProperties
-            }
-          >
-            <carte.Icon className="h-4 w-4 shrink-0 text-[#E8956F]" />
-            <span className="whitespace-nowrap text-xs font-medium text-[#E8DCCB]">{carte.label}</span>
-          </div>
-        ))}
       </div>
-
-      {/* Version mobile : liste verticale simplifiée, mouvement réduit */}
-      <div className="mx-auto mt-12 flex max-w-xs flex-col items-center gap-3 sm:hidden">
-        {CARTES_HERO.map((carte, i) => (
-          <div
-            key={carte.id}
-            className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-[#241C16]/90 px-4 py-3 carte-flottante-mobile"
-            style={{ animationDelay: `${i * 0.15}s` }}
-          >
-            <carte.Icon className="h-4 w-4 shrink-0 text-[#E8956F]" />
-            <span className="text-sm font-medium text-[#E8DCCB]">{carte.label}</span>
-          </div>
-        ))}
-        <div className="mt-1 flex items-center gap-2 rounded-full border border-[#C96B4A]/40 bg-[#2A2019] px-4 py-2.5">
-          <IconCheck className="h-4 w-4 text-[#E8956F]" />
-          <span className="text-xs font-medium text-[#E8DCCB]">Votre entreprise se souvient</span>
+      <div className="relative mx-auto mt-12 max-w-[320px] sm:hidden">
+        <div className="aspect-[9/16] overflow-hidden rounded-[1.75rem] border border-white/10 bg-[#FAF8F5] shadow-[0_24px_60px_-18px_rgba(0,0,0,0.6)]">
+          <VideoDemo
+            src="/compyo-demo-vertical.mp4"
+            affiche="/compyo-demo-vertical-affiche.jpg"
+            description={DESCRIPTION_DEMO}
+          />
         </div>
       </div>
 
-      <style jsx>{`
-        .carte-flottante {
-          animation: flotter var(--duree) ease-in-out var(--retard) infinite;
-        }
-        .noeud-central {
-          animation: pulser 4.2s ease-in-out infinite;
-        }
-        .ligne-convergence {
-          stroke-dashoffset: 8;
-          animation: dessiner 3.6s linear infinite;
-        }
-        @keyframes flotter {
-          0%,
-          100% {
-            transform: translate(-50%, -50%) rotate(var(--inclinaison)) translateY(0);
-          }
-          50% {
-            transform: translate(-50%, -50%) rotate(var(--inclinaison)) translateY(-8px);
-          }
-        }
-        @keyframes pulser {
-          0%,
-          100% {
-            box-shadow: 0 0 40px -8px rgba(201, 107, 74, 0.55);
-          }
-          50% {
-            box-shadow: 0 0 56px -6px rgba(201, 107, 74, 0.8);
-          }
-        }
-        @keyframes dessiner {
-          to {
-            stroke-dashoffset: 0;
-          }
-        }
-        .carte-flottante-mobile {
-          animation: apparaitre 0.6s ease-out both;
-        }
-        @keyframes apparaitre {
-          from {
-            opacity: 0;
-            transform: translateY(8px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .carte-flottante,
-          .noeud-central,
-          .ligne-convergence,
-          .carte-flottante-mobile {
-            animation: none !important;
-          }
-        }
-      `}</style>
     </section>
   );
 }
@@ -1058,7 +948,6 @@ export function LandingImmersive() {
       <Header masquerToggleTheme />
       <main>
         <HeroConvergence />
-        <AvantApres />
         <MetiersInteractifs />
         <Temoignage />
         <CtaFinal />

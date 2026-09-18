@@ -1,4 +1,5 @@
 import { LandingImmersive } from "@/components/marketing/LandingImmersive";
+import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 
 // ============================================================
 // Refonte navigation (Module 16, voir supabase/schema.sql) : Axel veut que
@@ -17,5 +18,7 @@ import { LandingImmersive } from "@/components/marketing/LandingImmersive";
 // ============================================================
 
 export default function HomePage() {
-  return <LandingImmersive />;
+  // Les avis Google se lisent côté serveur (clé d'API privée) : on les
+  // passe à l'accueil, qui tourne dans le navigateur.
+  return <LandingImmersive avis={<SectionAvisGoogle />} />;
 }

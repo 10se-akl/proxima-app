@@ -33,6 +33,7 @@ import {
 } from "react";
 import { Header, Footer } from "./LandingPage";
 import { VideoDemo } from "./VideoDemo";
+import { VitrineMetiers } from "./VitrineMetiers";
 
 // Pour les lecteurs d'écran : la vidéo n'a ni son ni sous-titres.
 const DESCRIPTION_DEMO =
@@ -929,7 +930,10 @@ export function CtaFinal() {
 // Composant racine
 // ----------------------------------------------------------------------------
 
-export function LandingImmersive() {
+// `avis` : la section des avis Google, rendue côté serveur (elle interroge
+// Google) et passée depuis app/page.tsx — ce composant-ci tourne dans le
+// navigateur et ne peut pas l'appeler lui-même.
+export function LandingImmersive({ avis }: { avis?: ReactNode } = {}) {
   // Fond appliqué sur un wrapper local plutôt que sur <body> : cette page
   // reste isolée, elle ne doit rien changer au thème du reste du site
   // (pas de header/footer global à ce jour dans app/layout.tsx — voir
@@ -948,8 +952,12 @@ export function LandingImmersive() {
       <Header masquerToggleTheme />
       <main>
         <HeroConvergence />
-        <MetiersInteractifs />
+        {/* 18/09 — remplace MetiersInteractifs (icône + une phrase, toujours
+            utilisée par /apercu-visuel) : chaque métier montre désormais
+            un chantier type, son devis et les vraies questions de l'app. */}
+        <VitrineMetiers illustrations={METIERS} />
         <Temoignage />
+        {avis}
         <CtaFinal />
       </main>
       <Footer />

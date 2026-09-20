@@ -153,6 +153,38 @@ export default function RootLayout({
   return (
     <html lang="fr">
       <head>
+        {/* 20/09 — Capte l'installation PWA AVANT React. Chrome déclenche
+            "beforeinstallprompt" très tôt pendant le chargement et ne le
+            rejoue jamais : sans écouteur à cet instant, l'installation
+            programmatique est perdue pour toute la visite. Un useEffect
+            arrive trop tard sur un téléphone (React s'hydrate après), d'où
+            le bouton "Installer Compyo" qui retombait sur les instructions
+            manuelles alors que Chrome, lui, proposait bien l'installation
+            dans son menu ⋮. Ce script doit donc rester en ligne et
+            synchrone dans le <head> : ni next/script (même en
+            beforeInteractive, la garantie est plus faible), ni defer/async.
+            Il met l'événement de côté, lib/pwa/installPrompt.ts le
+            récupère ensuite. Aucune dépendance, tout est en try/catch :
+            dans le pire des cas il ne fait rien, et on retombe sur le
+            comportement d'avant (instructions manuelles). */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              '(function(){try{' +
+              'if(window.__compyoInstallPromptPose)return;' +
+              'window.__compyoInstallPromptPose=1;' +
+              'if(!("__compyoInstallPrompt" in window))window.__compyoInstallPrompt=null;' +
+              'window.addEventListener("beforeinstallprompt",function(e){try{' +
+              'e.preventDefault();' +
+              'window.__compyoInstallPrompt=e;' +
+              'window.dispatchEvent(new CustomEvent("compyo:install-prompt-pret"));' +
+              '}catch(x){}});' +
+              'window.addEventListener("appinstalled",function(){try{' +
+              'window.__compyoInstallPrompt=null;' +
+              '}catch(x){}});' +
+              '}catch(e){}})();',
+          }}
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(DONNEES_STRUCTUREES) }}

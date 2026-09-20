@@ -232,6 +232,17 @@ export function InstallPWA() {
                         ? texteInstructionsMoteurRestreint(moteurRestreint)
                         : "Ajoutez Compyo à votre écran d'accueil : appuyez sur Partager puis \"Sur l'écran d'accueil\"."}
                 </p>
+                {/* 20/09 — Quand on en est aux instructions, la page
+                    /installer donne le pas-à-pas complet du navigateur
+                    détecté, et le diagnostic à nous envoyer si ça coince. */}
+                {!enUnGeste && (
+                  <a
+                    href="/installer"
+                    className="mt-1.5 inline-block text-xs font-medium text-signal underline underline-offset-2"
+                  >
+                    Voir le pas-à-pas
+                  </a>
+                )}
               </div>
             </div>
             <div className="mt-3 flex gap-2 justify-end">

@@ -554,6 +554,13 @@ export function Footer() {
             <Link href="/contact" className="hover:text-white transition-colors">
               Contact
             </Link>
+            {/* 20/09 — Seul point d'entrée permanent vers l'installation :
+                la carte de InstallPWA.tsx ne se propose qu'une fois par
+                navigateur, donc un artisan qui l'a fermée n'avait plus
+                aucun moyen d'installer Compyo depuis le site. */}
+            <Link href="/installer" className="hover:text-white transition-colors">
+              Installer l&apos;application
+            </Link>
           </nav>
         </div>
 

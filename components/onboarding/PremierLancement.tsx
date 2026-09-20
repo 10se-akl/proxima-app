@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { ExempleDevisModal } from "@/components/onboarding/ExempleDevisModal";
 import {
   declencherInstallation,
+  demanderAffichageManuel,
   estDejaInstallee,
   estIOS,
   initialiserEcouteInstallation,
@@ -105,9 +106,13 @@ export function PremierLancement() {
       return;
     }
     setInstallationEnCours(true);
-    await declencherInstallation();
+    const resultat = await declencherInstallation();
     setInstallationEnCours(false);
     terminer();
+    // 20/09 — Si le navigateur n'avait rien à proposer, ce bouton venait
+    // de ne RIEN faire aux yeux de l'artisan. La carte d'installation
+    // prend le relais avec le chemin manuel propre à son navigateur.
+    if (resultat === "indisponible") demanderAffichageManuel();
   }
 
   if (!visible) return null;

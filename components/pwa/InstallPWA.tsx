@@ -6,6 +6,7 @@ import {
   estDejaInstallee,
   estIOS,
   initialiserEcouteInstallation,
+  installationDirectePossible,
   peutProposerInstallation,
 } from "@/lib/pwa/installPrompt";
 import { detecterPlateforme, detecterMoteurRestreint, type MoteurRestreint } from "@/lib/pwa/plateforme";
@@ -25,6 +26,17 @@ function texteInstructionsMoteurRestreint(moteur: MoteurRestreint): string {
     default:
       return "";
   }
+}
+
+// 20/09 — Dernier recours, quand le clic sur "Installer" n'a rien donné :
+// le navigateur n'a jamais envoyé son événement d'installation, ou il a
+// déjà été consommé. Tous les navigateurs qui savent installer une PWA
+// gardent une entrée dans leur propre menu : on y envoie l'artisan plutôt
+// que de refermer la carte sans explication.
+function texteInstallationManuelle(plateforme: "android" | "ios" | "desktop"): string {
+  return plateforme === "desktop"
+    ? "Votre navigateur n'a pas proposé la fenêtre d'installation. Cliquez sur l'icône d'installation à droite de la barre d'adresse, ou ouvrez le menu ⋮ puis \"Installer Compyo\"."
+    : "Votre navigateur n'a pas proposé la fenêtre d'installation. Ouvrez son menu (⋮ en haut, ou ☰ en bas), puis \"Installer l'application\" ou \"Ajouter à l'écran d'accueil\".";
 }
 
 // ============================================================
@@ -64,28 +76,48 @@ export function InstallPWA() {
   // pas parler d'"écran d'accueil" à un artisan sur ordinateur.
   const [plateforme, setPlateforme] = useState<"android" | "ios" | "desktop">("android");
   const [moteurRestreint, setMoteurRestreint] = useState<MoteurRestreint>(null);
+  // Le navigateur a-t-il envoyé son événement d'installation ? C'est ce
+  // qui décide d'un vrai bouton plutôt que d'instructions à suivre —
+  // jamais le nom du navigateur (20/09, voir lib/pwa/installPrompt.ts).
+  const [installationDirecte, setInstallationDirecte] = useState(false);
   const [installationEnCours, setInstallationEnCours] = useState(false);
   const [installationReussie, setInstallationReussie] = useState(false);
+  // Le clic n'a rien donné : on bascule sur le chemin manuel du navigateur
+  // plutôt que de refermer la carte en silence.
+  const [echecInstallation, setEchecInstallation] = useState(false);
 
   useEffect(() => {
     initialiserEcouteInstallation();
     setModeIOS(estIOS());
     setPlateforme(detecterPlateforme());
     setMoteurRestreint(detecterMoteurRestreint());
+    setInstallationDirecte(installationDirectePossible());
+
+    // L'événement d'installation peut arriver après l'affichage de la
+    // carte : dans ce cas les instructions manuelles laissent la place au
+    // vrai bouton, sans que l'artisan ait à recharger quoi que ce soit.
+    const reevaluer = () => setInstallationDirecte(installationDirectePossible());
+    window.addEventListener("compyo:install-prompt-pret", reevaluer);
+    window.addEventListener("compyo:install-terminee", reevaluer);
 
     const gererDemandeManuelle = () => {
       setModeIOS(estIOS());
       setPlateforme(detecterPlateforme());
       setMoteurRestreint(detecterMoteurRestreint());
+      setInstallationDirecte(installationDirectePossible());
       setInstallationReussie(false);
+      setEchecInstallation(false);
       setAfficherCarte(true);
     };
     window.addEventListener("compyo:install-demande-manuelle", gererDemandeManuelle);
 
-    if (estDejaInstallee()) {
-      return () =>
-        window.removeEventListener("compyo:install-demande-manuelle", gererDemandeManuelle);
-    }
+    const retirerEcoutes = () => {
+      window.removeEventListener("compyo:install-prompt-pret", reevaluer);
+      window.removeEventListener("compyo:install-terminee", reevaluer);
+      window.removeEventListener("compyo:install-demande-manuelle", gererDemandeManuelle);
+    };
+
+    if (estDejaInstallee()) return retirerEcoutes;
 
     let dejaPropose = false;
     try {
@@ -110,7 +142,7 @@ export function InstallPWA() {
     }
 
     return () => {
-      window.removeEventListener("compyo:install-demande-manuelle", gererDemandeManuelle);
+      retirerEcoutes();
       if (minuteur) clearTimeout(minuteur);
     };
   }, []);
@@ -140,12 +172,28 @@ export function InstallPWA() {
     if (resultat === "accepted") {
       setInstallationReussie(true);
       setTimeout(() => setAfficherCarte(false), 2200);
-    } else {
-      fermer();
+      return;
     }
+    if (resultat === "indisponible") {
+      // Le navigateur n'avait finalement rien à proposer. Refermer la
+      // carte sans un mot, c'est exactement le "j'appuie et rien ne se
+      // passe" qui fait abandonner un artisan : on montre le chemin
+      // manuel du navigateur, qui lui existe toujours.
+      setEchecInstallation(true);
+      return;
+    }
+    fermer();
   }
 
   if (!afficherCarte) return null;
+
+  // 20/09 — L'événement l'emporte sur le user-agent : s'il est là,
+  // l'installation se fait en un bouton, même dans un navigateur qu'on
+  // croyait restreint (Samsung Internet l'envoie selon les versions).
+  // Sans événement, on retombe sur les instructions manuelles, qui
+  // restent le bon comportement dans WhatsApp/Instagram, Firefox Android
+  // et sur iOS, où cet événement n'existe pas.
+  const enUnGeste = !echecInstallation && (installationDirecte || (!modeIOS && !moteurRestreint));
 
   return (
     <div className="pwa-carte-entree fixed inset-x-4 z-50 sm:inset-x-auto sm:right-6 sm:w-96 [bottom:calc(1rem+env(safe-area-inset-bottom))] sm:[bottom:calc(1.5rem+env(safe-area-inset-bottom))]">
@@ -172,13 +220,17 @@ export function InstallPWA() {
                   {plateforme === "desktop" ? "Installer Compyo sur cet ordinateur" : "Installer Compyo"}
                 </p>
                 <p className="mt-1 text-xs text-ink/60 leading-relaxed">
-                  {moteurRestreint
-                    ? texteInstructionsMoteurRestreint(moteurRestreint)
-                    : modeIOS
-                      ? "Ajoutez Compyo à votre écran d'accueil : appuyez sur Partager puis \"Sur l'écran d'accueil\"."
-                      : plateforme === "desktop"
-                        ? "Ouvrez Compyo depuis votre bureau ou votre barre des tâches, dans sa propre fenêtre, sans passer par le navigateur."
-                        : "Ouvrez Compyo en un geste depuis votre écran d'accueil, comme une vraie application."}
+                  {/* Sans enUnGeste : le clic a échoué, ou c'est un
+                      navigateur restreint, ou iOS. */}
+                  {enUnGeste
+                    ? plateforme === "desktop"
+                      ? "Ouvrez Compyo depuis votre bureau ou votre barre des tâches, dans sa propre fenêtre, sans passer par le navigateur."
+                      : "Ouvrez Compyo en un geste depuis votre écran d'accueil, comme une vraie application."
+                    : echecInstallation
+                      ? texteInstallationManuelle(plateforme)
+                      : moteurRestreint
+                        ? texteInstructionsMoteurRestreint(moteurRestreint)
+                        : "Ajoutez Compyo à votre écran d'accueil : appuyez sur Partager puis \"Sur l'écran d'accueil\"."}
                 </p>
               </div>
             </div>
@@ -190,14 +242,16 @@ export function InstallPWA() {
                 Plus tard
               </button>
               {/*
-                Sprint Beta Final (27/08) — 🔴F : sans moteurRestreint dans
-                cette condition, un artisan dans WhatsApp/Firefox Android/
-                Samsung Internet voyait un bouton "Installer" actif qui ne
-                faisait RIEN au clic (declencherInstallation() retombe sur
-                "indisponible" faute de beforeinstallprompt) — pire qu'une
-                absence de bouton, ça ressemble à un bug de l'app.
+                Sprint Beta Final (27/08) — 🔴F : un bouton "Installer" qui
+                ne fait RIEN au clic est pire qu'une absence de bouton, ça
+                ressemble à un bug de l'app. La règle reste donc : pas de
+                bouton sans installation réellement possible.
+                20/09 — mais c'est l'ÉVÉNEMENT du navigateur qui en décide,
+                plus son nom. Un bêta-testeur sous Samsung Internet n'avait
+                que des instructions à suivre alors que son navigateur
+                savait installer Compyo en un bouton.
               */}
-              {!modeIOS && !moteurRestreint && (
+              {enUnGeste ? (
                 <button
                   onClick={installer}
                   disabled={installationEnCours}
@@ -205,8 +259,7 @@ export function InstallPWA() {
                 >
                   {installationEnCours ? "Installation…" : "Installer"}
                 </button>
-              )}
-              {(modeIOS || moteurRestreint) && (
+              ) : (
                 <button
                   onClick={fermer}
                   className="text-xs font-medium bg-ink text-paper rounded-lg px-3.5 py-2 transition-colors hover:bg-signal"

@@ -118,6 +118,18 @@ export function peutProposerInstallation(): boolean {
   return estIOS() || evenementDisponible() !== null || detecterMoteurRestreint() !== null;
 }
 
+// 20/09 — La seule preuve qui compte : le navigateur a-t-il envoyé son
+// événement d'installation, oui ou non. Un user-agent ne dit que ce qu'il
+// prétend être ; l'événement, lui, est l'installation réellement possible
+// en un bouton. À préférer partout à detecterMoteurRestreint() pour
+// décider entre un vrai bouton et des instructions manuelles : Samsung
+// Internet, par exemple, envoie l'événement selon les versions, et on lui
+// affichait pourtant toujours des instructions (le bêta-testeur voyait un
+// texte à suivre là où un bouton aurait suffi).
+export function installationDirectePossible(): boolean {
+  return evenementDisponible() !== null;
+}
+
 export async function declencherInstallation(): Promise<
   "accepted" | "dismissed" | "indisponible"
 > {

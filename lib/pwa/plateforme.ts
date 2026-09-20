@@ -50,3 +50,23 @@ export function detecterMoteurRestreint(): MoteurRestreint {
   if (/SamsungBrowser/i.test(ua)) return "samsung_internet";
   return null;
 }
+
+// 20/09 — Version d'Android, quand elle est lisible dans le user-agent.
+// Sert à une seule chose aujourd'hui : Android 14 refuse d'installer une
+// application qui vise une version trop ancienne du système, et c'est
+// précisément ce que fabrique Samsung Internet quand il installe une
+// application web (« Appli non sécurisée et bloquée », constaté sur le
+// Samsung d'un bêta-testeur). Le paquet fabriqué par Chrome, lui, est à
+// jour. Best-effort comme le reste de ce fichier : dans le doute (null),
+// on n'affirme rien à l'artisan.
+export function versionAndroid(): number | null {
+  if (typeof window === "undefined") return null;
+  const trouve = /Android (\d+)/i.exec(window.navigator.userAgent);
+  return trouve ? Number(trouve[1]) : null;
+}
+
+// L'installation depuis CE navigateur sera-t-elle refusée par Android ?
+export function installationBloqueeParAndroid(): boolean {
+  const version = versionAndroid();
+  return detecterMoteurRestreint() === "samsung_internet" && version !== null && version >= 14;
+}

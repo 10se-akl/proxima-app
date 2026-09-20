@@ -9,7 +9,12 @@ import {
   installationDirectePossible,
   peutProposerInstallation,
 } from "@/lib/pwa/installPrompt";
-import { detecterPlateforme, detecterMoteurRestreint, type MoteurRestreint } from "@/lib/pwa/plateforme";
+import {
+  detecterPlateforme,
+  detecterMoteurRestreint,
+  installationBloqueeParAndroid,
+  type MoteurRestreint,
+} from "@/lib/pwa/plateforme";
 
 // Sprint Beta Final (27/08) — 🔴F : texte d'instructions par navigateur
 // restreint (voir lib/pwa/plateforme.ts pour le pourquoi de chaque cas).
@@ -22,7 +27,13 @@ function texteInstructionsMoteurRestreint(moteur: MoteurRestreint): string {
     case "firefox_android":
       return "Appuyez sur ⋮ en haut à droite de Firefox, puis \"Installer\" (ou \"Ajouter à l'écran d'accueil\").";
     case "samsung_internet":
-      return "Appuyez sur ☰ en bas, puis \"Ajouter une page à\" → \"Écran d'accueil\".";
+      // 20/09 — Sur Android 14+, le menu de Samsung Internet mène à
+      // « Appli non sécurisée et bloquée » : le paquet qu'il fabrique vise
+      // une version trop ancienne du système. Inutile d'y envoyer
+      // l'artisan (voir installationBloqueeParAndroid).
+      return installationBloqueeParAndroid()
+        ? "Android refuse les installations venant de Samsung Internet. Ouvrez cette page dans Chrome : elle s'y installe en un bouton."
+        : "Appuyez sur ☰ en bas, puis \"Ajouter une page à\" → \"Écran d'accueil\".";
     default:
       return "";
   }

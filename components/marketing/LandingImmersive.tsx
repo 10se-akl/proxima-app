@@ -887,14 +887,22 @@ export function Temoignage() {
           visible ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
         }`}
       >
+        {/* 20/09 — Il y avait ici une citation « d'un artisan électricien,
+            utilisateur bêta » : elle était inventée. Compyo est en bêta
+            privée, aucun artisan n'a encore autorisé la publication de ses
+            mots. Un faux témoignage est la chose la plus facile à écrire
+            sur un site — et la plus facile à repérer pour un artisan qui
+            connaît ses collègues. L'emplacement reste, vide et annoncé
+            comme tel, jusqu'au premier vrai retour. */}
         <span className="inline-block rounded-full border border-white/40 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-white/90">
-          Extrait des retours bêta
+          Retours bêta
         </span>
-        <p className="mt-7 font-display text-2xl font-semibold leading-snug text-white sm:text-3xl">
-          « Avant Compyo, je savais que l&apos;info existait quelque part.
-          <br className="hidden sm:block" /> Maintenant, je sais où. »
+        <p className="mt-7 font-display text-2xl font-semibold leading-snug text-white/60 sm:text-3xl">
+          [témoignage à venir]
         </p>
-        <p className="mt-6 text-sm font-medium text-white/85">— Un artisan électricien, utilisateur bêta</p>
+        <p className="mt-6 text-sm font-medium text-white/85">
+          Les premiers retours des artisans de la bêta seront publiés ici, mot pour mot.
+        </p>
       </div>
     </section>
   );

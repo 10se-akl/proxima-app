@@ -653,3 +653,63 @@
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   cursor: pointer;
 }
+
+/* ============================================================
+   Accueil refondu (20/09) — le mouvement permanent.
+
+   Ce qui sépare un site figé d'un site vivant n'est pas un effet
+   spectaculaire, c'est qu'il y ait TOUJOURS quelque chose qui bouge très
+   lentement : imperceptible si on le cherche, ressenti si on ne le
+   cherche pas. Tout est ici en transformation CSS (composite GPU,
+   aucun recalcul de mise en page), et tout disparaît sous
+   prefers-reduced-motion — pas d'exception.
+   ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  /* La dérive des dessins métier : 10 px sur 19 secondes. Personne ne la
+     voit bouger ; tout le monde voit que la page respire. */
+  .derive-lente {
+    animation: derive-lente 19s ease-in-out infinite alternate;
+    will-change: transform;
+  }
+  @keyframes derive-lente {
+    from {
+      transform: translate3d(0, 0, 0) rotate(-0.4deg);
+    }
+    to {
+      transform: translate3d(0, -10px, 0) rotate(0.4deg);
+    }
+  }
+
+  /* Le niveau sonore de la maquette "note vocale" : des barres qui
+     respirent, pas un vumètre qui saute. */
+  .onde-son {
+    animation: onde-son 2.6s ease-in-out infinite;
+    transform-origin: bottom;
+  }
+  @keyframes onde-son {
+    0%,
+    100% {
+      transform: scaleY(0.5);
+    }
+    50% {
+      transform: scaleY(1);
+    }
+  }
+
+  /* Les lignes du devis qui se posent l'une après l'autre, une seule fois
+     à l'affichage — le geste du produit, pas une boucle. */
+  .ligne-devis {
+    opacity: 0;
+    animation: ligne-devis 0.5s ease-out forwards;
+  }
+  @keyframes ligne-devis {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}

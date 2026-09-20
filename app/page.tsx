@@ -1,24 +1,23 @@
-import { LandingImmersive } from "@/components/marketing/LandingImmersive";
+import { Accueil } from "@/components/marketing/accueil/Accueil";
 import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 
 // ============================================================
 // Refonte navigation (Module 16, voir supabase/schema.sql) : Axel veut que
 // le site vitrine et l'app fonctionnent comme un seul produit, sans jamais
 // avoir besoin de se déconnecter pour naviguer de l'un à l'autre. On ne
-// redirige donc plus un artisan connecté vers /dashboard ici — le Header
-// (voir components/marketing/LandingPage.tsx, réutilisé par
-// LandingImmersive) détecte simplement la session et affiche "Dashboard" à
-// la place de "Connexion"/"Rejoindre la bêta", pour qu'il puisse revenir
-// sur l'accueil marketing librement.
+// redirige donc pas un artisan connecté vers /dashboard ici — le Header
+// détecte simplement la session et affiche "Dashboard" à la place de
+// "Connexion"/"Rejoindre la bêta".
 //
-// Nouvelle direction artistique (validée par Axel après essai sur
-// /apercu-immersif) : accueil immersif sombre, storytelling visuel plutôt
-// que liste de fonctionnalités. L'ancienne landing (LandingPage.tsx) reste
-// dans le repo, inchangée, au cas où — simplement plus utilisée ici.
+// 20/09 — Refonte de l'accueil : récit plutôt que sommaire, voir
+// components/marketing/accueil/Accueil.tsx. L'ancienne version immersive
+// (LandingImmersive.tsx) reste en place, visible sur /apercu-immersif, et
+// l'ancienne landing multi-pages (LandingPage.tsx) fournit toujours le
+// Header et le Footer partagés par tout le site.
 // ============================================================
 
 export default function HomePage() {
-  // Les avis Google se lisent côté serveur (clé d'API privée) : on les
-  // passe à l'accueil, qui tourne dans le navigateur.
-  return <LandingImmersive avis={<SectionAvisGoogle />} />;
+  // Les avis Google se lisent côté serveur (clé d'API privée) : la section
+  // ne rend rien tant qu'il n'y a pas de fiche Google.
+  return <Accueil avis={<SectionAvisGoogle />} />;
 }

@@ -320,6 +320,26 @@ const BRUTS: Brut[] = [
     ],
     tvaPct: 20,
   },
+  {
+    // 20/09 — Dix-huitième métier de lib/metiers.ts, absent jusqu'ici.
+    // Une entreprise de rénovation chiffre justement ce que les autres
+    // chiffrent séparément : d'où un devis en plusieurs corps d'état.
+    id: "renovation",
+    nom: "Entreprise de rénovation",
+    typeChantier: "autre",
+    chantier: "Rénovation complète d'un appartement",
+    cotes: [
+      { libelle: "Surface", valeur: "62 m²" },
+      { libelle: "Durée", valeur: "6 semaines" },
+    ],
+    lignes: [
+      { designation: "Dépose, évacuation et protection des sols", quantite: 1, unite: "forfait", prixUnitaire: 2400 },
+      { designation: "Cloisons, doublages et plafonds", quantite: 62, unite: "m²", prixUnitaire: 78 },
+      { designation: "Électricité et plomberie, reprise complète", quantite: 1, unite: "forfait", prixUnitaire: 8900 },
+      { designation: "Peinture et revêtements de sol", quantite: 62, unite: "m²", prixUnitaire: 96 },
+    ],
+    tvaPct: 10,
+  },
 ];
 
 export const EXEMPLES_METIERS: ExempleMetier[] = BRUTS.map(({ typeChantier, ...m }) => ({

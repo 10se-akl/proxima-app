@@ -139,6 +139,11 @@ const LIENS_NAV = [
   { href: "/beta", label: "Bêta" },
   { href: "/a-propos", label: "À propos" },
   { href: "/contact", label: "Contact" },
+  // 20/09 — Onglet à part entière, pas seulement un lien de pied de page :
+  // installer l'app est une action que l'artisan doit pouvoir retrouver
+  // quand IL le décide. La carte automatique, elle, ne se propose qu'une
+  // fois par navigateur et disparaissait ensuite pour toujours.
+  { href: "/installer", label: "Installer" },
 ];
 
 export function Header({
@@ -186,7 +191,7 @@ export function Header({
           <span className="font-display font-semibold tracking-tight">Compyo</span>
         </Link>
 
-        <nav className="hidden xl:flex items-center gap-5">
+        <nav className="hidden xl:flex items-center gap-4">
           {LIENS_NAV.map((lien) => (
             <Link
               key={lien.href}

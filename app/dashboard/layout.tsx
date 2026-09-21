@@ -20,6 +20,16 @@ export default async function DashboardLayout({
     redirect("/login");
   }
 
+  // Module 43 (21/09) — deuxième barrière, identique à celle du
+  // middleware : si une page du dashboard était un jour servie sans passer
+  // par lui (matcher modifié, route oubliée), un compte en attente reste
+  // dehors. Seul le statut explicite "en_attente" bloque : les comptes
+  // créés avant le Module 43 et les employés invités n'ont pas ce statut,
+  // ils ne sont pas concernés.
+  if (user.app_metadata?.acces === "en_attente") {
+    redirect("/candidature-en-cours");
+  }
+
   const { data: profil } = await supabase
     .from("profils")
     .select("nom, metier")

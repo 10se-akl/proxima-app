@@ -84,6 +84,23 @@ export async function middleware(request: NextRequest) {
       url.pathname = "/login";
       return NextResponse.redirect(url);
     }
+
+    // Module 43 (21/09) — un compte dont la candidature n'est pas encore
+    // acceptée n'entre pas dans l'app. Le statut vient de app_metadata,
+    // que seul le serveur peut écrire (voir lib/candidatures/
+    // creerCompteCandidat.ts), et getUser() le relit auprès du serveur
+    // d'authentification à chaque requête : dès qu'Axel accepte, la
+    // navigation suivante passe. Aucune requête en base ici.
+    //
+    // Première des trois barrières : le layout du dashboard refait la même
+    // vérification, et la base elle-même n'ouvre les données qu'aux
+    // membres d'une organisation — qu'un compte en attente n'a pas.
+    if (besoinSession && user?.app_metadata?.acces === "en_attente") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/candidature-en-cours";
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   return response;

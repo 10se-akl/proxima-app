@@ -73,6 +73,14 @@ function CandidatureCard({ candidature }: { candidature: Candidature }) {
         <div>
           <p className="font-semibold text-sm">
             {candidature.prenom} {candidature.nom} — {candidature.metier}
+            {/* Module 43 — distinguer d'un coup d'œil les deux parcours :
+                compte déjà créé (accepter l'ouvre) ou ancienne candidature
+                (accepter envoie une invitation). */}
+            {candidature.statut === "pending" && (
+              <span className="ml-2 rounded-full bg-ink/5 px-2 py-0.5 align-middle font-mono text-[10px] font-normal uppercase tracking-wider text-ink/50">
+                {candidature.user_id ? "compte créé" : "sans compte"}
+              </span>
+            )}
           </p>
           <p className="text-xs text-ink/50 mt-0.5">
             {candidature.entreprise ?? "Sans entreprise renseignée"} · {candidature.email} ·{" "}

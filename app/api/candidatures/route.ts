@@ -1,77 +1,48 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { notifierNouvelleCandidature } from "@/lib/email";
-import type { Candidature } from "@/types";
+import { creerCompteCandidat, validerCandidat } from "@/lib/candidatures/creerCompteCandidat";
+
+// ============================================================
+// Demande d'accès (Module 43, 21/09) — la candidature crée le compte.
+//
+// Avant : la candidature n'était qu'une ligne en base ; le compte était
+// créé à l'acceptation, puis l'artisan recevait un lien pour choisir son
+// mot de passe. Maintenant, il choisit son mot de passe ici, et le compte
+// naît « en attente » (voir lib/candidatures/creerCompteCandidat.ts).
+//
+// ⚠️ Ce corps de requête contient un mot de passe : il n'est JAMAIS
+// journalisé, ni ici ni dans creerCompteCandidat. Ne pas ajouter de
+// console.log(body) pour déboguer.
+// ============================================================
 
 export async function POST(request: NextRequest) {
-  const body = await request.json();
+  const corps = await request.json().catch(() => null);
 
-  const {
-    nom,
-    prenom,
-    entreprise,
-    metier,
-    telephone,
-    email,
-    nbEmployes,
-    devisParSemaine,
-    problemePrincipal,
-    decouverte,
-  } = body;
-
-  if (!nom || !prenom || !metier || !telephone || !email || !problemePrincipal) {
-    return NextResponse.json({ error: "Champs requis manquants" }, { status: 400 });
+  // Champ piège, invisible pour un humain (voir app/demander-acces) : un
+  // robot qui remplit tous les champs le remplit aussi. On lui répond
+  // comme à un vrai candidat, pour ne rien lui apprendre, sans rien créer.
+  if (corps && typeof corps.siteWeb === "string" && corps.siteWeb.trim() !== "") {
+    return NextResponse.json({ ok: true });
   }
 
-  const supabase = createClient();
+  const validation = validerCandidat(corps);
+  if (!validation.ok) {
+    return NextResponse.json({ error: validation.message }, { status: 400 });
+  }
 
-  // Pas de .select() après l'insert : la règle de sécurité interdit
-  // volontairement à un visiteur anonyme de relire les candidatures (pour
-  // protéger la liste des candidats). Demander une relecture ici ferait
-  // échouer .single() même quand l'insertion elle-même a réussi.
-  const { error } = await supabase.from("candidatures").insert({
-    nom,
-    prenom,
-    entreprise: entreprise || null,
-    metier,
-    telephone,
-    email,
-    nb_employes: nbEmployes || null,
-    devis_par_semaine: devisParSemaine || null,
-    probleme_principal: problemePrincipal,
-    decouverte: decouverte || null,
-  });
-
-  if (error) {
-    console.error(error);
+  const resultat = await creerCompteCandidat(validation.donnees);
+  if (!resultat.ok) {
     return NextResponse.json(
-      { error: "Impossible d'enregistrer la candidature" },
-      { status: 500 }
+      { error: resultat.message, raison: resultat.raison },
+      { status: resultat.raison === "email_existant" ? 409 : 500 }
     );
   }
 
-  // IMPORTANT : on attend la fin de l'envoi avant de répondre. Sur un
-  // environnement serverless (Vercel), le traitement peut être coupé net
-  // dès que la réponse HTTP est envoyée — un appel "en tâche de fond" sans
-  // await n'a alors aucune garantie de se terminer, ce qui rendait l'envoi
-  // aléatoire (parfois reçu, parfois non, sans aucune erreur visible nulle
-  // part, puisque le processus était tué avant même d'avoir pu échouer
-  // proprement). notifierNouvelleCandidature() attrape déjà ses propres
-  // erreurs en interne, donc l'attendre ici ne fait toujours pas échouer la
-  // candidature si l'email a un problème — juste que l'envoi a maintenant
-  // la garantie de réellement se terminer.
-  await notifierNouvelleCandidature({
-    nom,
-    prenom,
-    entreprise: entreprise || null,
-    metier,
-    telephone,
-    email,
-    nb_employes: nbEmployes || null,
-    devis_par_semaine: devisParSemaine || null,
-    probleme_principal: problemePrincipal,
-    decouverte: decouverte || null,
-  } as Candidature);
+  // Attendu avant de répondre : sur Vercel, un envoi non attendu peut être
+  // coupé net dès que la réponse part. notifierNouvelleCandidature attrape
+  // déjà ses propres erreurs : un email raté ne fait jamais échouer la
+  // candidature, qui reste visible dans /admin/candidatures.
+  await notifierNouvelleCandidature(resultat.candidature);
 
   return NextResponse.json({ ok: true });
 }

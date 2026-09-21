@@ -71,6 +71,9 @@ export default function LoginPage() {
           <Button type="submit" disabled={chargement} className="w-full mt-2">
             {chargement ? "Connexion…" : "Se connecter"}
           </Button>
+          <Link href="/mot-de-passe-oublie" className="text-center text-sm text-ink/55 underline hover:text-ink">
+            Mot de passe oublié ?
+          </Link>
         </form>
 
         <p className="mt-6 text-sm text-ink/60 text-center">

@@ -139,3 +139,55 @@ export async function notifierNouvelleCandidature(candidature: Candidature) {
     }
   }
 }
+
+// ============================================================
+// Accès accepté (Module 43, 21/09) — l'email que reçoit l'artisan quand
+// Axel accepte sa candidature. Plus de lien « définissez votre mot de
+// passe » : il l'a choisi en candidatant, il se connecte directement.
+//
+// Comme le bilan mensuel, cet email part vers l'adresse de l'ARTISAN :
+// il faut donc RESEND_FROM_EMAIL (un domaine vérifié sur Resend). Sans
+// lui, rien ne part — et c'est dit à Axel au moment où il accepte (voir
+// app/api/admin/candidatures/[id]/route.ts), pour qu'il prévienne
+// l'artisan lui-même au lieu de croire que c'est fait.
+// ============================================================
+export async function envoyerAccesAccepte(params: {
+  destinataire: string;
+  prenom: string;
+  urlConnexion: string;
+}): Promise<"envoye" | "non_configure"> {
+  const expediteur = process.env.RESEND_FROM_EMAIL;
+  if (!process.env.RESEND_API_KEY || !expediteur) return "non_configure";
+
+  const texte = `Bonjour ${params.prenom},
+
+Bonne nouvelle : votre candidature à la bêta de Compyo est acceptée.
+
+Vous pouvez vous connecter dès maintenant, avec l'adresse email et le mot de passe que vous avez choisis en faisant votre demande :
+${params.urlConnexion}
+
+Si vous avez oublié votre mot de passe, la page de connexion vous permet d'en recevoir un nouveau.
+
+À très vite sur Compyo,
+Axel`;
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: expediteur,
+      to: params.destinataire,
+      subject: "Votre accès à Compyo est ouvert",
+      text: texte,
+    }),
+  });
+
+  if (!res.ok) {
+    const corpsErreur = await res.text().catch(() => "(corps illisible)");
+    throw new Error(`Resend a répondu ${res.status} : ${corpsErreur}`);
+  }
+  return "envoye";
+}

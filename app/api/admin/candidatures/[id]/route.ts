@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { envoyerAccesAccepte } from "@/lib/email";
+import { SITE_URL } from "@/lib/site";
+import type { Candidature } from "@/types";
 
 async function verifierAdmin() {
   const supabase = createClient();
@@ -39,6 +42,16 @@ export async function PATCH(
 
   if (fetchError || !candidature) {
     return NextResponse.json({ error: "Candidature introuvable" }, { status: 404 });
+  }
+
+  // Module 43 (21/09) — une candidature qui porte un user_id a été déposée
+  // avec le nouveau formulaire : le compte existe déjà, avec le mot de
+  // passe choisi par l'artisan. Les candidatures plus anciennes (sans
+  // compte) gardent le chemin d'origine, plus bas : invitation par email.
+  if (candidature.user_id) {
+    return action === "accepter"
+      ? accepterCompteExistant(admin, candidature as Candidature & { user_id: string })
+      : refuserCompteExistant(admin, candidature as Candidature & { user_id: string });
   }
 
   if (action === "refuser") {
@@ -101,6 +114,14 @@ export async function PATCH(
             utilisateurExistant.id,
             candidature.entreprise ?? `${candidature.prenom} ${candidature.nom}`
           );
+          // Module 43 — ce compte existant peut être celui d'une seconde
+          // candidature déposée avec le nouveau formulaire, donc « en
+          // attente ». L'accepter ici sans l'activer le laisserait dehors.
+          if (utilisateurExistant.app_metadata?.acces === "en_attente") {
+            await admin.auth.admin.updateUserById(utilisateurExistant.id, {
+              app_metadata: { acces: "actif" },
+            });
+          }
           await admin.from("candidatures").update({ statut: "accepted" }).eq("id", params.id);
           return NextResponse.json({
             ok: true,
@@ -176,4 +197,113 @@ async function creerOrganisationProprietaire(
     .insert({ organisation_id: org.id, user_id: userId, role: "proprietaire" });
 
   return membershipError ?? null;
+}
+
+// ============================================================
+// Module 43 (21/09) — accepter une candidature dont le compte existe déjà.
+//
+// Chaque étape est rejouable : si l'une échoue, Axel reclique sur
+// « Accepter » et on reprend là où ça s'était arrêté, sans doublon. Et
+// l'ordre est choisi pour qu'un échec laisse toujours le compte FERMÉ :
+// le statut ne passe à "actif" qu'une fois le profil et l'organisation
+// en place.
+// ============================================================
+async function accepterCompteExistant(
+  admin: ReturnType<typeof createAdminClient>,
+  candidature: Candidature & { user_id: string }
+) {
+  const userId = candidature.user_id;
+  const nomComplet = `${candidature.prenom} ${candidature.nom}`;
+
+  // 1. Profil
+  const { data: profil } = await admin.from("profils").select("id").eq("id", userId).maybeSingle();
+  if (!profil) {
+    const { error } = await admin.from("profils").insert({
+      id: userId,
+      nom: nomComplet,
+      entreprise: candidature.entreprise,
+      metier: candidature.metier,
+      email: candidature.email,
+    });
+    if (error) {
+      console.error("Acceptation : profil non créé —", error.message);
+      return NextResponse.json({ error: "Profil non créé. Le compte reste fermé : réessayez." }, { status: 500 });
+    }
+  }
+
+  // 2. Organisation (dont il devient propriétaire)
+  const { data: membership } = await admin
+    .from("memberships")
+    .select("organisation_id")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (!membership) {
+    const erreurOrg = await creerOrganisationProprietaire(admin, userId, candidature.entreprise ?? nomComplet);
+    if (erreurOrg) {
+      console.error("Acceptation : organisation non créée —", erreurOrg);
+      return NextResponse.json(
+        { error: "Organisation non créée. Le compte reste fermé : réessayez." },
+        { status: 500 }
+      );
+    }
+  }
+
+  // 3. Ouverture du compte — en dernier, une fois tout le reste en place.
+  // Supabase fusionne app_metadata : les autres clés (fournisseur de
+  // connexion) sont conservées.
+  const { error: erreurOuverture } = await admin.auth.admin.updateUserById(userId, {
+    app_metadata: { acces: "actif" },
+  });
+  if (erreurOuverture) {
+    console.error("Acceptation : ouverture du compte impossible —", erreurOuverture.message);
+    return NextResponse.json(
+      { error: "Profil prêt, mais le compte n'a pas pu être ouvert. Réessayez." },
+      { status: 500 }
+    );
+  }
+
+  await admin.from("candidatures").update({ statut: "accepted" }).eq("id", candidature.id);
+
+  // 4. Prévenir l'artisan. Un échec ici n'annule rien (il peut déjà se
+  // connecter) — mais Axel doit le savoir, pour le prévenir lui-même.
+  let info: string | undefined;
+  try {
+    const envoi = await envoyerAccesAccepte({
+      destinataire: candidature.email,
+      prenom: candidature.prenom,
+      urlConnexion: `${SITE_URL}/login`,
+    });
+    if (envoi === "non_configure") {
+      info = `Accès ouvert. Aucun email n'est parti (RESEND_FROM_EMAIL n'est pas configuré) : préviens ${candidature.prenom} toi-même au ${candidature.telephone}.`;
+    }
+  } catch (err) {
+    console.error("Acceptation : email d'accès non envoyé —", err);
+    info = `Accès ouvert, mais l'email n'a pas pu partir : préviens ${candidature.prenom} toi-même au ${candidature.telephone}.`;
+  }
+
+  return NextResponse.json({ ok: true, ...(info ? { info } : {}) });
+}
+
+// Refuser : le compte est SUPPRIMÉ, pas désactivé (choix d'Axel, 21/09).
+// Garder un compte inutilisable avec un mot de passe n'a aucune utilité,
+// et le RGPD demande de ne pas conserver sans raison. La candidature
+// reste, marquée refusée, pour l'historique ; son user_id repasse à null
+// tout seul (on delete set null). La personne pourra recandidater.
+async function refuserCompteExistant(
+  admin: ReturnType<typeof createAdminClient>,
+  candidature: Candidature & { user_id: string }
+) {
+  // Suppression d'abord : c'est l'action qui compte. Si elle échoue, rien
+  // n'a changé et Axel peut simplement réessayer.
+  const { error: erreurSuppression } = await admin.auth.admin.deleteUser(candidature.user_id);
+  if (erreurSuppression) {
+    console.error("Refus : suppression du compte impossible —", erreurSuppression.message);
+    return NextResponse.json(
+      { error: "Le compte n'a pas pu être supprimé. Rien n'a changé : réessayez." },
+      { status: 500 }
+    );
+  }
+
+  await admin.from("candidatures").update({ statut: "rejected" }).eq("id", candidature.id);
+  return NextResponse.json({ ok: true });
 }

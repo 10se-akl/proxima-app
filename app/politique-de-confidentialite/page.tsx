@@ -44,6 +44,14 @@ export default function PolitiqueConfidentialitePage() {
           peuvent être conservées un temps raisonnable pour garder une trace des échanges, puis
           supprimées sur simple demande.
         </p>
+        <p>
+          Envoyer une candidature crée aussi votre compte Compyo, avec l&apos;email et le mot de
+          passe que vous choisissez. Le mot de passe est confié à notre prestataire
+          d&apos;authentification (Supabase), qui le conserve sous une forme chiffrée
+          irréversible : personne chez Compyo ne peut le lire. Tant que votre candidature n&apos;est
+          pas acceptée, ce compte ne donne accès à aucune fonctionnalité ; si elle est refusée, il
+          est supprimé.
+        </p>
       </section>
 
       <section>

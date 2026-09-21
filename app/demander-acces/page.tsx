@@ -1,13 +1,20 @@
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { ErreurInline } from "@/components/ui/EtatErreur";
 import { METIERS } from "@/lib/metiers";
+import { createClient } from "@/lib/supabase/client";
+
+// Module 43 (21/09) — la candidature crée directement le compte, avec le
+// mot de passe choisi ici. Plus d'email « définissez votre mot de passe »
+// après l'acceptation : l'artisan se connecte avec celui-ci dès qu'Axel a
+// dit oui. Voir app/api/candidatures/route.ts.
+const LONGUEUR_MIN_MOT_DE_PASSE = 8;
 
 // Next.js exige que tout composant utilisant useSearchParams() soit
 // entouré d'une frontière <Suspense> — sinon le pré-rendu statique de la
@@ -21,6 +28,7 @@ export default function DemanderAccesPage() {
 }
 
 function DemanderAccesForm() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const parrain = searchParams.get("parraine_par");
 
@@ -31,11 +39,17 @@ function DemanderAccesForm() {
     metier: "",
     telephone: "",
     email: "",
+    motDePasse: "",
+    motDePasseConfirmation: "",
     nbEmployes: "",
     devisParSemaine: "",
     problemePrincipal: "",
     decouverte: "",
+    // Champ piège : invisible pour un humain, rempli par les robots qui
+    // remplissent tout. Voir app/api/candidatures/route.ts.
+    siteWeb: "",
   });
+  const [compteExistant, setCompteExistant] = useState(false);
 
   useEffect(() => {
     if (parrain) {
@@ -63,7 +77,24 @@ function DemanderAccesForm() {
   // la saisie). Même pattern que components/carte-mentale/CarteMentale.tsx.
   async function envoyerCandidature() {
     setErreur(null);
+    setCompteExistant(false);
+
+    // Vérifiées ici pour une réponse immédiate, et de nouveau côté serveur
+    // (lib/candidatures/creerCompteCandidat.ts), seul contrôle qui compte.
+    if (form.motDePasse.length < LONGUEUR_MIN_MOT_DE_PASSE) {
+      setErreur(`Choisissez un mot de passe d'au moins ${LONGUEUR_MIN_MOT_DE_PASSE} caractères.`);
+      return;
+    }
+    if (form.motDePasse !== form.motDePasseConfirmation) {
+      setErreur("Les deux mots de passe ne sont pas identiques.");
+      return;
+    }
+
     setEnvoi(true);
+    // Pendant la redirection vers la page d'attente, le bouton reste
+    // désactivé : sinon il redevient cliquable une fraction de seconde et
+    // un double appui renverrait la candidature.
+    let redirection = false;
     try {
       const res = await fetch("/api/candidatures", {
         method: "POST",
@@ -72,15 +103,34 @@ function DemanderAccesForm() {
       });
 
       if (!res.ok) {
-        setErreur("L'envoi a échoué. Réessayez dans un instant.");
+        const data = await res.json().catch(() => null);
+        if (res.status === 409) {
+          setCompteExistant(true);
+          return;
+        }
+        setErreur(data?.error ?? "L'envoi a échoué. Réessayez dans un instant.");
         return;
       }
 
+      // Le compte existe : on connecte l'artisan tout de suite, pour qu'il
+      // voie où en est sa candidature et n'ait rien à retaper plus tard.
+      // S'il n'est pas connecté pour une raison quelconque, la candidature
+      // est quand même partie : on le lui dit simplement.
+      const { error } = await createClient().auth.signInWithPassword({
+        email: form.email.trim().toLowerCase(),
+        password: form.motDePasse,
+      });
+      if (!error) {
+        redirection = true;
+        router.push("/candidature-en-cours");
+        router.refresh();
+        return;
+      }
       setEnvoye(true);
     } catch {
       setErreur("Connexion impossible. Vérifiez votre réseau et réessayez.");
     } finally {
-      setEnvoi(false);
+      if (!redirection) setEnvoi(false);
     }
   }
 
@@ -96,11 +146,12 @@ function DemanderAccesForm() {
           <p className="font-display font-semibold text-lg">Compyo</p>
           <h1 className="mt-4 text-xl font-semibold">Candidature envoyée.</h1>
           <p className="mt-3 text-sm text-ink/65">
-            Nous examinons chaque candidature individuellement. Si elle est retenue, vous
-            recevrez un email pour activer votre accès.
+            Votre compte est créé. Nous examinons chaque candidature individuellement : dès
+            qu&apos;elle est acceptée, vous pourrez vous connecter avec votre email et le mot de
+            passe que vous venez de choisir.
           </p>
-          <Link href="/" className="mt-6 inline-block text-sm text-ink underline">
-            Retour à l&apos;accueil
+          <Link href="/login" className="mt-6 inline-block text-sm text-ink underline">
+            Aller à la connexion
           </Link>
         </Card>
       </main>
@@ -166,9 +217,37 @@ function DemanderAccesForm() {
                 label="Email"
                 type="email"
                 required
+                autoComplete="email"
                 value={form.email}
                 onChange={update("email")}
               />
+
+              {/* Le mot de passe du futur compte : c'est celui que l'artisan
+                  utilisera dès l'acceptation, sans autre étape. autoComplete
+                  "new-password" permet au téléphone de le proposer et de le
+                  mémoriser — le meilleur moyen de ne pas l'oublier d'ici là. */}
+              <Field
+                label="Mot de passe"
+                type="password"
+                required
+                minLength={LONGUEUR_MIN_MOT_DE_PASSE}
+                autoComplete="new-password"
+                value={form.motDePasse}
+                onChange={update("motDePasse")}
+              />
+              <Field
+                label="Confirmer le mot de passe"
+                type="password"
+                required
+                minLength={LONGUEUR_MIN_MOT_DE_PASSE}
+                autoComplete="new-password"
+                value={form.motDePasseConfirmation}
+                onChange={update("motDePasseConfirmation")}
+              />
+              <p className="-mt-3 text-xs text-ink/50 sm:col-span-2">
+                8 caractères minimum. C&apos;est avec ce mot de passe que vous vous connecterez dès
+                que votre candidature sera acceptée.
+              </p>
 
               <div>
                 <label className="block text-xs font-medium text-ink/70 mb-1.5">
@@ -218,6 +297,32 @@ function DemanderAccesForm() {
               value={form.decouverte}
               onChange={update("decouverte")}
             />
+
+            {/* Champ piège : hors de l'écran (pas display:none, que les
+                robots savent ignorer), retiré de l'ordre de tabulation et
+                caché aux lecteurs d'écran — un humain ne le voit jamais. */}
+            <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
+              <label>
+                Site web
+                <input
+                  type="text"
+                  tabIndex={-1}
+                  autoComplete="off"
+                  value={form.siteWeb}
+                  onChange={update("siteWeb")}
+                />
+              </label>
+            </div>
+
+            {compteExistant && (
+              <p className="rounded-xl border border-ink/10 bg-paper-warm px-4 py-3 text-sm text-ink/80">
+                Un compte existe déjà avec cette adresse email.{" "}
+                <Link href="/login" className="font-medium underline">
+                  Connectez-vous
+                </Link>{" "}
+                pour voir où en est votre candidature.
+              </p>
+            )}
 
             {erreur && <ErreurInline message={erreur} onReessayer={envoyerCandidature} />}
 

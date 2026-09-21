@@ -2406,3 +2406,51 @@ begin
   limit 1;
 end;
 $$;
+
+-- ============================================================
+-- Module 43 (21/09) — Demande d'accès en une seule étape.
+--
+-- Avant : candidature → acceptation → email d'invitation → l'artisan
+-- choisit son mot de passe → connexion. Maintenant, le formulaire de
+-- candidature crée directement le compte, avec le mot de passe choisi par
+-- l'artisan. Le compte naît « en attente » et ne donne accès à rien tant
+-- qu'Axel n'a pas accepté la candidature.
+--
+-- OÙ VIT LE STATUT DU COMPTE : dans auth.users.raw_app_meta_data
+-- ("acces": "en_attente" puis "actif"), posé par le serveur au moment de
+-- la création via l'API d'administration de Supabase Auth (voir
+-- lib/candidatures/creerCompteCandidat.ts). Pas dans une table : l'artisan
+-- ne peut modifier NI app_metadata (réservé à la clé service_role) NI
+-- la créer lui-même, puisque les inscriptions publiques restent fermées
+-- (réglage Supabase « Allow new users to sign up » : désactivé).
+--
+-- Pourquoi pas un trigger sur auth.users qui poserait ce statut : Supabase
+-- Auth réécrit raw_app_meta_data juste après la création du compte (liste
+-- des fournisseurs de connexion), avec sa propre copie en mémoire — un
+-- statut posé par trigger pouvait donc disparaître sans bruit, et le
+-- compte passer sans validation. Poser le statut à la création, par l'API
+-- prévue pour ça, n'a pas ce défaut.
+--
+-- La vraie barrière de sécurité, elle, ne change pas : toutes les données
+-- métier sont réservées aux membres d'une organisation, et un compte en
+-- attente n'en a aucune (elle est créée à l'acceptation).
+-- ============================================================
+
+-- 43a — À appliquer AVANT le déploiement du code : compatible avec
+-- l'ancien code (une colonne en plus, rien de retiré).
+alter table candidatures
+  add column if not exists user_id uuid references auth.users(id) on delete set null;
+
+-- Un compte = une candidature au plus.
+create unique index if not exists candidatures_user_id_unique
+  on candidatures (user_id) where user_id is not null;
+
+-- 43b — À appliquer APRÈS le déploiement du code. Ferme l'insertion
+-- publique : n'importe quel visiteur pouvait jusqu'ici écrire une
+-- candidature directement en base, avec le statut de son choix (y compris
+-- "accepted"). Sans conséquence tant que ce statut ne donnait accès à
+-- rien, mais inacceptable dès lors qu'une candidature est liée à un
+-- compte. Désormais seul le serveur insère une candidature, après avoir
+-- vérifié le formulaire. Appliqué avant le déploiement, cette ligne
+-- casserait l'ancien formulaire pendant les quelques minutes d'attente.
+drop policy if exists "candidature ouverte à tous" on candidatures;

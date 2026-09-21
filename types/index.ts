@@ -327,6 +327,11 @@ export type Candidature = {
   decouverte: string | null;
   statut: StatutCandidature;
   created_at: string;
+  // Module 43 (21/09) — compte créé au moment de la candidature, avec le
+  // mot de passe choisi par l'artisan. Null pour les candidatures
+  // antérieures (compte créé à l'acceptation, par invitation), et après
+  // un refus (le compte est alors supprimé).
+  user_id?: string | null;
 };
 
 // Notes professionnelles (29/08) — voir Module 27, supabase/schema.sql

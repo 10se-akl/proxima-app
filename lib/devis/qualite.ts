@@ -1,6 +1,14 @@
 import type { SourceDocumentDevis } from "@/lib/devis/modeleDocument";
 import { estEntrepreneurIndividuel } from "@/lib/devis/mentionsLegales";
-import type { MentionsLegales } from "@/types";
+import type { MentionsLegales, ParametresEntreprise } from "@/types";
+import {
+  estLigneAjustementMinimum,
+  estUniteHeure,
+  estUniteJour,
+  joursDeMainOeuvre,
+  joursDepuisTexte,
+  tarifJournee,
+} from "@/lib/moteur-metier/tempsMainOeuvre";
 
 // ============================================================
 // Score du devis (17/09) — deux questions, séparées :
@@ -60,8 +68,14 @@ function point(
 }
 
 export function evaluerDevis(
-  source: Pick<SourceDocumentDevis, "lignes" | "lots" | "objet" | "validite_jours" | "tva_pct" | "mention_tva_reduite">,
-  mentions: MentionsLegales | null
+  source: Pick<
+    SourceDocumentDevis,
+    "lignes" | "lots" | "objet" | "validite_jours" | "tva_pct" | "mention_tva_reduite" | "duree_estimee"
+  >,
+  mentions: MentionsLegales | null,
+  // 21/09 — facultatif : sans les tarifs de l'artisan, les contrôles de
+  // cohérence prix / unité ne peuvent pas se faire et sont simplement sautés.
+  tarifs?: Pick<ParametresEntreprise, "cout_horaire" | "cout_journalier"> | null
 ): EvaluationDevis {
   const m = mentions;
   const lignes = source.lignes.filter((l) => l.categorie !== "deplacement");
@@ -226,6 +240,54 @@ export function evaluerDevis(
       niveau: "conseil",
       libelle: "Lignes à 0 €",
       detail: `${gratuites.length} ligne${gratuites.length > 1 ? "s" : ""} à 0,00 € apparaîtra${gratuites.length > 1 ? "ont" : ""} telle${gratuites.length > 1 ? "s" : ""} quelle${gratuites.length > 1 ? "s" : ""} sur le devis. Si c'est un geste commercial, dites-le dans le libellé (« offert »).`,
+    });
+  }
+
+  // ---- Cohérence du temps (21/09) — voir tempsMainOeuvre.ts --------------
+  // Ce que l'œil de l'artisan rate le plus facilement : une ligne passée en
+  // jours qui a gardé le prix d'une heure, et une durée annoncée au client
+  // sans rapport avec la main-d'œuvre qu'il paie.
+  const euros = (n: number) => `${n.toLocaleString("fr-FR", { maximumFractionDigits: 2 })} €`;
+  if (tarifs && tarifs.cout_horaire > 0) {
+    const mainOeuvre = lignes.filter((l) => l.categorie === "main_oeuvre" && !estLigneAjustementMinimum(l));
+    const journee = tarifJournee(tarifs);
+    const jourAuPrixHeure = mainOeuvre.find(
+      (l) => estUniteJour(l.unite) && l.prix_unitaire > 0 && l.prix_unitaire <= tarifs.cout_horaire * 2
+    );
+    if (jourAuPrixHeure) {
+      lisibilite.push({
+        id: "unite_prix",
+        niveau: "attention",
+        libelle: "Prix d'une heure sur une ligne en jours",
+        detail: `« ${jourAuPrixHeure.description.trim()} » est comptée en jours, à ${euros(jourAuPrixHeure.prix_unitaire)} l'unité : c'est le prix d'une heure. Une journée vous coûte ${euros(journee)}. Choisissez « jour » dans l'unité de la ligne : le prix se corrige tout seul.`,
+      });
+    }
+    const heureAuPrixJour = mainOeuvre.find(
+      (l) => estUniteHeure(l.unite) && l.prix_unitaire >= tarifs.cout_horaire * 4
+    );
+    if (heureAuPrixJour) {
+      lisibilite.push({
+        id: "unite_prix_heure",
+        niveau: "attention",
+        libelle: "Prix d'une journée sur une ligne en heures",
+        detail: `« ${heureAuPrixJour.description.trim()} » est comptée en heures, à ${euros(heureAuPrixJour.prix_unitaire)} l'heure, alors que votre tarif horaire est de ${euros(tarifs.cout_horaire)}. Si c'est un prix à la journée, choisissez « jour » dans l'unité de la ligne.`,
+      });
+    }
+  }
+
+  const dureeAnnoncee = joursDepuisTexte(source.duree_estimee);
+  const joursDeTravail = joursDeMainOeuvre(lignes);
+  // Seulement quand la durée annoncée est bien PLUS COURTE que le travail
+  // facturé : un chantier plus long que sa main-d'œuvre est souvent normal
+  // (séchage, livraisons), l'inverse fait croire au client à un chantier
+  // express qu'il paie pourtant plusieurs jours.
+  if (dureeAnnoncee !== null && joursDeTravail >= 1 && dureeAnnoncee < joursDeTravail / 2) {
+    const jours = Math.round(joursDeTravail * 2) / 2;
+    lisibilite.push({
+      id: "duree_estimee",
+      niveau: "conseil",
+      libelle: "Durée estimée",
+      detail: `Le devis annonce « ${source.duree_estimee?.trim()} », mais sa main-d'œuvre représente environ ${String(jours).replace(".", ",")} jour${jours > 1 ? "s" : ""} de travail (à 8 h par jour). Si vous êtes plusieurs sur le chantier, c'est peut-être normal ; sinon, le client s'attend à un chantier bien plus court que ce qu'il paie.`,
     });
   }
 

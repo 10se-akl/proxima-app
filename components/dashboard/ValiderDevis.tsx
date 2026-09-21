@@ -419,6 +419,7 @@ export function ValiderDevis({
       <EditeurLignes
         lignes={lignes}
         lots={lots}
+        tarifs={parametres ?? null}
         onChange={(nouvellesLignes, nouveauxLots) => {
           setLignes(nouvellesLignes);
           setLots(nouveauxLots);

@@ -200,7 +200,10 @@ export function VueEspaceDevis({
     () => mentionsEffectives(donnees.devis, donnees.parametres),
     [donnees]
   );
-  const evaluation = useMemo(() => evaluerDevis(source, mentions), [source, mentions]);
+  const evaluation = useMemo(
+    () => evaluerDevis(source, mentions, donnees.parametres),
+    [source, mentions, donnees.parametres]
+  );
 
   const modele = useMemo(() => {
     const { devis, projet, nomArtisan, logoUrl } = donnees;

@@ -1,3 +1,4 @@
+import { HEURES_PAR_JOURNEE, LIBELLE_AJUSTEMENT_MINIMUM, heuresDuPoste } from "@/lib/moteur-metier/tempsMainOeuvre";
 import type {
   ParametresEntreprise,
   PosteTravailIA,
@@ -156,14 +157,18 @@ function trouverPrixReference(description: string): number {
 // estime "7h de pose" pense déjà en termes de journée complète, pas d'un
 // gros reliquat d'heures.
 const SEUIL_HEURES_JOURNEE = 7;
-const HEURES_PAR_JOURNEE = 8;
+// HEURES_PAR_JOURNEE (8) et la lecture des unités viennent de
+// tempsMainOeuvre.ts (21/09), partagés avec l'éditeur et le score.
 
 function calculerLigne(
   poste: PosteTravailIA,
   parametres: ParametresEntreprise
 ): LigneDevisCalculee {
   if (poste.categorie === "main_oeuvre") {
-    const temps = poste.temps_estime_heures ?? poste.quantite;
+    // 21/09 — Avant : `temps_estime_heures ?? quantite`. Un poste que l'IA
+    // rendait en « 3 jour » sans temps en heures valait 3 HEURES. Voir
+    // heuresDuPoste : 3 jours = 24 h, une demi-journée = 4 h.
+    const temps = heuresDuPoste(poste);
 
     // Revue métier (06/09) — "cout_journalier" était configurable dans
     // Paramètres mais jamais lu ici : un maçon, un couvreur, un
@@ -243,7 +248,7 @@ function appliquerHeuresMinimum(
 
   const heuresManquantes = parametres.heures_min_facturables - totalHeures;
   const complement: LigneDevisCalculee = {
-    description: "Ajustement heures minimum facturables",
+    description: LIBELLE_AJUSTEMENT_MINIMUM,
     categorie: "main_oeuvre",
     quantite: heuresManquantes,
     unite: "heure",

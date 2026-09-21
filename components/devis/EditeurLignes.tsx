@@ -1,7 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import type { LigneDevisCalculee, LotDevis } from "@/types";
+import type { LigneDevisCalculee, LotDevis, ParametresEntreprise } from "@/types";
+import {
+  convertirLigneMainOeuvre,
+  estLigneAjustementMinimum,
+  estUniteHeure,
+  estUniteJour,
+  reajusterMinimum,
+} from "@/lib/moteur-metier/tempsMainOeuvre";
+
+// Tarifs de l'artisan : sans eux (paramètres pas encore chargés), l'éditeur
+// fonctionne comme avant, sans conversion ni ajustement automatique.
+export type TarifsEditeur = Pick<ParametresEntreprise, "cout_horaire" | "cout_journalier" | "heures_min_facturables">;
 
 // ============================================================
 // Lignes du devis, avec ou sans lots (17/09).
@@ -56,10 +67,12 @@ export function EditeurLignes({
   lignes,
   lots,
   onChange,
+  tarifs,
 }: {
   lignes: LigneEditee[];
   lots: LotDevis[];
   onChange: (lignes: LigneEditee[], lots: LotDevis[]) => void;
+  tarifs?: TarifsEditeur | null;
 }) {
   const [replies, setReplies] = useState<Set<string>>(new Set());
   const [lotAFocaliser, setLotAFocaliser] = useState<string | null>(null);
@@ -68,10 +81,28 @@ export function EditeurLignes({
   const dansLot = (l: LigneEditee, lotId: string | null) =>
     lotId === null ? !l.lot_id || !idsLots.has(l.lot_id) : l.lot_id === lotId;
 
+  // 21/09 — La ligne « Ajustement heures minimum facturables » suit les
+  // heures réelles à chaque modification (voir lib/moteur-metier/
+  // tempsMainOeuvre.ts) : sans ça, monter un poste de 0,5 h à 3 h laissait
+  // le complément de 0,5 h, payé en trop par le client.
+  const avecMinimumAJour = (l: LigneEditee[]) =>
+    tarifs ? reajusterMinimum(l, tarifs.heures_min_facturables) : l;
+
+  // Heure ↔ jour sur une ligne de main-d'œuvre : le temps est conservé, le
+  // prix unitaire devient le bon tarif. Passer « heure » en « jour » en
+  // tapant le mot gardait le prix horaire (3 jours × 45 €).
+  function changerUniteTemps(cle: string, vers: "heure" | "jour") {
+    if (!tarifs) return;
+    onChange(
+      avecMinimumAJour(lignes.map((l) => (l.cle === cle ? convertirLigneMainOeuvre(l, vers, tarifs) : l))),
+      lots
+    );
+  }
+
   // ---- lignes ----------------------------------------------------------
   function modifier(cle: string, cleChamp: keyof LigneDevisCalculee, valeur: string | null) {
     onChange(
-      lignes.map((ligne) => {
+      avecMinimumAJour(lignes.map((ligne) => {
         if (ligne.cle !== cle) return ligne;
         // null = on retire complètement le champ (explication).
         if (valeur === null) {
@@ -89,14 +120,14 @@ export function EditeurLignes({
           return majee;
         }
         return { ...ligne, [cleChamp]: valeur };
-      }),
+      })),
       lots
     );
   }
 
   function supprimer(cle: string) {
     onChange(
-      lignes.filter((l) => l.cle !== cle),
+      avecMinimumAJour(lignes.filter((l) => l.cle !== cle)),
       lots
     );
   }
@@ -211,6 +242,11 @@ export function EditeurLignes({
 
   // ---- rendu -----------------------------------------------------------
   function carteLigne(ligne: LigneEditee, position: number, nombreDansGroupe: number) {
+    // Ligne d'ajustement minimum : calculée, pas saisie (voir
+    // avecMinimumAJour). Ses montants sont en lecture seule ; l'artisan
+    // peut toujours la supprimer ou la renommer pour la reprendre en main.
+    const ajustement = Boolean(tarifs) && estLigneAjustementMinimum(ligne);
+    const uniteTemps = estUniteJour(ligne.unite) ? "jour" : estUniteHeure(ligne.unite) ? "heure" : "autre";
     return (
       <div key={ligne.cle} className="rounded-xl border border-ink/10 bg-surface p-3 transition-colors hover:border-ink/20">
         <div className="flex items-start gap-2">
@@ -258,12 +294,40 @@ export function EditeurLignes({
               min={0}
               value={ligne.quantite}
               onChange={(e) => modifier(ligne.cle, "quantite", e.target.value)}
-              className={champ}
+              readOnly={ajustement}
+              className={`${champ} ${ajustement ? "opacity-60" : ""}`}
             />
           </div>
           <div>
             <label className="mb-1 block text-[10px] text-ink/40">Unité</label>
-            <input value={ligne.unite} onChange={(e) => modifier(ligne.cle, "unite", e.target.value)} className={champ} />
+            {/* Main-d'œuvre : un choix heure / jour qui CONVERTIT le prix,
+                plutôt qu'un texte libre qui le laissait tel quel. */}
+            {tarifs && ligne.categorie === "main_oeuvre" && !ajustement ? (
+              <select
+                value={uniteTemps}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (v === "heure" || v === "jour") changerUniteTemps(ligne.cle, v);
+                }}
+                aria-label="Unité du poste"
+                className={champ}
+              >
+                <option value="heure">heure</option>
+                <option value="jour">jour</option>
+                {uniteTemps === "autre" && (
+                  <option value="autre" disabled>
+                    {ligne.unite}
+                  </option>
+                )}
+              </select>
+            ) : (
+              <input
+                value={ligne.unite}
+                onChange={(e) => modifier(ligne.cle, "unite", e.target.value)}
+                readOnly={ajustement}
+                className={`${champ} ${ajustement ? "opacity-60" : ""}`}
+              />
+            )}
           </div>
           <div>
             <label className="mb-1 block text-[10px] text-ink/40">Prix unitaire (€)</label>
@@ -273,10 +337,18 @@ export function EditeurLignes({
               min={0}
               value={ligne.prix_unitaire}
               onChange={(e) => modifier(ligne.cle, "prix_unitaire", e.target.value)}
-              className={champ}
+              readOnly={ajustement}
+              className={`${champ} ${ajustement ? "opacity-60" : ""}`}
             />
           </div>
         </div>
+        {ajustement && tarifs && (
+          <p className="mt-2 text-[11px] leading-relaxed text-ink/50">
+            Calculée automatiquement pour atteindre votre minimum de {tarifs.heures_min_facturables} h
+            facturable{tarifs.heures_min_facturables > 1 ? "s" : ""} : elle suit vos heures et
+            disparaît dès qu&apos;il est atteint. Supprimez-la si vous ne voulez pas l&apos;appliquer.
+          </p>
+        )}
         {/* Explication proposée par l'IA : l'artisan la garde, la reformule
             ou la retire. Rien à écrire s'il n'en veut pas. */}
         {typeof ligne.explication === "string" && (

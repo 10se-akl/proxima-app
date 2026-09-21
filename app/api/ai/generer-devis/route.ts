@@ -1,3 +1,4 @@
+import { heuresDuPoste } from "@/lib/moteur-metier/tempsMainOeuvre";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { appelerClaude, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
@@ -22,7 +23,9 @@ function posteEstValide(p: PosteTravailIA): boolean {
   // traité comme invalide, comme n'importe quel autre poste mal formé.
   if (!p || typeof p !== "object") return false;
   const categorieValide = ["main_oeuvre", "fourniture", "forfait"].includes(p.categorie);
-  const quantite = p.categorie === "main_oeuvre" ? (p.temps_estime_heures ?? p.quantite) : p.quantite;
+  // Même lecture du temps que le moteur (tempsMainOeuvre.ts) : « 3 jour »
+  // sans temps en heures est valide et vaut 24 h.
+  const quantite = p.categorie === "main_oeuvre" ? heuresDuPoste(p) : p.quantite;
   const quantiteValide = typeof quantite === "number" && Number.isFinite(quantite) && quantite > 0;
   const descriptionValide = typeof p.description === "string" && p.description.trim().length > 0;
   return categorieValide && quantiteValide && descriptionValide;

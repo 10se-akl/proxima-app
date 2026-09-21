@@ -28,7 +28,7 @@ import { FICHE_PAR_ID } from "@/lib/metiersPages";
 // caractère, ce qui provoque un avertissement d'hydratation React.
 function euros(n: number): string {
   const [entier, centimes] = n.toFixed(2).split(".");
-  return `${entier.replace(/\B(?=(\d{3})+(?!\d))/g, " ")},${centimes} €`;
+  return `${entier.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0")},${centimes}\u00A0€`;
 }
 
 function quantite(n: number): string {

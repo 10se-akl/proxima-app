@@ -19,8 +19,15 @@ export async function enregistrerEvenement(
     metadata?: Record<string, unknown>;
   }
 ) {
+  // 21/09 — Le client Supabase ne lève JAMAIS d'exception quand la base
+  // refuse une écriture : il renvoie { error }. Le try/catch seul ne
+  // voyait donc rien, et un événement refusé (droits, contrainte, colonne
+  // manquante après une migration non appliquée) disparaissait sans une
+  // ligne dans les journaux — c'est ce qui pouvait faire manquer un devis
+  // accepté au bilan mensuel. L'écriture reste non bloquante pour l'action
+  // en cours, mais l'échec est maintenant visible dans les logs Vercel.
   try {
-    await supabase.from("evenements_projet").insert({
+    const { error } = await supabase.from("evenements_projet").insert({
       demande_id: params.demandeId,
       artisan_id: params.artisanId,
       organisation_id: params.organisationId,
@@ -29,6 +36,13 @@ export async function enregistrerEvenement(
       detail: params.detail ?? null,
       metadata: params.metadata ?? null,
     });
+    if (error) {
+      console.error(
+        `Événement de timeline "${params.type}" refusé par la base :`,
+        error.message,
+        error.details ?? ""
+      );
+    }
   } catch (err) {
     console.error("Échec de l'enregistrement de l'événement de timeline :", err);
   }

@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { calculerBilanMensuel, bilanEstVide } from "@/lib/bilan-mensuel";
 import { envoyerBilanMensuel } from "@/lib/email";
 import { SITE_URL } from "@/lib/site";
+import { bornes, cle, decaler, moisCourant } from "@/lib/moisParis";
 
 // ============================================================
 // Cron du bilan mensuel (08/09) — voir Module 32, supabase/schema.sql, et
@@ -22,11 +23,11 @@ import { SITE_URL } from "@/lib/site";
 
 export const maxDuration = 60;
 
+// 21/09 — À l'heure de Paris : le serveur tourne en UTC, et
+// `new Date(année, mois, 1)` y tombait à 2 h du matin l'été. Un devis
+// accepté le 1er à 1 h passait dans le mauvais mois (voir lib/moisParis.ts).
 function moisPrecedent(): { debut: Date; fin: Date } {
-  const maintenant = new Date();
-  const debut = new Date(maintenant.getFullYear(), maintenant.getMonth() - 1, 1);
-  const fin = new Date(maintenant.getFullYear(), maintenant.getMonth(), 1);
-  return { debut, fin };
+  return bornes(decaler(moisCourant(), -1));
 }
 
 export async function GET(request: NextRequest) {
@@ -42,6 +43,9 @@ export async function GET(request: NextRequest) {
 
   const supabase = createAdminClient();
   const { debut, fin } = moisPrecedent();
+  // L'email parle du mois écoulé : son lien doit ouvrir CE mois-là. La page
+  // s'ouvre sinon sur le mois en cours (voir app/dashboard/bilan/page.tsx).
+  const moisDuBilan = cle(decaler(moisCourant(), -1));
 
   const { data: organisations, error } = await supabase.from("organisations").select("id, cree_par");
 
@@ -87,7 +91,7 @@ export async function GET(request: NextRequest) {
               destinataire,
               prenom,
               bilan,
-              urlBilan: `${SITE_URL}/dashboard/bilan`,
+              urlBilan: `${SITE_URL}/dashboard/bilan?mois=${moisDuBilan}`,
             });
             envoyee = true;
           }

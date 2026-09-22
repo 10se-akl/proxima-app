@@ -4,6 +4,7 @@ import { SITE_URL } from "@/lib/site";
 import { InstallPWA } from "@/components/pwa/InstallPWA";
 import { MiseAJourPWA } from "@/components/pwa/MiseAJourPWA";
 import { EnregistrerServiceWorker } from "@/components/pwa/EnregistrerServiceWorker";
+import { MesureAudience } from "@/components/MesureAudience";
 
 const URL_SITE = SITE_URL;
 const TITRE = "Compyo — L'assistant qui s'occupe de l'administratif des artisans";
@@ -251,6 +252,9 @@ export default function RootLayout({
         <EnregistrerServiceWorker />
         <InstallPWA />
         <MiseAJourPWA />
+        {/* Mesure d'audience maison, sans cookie (Module 44) — voir
+            components/MesureAudience.tsx et app/api/visite/route.ts. */}
+        <MesureAudience />
       </body>
     </html>
   );

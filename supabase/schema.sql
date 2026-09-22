@@ -2454,3 +2454,91 @@ create unique index if not exists candidatures_user_id_unique
 -- vérifié le formulaire. Appliqué avant le déploiement, cette ligne
 -- casserait l'ancien formulaire pendant les quelques minutes d'attente.
 drop policy if exists "candidature ouverte à tous" on candidatures;
+
+-- ============================================================
+-- Module 44 (22/09) — Statistiques : mesure d'audience maison et
+-- exclusion des comptes de test.
+--
+-- Axel veut une seule page de statistiques (/admin/statistiques) : les
+-- visites du site ET l'usage de l'app, sans outil extérieur.
+--
+-- MESURE D'AUDIENCE SANS COOKIE. Chaque page vue enregistre : la page,
+-- d'où vient le visiteur (le nom du site seulement, jamais l'adresse
+-- complète), le type d'appareil, le navigateur, le pays. Aucun cookie,
+-- aucune adresse IP stockée, aucun identifiant de compte. Le visiteur est
+-- représenté par une empreinte qui CHANGE CHAQUE JOUR (voir
+-- app/api/visite/route.ts) : on sait compter les visiteurs d'une journée,
+-- jamais suivre quelqu'un d'un jour à l'autre. C'est le cadre dans lequel
+-- la CNIL dispense la mesure d'audience de consentement : finalité limitée
+-- à la mesure, données anonymes, conservation limitée (13 mois ici).
+--
+-- Personne ne lit ni n'écrit la table directement : l'écriture passe par
+-- enregistrer_visite(), qui valide chaque champ ; la lecture, par la page
+-- d'administration (clé service_role).
+-- ============================================================
+
+create table if not exists visites (
+  id bigint generated always as identity primary key,
+  cree_le timestamptz not null default now(),
+  chemin text not null,
+  origine text,
+  appareil text not null check (appareil in ('mobile', 'tablette', 'ordinateur')),
+  navigateur text,
+  pays text,
+  visiteur text not null,
+  source text
+);
+
+create index if not exists visites_cree_le_idx on visites (cree_le);
+
+alter table visites enable row level security;
+-- Volontairement AUCUNE policy : ni lecture ni écriture directe.
+
+create or replace function enregistrer_visite(
+  p_chemin text,
+  p_origine text,
+  p_appareil text,
+  p_navigateur text,
+  p_pays text,
+  p_visiteur text,
+  p_source text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if p_chemin is null or p_visiteur is null
+     or p_appareil not in ('mobile', 'tablette', 'ordinateur') then
+    return;
+  end if;
+
+  insert into visites (chemin, origine, appareil, navigateur, pays, visiteur, source)
+  values (
+    left(p_chemin, 200),
+    nullif(left(p_origine, 100), ''),
+    p_appareil,
+    nullif(left(p_navigateur, 40), ''),
+    nullif(left(upper(p_pays), 2), ''),
+    left(p_visiteur, 64),
+    nullif(left(p_source, 60), '')
+  );
+
+  -- Conservation limitée à 13 mois, sans tâche planifiée à maintenir : une
+  -- visite sur mille fait le ménage au passage.
+  if random() < 0.001 then
+    delete from visites where cree_le < now() - interval '13 months';
+  end if;
+end;
+$$;
+
+revoke all on function enregistrer_visite(text, text, text, text, text, text, text) from public;
+grant execute on function enregistrer_visite(text, text, text, text, text, text, text) to anon, authenticated;
+
+-- Comptes de test : une organisation marquée ici n'entre dans AUCUNE
+-- statistique d'usage. Celle d'Axel l'est d'office par la page
+-- d'administration ; les autres (comptes créés pour tester le parcours
+-- de candidature) se marquent d'un clic sur la page.
+alter table organisations
+  add column if not exists exclue_des_stats boolean not null default false;

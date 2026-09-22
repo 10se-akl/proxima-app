@@ -55,6 +55,21 @@ export default function PolitiqueConfidentialitePage() {
       </section>
 
       <section>
+        <h2>Mesure d&apos;audience</h2>
+        <p>
+          Pour savoir quelles pages sont utiles et lesquelles améliorer, Compyo compte les pages
+          vues, avec son propre outil, sans cookie et sans prestataire extérieur. Pour chaque page
+          vue sont enregistrés : la page, le nom du site d&apos;où vous arrivez le cas échéant (par
+          exemple « Google »), le type d&apos;appareil, le navigateur et le pays. Votre adresse IP
+          n&apos;est jamais conservée : elle sert seulement à calculer une empreinte anonyme qui
+          change chaque jour, pour compter les visiteurs sans pouvoir suivre personne d&apos;un
+          jour à l&apos;autre. Si votre navigateur demande à ne pas être suivi (réglage « Do Not
+          Track » ou « Global Privacy Control »), rien n&apos;est mesuré. Ces données sont conservées
+          13 mois.
+        </p>
+      </section>
+
+      <section>
         <h2>Données traitées une fois artisan utilisateur de Compyo</h2>
         <p>
           Une fois un accès accordé, l&apos;artisan saisit et Compyo traite, pour son propre

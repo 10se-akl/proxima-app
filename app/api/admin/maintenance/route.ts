@@ -51,20 +51,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
   }
 
-  const { actif } = await request.json();
+  const corps = await request.json().catch(() => null);
+  const actif = corps?.actif;
   if (typeof actif !== "boolean") {
     return NextResponse.json({ error: "actif (booléen) requis" }, { status: 400 });
   }
 
+  // Upsert plutôt qu'update (22/09) : si la ligne manquait, un update ne
+  // touchait rien, sans erreur — le bouton disait « fait » et le site ne
+  // changeait pas. Le message d'erreur exact est renvoyé : seul l'admin
+  // atteint ce point, et un « Réessayez » sans détail l'a laissé bloqué
+  // derrière son propre écran de maintenance.
   const admin = createAdminClient();
   const { error } = await admin
     .from("parametres_systeme")
-    .update({ valeur: actif, mis_a_jour_le: new Date().toISOString() })
-    .eq("cle", "maintenance_actif");
+    .upsert({ cle: "maintenance_actif", valeur: actif, mis_a_jour_le: new Date().toISOString() }, { onConflict: "cle" });
 
   if (error) {
-    console.error(error);
-    return NextResponse.json({ error: "Impossible de mettre à jour l'état" }, { status: 500 });
+    console.error("Maintenance : bascule impossible —", error);
+    return NextResponse.json(
+      { error: "Impossible de mettre à jour l'état", detail: error.message },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({ actif });

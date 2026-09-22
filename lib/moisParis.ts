@@ -33,10 +33,23 @@ function decalageParis(instant: Date): number {
   return Math.round((commeUtc - instant.getTime()) / 60000);
 }
 
+/** Minuit à Paris, pour n'importe quel jour. Les débordements sont admis
+ *  (jour 32 = le 1er du mois suivant), comme avec Date.UTC. */
+export function minuitParis(annee: number, mois: number, jour: number): Date {
+  const minuitUtc = Date.UTC(annee, mois, jour);
+  return new Date(minuitUtc - decalageParis(new Date(minuitUtc)) * 60000);
+}
+
 /** L'instant exact où commence ce mois à Paris. */
 export function debutMois({ annee, mois }: Mois): Date {
-  const minuitUtc = Date.UTC(annee, mois, 1);
-  return new Date(minuitUtc - decalageParis(new Date(minuitUtc)) * 60000);
+  return minuitParis(annee, mois, 1);
+}
+
+/** L'année en cours à Paris — celle des numéros de devis et de factures.
+ *  `new Date().getFullYear()` sur le serveur (UTC) donnait encore l'année
+ *  précédente le 1er janvier entre minuit et 1 h. */
+export function anneeParis(maintenant = new Date()): number {
+  return aujourdhuiParis(maintenant).annee;
 }
 
 export function decaler({ annee, mois }: Mois, n: number): Mois {

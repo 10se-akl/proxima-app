@@ -1,4 +1,12 @@
-import { HEURES_PAR_JOURNEE, LIBELLE_AJUSTEMENT_MINIMUM, heuresDuPoste } from "@/lib/moteur-metier/tempsMainOeuvre";
+import {
+  HEURES_PAR_JOURNEE,
+  LIBELLE_AJUSTEMENT_MINIMUM,
+  estUniteDemiJournee,
+  estUniteHeure,
+  estUniteJour,
+  heuresDeLigne,
+  heuresDuPoste,
+} from "@/lib/moteur-metier/tempsMainOeuvre";
 import type {
   ParametresEntreprise,
   PosteTravailIA,
@@ -238,9 +246,14 @@ function appliquerHeuresMinimum(
   lignes: LigneDevisCalculee[],
   parametres: ParametresEntreprise
 ): LigneDevisCalculee[] {
+  // 21/09 — Les lignes au JOUR comptent aussi (8 h chacune). Avant, un
+  // devis « 1 jour + 30 min » recevait un complément de 30 min alors qu'il
+  // contenait déjà une journée de travail — et l'éditeur, lui, le retirait
+  // à la première modification. Même comptage partout (tempsMainOeuvre.ts).
   const totalHeures = lignes
-    .filter((l) => l.categorie === "main_oeuvre" && l.unite === "heure")
-    .reduce((s, l) => s + l.quantite, 0);
+    .filter((l) => l.categorie === "main_oeuvre")
+    .filter((l) => estUniteHeure(l.unite) || estUniteJour(l.unite) || estUniteDemiJournee(l.unite))
+    .reduce((s, l) => s + heuresDeLigne(l), 0);
 
   if (totalHeures === 0 || totalHeures >= parametres.heures_min_facturables) {
     return lignes;
@@ -281,7 +294,10 @@ export function calculerDevis(
   const totalHT = totalHtDeVente(lignes, deplacement, margePct);
   const montantMarge = arrondir(totalHT - avantMarge);
 
-  const tvaPct = parametres.tva_pct;
+  // 21/09 — Franchise en base de TVA : 0 %, quoi que dise le champ TVA des
+  // paramètres. Un micro-entrepreneur resté sur le taux par défaut (20 %)
+  // envoyait des devis avec une TVA qu'il n'a pas le droit de facturer.
+  const tvaPct = parametres.mention_tva_non_applicable ? 0 : parametres.tva_pct;
   const montantTVA = arrondir(totalHT * (tvaPct / 100));
   const totalTTC = arrondir(totalHT + montantTVA);
 

@@ -135,8 +135,15 @@ const LIBELLE_CATEGORIE: Record<string, string> = {
   forfait: "Prestations au forfait",
 };
 
+// À l'heure de Paris, quel que soit l'endroit où le document est rendu
+// (serveur en UTC pour la page de signature, navigateur pour le PDF).
 export function dateLongue(iso: string): string {
-  return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return new Date(iso).toLocaleDateString("fr-FR", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "Europe/Paris",
+  });
 }
 
 // Main-d'œuvre / fournitures séparées : une vraie faiblesse relevée chez un

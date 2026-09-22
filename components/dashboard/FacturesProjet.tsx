@@ -8,6 +8,7 @@ import { Field } from "@/components/ui/Input";
 import { ErreurInline } from "@/components/ui/EtatErreur";
 import { FacturePreview } from "@/components/dashboard/FacturePreview";
 import type { Devis, Facture } from "@/types";
+import { montantAcompte as calculerAcompteSigne } from "@/lib/devis/mentionsLegales";
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -297,7 +298,21 @@ export function FacturesProjet({
 
       <div className="mt-4 flex flex-wrap gap-3">
         {soldeRestant > 0 && !afficherFormAcompte && (
-          <Button variant="ghost" onClick={() => setAfficherFormAcompte(true)}>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              // 21/09 — Pré-rempli avec l'acompte SIGNÉ (« 30 %, soit
+              // 307,31 € »), calculé par la même fonction que le devis :
+              // l'artisan facture exactement ce que son client a accepté,
+              // sans refaire le calcul de tête. Seulement pour le premier
+              // acompte, et toujours modifiable.
+              const dejaUnAcompte = factures.some((f) => f.type === "acompte" && f.statut !== "annulee");
+              if (!montantAcompte && devis.acompte_pct && devis.acompte_pct > 0 && !dejaUnAcompte) {
+                setMontantAcompte(calculerAcompteSigne(devis.total_estime, devis.acompte_pct).toFixed(2).replace(".", ","));
+              }
+              setAfficherFormAcompte(true);
+            }}
+          >
             + Facture d&apos;acompte
           </Button>
         )}

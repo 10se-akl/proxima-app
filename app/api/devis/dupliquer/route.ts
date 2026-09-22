@@ -1,3 +1,4 @@
+import { anneeParis } from "@/lib/moisParis";
 import { NextRequest, NextResponse } from "next/server";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
 import { createClient } from "@/lib/supabase/server";
@@ -57,7 +58,7 @@ export async function POST(request: NextRequest) {
   // ici plutôt que factorisée pour l'instant : les deux routes divergent
   // sur ce qu'elles insèrent (postes calculés par l'IA vs copie directe),
   // seule la mécanique de numérotation est commune.
-  const anneeCourante = new Date().getFullYear();
+  const anneeCourante = anneeParis() /* année à Paris, pas en UTC (21/09) */;
   const MAX_TENTATIVES_NUMERO = 5;
   const artisanId = user.id;
 

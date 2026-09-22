@@ -423,7 +423,20 @@ export default function ParametresPage() {
                   <input
                     type="checkbox"
                     checked={form.mention_tva_non_applicable}
-                    onChange={(e) => setForm({ ...form, mention_tva_non_applicable: e.target.checked })}
+                    // 21/09 — En franchise, pas de TVA : le taux passe à 0 %
+                    // avec la case, et revient à 20 % quand on la décoche
+                    // (s'il était resté à 0). Le devis applique de toute
+                    // façon 0 % en franchise (voir calculerDevis), mais un
+                    // champ « TVA 20 % » à côté de la case cochée semait le
+                    // doute.
+                    onChange={(e) => {
+                      const franchise = e.target.checked;
+                      setForm({
+                        ...form,
+                        mention_tva_non_applicable: franchise,
+                        tva_pct: franchise ? 0 : form.tva_pct === 0 ? 20 : form.tva_pct,
+                      });
+                    }}
                     className="w-4 h-4 rounded border-ink/25 accent-signal"
                   />
                   Franchise en base de TVA (art. 293 B du CGI)
@@ -552,16 +565,24 @@ export default function ParametresPage() {
               facturer à l&apos;heure.
             </p>
             <div className="grid sm:grid-cols-2 gap-5">
-              <Field
-                label="TVA (%)"
-                type="number"
-                step="0.01"
-                min={BORNES.tva_pct!.min}
-                max={BORNES.tva_pct!.max}
-                required
-                value={form.tva_pct}
-                onChange={update("tva_pct")}
-              />
+              <div>
+                <Field
+                  label="TVA (%)"
+                  type="number"
+                  step="0.01"
+                  min={BORNES.tva_pct!.min}
+                  max={BORNES.tva_pct!.max}
+                  required
+                  value={form.tva_pct}
+                  onChange={update("tva_pct")}
+                  disabled={form.mention_tva_non_applicable}
+                />
+                {form.mention_tva_non_applicable && (
+                  <p className="mt-1.5 text-xs text-ink/50">
+                    Franchise en base de TVA : vos devis et factures sont sans TVA.
+                  </p>
+                )}
+              </div>
               <Field
                 label="Coût horaire (€)"
                 type="number"

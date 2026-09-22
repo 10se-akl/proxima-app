@@ -1,3 +1,4 @@
+import { anneeParis } from "@/lib/moisParis";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganisationId } from "@/lib/organisation";
@@ -90,7 +91,7 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
   const { lignes, tva_pct } = genererLignesAvoir(factureOriginale as Facture);
   const totaux = calculerTotauxFacture(lignes, tva_pct);
 
-  const annee = new Date().getFullYear();
+  const annee = anneeParis() /* année à Paris, pas en UTC (21/09) */;
   const { data: numeroSequentiel, error: erreurNumero } = await supabase.rpc("prochain_numero_facture", {
     p_organisation_id: organisationId,
     p_annee: annee,

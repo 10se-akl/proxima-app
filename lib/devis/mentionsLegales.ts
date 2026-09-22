@@ -1,5 +1,6 @@
 import { figerMentionsLegales } from "@/lib/moteur-metier/genererFacture";
 import type { Devis, MentionsLegales, ParametresEntreprise } from "@/types";
+import { jourParis, minuitParis } from "@/lib/moisParis";
 
 // ============================================================
 // Mentions légales et conditions du devis (Module 42, 17/09).
@@ -114,13 +115,26 @@ export function mentionsAssurances(m: MentionsLegales | null): string[] {
 // Date de fin de validité, comptée à partir de l'envoi au client — c'est à
 // ce moment-là que l'offre lui est faite. Avant l'envoi, on compte depuis la
 // création, pour que l'aperçu montre une date plausible.
+// 21/09 — La fin de validité est la FIN du dernier jour, à Paris. Avant :
+// l'heure exacte d'envoi + N jours. Un devis « valable jusqu'au 2 octobre »
+// passait donc en « expiré » l'après-midi du 2, et la date elle-même
+// pouvait différer d'un jour entre le serveur (UTC) et le navigateur
+// autour d'un changement d'heure.
 export function finDeValidite(
   devis: Pick<Devis, "validite_jours" | "envoye_le" | "created_at">
 ): Date | null {
   if (!devis.validite_jours) return null;
-  const depart = new Date(devis.envoye_le ?? devis.created_at);
-  depart.setDate(depart.getDate() + devis.validite_jours);
-  return depart;
+  const depart = jourParis(devis.envoye_le ?? devis.created_at);
+  const lendemainDuDernierJour = minuitParis(depart.annee, depart.mois, depart.jour + devis.validite_jours + 1);
+  return new Date(lendemainDuDernierJour.getTime() - 1);
+}
+
+/** Montant de l'acompte, calculé en centimes — le même partout (document
+ *  signé, facture d'acompte pré-remplie). En nombres à virgule,
+ *  30 % de 1 024,35 € donnait 307,30 € au lieu de 307,31 € (vérifié sur
+ *  27 millions de combinaisons montant × pourcentage). */
+export function montantAcompte(totalTtc: number, acomptePct: number): number {
+  return Math.round((Math.round(totalTtc * 100) * acomptePct) / 100) / 100;
 }
 
 // Conditions de départ d'un NOUVEAU devis, reprises des paramètres de
@@ -156,8 +170,11 @@ export function conditionsOffre(
   m: MentionsLegales | null
 ): ConditionOffre[] {
   const conditions: ConditionOffre[] = [];
+  // Toujours à l'heure de Paris : la page de signature est rendue par le
+  // serveur (UTC), le PDF par le navigateur — sans fuseau fixé, les deux
+  // pouvaient écrire deux dates différentes sur le même devis.
   const dateLongue = (d: Date) =>
-    d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    d.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Paris" });
 
   const fin = finDeValidite(devis);
   if (fin && devis.validite_jours) {
@@ -178,7 +195,7 @@ export function conditionsOffre(
   }
 
   if (devis.acompte_pct && devis.acompte_pct > 0) {
-    const acompte = Math.round(devis.total_estime * devis.acompte_pct) / 100;
+    const acompte = montantAcompte(devis.total_estime, devis.acompte_pct);
     const solde = Math.round((devis.total_estime - acompte) * 100) / 100;
     conditions.push({
       libelle: "Acompte à la signature",

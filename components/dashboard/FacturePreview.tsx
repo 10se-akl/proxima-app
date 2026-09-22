@@ -129,7 +129,12 @@ export function FacturePreview({
             <span>Total HT</span>
             <span className="font-mono">{formatEuros(facture.sous_total_ht)}</span>
           </div>
-          {m.mention_tva_non_applicable ? (
+          {/* 21/09 — Ce qui s'affiche = ce qui est enregistré. Avant,
+              la mention de franchise masquait la TVA même quand la facture
+              en contenait une (devis resté à 20 %) : écran à 1 000 €, base
+              à 1 200 €. Seule une facture réellement à 0 % dit « non
+              applicable » ; les nouvelles le sont toujours en franchise. */}
+          {m.mention_tva_non_applicable && facture.tva_pct === 0 ? (
             <div className="flex items-center justify-between text-ink/60">
               <span>TVA</span>
               <span className="font-mono text-xs">Non applicable, art. 293 B du CGI</span>
@@ -143,7 +148,7 @@ export function FacturePreview({
           <div className="flex items-center justify-between font-semibold pt-2 border-t border-ink/10">
             <span>Total TTC</span>
             <span className="font-mono text-lg">
-              {formatEuros(m.mention_tva_non_applicable ? facture.sous_total_ht : facture.total_ttc)}
+              {formatEuros(facture.total_ttc)}
             </span>
           </div>
         </div>

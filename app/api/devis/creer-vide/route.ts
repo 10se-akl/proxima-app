@@ -1,3 +1,4 @@
+import { anneeParis } from "@/lib/moisParis";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganisationId } from "@/lib/organisation";
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
   // /api/ai/generer-devis et /api/devis/dupliquer) — dupliquée ici plutôt
   // que factorisée pour l'instant, comme déjà assumé ailleurs dans ces
   // deux routes.
-  const anneeCourante = new Date().getFullYear();
+  const anneeCourante = anneeParis() /* année à Paris, pas en UTC (21/09) */;
   const MAX_TENTATIVES_NUMERO = 5;
 
   async function inserer() {

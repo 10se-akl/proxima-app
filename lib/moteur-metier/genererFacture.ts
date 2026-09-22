@@ -35,7 +35,10 @@ function totauxDepuisLignes(lignes: LigneFacture[], tvaPct: number) {
 // total HT du devis, donc la facture retombe sur son total TTC.
 export function genererLignesFactureComplete(
   devis: Devis,
-  facturesAcompteLiees: Facture[]
+  facturesAcompteLiees: Facture[],
+  // 21/09 — taux imposé : 0 pour un artisan en franchise de TVA, même si
+  // le devis en portait par erreur (voir app/api/factures/creer).
+  tvaImposee?: number
 ): { lignes: LigneFacture[]; tva_pct: number } {
   const lignes: LigneFacture[] = lignesDuDocument(devis).map((l) => ({
     description: l.description,
@@ -63,7 +66,7 @@ export function genererLignesFactureComplete(
     });
   }
 
-  return { lignes, tva_pct: devis.tva_pct };
+  return { lignes, tva_pct: tvaImposee ?? devis.tva_pct };
 }
 
 // Facture d'acompte : une seule ligne, calculée sur un montant TTC saisi
@@ -73,9 +76,10 @@ export function genererLignesFactureComplete(
 // fois au niveau du document" déjà en place pour les devis.
 export function genererLignesFactureAcompte(
   devis: Devis,
-  montantAcompteTTC: number
+  montantAcompteTTC: number,
+  tvaImposee?: number
 ): { lignes: LigneFacture[]; tva_pct: number } {
-  const tvaPct = devis.tva_pct;
+  const tvaPct = tvaImposee ?? devis.tva_pct;
   const montantAcompteHT = arrondir(montantAcompteTTC / (1 + tvaPct / 100));
   const pourcentageDuDevis = devis.total_estime > 0 ? Math.round((montantAcompteTTC / devis.total_estime) * 1000) / 10 : 0;
 

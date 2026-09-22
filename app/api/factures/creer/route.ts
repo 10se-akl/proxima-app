@@ -1,3 +1,4 @@
+import { anneeParis } from "@/lib/moisParis";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganisationId } from "@/lib/organisation";
@@ -33,13 +34,23 @@ export async function POST(request: NextRequest) {
   } catch {
     return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
   }
-  const { devisId, type, montantAcompteTTC, dateEcheance } = corps;
+  const { devisId, type, dateEcheance } = corps;
 
   if (!devisId || (type !== "facture" && type !== "acompte")) {
     return NextResponse.json({ error: "devisId et type ('facture' ou 'acompte') requis" }, { status: 400 });
   }
+  // 21/09 — Un montant envoyé en texte ("300") passait le contrôle puis
+  // faisait planter la génération ; un montant à trois décimales
+  // produisait une facture au demi-centime. Nombre fini, arrondi au centime.
+  const montantBrut = Number(corps.montantAcompteTTC);
+  const montantAcompteTTC =
+    type === "acompte" && Number.isFinite(montantBrut) ? Math.round(montantBrut * 100) / 100 : undefined;
   if (type === "acompte" && (!montantAcompteTTC || montantAcompteTTC <= 0)) {
     return NextResponse.json({ error: "montantAcompteTTC (> 0) requis pour une facture d'acompte" }, { status: 400 });
+  }
+  // Une échéance mal formée finissait en erreur générique de la base.
+  if (dateEcheance && !/^\d{4}-\d{2}-\d{2}$/.test(dateEcheance)) {
+    return NextResponse.json({ error: "Date d'échéance invalide." }, { status: 400 });
   }
 
   const supabase = createClient();
@@ -122,6 +133,19 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // 21/09 — Franchise en base de TVA : aucune TVA sur la facture, jamais.
+  // Avant, un devis resté à 20 % (taux par défaut) produisait une facture
+  // enregistrée à 1 200 € TTC, que l'écran affichait pourtant à 1 000 €
+  // « TVA non applicable » : le document légal et la base se
+  // contredisaient, et le bilan comptait 200 € jamais encaissés.
+  const enFranchise = Boolean(parametres.mention_tva_non_applicable);
+  const tvaImposee = enFranchise ? 0 : undefined;
+  // Plafond des acomptes : le total que le client paiera réellement — le HT
+  // du devis quand il n'y a pas de TVA à facturer.
+  const plafondAcomptes = enFranchise
+    ? Math.round((devis.total_estime - (devis.montant_tva ?? 0)) * 100) / 100
+    : devis.total_estime;
+
   let lignesEtTva: { lignes: ReturnType<typeof genererLignesFactureAcompte>["lignes"]; tva_pct: number };
 
   if (type === "acompte") {
@@ -135,13 +159,13 @@ export async function POST(request: NextRequest) {
       .eq("type", "acompte")
       .neq("statut", "annulee");
     const montantAcomptesExistants = (acomptesExistants ?? []).reduce((s, f) => s + f.total_ttc, 0);
-    if (montantAcomptesExistants + montantAcompteTTC! > devis.total_estime + 0.01) {
+    if (montantAcomptesExistants + montantAcompteTTC! > plafondAcomptes + 0.01) {
       return NextResponse.json(
         { error: "Ce montant d'acompte dépasse le total du devis." },
         { status: 400 }
       );
     }
-    lignesEtTva = genererLignesFactureAcompte(devis, montantAcompteTTC!);
+    lignesEtTva = genererLignesFactureAcompte(devis, montantAcompteTTC!, tvaImposee);
   } else {
     // Garde-fou anti double-facturation : une seule facture de solde
     // (non annulée) par devis. Sans ce contrôle, un second clic sur
@@ -175,7 +199,7 @@ export async function POST(request: NextRequest) {
       .eq("devis_id", devisId)
       .eq("type", "acompte")
       .neq("statut", "annulee");
-    lignesEtTva = genererLignesFactureComplete(devis, (acomptesLies ?? []) as Facture[]);
+    lignesEtTva = genererLignesFactureComplete(devis, (acomptesLies ?? []) as Facture[], tvaImposee);
   }
 
   const totaux = calculerTotauxFacture(lignesEtTva.lignes, lignesEtTva.tva_pct);
@@ -190,7 +214,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const annee = new Date().getFullYear();
+  const annee = anneeParis() /* année à Paris, pas en UTC (21/09) */;
 
   // Numéro atomique, sans trou — voir prochain_numero_facture() dans
   // supabase/schema.sql. Contrairement au devis, aucune boucle de retry

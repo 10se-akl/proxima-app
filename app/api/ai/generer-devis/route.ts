@@ -1,3 +1,4 @@
+import { anneeParis } from "@/lib/moisParis";
 import { heuresDuPoste } from "@/lib/moteur-metier/tempsMainOeuvre";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
@@ -346,7 +347,7 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     // tentatives, en recomptant à chaque fois, couvre largement ce cas
     // réel sans construire un compteur atomique en base, disproportionné à
     // cette échelle.
-    const anneeCourante = new Date().getFullYear();
+    const anneeCourante = anneeParis() /* année à Paris, pas en UTC (21/09) */;
     const MAX_TENTATIVES_NUMERO = 5;
     // TypeScript ne garde pas le narrowing de "user non-null" (vérifié plus
     // haut) à l'intérieur d'une fonction imbriquée définie plus loin — on

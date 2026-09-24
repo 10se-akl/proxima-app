@@ -6,19 +6,15 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Input";
-import { Avatar } from "@/components/ui/Avatar";
 import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PropositionUrgence } from "@/components/dashboard/PropositionUrgence";
 import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
-import { Timeline, type TimelineItem } from "@/components/dashboard/Timeline";
+import type { TimelineItem } from "@/components/dashboard/Timeline";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { adresseEspaceDevis, dupliquerDevis as creerNouvelleVersion } from "@/lib/devis/actions";
-import { statutAffiche } from "@/lib/devis/statut";
-import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
 import {
   listerNotesProjet,
@@ -28,14 +24,16 @@ import {
   TYPES_CHANTIER_RAPPEL_RECURRENT,
   PRESETS_RAPPEL_RECURRENT,
 } from "@/lib/notes";
-import { NoteCard } from "@/components/notes/NoteCard";
 import { FormulaireNote } from "@/components/notes/FormulaireNote";
 // Sprint Robustesse (30/08) — outils partagés pour les mutations Supabase
 // (voir lib/supabase/resultat.ts) et pour l'affichage d'un échec de
 // chargement de page (voir components/ui/EtatErreur.tsx).
 import { executerMutation } from "@/lib/supabase/resultat";
 import { EtatErreur, ErreurInline } from "@/components/ui/EtatErreur";
-import type { Projet, Devis, NoteVocale, EvenementProjet, ParametresEntreprise, Note } from "@/types";
+import type { Projet, Devis, NoteVocale, EvenementProjet, EvenementPlanning, ParametresEntreprise, Note } from "@/types";
+import { VueProjet } from "@/components/projet/VueProjet";
+import { Feuille } from "@/components/projet/Feuille";
+import type { IdAction } from "@/components/projet/prochaineAction";
 
 // Revue métier (06/09) — dérivé de LABEL_TYPE_CHANTIER (components/
 // dashboard/DemandeCard.tsx) plutôt que dupliqué ici : une seule liste à
@@ -99,10 +97,17 @@ export default function DetailDemandePage({
   );
   const [notesVocales, setNotesVocales] = useState<NoteVocale[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  const [formulaireNoteOuvert, setFormulaireNoteOuvert] = useState(false);
   const [rappelRecurrentEnCours, setRappelRecurrentEnCours] = useState<number | null>(null);
   const [rappelRecurrentCree, setRappelRecurrentCree] = useState<number | null>(null);
   const [evenementsProjet, setEvenementsProjet] = useState<EvenementProjet[]>([]);
+  // Fiche projet (24/09) — les rendez-vous et tâches du planning liés à ce
+  // projet : l'ancienne fiche ne les montrait pas du tout (seulement un
+  // bouton « + Planifier »), alors que « quand je repasse ? » est une des
+  // premières questions qu'on se pose en ouvrant un chantier.
+  const [rendezVous, setRendezVous] = useState<EvenementPlanning[]>([]);
+  const [urlsPhotos, setUrlsPhotos] = useState<Record<string, string>>({});
+  const [feuilleReponse, setFeuilleReponse] = useState(false);
+  const [maintenant, setMaintenant] = useState(() => new Date());
   // "Mémoire client" (06/09) — voir chargerDonnees() : null tant que non
   // chargé, pour ne jamais afficher "0 autre projet" pendant une fraction
   // de seconde avant que la vraie valeur n'arrive.
@@ -111,7 +116,6 @@ export default function DetailDemandePage({
   const [organisationId, setOrganisationId] = useState<string | null>(null);
   const [parametres, setParametres] = useState<ParametresEntreprise | null>(null);
   const [logoUrl, setLogoUrl] = useState<string | null>(null);
-  const [infosOuvertes, setInfosOuvertes] = useState(false);
   // Audit Cycle 2 (Agent Destructeur) : les boutons "Marquer comme
   // envoyé/accepté/refusé/démarré/terminé" n'avaient aucun état
   // "disabled" pendant l'appel réseau — un double-clic (ou un clic répété
@@ -186,6 +190,7 @@ export default function DetailDemandePage({
         { data: evenementsData },
         notesProjet,
         orgId,
+        { data: rdvData },
       ] = await Promise.all([
         supabase.from("demandes").select("*").eq("id", params.id).maybeSingle(),
         supabase
@@ -209,6 +214,11 @@ export default function DetailDemandePage({
         // du brief : section dédiée dans la fiche projet.
         listerNotesProjet(supabase, params.id),
         user ? getOrganisationId(supabase, user.id) : Promise.resolve(null),
+        supabase
+          .from("evenements_planning")
+          .select("*")
+          .eq("demande_id", params.id)
+          .order("date_heure", { ascending: true }),
       ]);
 
       if (!demandeData) {
@@ -220,6 +230,8 @@ export default function DetailDemandePage({
       setNotesVocales((notesData as NoteVocale[]) ?? []);
       setEvenementsProjet((evenementsData as EvenementProjet[]) ?? []);
       setNotes(notesProjet);
+      setRendezVous((rdvData as EvenementPlanning[]) ?? []);
+      setMaintenant(new Date());
 
       if (user) {
         setArtisanId(user.id);
@@ -279,6 +291,30 @@ export default function DetailDemandePage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
+  // Les photos du Carnet : un seul appel groupé pour toutes les URLs
+  // signées (le stockage est privé). On garde celles déjà obtenues pour ne
+  // pas faire clignoter les miniatures à chaque rechargement.
+  const cheminsPhotos = (demande?.photos ?? []).join("|");
+  useEffect(() => {
+    const chemins = demande?.photos ?? [];
+    if (chemins.length === 0) return;
+    let annule = false;
+    supabase.storage
+      .from("photos")
+      .createSignedUrls(chemins, 3600)
+      .then(({ data }) => {
+        if (annule || !data) return;
+        const urls: Record<string, string> = {};
+        for (const item of data) if (item.signedUrl && !item.error && item.path) urls[item.path] = item.signedUrl;
+        setUrlsPhotos((avant) => ({ ...avant, ...urls }));
+      })
+      .catch(() => {});
+    return () => {
+      annule = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cheminsPhotos]);
+
   // Marque le projet comme modifié depuis le dernier devis — utilisé pour
   // proposer (jamais imposer) une mise à jour du devis.
   async function signalerModification() {
@@ -289,10 +325,21 @@ export default function DetailDemandePage({
   }
 
   async function terminerNote(noteId: string, terminee: boolean) {
+    // termine_le aussi : c'est la date sous laquelle la tâche faite apparaît
+    // dans le Carnet (« Aujourd'hui », pas le jour de sa création).
+    const avant = notes.find((n) => n.id === noteId);
     setNotes((prev) =>
-      prev.map((n) => (n.id === noteId ? { ...n, statut: terminee ? "terminee" : "active" } : n))
+      prev.map((n) =>
+        n.id === noteId
+          ? { ...n, statut: terminee ? "terminee" : "active", termine_le: terminee ? new Date().toISOString() : null }
+          : n
+      )
     );
-    await marquerNoteTerminee(supabase, noteId, terminee);
+    const ok = await marquerNoteTerminee(supabase, noteId, terminee);
+    if (!ok && avant) {
+      setNotes((prev) => prev.map((n) => (n.id === noteId ? avant : n)));
+      setErreur("La tâche n'a pas pu être mise à jour. Réessayez.");
+    }
   }
 
   async function analyserDemande() {
@@ -612,7 +659,6 @@ export default function DetailDemandePage({
     }
     const data = await res.json();
     setBrouillonReponse(data.brouillon);
-    document.getElementById("bloc-reponse-client")?.scrollIntoView({ behavior: "smooth", block: "center" });
   }
 
   // Sprint "Relance suggérée" (06/09) — le résumé de fin de journée détecte
@@ -623,6 +669,7 @@ export default function DetailDemandePage({
   // plutôt que de dupliquer un nouvel appel IA — même philosophie que le
   // reste du produit : l'IA propose, l'artisan décide et envoie lui-même.
   function genererRelance() {
+    setFeuilleReponse(true);
     const jours = joursDepuisEnvoiDevis();
     genererReponse(
       jours
@@ -807,7 +854,6 @@ export default function DetailDemandePage({
     adresse_client: "",
     type_chantier: "autre",
   });
-  const [infosEnregistrees, setInfosEnregistrees] = useState(false);
   // Sprint Robustesse (30/08) — même bug que erreurNotes ci-dessus : un
   // échec Supabase sur enregistrerInfos ne se traduisait par rien à
   // l'écran, l'artisan pensant ses coordonnées client enregistrées.
@@ -823,8 +869,8 @@ export default function DetailDemandePage({
     }
   }, [demande?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  async function enregistrerInfos() {
-    if (!demande) return;
+  async function enregistrerInfos(): Promise<boolean> {
+    if (!demande) return false;
     const resultat = await executerMutation(
       supabase
         .from("demandes")
@@ -838,11 +884,9 @@ export default function DetailDemandePage({
     );
     if (!resultat.ok) {
       setErreurInfos(resultat.erreur);
-      return;
+      return false;
     }
     setErreurInfos(null);
-    setInfosEnregistrees(true);
-    setTimeout(() => setInfosEnregistrees(false), 1500);
     if (artisanId && organisationId) {
       await enregistrerEvenement(supabase, {
         demandeId: demande.id,
@@ -853,6 +897,7 @@ export default function DetailDemandePage({
       });
     }
     await chargerDonnees();
+    return true;
   }
 
   if (introuvable) {
@@ -892,35 +937,9 @@ export default function DetailDemandePage({
     return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
   }
 
-  // Le devis a-t-il été généré avant la dernière modification du projet ?
-  // Un chantier déjà terminé (souvent déjà payé) n'a plus besoin qu'on lui
-  // propose de régénérer son devis — ajouter une photo de fin de chantier
-  // pour le portfolio ne doit pas rouvrir la question du prix. Idem une
-  // fois le devis accepté par le client ou le chantier démarré : "Mettre à
-  // jour le devis" insère un NOUVEAU devis brouillon et écrase le statut de
-  // la demande (voir /api/ai/generer-devis) — proposer ça en un clic sur un
-  // projet déjà accepté ferait disparaître le devis accepté de l'écran et
-  // repasserait silencieusement le projet à "devis à valider" (bug trouvé
-  // à l'audit du 25/08). Pour ces deux statuts, on affiche plus bas une
-  // proposition distincte, plus explicite : dupliquer le devis existant
-  // (voir dupliquerDevis) plutôt que le remplacer.
-  const devisPerime =
-    demande.statut !== "termine" &&
-    demande.statut !== "accepte" &&
-    demande.statut !== "en_cours" &&
-    devis &&
-    demande.derniere_modification_le &&
-    new Date(demande.derniere_modification_le) > new Date(devis.created_at);
-
-  // Même détection que ci-dessus, mais pour un projet déjà accepté/en
-  // cours : on ne propose jamais de régénérer en un clic (ça écraserait le
-  // devis accepté), seulement de le dupliquer pour ajuster manuellement —
-  // même chemin déjà utilisé pour un devis refusé, aucun appel IA.
-  const devisPerimeProjetEngage =
-    (demande.statut === "accepte" || demande.statut === "en_cours") &&
-    devis &&
-    demande.derniere_modification_le &&
-    new Date(demande.derniere_modification_le) > new Date(devis.created_at);
+  // « Le projet a changé depuis le devis » : la détection et le choix de
+  // l'action (mettre à jour un devis pas encore accepté, dupliquer un devis
+  // accepté ou en cours — jamais l'écraser) sont dans prochaineAction.ts.
 
   // L'analyse IA ne sert qu'à mettre en ordre des notes déjà accumulées —
   // sans rien de plus que la description initiale, il n'y a rien à
@@ -934,7 +953,7 @@ export default function DetailDemandePage({
     notesVocales.length > 0;
 
   // Une analyse existe déjà et rien n'a été ajouté depuis (même logique que
-  // devisPerime ci-dessus, appliquée à l'analyse plutôt qu'au devis) :
+  // le devis périmé de prochaineAction.ts, appliquée à l'analyse) :
   // inutile de relancer l'IA en boucle pour reproduire le même résultat.
   const analyseAJour =
     Boolean(demande.questions_manquantes) &&
@@ -942,142 +961,152 @@ export default function DetailDemandePage({
     (!demande.derniere_modification_le ||
       new Date(demande.derniere_modification_le) <= new Date(demande.derniere_analyse_le as string));
 
+  // Les projets créés avant le journal d'évènements n'en ont aucun : on
+  // reconstruit les grandes étapes à partir des dates connues (sans les
+  // notes vocales ni les photos, déjà présentes dans le Carnet).
+  const evenementsCarnet: EvenementProjet[] =
+    evenementsProjet.length > 0
+      ? evenementsProjet
+      : construireHistoriqueHerite(demande, devis, [])
+          .filter((item) => item.label !== "Photos ajoutées")
+          .map((item, i) => ({
+            id: `herite-${i}`,
+            demande_id: demande.id,
+            artisan_id: demande.artisan_id,
+            organisation_id: demande.organisation_id,
+            type: "projet_cree",
+            titre: item.label,
+            detail: item.detail ?? null,
+            metadata: null,
+            created_at: item.date,
+          }));
+
+  const actions: Record<IdAction, () => void> = {
+    generer_devis: genererDevis,
+    mettre_a_jour_devis: genererDevis,
+    devis_express: creerDevisExpress,
+    analyser: analyserDemande,
+    ouvrir_devis: () => devis && router.push(adresseEspaceDevis(devis.id)),
+    relancer: genererRelance,
+    dupliquer_devis: dupliquerDevis,
+    planifier: () => router.push(`/dashboard/planning/nouveau?projetId=${demande.id}`),
+    demarrer: marquerEnCours,
+    terminer: marquerTermine,
+    ajouter: () => {},
+    facturation: () => {},
+  };
+
+  const factures =
+    devis &&
+    devis.statut !== "brouillon" &&
+    devis.statut !== "refuse" &&
+    ["accepte", "en_cours", "termine"].includes(demande.statut) ? (
+      <FacturesProjet
+        devis={devis}
+        nomClient={demande.nom_client}
+        telephoneClient={demande.telephone_client}
+        adresseClient={demande.adresse_client}
+        logoUrl={logoUrl}
+      />
+    ) : null;
+
   return (
-    <div className="p-8 max-w-3xl">
-      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-2">
-        Projet
-      </p>
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div className="flex items-center gap-3 min-w-0">
-          <Avatar nom={demande.nom_client || "?"} taille={40} />
-          <h1 className="font-display text-2xl font-semibold truncate">
-            {demande.nom_client}
-          </h1>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" onClick={marquerVisite} disabled={actionEnCours}>
-            {demande.visite_le ? "✓ Visite effectuée" : "Marquer visite effectuée"}
-          </Button>
-          <Link href={`/dashboard/planning/nouveau?projetId=${demande.id}`}>
-            <Button variant="ghost">+ Planifier</Button>
-          </Link>
-        </div>
-      </div>
-
-      {/* "Mémoire client" (06/09) — un rapprochement déjà fait en interne
-          (table clients, par numéro de téléphone normalisé) mais jamais
-          montré à l'artisan jusqu'ici. Aucune concurrent établi (Obat,
-          Tolteck, Batappli) ne fait ce lien automatique entre chantiers
-          d'un même client. */}
-      {nbAutresProjetsClient !== null && nbAutresProjetsClient > 0 && (
-        <p className="mt-2 text-xs text-steel">
-          🧠 Vous avez déjà travaillé avec ce client sur {nbAutresProjetsClient} autre
-          {nbAutresProjetsClient > 1 ? "s" : ""} chantier{nbAutresProjetsClient > 1 ? "s" : ""}.
-        </p>
-      )}
-
-      {/* Échappatoire toujours disponible : le parcours guidé (devis →
-          accepté → en cours → terminé) plus bas reste la voie normale, mais
-          un artisan doit toujours pouvoir clôturer un projet directement,
-          même s'il a sauté des étapes ou géré ce chantier hors de l'app. */}
-      {demande.statut !== "termine" && (
-        <button
-          onClick={marquerTermine}
-          disabled={actionEnCours}
-          className="mt-2 text-xs text-ink/40 hover:text-ink underline transition-colors disabled:opacity-40"
-        >
-          Marquer directement ce projet comme terminé
-        </button>
-      )}
-
-      <div className="mt-3 flex items-center gap-2">
-        <span className="text-xs text-ink/50">Priorité :</span>
-        {(["urgent", "important", "normal"] as const).map((p) => (
-          <button
-            key={p}
-            onClick={() => changerPriorite(p)}
-            className={`px-2.5 py-1 rounded-full text-xs border transition-colors ${
-              (demande.priorite ?? "normal") === p
-                ? "bg-ink text-paper border-ink"
-                : "border-ink/15 text-ink/50 hover:border-ink/40"
-            }`}
-          >
-            {p === "urgent" ? "Urgent" : p === "important" ? "Important" : "Normal"}
-          </button>
-        ))}
-      </div>
-
-      <BarreProgression statut={demande.statut} />
-
-      {/* La fiche projet fonctionne comme un dossier posé sur un bureau :
-          chaque section est un "compartiment" séparé et clairement titré
-          (contact, photos, notes vocales, notes) plutôt qu'un long
-          formulaire continu — l'artisan sait d'un coup d'œil où trouver
-          quoi, sans jamais avoir à chercher. */}
-
-      <FicheSection icone="📇" titre="Contact & description">
-        {(demande.telephone_client || demande.adresse_client) && (
-          <div className="flex flex-wrap gap-x-6 gap-y-1.5 text-sm mb-4">
-            {demande.telephone_client && (
-              <a
-                href={`tel:${demande.telephone_client.replace(/\s/g, "")}`}
-                className="text-ink/70 hover:text-ink underline underline-offset-2 transition-colors"
-              >
-                📞 {demande.telephone_client}
-              </a>
-            )}
-            {demande.adresse_client && (
-              <a
-                href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                  demande.adresse_client
-                )}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-ink/70 hover:text-ink underline underline-offset-2 transition-colors"
-              >
-                📍 {demande.adresse_client}
-              </a>
-            )}
-          </div>
-        )}
-
-        <p className="text-xs font-medium text-ink/50 uppercase tracking-wider">
-          Description
-        </p>
-        <p className="mt-2 text-sm text-ink/80">{demande.description}</p>
-
-        {/* Informations complémentaires — facultatives, ajoutées quand nécessaire */}
-        <div className="mt-4">
-          <button
-            onClick={() => setInfosOuvertes(!infosOuvertes)}
-            className="text-xs text-ink/50 hover:text-ink underline transition-colors"
-          >
-            {infosOuvertes ? "Masquer" : "+ Compléter les informations (adresse, téléphone, type de chantier…)"}
-          </button>
-
-          {infosOuvertes && (
-            <div className="mt-3 grid sm:grid-cols-2 gap-4 rounded-xl border border-ink/10 p-4">
+    <>
+      <VueProjet
+        projet={demande}
+        devis={devis}
+        notesVocales={notesVocales}
+        notes={notes}
+        evenements={evenementsCarnet}
+        rendezVous={rendezVous}
+        urlsPhotos={urlsPhotos}
+        nbAutresProjetsClient={nbAutresProjetsClient}
+        checklistMetier={obtenirChecklist(demande.type_chantier, metierArtisan)}
+        peutAnalyser={peutAnalyser}
+        analyseAJour={analyseAJour}
+        maintenant={maintenant}
+        chargement={{
+          generer_devis: chargementDevis,
+          mettre_a_jour_devis: chargementDevis,
+          devis_express: chargementDevis,
+          dupliquer_devis: chargementDevis,
+          analyser: chargementAnalyse,
+          relancer: chargementReponse,
+          demarrer: actionEnCours,
+          terminer: actionEnCours,
+        }}
+        erreur={sectionErreur === "reponse" ? null : erreur}
+        surAction={(id) => actions[id]()}
+        surTerminerNote={terminerNote}
+        surChangerPriorite={changerPriorite}
+        surMarquerVisite={marquerVisite}
+        surPreparerReponse={() => {
+          setFeuilleReponse(true);
+          if (!brouillonReponse) genererReponse();
+        }}
+        memo={{
+          valeur: notesLocales,
+          surChanger: setNotesLocales,
+          surEnregistrer: enregistrerNotes,
+          enregistre: notesEnregistrees,
+        }}
+        lienPlanifier={`/dashboard/planning/nouveau?projetId=${demande.id}`}
+        rendus={{
+          vocal: (fermer) => (
+            <NotesVocales
+              demandeId={demande.id}
+              notes={notesVocales}
+              telephoneClient={demande.telephone_client}
+              masquerListe
+              onNouvelleNote={async () => {
+                fermer();
+                await signalerModification();
+                await chargerDonnees();
+              }}
+            />
+          ),
+          photos: (
+            <PhotosProjet
+              demandeId={demande.id}
+              chemins={demande.photos ?? []}
+              onChemins={async (photos) => {
+                setDemande({ ...demande, photos });
+                if (!demande.photos_ajoutees_le) {
+                  await supabase
+                    .from("demandes")
+                    .update({ photos_ajoutees_le: new Date().toISOString() })
+                    .eq("id", demande.id);
+                }
+                await signalerModification();
+                await chargerDonnees();
+              }}
+            />
+          ),
+          note: (fermer) => (
+            <FormulaireNote
+              projetIdFixe={demande.id}
+              nomProjetFixe={demande.nom_client}
+              onCree={() => {
+                fermer();
+                listerNotesProjet(supabase, demande.id).then(setNotes);
+              }}
+              onAnnuler={fermer}
+            />
+          ),
+          infos: (fermer) => (
+            <div className="grid gap-4 sm:grid-cols-2">
               <Field
                 label="Téléphone du client"
                 type="tel"
                 value={infos.telephone_client}
                 onChange={(e) => setInfos({ ...infos, telephone_client: e.target.value })}
               />
-              <div className="sm:col-span-2">
-                <Field
-                  label="Adresse du chantier"
-                  value={infos.adresse_client}
-                  onChange={(e) => setInfos({ ...infos, adresse_client: e.target.value })}
-                />
-              </div>
               <div>
-                <label className="block text-xs font-medium text-ink/70 mb-1.5">
-                  Type de chantier
-                </label>
+                <label className="mb-1.5 block text-xs font-medium text-ink/70">Type de chantier</label>
                 <select
                   value={infos.type_chantier}
                   onChange={(e) => setInfos({ ...infos, type_chantier: e.target.value })}
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
+                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
                 >
                   {TYPES_CHANTIER.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -1086,709 +1115,139 @@ export default function DetailDemandePage({
                   ))}
                 </select>
               </div>
-              <div className="sm:col-span-2 flex items-center gap-3">
-                <Button variant="ghost" onClick={enregistrerInfos}>
+              <div className="sm:col-span-2">
+                <Field
+                  label="Adresse du chantier"
+                  value={infos.adresse_client}
+                  onChange={(e) => setInfos({ ...infos, adresse_client: e.target.value })}
+                />
+              </div>
+              <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+                <Button
+                  onClick={async () => {
+                    if (await enregistrerInfos()) fermer();
+                  }}
+                >
                   Enregistrer
                 </Button>
-                {infosEnregistrees && (
-                  <span className="text-xs text-steel">✓ Enregistré</span>
-                )}
-                {/* Sprint Robustesse (30/08) — voir enregistrerInfos : un échec
-                    Supabase est maintenant signalé ici, à côté du champ concerné. */}
-                {erreurInfos && (
-                  <ErreurInline message={erreurInfos} onReessayer={enregistrerInfos} />
-                )}
+                {erreurInfos && <ErreurInline message={erreurInfos} onReessayer={enregistrerInfos} />}
               </div>
             </div>
-          )}
-        </div>
-      </FicheSection>
-
-      <FicheSection icone="📸" titre="Photos">
-        <PhotosProjet
-          demandeId={demande.id}
-          chemins={demande.photos ?? []}
-          onChemins={async (photos) => {
-            setDemande({ ...demande, photos });
-            if (!demande.photos_ajoutees_le) {
-              await supabase
-                .from("demandes")
-                .update({ photos_ajoutees_le: new Date().toISOString() })
-                .eq("id", demande.id);
-            }
-            await signalerModification();
-            await chargerDonnees();
-          }}
-        />
-      </FicheSection>
-
-      <FicheSection
-        icone="🎤"
-        titre="Notes vocales"
-        sousTitre="Un changement en fin de chantier ? Dictez-le ici, puis régénérez le devis — vous n'avez rien d'autre à retaper."
-      >
-        <NotesVocales
-          demandeId={demande.id}
-          notes={notesVocales}
-          telephoneClient={demande.telephone_client}
-          onNouvelleNote={async () => {
-            await signalerModification();
-            await chargerDonnees();
-          }}
-        />
-      </FicheSection>
-
-      <FicheSection icone="📝" titre="Notes libres">
-        {notesEnregistrees && (
-          <p className="text-xs text-steel mb-2">✓ Enregistré</p>
-        )}
-        {/* Sprint Robustesse (30/08) — voir enregistrerNotes : un échec
-            Supabase est maintenant signalé ici, à côté du champ concerné,
-            plutôt que de disparaître silencieusement. */}
-        {erreurNotes && (
-          <ErreurInline message={erreurNotes} onReessayer={enregistrerNotes} className="mb-2" />
-        )}
-        <textarea
-          value={notesLocales}
-          onChange={(e) => setNotesLocales(e.target.value)}
-          onBlur={enregistrerNotes}
-          rows={3}
-          placeholder="Ajoutez ici tout ce qui est utile : mesures prises sur place, contraintes, remarques après la visite…"
-          className="w-full text-sm text-ink/80 leading-relaxed rounded-xl border border-ink/10 bg-paper p-3 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
-        />
-      </FicheSection>
-
-      <ChecklistMetier typeChantier={demande.type_chantier} metierArtisan={metierArtisan} />
-
-      {/* Notes professionnelles (29/08) — point 2 du brief : "Dans la
-          fiche projet : nouvelle section 'Notes' [...] Le projet est alors
-          déjà sélectionné." Placée avant l'analyse IA : les notes actives
-          font partie du contexte envoyé à l'IA (point 4, voir
-          app/api/ai/analyser-demande/route.ts), logique de les voir juste
-          avant à l'écran aussi. */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-sm">Notes</h2>
-          <button
-            onClick={() => setFormulaireNoteOuvert((v) => !v)}
-            className="text-xs font-medium text-ink/50 hover:text-ink underline underline-offset-2 transition-colors"
-          >
-            {formulaireNoteOuvert ? "Annuler" : "+ Ajouter une note"}
-          </button>
-        </div>
-
-        {TYPES_CHANTIER_RAPPEL_RECURRENT.includes(demande.type_chantier) && (
-          <div className="mt-3 flex items-center flex-wrap gap-2">
-            <span className="text-xs text-ink/50">Programmer un rappel de suivi :</span>
-            {PRESETS_RAPPEL_RECURRENT.map(({ mois, libelle }) => (
-              <button
-                key={mois}
-                type="button"
-                onClick={() => creerRappelRecurrent(mois)}
-                disabled={rappelRecurrentEnCours !== null}
-                className="text-xs rounded-full border border-ink/15 px-3 py-1.5 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
-              >
-                {rappelRecurrentEnCours === mois ? "…" : libelle}
-              </button>
-            ))}
-            {rappelRecurrentCree !== null && (
-              <span className="text-xs text-succes">
-                ✓ Rappel programmé, {PRESETS_RAPPEL_RECURRENT.find((p) => p.mois === rappelRecurrentCree)?.libelle.toLowerCase()}
-              </span>
-            )}
-          </div>
-        )}
-
-        {formulaireNoteOuvert && (
-          <div className="mt-3">
-            <FormulaireNote
-              projetIdFixe={demande.id}
-              nomProjetFixe={demande.nom_client}
-              onCree={() => {
-                setFormulaireNoteOuvert(false);
-                listerNotesProjet(supabase, demande.id).then(setNotes);
-              }}
-              onAnnuler={() => setFormulaireNoteOuvert(false)}
-            />
-          </div>
-        )}
-
-        {notes.length > 0 && (
-          <div className="mt-3 flex flex-col gap-2.5">
-            {notes
-              .filter((n) => n.statut === "active")
-              .concat(notes.filter((n) => n.statut === "terminee"))
-              .map((note) => (
-                <NoteCard
-                  key={note.id}
-                  note={note}
-                  afficherProjet={false}
-                  onTerminer={terminerNote}
+          ),
+          factures,
+          erreurMemo: erreurNotes ? (
+            <ErreurInline message={erreurNotes} onReessayer={enregistrerNotes} className="mt-2" />
+          ) : null,
+          propositionUrgence:
+            urgenceProposee && artisanId && organisationId ? (
+              <div className="mt-4">
+                <PropositionUrgence
+                  demandeId={params.id}
+                  artisanId={artisanId}
+                  organisationId={organisationId}
+                  onTraite={async () => {
+                    setUrgenceProposee(false);
+                    await chargerDonnees();
+                  }}
                 />
-              ))}
-          </div>
-        )}
-      </div>
+              </div>
+            ) : null,
+          propositionTaches:
+            tachesProposees && tachesProposees.length > 0 ? (
+              <div className="mt-3 rounded-xl bg-paper-warm/70 p-4 ring-1 ring-ink/[0.06]">
+                <p className="text-[13px] font-medium text-ink">L&apos;IA a repéré ces tâches. Les ajouter ?</p>
+                <ul className="mt-2 space-y-1 text-[14px] text-ink/75">
+                  {tachesProposees.map((t) => (
+                    <li key={t}>· {t}</li>
+                  ))}
+                </ul>
+                <div className="mt-3 flex flex-wrap gap-2.5">
+                  <Button onClick={accepterTaches} loading={ajoutTachesEnCours}>
+                    Ajouter
+                  </Button>
+                  <Button variant="ghost" onClick={() => setTachesProposees(null)} disabled={ajoutTachesEnCours}>
+                    Non merci
+                  </Button>
+                </div>
+              </div>
+            ) : null,
+          apresMaintenant:
+            demande.statut === "termine" && TYPES_CHANTIER_RAPPEL_RECURRENT.includes(demande.type_chantier) ? (
+              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink/[0.07] pt-4">
+                <span className="text-[13.5px] text-ink/60">Rappel de suivi :</span>
+                {PRESETS_RAPPEL_RECURRENT.map(({ mois, libelle }) => (
+                  <button
+                    key={mois}
+                    type="button"
+                    onClick={() => creerRappelRecurrent(mois)}
+                    disabled={rappelRecurrentEnCours !== null}
+                    className="rounded-full border border-ink/15 px-3 py-1.5 text-[13px] text-ink/75 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
+                  >
+                    {rappelRecurrentEnCours === mois ? "…" : libelle}
+                  </button>
+                ))}
+                {rappelRecurrentCree !== null && (
+                  <span className="text-[13px] text-succes">
+                    Rappel programmé, {PRESETS_RAPPEL_RECURRENT.find((p) => p.mois === rappelRecurrentCree)?.libelle.toLowerCase()}
+                  </span>
+                )}
+              </div>
+            ) : null,
+        }}
+      />
 
-      {/* Étape 1 : analyse IA — optionnelle. Elle sert à faire le tri dans des
-          notes en vrac (dictées sur le terrain, décousues) et à repérer ce
-          qu'il manque encore avant de chiffrer. Si le projet est déjà clair,
-          elle n'apporte rien de plus : on peut aller directement générer le
-          devis ci-dessous, les deux étapes ne sont plus liées. */}
-      <div className="mt-8">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-sm">
-            1. Cadrer le besoin avec l&apos;IA <span className="text-ink/35 font-normal">(optionnel)</span>
-          </h2>
-          <Button
-            variant={demande.questions_manquantes ? "ghost" : "primary"}
-            onClick={analyserDemande}
-            loading={chargementAnalyse}
-            disabled={!peutAnalyser || analyseAJour}
-            title={
-              !peutAnalyser
-                ? "Ajoutez d'abord une note (vocale ou écrite)"
-                : analyseAJour
-                ? "Rien de nouveau depuis la dernière analyse"
-                : undefined
-            }
-          >
-            {chargementAnalyse
-              ? "Analyse en cours…"
-              : demande.questions_manquantes
-              ? "Mettre à jour le résumé"
-              : "Analyser avec l'IA"}
+      {/* Avant de chiffrer, si l'analyse a signalé des manques : on demande,
+          sans jamais bloquer. */}
+      <Feuille
+        ouverte={Boolean(infosAConfirmer && infosAConfirmer.length > 0)}
+        titre="Il manque peut-être quelques informations"
+        surFermer={() => setInfosAConfirmer(null)}
+      >
+        <ul className="flex flex-col gap-1.5 text-[14.5px] text-ink/75">
+          {(infosAConfirmer ?? []).map((info) => (
+            <li key={info} className="flex gap-2">
+              <span className="shrink-0 text-signal" aria-hidden="true">
+                •
+              </span>
+              <span>{info}</span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-[13px] leading-relaxed text-ink/50">
+          Vous pouvez préparer le devis quand même : il restera modifiable ligne par ligne avant l&apos;envoi.
+        </p>
+        <div className="mt-5 flex flex-wrap gap-3">
+          <Button onClick={lancerGenerationDevis}>Préparer quand même</Button>
+          <Button variant="ghost" onClick={() => setInfosAConfirmer(null)}>
+            Compléter d&apos;abord
           </Button>
         </div>
-        <p className="mt-1.5 text-xs text-ink/40">
-          {!peutAnalyser
-            ? "Ajoutez une note libre ou une note vocale ci-dessus pour pouvoir lancer l'analyse — sans notes, il n'y a rien à structurer."
-            : analyseAJour
-            ? "Déjà à jour — ajoutez une nouvelle note pour pouvoir relancer l'analyse."
-            : "Utile si vos notes sont en vrac — l'IA en fait la synthèse et repère ce qui manque. Si le projet est déjà clair, passez directement à l'étape 2."}
-        </p>
+      </Feuille>
 
-        {/* Sprint Robustesse (30/08) — un seul état `erreur` partagé par les
-            3 actions IA (analyser/générer devis/générer réponse), affiché
-            jusqu'ici seulement tout en bas de page, après l'historique :
-            un artisan cliquant ce bouton en haut de la fiche ne voyait
-            jamais l'erreur sans scroller toute la page. Correctif le plus
-            simple sans réarchitecturer l'état : dupliquer l'affichage sous
-            chacun des 3 boutons concernés (celui-ci reste aussi en bas, en
-            filet de sécurité pour les autres mutations qui utilisent le
-            même état, ex. dupliquerDevis). */}
-        {infosAConfirmer && infosAConfirmer.length > 0 && (
-          <div
-            className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-ink/40 backdrop-blur-sm p-0 sm:p-6"
-            role="alertdialog"
-            aria-modal="true"
-            aria-label="Informations manquantes"
-          >
-            <div className="w-full sm:max-w-md bg-paper rounded-t-3xl sm:rounded-3xl border border-ink/10 shadow-2xl p-6 [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:[padding-bottom:1.5rem]">
-              <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-1.5">
-                Avant de chiffrer
-              </p>
-              <p className="font-display text-lg font-semibold text-ink leading-snug">
-                Il manque peut-être encore quelques informations
-              </p>
-              <ul className="mt-3 flex flex-col gap-1.5 text-sm text-ink/70">
-                {infosAConfirmer.map((info) => (
-                  <li key={info} className="flex gap-2">
-                    <span className="text-signal shrink-0" aria-hidden="true">
-                      •
-                    </span>
-                    <span>{info}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-3 text-xs text-ink/45 leading-relaxed">
-                Vous pouvez générer le devis quand même — il restera modifiable ligne par ligne
-                avant envoi.
-              </p>
-              <div className="mt-5 flex flex-wrap gap-3">
-                <Button onClick={lancerGenerationDevis}>Générer quand même</Button>
-                <Button variant="ghost" onClick={() => setInfosAConfirmer(null)}>
-                  Compléter d&apos;abord
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tachesProposees && tachesProposees.length > 0 && (
-          <Card className="mt-3 p-4">
-            <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-2">
-              Tâches repérées — les ajouter à vos notes ?
-            </p>
-            <ul className="text-sm text-ink/80 list-disc pl-5">
-              {tachesProposees.map((t) => (
-                <li key={t}>{t}</li>
-              ))}
-            </ul>
-            <div className="mt-3 flex gap-3">
-              <Button onClick={accepterTaches} disabled={ajoutTachesEnCours}>
-                {ajoutTachesEnCours ? "Ajout…" : "Ajouter à mes notes"}
-              </Button>
-              <Button
-                variant="ghost"
-                onClick={() => setTachesProposees(null)}
-                disabled={ajoutTachesEnCours}
-              >
-                Non merci
+      {/* Un message au client (réponse ou relance), préparé par l'IA : à
+          relire, puis à copier et envoyer soi-même. */}
+      <Feuille ouverte={feuilleReponse} titre="Message au client" surFermer={() => setFeuilleReponse(false)}>
+        {chargementReponse && !brouillonReponse && <p className="text-[14.5px] text-ink/60">Rédaction en cours…</p>}
+        {erreur && sectionErreur === "reponse" && <p className="text-[14.5px] text-signal">{erreur}</p>}
+        {brouillonReponse && (
+          <>
+            <p className="text-[13px] text-ink/50">Brouillon : relisez et ajustez avant de l&apos;envoyer vous-même.</p>
+            <textarea
+              value={brouillonReponse}
+              onChange={(e) => setBrouillonReponse(e.target.value)}
+              rows={8}
+              className="mt-2 w-full resize-none rounded-xl border border-ink/10 bg-surface p-3 text-[15px] leading-relaxed text-ink/85 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
+            />
+            <div className="mt-3 flex flex-wrap gap-2.5">
+              <Button onClick={copierReponse}>{copie ? "Copié" : "Copier le texte"}</Button>
+              <Button variant="ghost" onClick={() => genererReponse()} loading={chargementReponse}>
+                Proposer une autre version
               </Button>
             </div>
-          </Card>
+          </>
         )}
-
-        {urgenceProposee && artisanId && organisationId && (
-          <PropositionUrgence
-            demandeId={params.id}
-            artisanId={artisanId}
-            organisationId={organisationId}
-            onTraite={async () => {
-              setUrgenceProposee(false);
-              await chargerDonnees();
-            }}
-          />
-        )}
-
-        {erreur && sectionErreur === "analyse" && (
-          <p className="mt-2 text-sm text-signal">{erreur}</p>
-        )}
-
-        {demande.questions_manquantes && (
-          <Card className="mt-4 p-6">
-            <p className="text-sm text-ink/80">
-              {demande.questions_manquantes.resume}
-            </p>
-
-            {/* Garde-fou (06/09) : "?? []" plutôt qu'un accès direct — une
-                réponse IA légèrement malformée (champ manquant, mauvais
-                type) ne doit jamais faire planter l'affichage de toute la
-                fiche projet, seulement afficher moins d'informations. */}
-            {(demande.questions_manquantes.informations_manquantes ?? []).length > 0 && (
-              <>
-                <p className="mt-4 text-xs font-medium text-ink/50 uppercase tracking-wider">
-                  Checklist — ce qu'il manque peut-être encore
-                </p>
-                <div className="mt-2 flex flex-col gap-1.5">
-                  {(demande.questions_manquantes.informations_manquantes ?? []).map((info) => {
-                    const dejaCoche =
-                      /photo/i.test(info) && (demande.photos?.length ?? 0) > 0;
-                    return (
-                      <label
-                        key={info}
-                        className="flex items-center gap-2 text-sm text-ink/70"
-                      >
-                        <input
-                          type="checkbox"
-                          defaultChecked={dejaCoche}
-                          className="accent-signal"
-                        />
-                        <span className={dejaCoche ? "line-through text-ink/40" : ""}>
-                          {info}
-                        </span>
-                      </label>
-                    );
-                  })}
-                </div>
-                <p className="mt-2 text-[11px] text-ink/35">
-                  Simple aide-mémoire — cocher ne change rien ailleurs dans l&apos;app.
-                </p>
-              </>
-            )}
-
-            <p className="mt-4 text-xs font-medium text-ink/50 uppercase tracking-wider">
-              Questions à poser au client
-            </p>
-            <ul className="mt-2 list-disc list-inside text-sm text-ink/70 space-y-1">
-              {(demande.questions_manquantes.questions_suggerees ?? []).map((q) => (
-                <li key={q}>{q}</li>
-              ))}
-            </ul>
-          </Card>
-        )}
-      </div>
-
-      {/* Étape 2 : génération du devis — indépendante de l'étape 1. Elle
-          fonctionne directement à partir de la description et des notes du
-          projet ; l'analyse IA n'est pas un prérequis, juste une aide en
-          option pour les notes en vrac. */}
-      <div className="mt-8">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <h2 className="font-semibold text-sm">2. Générer un devis</h2>
-            {(!devis || devis.statut === "refuse") && (
-              <div className="flex items-center gap-2">
-                {/* Devis express (06/09) — pour un dépannage/une intervention
-                    déjà réalisée sur place (serrurier, vitrier, urgence) :
-                    saute l'IA, ouvre directement une ligne vide à remplir. */}
-                <Button variant="ghost" onClick={creerDevisExpress} loading={chargementDevis} title="Chiffrer directement à la main, sans passer par l'IA — pour une intervention déjà réalisée sur place.">
-                  {chargementDevis ? "Création…" : "⚡ Devis express"}
-                </Button>
-                <Button onClick={genererDevis} loading={chargementDevis}>
-                  {chargementDevis
-                    ? "Génération en cours…"
-                    : devis
-                    ? "Générer un nouveau devis"
-                    : "Générer le devis"}
-                </Button>
-              </div>
-            )}
-          </div>
-
-          {/* Sprint Robustesse (30/08) — voir commentaire identique plus
-              haut sous le bouton "Analyser avec l'IA" : l'erreur s'affiche
-              désormais UNIQUEMENT sous l'action qui l'a produite. */}
-          {erreur && sectionErreur === "devis" && (
-            <p className="mt-2 text-sm text-signal">{erreur}</p>
-          )}
-
-          {devis?.statut === "refuse" && (
-            <Card className="mt-4 p-4 border-signal/30 bg-signal/5">
-              <p className="text-sm text-ink/80">
-                Ce devis a été marqué comme refusé par le client. Générez-en un nouveau
-                lorsque vous êtes prêt, ou repartez de celui-ci si le client a juste changé
-                d&apos;avis sur le prix.
-              </p>
-              <Button
-                variant="ghost"
-                onClick={dupliquerDevis}
-                loading={chargementDevis}
-                className="mt-3"
-              >
-                {chargementDevis ? "Duplication…" : "Dupliquer ce devis pour le modifier"}
-              </Button>
-              <Link
-                href={adresseEspaceDevis(devis.id)}
-                className="ml-3 text-xs text-ink/50 underline-offset-2 hover:text-ink hover:underline"
-              >
-                Revoir le devis refusé
-              </Link>
-            </Card>
-          )}
-
-          {devisPerime && devis?.statut !== "brouillon" && (
-            <Card className="mt-4 p-4 border-alerte-orange/40 bg-alerte-orange/5">
-              <p className="text-sm text-ink/80">
-                Le projet a changé depuis le dernier devis (nouvelle note, photo ou note
-                vocale). Voulez-vous le régénérer en tenant compte de ces changements ?
-              </p>
-              <Button onClick={genererDevis} loading={chargementDevis} className="mt-3">
-                {chargementDevis ? "Mise à jour…" : "Mettre à jour le devis"}
-              </Button>
-            </Card>
-          )}
-
-          {/* Projet déjà accepté ou en cours : jamais de régénération en un
-              clic (voir le commentaire sur devisPerimeProjetEngage plus
-              haut) — seulement une duplication explicite, qui laisse le
-              devis accepté intact et n'écrase pas le statut du projet. */}
-          {devisPerimeProjetEngage && (
-            <Card className="mt-4 p-4 border-alerte-orange/40 bg-alerte-orange/5">
-              <p className="text-sm text-ink/80">
-                Le projet a changé depuis ce devis {demande.statut === "accepte" ? "accepté" : "en cours"}
-                . Le devis d&apos;origine reste inchangé — dupliquez-le si vous devez ajuster le
-                prix ou les prestations.
-              </p>
-              <Button
-                variant="ghost"
-                onClick={dupliquerDevis}
-                loading={chargementDevis}
-                className="mt-3"
-              >
-                {chargementDevis ? "Duplication…" : "Dupliquer ce devis pour l'ajuster"}
-              </Button>
-            </Card>
-          )}
-
-          {/* 17/09 — demandé par Axel : le devis prenait toute la fiche
-              projet. Il vit désormais dans son propre espace (éditeur, vrai
-              PDF, envoi, suivi : app/dashboard/devis/[id]) ; la fiche n'en
-              garde que l'essentiel et la suite du chantier. */}
-          {devis && devis.statut !== "refuse" && (
-            <Card className="mt-4 p-5">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium">Devis n° {devis.numero}</p>
-                    <span
-                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${statutAffiche(devis, demande.statut).classe}`}
-                    >
-                      {statutAffiche(devis, demande.statut).texte}
-                    </span>
-                  </div>
-                  <p className="mt-0.5 text-sm text-ink/55">
-                    {formatMontant(devis.total_estime)} TTC
-                    {devis.envoye_le ? ` · envoyé le ${dateLongue(devis.envoye_le)}` : ""}
-                  </p>
-                  {devis.statut === "brouillon" && (
-                    <p className="mt-1 text-xs text-ink/45">
-                      À relire et valider avant de l&apos;envoyer — rien ne part sans vous.
-                    </p>
-                  )}
-                </div>
-                <Button
-                  variant={devis.statut === "brouillon" || devis.statut === "a_valider" ? "primary" : "ghost"}
-                  onClick={() => router.push(adresseEspaceDevis(devis.id))}
-                >
-                  {devis.statut === "brouillon"
-                    ? "Terminer le devis"
-                    : devis.statut === "a_valider"
-                      ? "Ouvrir et envoyer"
-                      : "Ouvrir le devis"}
-                </Button>
-              </div>
-
-              {devis.statut === "envoye" && demande.statut !== "accepte" && joursDepuisEnvoiDevis() !== null && (
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-ink/10 pt-4">
-                  <p className="text-xs text-ink/50">
-                    Sans réponse depuis {joursDepuisEnvoiDevis()} jour{(joursDepuisEnvoiDevis() ?? 0) > 1 ? "s" : ""}.
-                  </p>
-                  <Button variant="ghost" onClick={genererRelance} loading={chargementReponse}>
-                    {chargementReponse ? "Rédaction…" : "Suggérer une relance"}
-                  </Button>
-                </div>
-              )}
-
-              {demande.statut === "accepte" && (
-                <div className="mt-4 border-t border-ink/10 pt-4">
-                  <Button variant="ghost" onClick={marquerEnCours} disabled={actionEnCours}>
-                    Marquer le chantier comme démarré
-                  </Button>
-                </div>
-              )}
-              {demande.statut === "en_cours" && (
-                <div className="mt-4 flex flex-wrap items-center gap-3 border-t border-ink/10 pt-4">
-                  <span className="text-sm text-steel">🔨 Chantier en cours</span>
-                  <Button variant="ghost" onClick={marquerTermine} disabled={actionEnCours}>
-                    Marquer comme terminé
-                  </Button>
-                </div>
-              )}
-              {demande.statut === "termine" && (
-                <p className="mt-4 border-t border-ink/10 pt-4 text-sm text-steel">✓ Chantier terminé</p>
-              )}
-            </Card>
-          )}
-
-          {/* Module 28 (06/09) — facturation : disponible dès que le client a
-              accepté le devis, quel que soit l'avancement du chantier (un
-              acompte se facture souvent avant même le démarrage). */}
-          {devis &&
-            devis.statut !== "brouillon" &&
-            devis.statut !== "refuse" &&
-            ["accepte", "en_cours", "termine"].includes(demande.statut) && (
-              <FacturesProjet
-                devis={devis}
-                nomClient={demande.nom_client}
-                telephoneClient={demande.telephone_client}
-                adresseClient={demande.adresse_client}
-                logoUrl={logoUrl}
-              />
-            )}
-        </div>
-
-      {/* Étape 3 : réponse suggérée au client — l'artisan valide toujours avant envoi.
-          Sprint "Relance suggérée" (06/09) — condition élargie à
-          "brouillonReponse déjà généré" : le bouton "Suggérer une relance"
-          (voir plus haut, à côté des actions du devis envoyé) peut produire
-          un brouillon même sur un projet jamais passé par l'analyse IA
-          (questions_manquantes resterait alors null) — sans cet ajout, la
-          relance générée n'aurait eu aucun endroit où s'afficher. */}
-      {(demande.questions_manquantes || brouillonReponse) && (
-        <div className="mt-8" id="bloc-reponse-client">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-sm">3. Préparer une réponse au client</h2>
-            <Button
-              variant="ghost"
-              onClick={() => genererReponse()}
-              loading={chargementReponse}
-            >
-              {chargementReponse
-                ? "Rédaction en cours…"
-                : brouillonReponse
-                ? "Régénérer"
-                : "Générer une réponse"}
-            </Button>
-          </div>
-
-          {/* Sprint Robustesse (30/08) — voir les deux commentaires
-              identiques plus haut : l'erreur s'affiche désormais
-              UNIQUEMENT sous l'action qui l'a produite. */}
-          {erreur && sectionErreur === "reponse" && (
-            <p className="mt-2 text-sm text-signal">{erreur}</p>
-          )}
-
-          {brouillonReponse && (
-            <Card className="mt-4 p-6">
-              <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-2">
-                Brouillon — relisez et ajustez avant d&apos;envoyer vous-même
-              </p>
-              <textarea
-                value={brouillonReponse}
-                onChange={(e) => setBrouillonReponse(e.target.value)}
-                rows={6}
-                className="w-full text-sm text-ink/80 leading-relaxed rounded-xl border border-ink/10 bg-paper p-3 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
-              />
-              <Button variant="ghost" onClick={copierReponse} className="mt-3">
-                {copie ? "✓ Copié" : "Copier le texte"}
-              </Button>
-            </Card>
-          )}
-        </div>
-      )}
-
-      {/* Historique — fil chronologique de tout ce qui s'est passé sur le projet.
-          evenements_projet est la source de vérité désormais ; les projets créés
-          avant l'introduction de cette table (aucun événement enregistré) gardent
-          l'ancien calcul en secours, sans migration de données nécessaire. */}
-      <div className="mt-8">
-        <h2 className="font-semibold text-sm">Historique</h2>
-        <div className="mt-4">
-          <Timeline
-            items={
-              evenementsProjet.length > 0
-                ? evenementsProjet.map(
-                    (e): TimelineItem => ({
-                      date: e.created_at,
-                      label: e.titre,
-                      detail: e.detail ?? undefined,
-                    })
-                  )
-                : construireHistoriqueHerite(demande, devis, notesVocales)
-            }
-          />
-        </div>
-      </div>
-
-      {/* Bandeau de repli : toutes les autres mutations de la page
-          (dupliquer un devis, marquer une visite, clôturer…) n'indiquent
-          pas de section, leur erreur s'affiche donc ici, une seule fois. */}
-      {erreur && sectionErreur === null && (
-        <p className="mt-4 text-sm text-signal">{erreur}</p>
-      )}
-    </div>
-  );
-}
-
-// Où en est le chantier, en un coup d'œil — pas besoin de lire le statut
-// écrit ou de dérouler la fiche. 5 étapes fixes, toujours dans le même
-// ordre, jamais plus : "nouveau"/"analyse" comptent comme une seule étape
-// ("Nouveau"), de même pour "devis_genere"/"devis_envoye" ("Devis").
-const ETAPES_PROGRESSION: { cle: string; label: string; statuts: string[] }[] = [
-  { cle: "nouveau", label: "Nouveau", statuts: ["nouveau", "analyse"] },
-  { cle: "devis", label: "Devis", statuts: ["devis_genere", "devis_envoye"] },
-  { cle: "accepte", label: "Accepté", statuts: ["accepte"] },
-  { cle: "en_cours", label: "En cours", statuts: ["en_cours"] },
-  { cle: "termine", label: "Terminé", statuts: ["termine"] },
-];
-
-function BarreProgression({ statut }: { statut: string }) {
-  const indexActuel = Math.max(
-    0,
-    ETAPES_PROGRESSION.findIndex((e) => e.statuts.includes(statut))
-  );
-
-  return (
-    <div className="mt-4 flex items-center">
-      {ETAPES_PROGRESSION.map((etape, i) => (
-        <div key={etape.cle} className="flex items-center flex-1 last:flex-none">
-          <div className="flex flex-col items-center gap-1.5">
-            <div
-              className={`w-2.5 h-2.5 rounded-full ${
-                i <= indexActuel ? "bg-ink" : "bg-ink/15"
-              }`}
-            />
-            <span
-              className={`text-[10px] whitespace-nowrap ${
-                i === indexActuel ? "text-ink font-medium" : "text-ink/35"
-              }`}
-            >
-              {etape.label}
-            </span>
-          </div>
-          {i < ETAPES_PROGRESSION.length - 1 && (
-            <div
-              className={`h-px flex-1 mx-1.5 mb-4 ${
-                i < indexActuel ? "bg-ink" : "bg-ink/15"
-              }`}
-            />
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-
-// Aide-mémoire propre au corps de métier, à consulter avant ou pendant la
-// visite — avant même de lancer l'analyse IA, qui elle ne travaille qu'à
-// partir de ce que l'artisan a déjà noté. Repliée par défaut pour ne pas
-// surcharger la fiche ; cocher ne change rien ailleurs, comme la checklist
-// générée par l'IA plus bas — c'est un pense-bête, pas un formulaire.
-function ChecklistMetier({
-  typeChantier,
-  metierArtisan,
-}: {
-  typeChantier: string;
-  metierArtisan: string | null;
-}) {
-  const [ouverte, setOuverte] = useState(false);
-  // Sprint Beta Final (27/08) — 🔴G : priorité au type de chantier détecté
-  // s'il est spécifique, repli sur le métier déclaré par l'artisan sinon
-  // (voir lib/checklistsMetier.ts) — un serrurier ou un paysagiste dont le
-  // chantier tombe en "autre" retrouve enfin une checklist qui lui parle.
-  const points = obtenirChecklist(typeChantier, metierArtisan);
-  if (!points) return null;
-
-  return (
-    <div className="mt-6">
-      <button
-        onClick={() => setOuverte((v) => !v)}
-        className="text-xs text-ink/50 hover:text-ink underline underline-offset-2 transition-colors"
-      >
-        📋 {ouverte ? "Masquer" : "Voir"} la checklist avant devis
-      </button>
-      {ouverte && (
-        <Card className="mt-3 p-5">
-          <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-3">
-            À vérifier sur place
-          </p>
-          <div className="flex flex-col gap-1.5">
-            {points.map((point) => (
-              <label key={point} className="flex items-center gap-2 text-sm text-ink/70">
-                <input type="checkbox" className="accent-signal" />
-                <span>{point}</span>
-              </label>
-            ))}
-          </div>
-        </Card>
-      )}
-    </div>
-  );
-}
-
-// Un "compartiment" du dossier projet : titre + icône constants, pour que
-// l'artisan reconnaisse toujours la même section au même endroit, quel que
-// soit le projet ouvert.
-function FicheSection({
-  icone,
-  titre,
-  sousTitre,
-  children,
-}: {
-  icone: string;
-  titre: string;
-  sousTitre?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <Card className="mt-4 p-6">
-      <p className="text-xs font-medium text-ink/50 uppercase tracking-wider">
-        {icone} {titre}
-      </p>
-      {sousTitre && <p className="mt-1 text-[11px] text-ink/40">{sousTitre}</p>}
-      <div className="mt-3">{children}</div>
-    </Card>
+      </Feuille>
+    </>
   );
 }
 

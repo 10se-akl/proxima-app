@@ -713,3 +713,26 @@
     }
   }
 }
+
+/* Fiche projet (24/09) — l’ouverture des feuilles (components/projet/
+   Feuille.tsx) : un fondu pour le voile, une montée courte pour le
+   panneau. Rien pour qui a demandé moins de mouvement. */
+@media (prefers-reduced-motion: no-preference) {
+  .feuille-voile {
+    animation: feuille-fondu 0.2s ease-out;
+  }
+  .feuille-panneau {
+    animation: feuille-monte 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@keyframes feuille-fondu {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes feuille-monte {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+}

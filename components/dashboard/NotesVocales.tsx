@@ -19,11 +19,15 @@ export function NotesVocales({
   notes,
   telephoneClient,
   onNouvelleNote,
+  masquerListe = false,
 }: {
   demandeId: string;
   notes: NoteVocale[];
   telephoneClient?: string | null;
   onNouvelleNote: () => void;
+  /** Fiche projet (24/09) : la dictée s’ouvre dans une feuille, les notes
+   *  déjà enregistrées vivent dans le Carnet — pas besoin de les répéter. */
+  masquerListe?: boolean;
 }) {
   const supabase = createClient();
   const [enregistrement, setEnregistrement] = useState(false);
@@ -285,7 +289,7 @@ export function NotesVocales({
 
 
 
-      {notes.length > 0 && (
+      {!masquerListe && notes.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">
           {notes.map((n) => (
             <NoteVocaleItem key={n.id} note={n} />

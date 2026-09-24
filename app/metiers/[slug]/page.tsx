@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Header, Footer, Reveal } from "@/components/marketing/LandingPage";
+import { Header, Footer, Reveal } from "@/components/marketing/Cadre";
 import { CadreDessin } from "@/components/marketing/accueil/Maquettes";
 import { CONTENUS_METIERS } from "@/components/marketing/metiers/contenusMetiers";
 import {

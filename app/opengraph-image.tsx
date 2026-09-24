@@ -103,7 +103,7 @@ export default function OpengraphImage() {
             maxWidth: 950,
           }}
         >
-          Passez plus de temps sur vos chantiers.
+          Vos soirées ne sont pas faites
         </div>
         <div
           style={{
@@ -114,7 +114,7 @@ export default function OpengraphImage() {
             lineHeight: 1.15,
           }}
         >
-          Compyo s&apos;occupe du reste.
+          pour la paperasse.
         </div>
         <div
           style={{
@@ -124,7 +124,7 @@ export default function OpengraphImage() {
             marginTop: 36,
           }}
         >
-          L&apos;assistant conçu pour les artisans du bâtiment — bêta privée
+          Le compagnon administratif des artisans du bâtiment — bêta privée
         </div>
       </div>
     ),

@@ -1,4 +1,4 @@
-import { Reveal, SectionLabel } from "./LandingPage";
+import { Reveal, SectionLabel } from "./Cadre";
 
 // ============================================================
 // "Une journée avec Compyo" — section vedette demandée par Axel : moins

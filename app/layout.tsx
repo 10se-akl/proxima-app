@@ -70,6 +70,10 @@ export const metadata: Metadata = {
   // désactive le format-detection qui transforme parfois des numéros de
   // devis ou des références en liens "appeler" cliquables involontaires.
   formatDetection: { telephone: false },
+  // 24/09 — Chrome signale « apple-mobile-web-app-capable » (posé par
+  // appleWebApp ci-dessus) comme obsolète et demande son équivalent
+  // standard. Les deux cohabitent : iOS lit le premier, Chrome le second.
+  other: { "mobile-web-app-capable": "yes" },
 };
 
 // Séparé de `metadata` depuis Next.js 14 (dépréciation de viewport dans
@@ -152,7 +156,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
+    // suppressHydrationWarning (24/09) : le script anti-flash ci-dessous
+    // pose la classe .dark sur <html> AVANT React. Sans cette mention,
+    // React signalait à chaque chargement une différence d'attribut
+    // « class » entre le serveur et le navigateur — attendue, et limitée
+    // à cette seule balise (les enfants restent vérifiés normalement).
+    <html lang="fr" suppressHydrationWarning>
       <head>
         {/* 20/09 — Capte l'installation PWA AVANT React. Chrome déclenche
             "beforeinstallprompt" très tôt pendant le chargement et ne le

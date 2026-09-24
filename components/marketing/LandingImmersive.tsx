@@ -31,7 +31,7 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { Header, Footer } from "./LandingPage";
+import { Header, Footer } from "./Cadre";
 import { VideoDemo } from "./VideoDemo";
 import { VitrineMetiers } from "./VitrineMetiers";
 

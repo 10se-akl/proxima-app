@@ -1,4 +1,5 @@
-import { Accueil } from "@/components/marketing/accueil/Accueil";
+import type { Metadata } from "next";
+import { Accueil } from "@/components/marketing/vitrine/Accueil";
 import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 
 // ============================================================
@@ -9,12 +10,25 @@ import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 // détecte simplement la session et affiche "Dashboard" à la place de
 // "Connexion"/"Rejoindre la bêta".
 //
-// 20/09 — Refonte de l'accueil : récit plutôt que sommaire, voir
-// components/marketing/accueil/Accueil.tsx. L'ancienne version immersive
-// (LandingImmersive.tsx) reste en place, visible sur /apercu-immersif, et
-// l'ancienne landing multi-pages (LandingPage.tsx) fournit toujours le
-// Header et le Footer partagés par tout le site.
+// 24/09 — Nouvelle vitrine : l'histoire d'une journée d'artisan, voir
+// components/marketing/vitrine/Accueil.tsx. L'en-tête et le pied de page
+// partagés par tout le site sont dans components/marketing/Cadre.tsx.
 // ============================================================
+
+// 24/09 — Le titre et la description suivent le nouveau message de
+// l'accueil. Titre « absolu » : le gabarit « %s — Compyo » du layout
+// l'aurait doublé.
+const TITRE = "Compyo — Le compagnon administratif des artisans du bâtiment";
+const DESCRIPTION =
+  "Vos soirées ne sont pas faites pour la paperasse. Du premier message du client à la facture réglée : Compyo crée le projet, range vos notes et vos photos, prépare le devis avec vos prix et suit la signature. Bêta privée.";
+
+export const metadata: Metadata = {
+  title: { absolute: TITRE },
+  description: DESCRIPTION,
+  alternates: { canonical: "/" },
+  openGraph: { title: TITRE, description: DESCRIPTION, url: "/" },
+  twitter: { title: TITRE, description: DESCRIPTION },
+};
 
 export default function HomePage() {
   // Les avis Google se lisent côté serveur (clé d'API privée) : la section

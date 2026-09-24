@@ -1,4 +1,4 @@
-import { Reveal, SectionLabel } from "./LandingPage";
+import { Reveal, SectionLabel } from "./Cadre";
 
 // ============================================================
 // Nous contacter — Compyo est un projet solo en bêta privée,

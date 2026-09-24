@@ -1,7 +1,7 @@
 "use client";
 
 import { DemoPanel } from "./DemoPanel";
-import { Reveal, SectionLabel } from "./LandingPage";
+import { Reveal, SectionLabel } from "./Cadre";
 
 // Section dédiée aux notes vocales + résumé de fin de journée — remplace
 // la carte "Notes vocales" de l'ancienne grille Solutions. Mockup à gauche

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Header, Footer } from "@/components/marketing/LandingPage";
+import { Header, Footer } from "@/components/marketing/Cadre";
 import { DemoDevis } from "@/components/marketing/DemoDevis";
 import { DemoImport } from "@/components/marketing/DemoImport";
 import { DemoPlanning } from "@/components/marketing/DemoPlanning";

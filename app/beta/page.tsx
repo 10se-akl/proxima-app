@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
+import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
 export const metadata: Metadata = {
   // SEO (05/09) — voir même correctif que /fonctionnalites : le layout

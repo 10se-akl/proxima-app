@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { createClient } from "@/lib/supabase/server";
-import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
+import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 import { CarteMentale } from "@/components/carte-mentale/CarteMentale";
 import { CATEGORIES } from "@/lib/retours/taxonomie";
 

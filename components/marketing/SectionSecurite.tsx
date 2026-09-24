@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Reveal, SectionLabel } from "./LandingPage";
+import { Reveal, SectionLabel } from "./Cadre";
 
 // ============================================================
 // Sécurité & confidentialité — les artisans nous confient leurs

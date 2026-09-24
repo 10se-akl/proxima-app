@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
+import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 import { AssistantInstallation } from "@/components/pwa/AssistantInstallation";
 
 // ============================================================

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
+import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
 export const metadata: Metadata = {
   title: "Compyo est-il sérieux et sécurisé ? — Transparence",

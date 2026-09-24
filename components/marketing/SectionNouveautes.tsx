@@ -1,4 +1,4 @@
-import { Reveal, SectionLabel } from "./LandingPage";
+import { Reveal, SectionLabel } from "./Cadre";
 
 // ============================================================
 // SEO/GEO (06/09) — le featureList JSON-LD de /fonctionnalites a été

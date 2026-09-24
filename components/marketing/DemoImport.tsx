@@ -1,7 +1,7 @@
 "use client";
 
 import { DemoPanel } from "@/components/marketing/DemoPanel";
-import { Reveal, SectionLabel } from "@/components/marketing/LandingPage";
+import { Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
 // Section dédiée à l'import automatique : l'artisan colle un message reçu
 // (SMS/WhatsApp/mail) ou une capture d'écran de conversation, et Compyo en

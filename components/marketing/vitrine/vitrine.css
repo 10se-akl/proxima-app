@@ -1,0 +1,572 @@
+/* ============================================================
+   La vitrine (24/09) — styles propres à l'accueil, chargés seulement
+   par les pages qui l'importent (voir Accueil.tsx), pas par le
+   dashboard.
+
+   Trois règles tenues partout :
+   - on n'anime que transform et opacity (et, rarement, la taille d'une
+     grille) : c'est ce qui reste fluide sur un téléphone d'entrée de
+     gamme ;
+   - tout ce qui bouge a un état final visible sans animation : sans
+     JavaScript, ou pour qui demande moins de mouvement, la page montre
+     directement la fin de chaque scène ;
+   - des durées longues et des courbes douces. Rien ne rebondit.
+   ============================================================ */
+
+.vitrine {
+  --v-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --v-ease-doux: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Une ombre d'objet réaliste se construit en couches : un contact net
+     au pied de l'objet, puis des ombres de plus en plus larges et
+     diffuses. Une seule ombre floue fait « autocollant ». */
+  --v-ombre: 0 1px 1px rgb(46 30 20 / 0.04), 0 2px 4px rgb(46 30 20 / 0.05),
+    0 8px 18px rgb(46 30 20 / 0.06), 0 24px 48px -12px rgb(46 30 20 / 0.14),
+    0 60px 110px -40px rgb(46 30 20 / 0.3);
+  --v-ombre-legere: 0 1px 2px rgb(46 30 20 / 0.06), 0 8px 20px -8px rgb(46 30 20 / 0.16);
+  --v-reflet: inset 0 1px 0 rgb(255 255 255 / 0.7);
+  /* Sur l'accueil, le pied de page suit la dernière section (un soir
+     brun) plutôt que l'anthracite bleuté du reste du site : les deux
+     côte à côte faisaient une rupture de couleur. */
+  --c-anthracite: 18 14 12;
+  /* Le mur du hero et la lumière qui y entre. */
+  --v-mur-haut: 240 232 222;
+  --v-mur-bas: 228 215 200;
+  --v-soleil: 255 248 236;
+}
+
+.dark .vitrine {
+  --v-ombre: 0 1px 1px rgb(0 0 0 / 0.25), 0 2px 4px rgb(0 0 0 / 0.25),
+    0 8px 18px rgb(0 0 0 / 0.3), 0 24px 48px -12px rgb(0 0 0 / 0.5),
+    0 60px 110px -40px rgb(0 0 0 / 0.7);
+  --v-ombre-legere: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 20px -8px rgb(0 0 0 / 0.5);
+  --v-reflet: inset 0 1px 0 rgb(255 255 255 / 0.07);
+  --v-mur-haut: 31 25 21;
+  --v-mur-bas: 20 16 14;
+  --v-soleil: 255 170 112;
+}
+
+/* ------------------------------------------------------------ hero */
+
+.v-mur {
+  background: linear-gradient(172deg, rgb(var(--v-mur-haut)) 0%, rgb(var(--v-mur-bas)) 100%);
+}
+
+/* La lumière d'une fenêtre, projetée sur le mur. Quatre carreaux
+   lumineux séparés par les montants (le vide entre eux), déformés en
+   perspective puis adoucis : c'est la seule « photo » dont un hero a
+   besoin pour paraître éclairé par un vrai soleil de fin de journée. */
+.v-fenetre {
+  position: absolute;
+  top: 4%;
+  left: 44%;
+  width: 46%;
+  height: 86%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1.3fr 1fr;
+  gap: 3.5%;
+  transform: skewX(-22deg) skewY(-8deg) rotate(-3deg);
+  filter: blur(7px);
+}
+@media (max-width: 1023px) {
+  /* Sur téléphone, le téléphone est sous le texte : la fenêtre passe
+     derrière lui, en bas de l'écran. */
+  .v-fenetre {
+    top: 46%;
+    left: 18%;
+    width: 80%;
+    height: 50%;
+  }
+}
+.v-fenetre > span {
+  border-radius: 3px;
+  background: linear-gradient(
+    205deg,
+    rgb(var(--v-soleil) / 1) 0%,
+    rgb(var(--v-soleil) / 0.85) 45%,
+    rgb(var(--v-soleil) / 0.25) 100%
+  );
+}
+.dark .v-fenetre {
+  opacity: 0.2;
+  filter: blur(10px);
+}
+/* Le halo chaud autour de la tache de soleil. */
+.v-halo {
+  position: absolute;
+  inset: -20% -20% auto auto;
+  width: 90%;
+  height: 120%;
+  background: radial-gradient(
+    closest-side,
+    rgb(var(--v-soleil) / 0.7),
+    rgb(var(--v-soleil) / 0) 100%
+  );
+}
+.dark .v-halo {
+  background: radial-gradient(closest-side, rgb(201 107 74 / 0.2), rgb(201 107 74 / 0) 100%);
+}
+@media (prefers-reduced-motion: no-preference) {
+  /* Le soleil tourne : la tache glisse de quelques pour cent en une
+     minute. Personne ne le remarque consciemment, mais un mur
+     parfaitement immobile fait décor. */
+  .v-fenetre {
+    animation: v-soleil 60s var(--v-ease-doux) infinite alternate;
+  }
+}
+@keyframes v-soleil {
+  to {
+    transform: skewX(-18deg) skewY(-7deg) rotate(-2deg) translate3d(-3%, 2%, 0);
+  }
+}
+
+/* ------------------------------------------------------------ téléphone */
+
+.v-telephone {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 9 / 19.4;
+  padding: 3.4%;
+  border-radius: 17% / 8%;
+  /* Un cadre en métal : un dégradé qui accroche la lumière sur une arête,
+     la tranche plus sombre, puis un liseré intérieur. */
+  background: linear-gradient(140deg, #4b5159 0%, #1b1e22 22%, #2c3138 58%, #121417 100%);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.1),
+    inset 0 0 0 3px #0c0d0f,
+    var(--v-ombre);
+}
+.v-ecran {
+  position: relative;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 13.5% / 6.4%;
+  container-type: inline-size;
+  isolation: isolate;
+}
+/* Le fond d'écran : un coucher de soleil, dans la couleur de la marque. */
+.v-fond-soir {
+  background:
+    radial-gradient(130% 62% at 50% 108%, #f2b48f 0%, #c96b4a 30%, rgb(110 58 40) 58%, rgb(34 24 21) 88%),
+    #1c1512;
+}
+.v-reflet-ecran {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at var(--gx, 30%) var(--gy, 20%),
+    rgb(255 255 255 / 0.16),
+    rgb(255 255 255 / 0) 42%
+  );
+  z-index: 5;
+}
+
+/* Une notification du téléphone : sa hauteur passe de 0 à sa taille
+   réelle (grille 0fr → 1fr), ce qui fait glisser les suivantes vers le
+   bas sans calcul de position. */
+.v-notif {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transform: translate3d(0, 8px, 0) scale(0.96);
+  transition:
+    grid-template-rows 0.9s var(--v-ease),
+    opacity 0.7s var(--v-ease),
+    transform 0.9s var(--v-ease);
+}
+.v-notif[data-visible="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transform: none;
+}
+.v-notif > div {
+  min-height: 0;
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-notif {
+    transition: none;
+  }
+}
+
+.v-flotte {
+  animation: v-flotte 9s var(--v-ease-doux) infinite alternate;
+}
+@keyframes v-flotte {
+  to {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-flotte {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------ scènes
+
+   Une scène joue quand elle arrive à l'écran : components/marketing/
+   vitrine/Journee.tsx pose [data-actif] dessus. [data-pret] (posé sur la
+   section au montage) garantit qu'un visiteur sans JavaScript voit tout,
+   directement dans l'état final. */
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-pret] [data-scene] .v-entre,
+  [data-pret] [data-scene] .v-pop,
+  [data-pret] [data-scene] .v-gauche,
+  [data-pret] [data-scene] .v-droite {
+    opacity: 0;
+  }
+  [data-pret] [data-scene][data-actif] .v-entre {
+    animation: v-entre 1.1s var(--v-ease) var(--d, 0s) both;
+  }
+  [data-pret] [data-scene][data-actif] .v-pop {
+    animation: v-pop 0.9s var(--v-ease) var(--d, 0s) both;
+  }
+  [data-pret] [data-scene][data-actif] .v-gauche {
+    animation: v-gauche 1.1s var(--v-ease) var(--d, 0s) both;
+  }
+  [data-pret] [data-scene][data-actif] .v-droite {
+    animation: v-droite 1.1s var(--v-ease) var(--d, 0s) both;
+  }
+  /* Apparaît puis disparaît : la feuille de partage, un curseur. */
+  [data-pret] [data-scene][data-actif] .v-passe {
+    animation: v-passe var(--duree, 2s) var(--v-ease) var(--d, 0s) both;
+  }
+  /* Visible au début, disparaît à --d. */
+  [data-pret] [data-scene][data-actif] .v-sort {
+    animation: v-sort 0.8s var(--v-ease) var(--d, 0s) both;
+  }
+  /* Le rond qui s'étend sous un doigt qui touche. */
+  [data-pret] [data-scene][data-actif] .v-clic {
+    animation: v-clic 1s var(--v-ease) var(--d, 0s) both;
+  }
+  /* Les photos en vrac qui se rangent (--px, --py, --pr : leur place
+     dans la pile). */
+  [data-pret] [data-scene] .v-photo {
+    transform: translate(var(--px), var(--py)) rotate(var(--pr));
+  }
+  [data-pret] [data-scene][data-actif] .v-photo {
+    animation: v-range 1.4s var(--v-ease) var(--d, 0s) both;
+  }
+  /* Un simple fondu (les liens de la carte du projet). */
+  [data-pret] [data-scene] .v-fondu {
+    opacity: 0;
+  }
+  [data-pret] [data-scene][data-actif] .v-fondu {
+    animation: v-mot 0.9s ease var(--d, 0s) both;
+  }
+  /* Le micro qui enregistre. */
+  [data-pret] [data-scene][data-actif] .v-pulse {
+    animation: v-pulse 1.6s ease-out var(--d, 0s) 3 both;
+  }
+  /* Un trait qui se dessine (pathLength="1" sur le tracé). */
+  [data-pret] [data-scene] .v-trace {
+    stroke-dasharray: 1;
+    stroke-dashoffset: 1;
+  }
+  [data-pret] [data-scene][data-actif] .v-trace {
+    animation: v-trace var(--duree, 1.2s) var(--v-ease-doux) var(--d, 0s) both;
+  }
+  /* Une barre qui se remplit de gauche à droite. */
+  [data-pret] [data-scene] .v-remplit {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  [data-pret] [data-scene][data-actif] .v-remplit {
+    animation: v-remplit var(--duree, 1.2s) var(--v-ease) var(--d, 0s) both;
+  }
+  /* Un texte qui s'écrit : chaque mot est un <span class="v-mot">. */
+  [data-pret] [data-scene] .v-mot {
+    opacity: 0;
+  }
+  [data-pret] [data-scene][data-actif] .v-mot {
+    animation: v-mot 0.5s ease var(--d, 0s) both;
+  }
+  /* Les barres de l'enregistrement vocal. */
+  [data-pret] [data-scene][data-actif] .v-onde {
+    animation: v-onde 0.9s var(--v-ease-doux) var(--d, 0s) 5 alternate both;
+  }
+}
+
+/* États finaux qui valent aussi sans JavaScript : ce qui ne fait que
+   passer (feuille de partage, rond du doigt) est caché ; ce qui
+   disparaît (.v-sort) aussi. */
+.v-passe,
+.v-sort,
+.v-clic {
+  opacity: 0;
+  visibility: hidden;
+}
+
+/* Un refus : le créneau déjà pris tremble. */
+.v-secoue {
+  animation: v-secoue 0.5s var(--v-ease-doux);
+}
+.v-secoue-b {
+  animation: v-secoue-b 0.5s var(--v-ease-doux);
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-secoue,
+  .v-secoue-b {
+    animation: none;
+  }
+}
+@keyframes v-secoue {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+@keyframes v-secoue-b {
+  20%,
+  60% {
+    transform: translateX(-5px);
+  }
+  40%,
+  80% {
+    transform: translateX(5px);
+  }
+}
+
+@keyframes v-entre {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes v-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes v-gauche {
+  from {
+    opacity: 0;
+    transform: translate3d(-24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes v-droite {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes v-passe {
+  0% {
+    opacity: 0;
+    visibility: visible;
+    transform: translate3d(0, 14px, 0);
+  }
+  18%,
+  78% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+    visibility: hidden;
+  }
+}
+@keyframes v-sort {
+  from {
+    opacity: 1;
+    visibility: visible;
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+    visibility: hidden;
+  }
+}
+@keyframes v-clic {
+  0% {
+    opacity: 0.9;
+    visibility: visible;
+    transform: scale(0.5);
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+    transform: scale(1.7);
+  }
+}
+@keyframes v-range {
+  from {
+    transform: translate(var(--px), var(--py)) rotate(var(--pr));
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes v-pulse {
+  from {
+    opacity: 0.7;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.6);
+  }
+}
+@keyframes v-trace {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes v-remplit {
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes v-mot {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes v-onde {
+  from {
+    transform: scaleY(0.25);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+/* Le bouton « Rejouer » de chaque scène : discret tant qu'on ne survole
+   pas la scène. */
+.v-rejouer {
+  opacity: 0.8;
+  transition: opacity 0.3s ease;
+}
+[data-scene]:hover .v-rejouer,
+.v-rejouer:focus-visible {
+  opacity: 1;
+}
+
+/* La toile d'une scène : chaque scène a sa lumière, qui avance dans la
+   journée (--soleil-x / --soleil-y posés par la scène). */
+.v-toile {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(
+      70% 80% at var(--soleil-x, 20%) var(--soleil-y, 0%),
+      rgb(var(--v-soleil) / var(--soleil-force, 0.7)),
+      rgb(var(--v-soleil) / 0) 70%
+    ),
+    rgb(var(--c-paper-warm));
+  box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / 0.06);
+}
+.dark .v-toile {
+  background:
+    radial-gradient(
+      70% 80% at var(--soleil-x, 20%) var(--soleil-y, 0%),
+      rgb(201 107 74 / calc(var(--soleil-force, 0.7) * 0.2)),
+      rgb(201 107 74 / 0) 70%
+    ),
+    rgb(var(--c-surface));
+}
+
+/* Le grain : une texture de bruit très légère posée sur les matières et
+   les toiles. Sans elle, un dégradé CSS fait « écran » ; avec, il fait
+   « matière ». Généré une fois (SVG en ligne), jamais animé. */
+.v-grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0 0.5  0 0 0 0.9 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
+}
+
+/* ------------------------------------------------------------ métiers */
+
+/* La fiche d'un métier rejoue son entrée à chaque changement (elle est
+   recréée) : ces animations-là ne dépendent pas d'une scène. */
+@media (prefers-reduced-motion: no-preference) {
+  .v-apparait {
+    animation: v-entre 0.8s var(--v-ease) var(--d, 0s) both;
+  }
+  .v-apparait-mot {
+    animation: v-mot 0.35s ease var(--d, 0s) both;
+  }
+}
+
+/* La carte qui grandit jusqu'à devenir le visuel de la fiche (View
+   Transitions, voir metiers/Metiers.tsx). */
+::view-transition-group(metier-visuel) {
+  animation-duration: 0.75s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+::view-transition-image-pair(metier-visuel) {
+  overflow: hidden;
+  border-radius: 1.4rem;
+}
+::view-transition-old(metier-visuel),
+::view-transition-new(metier-visuel) {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.35s;
+}
+
+/* ------------------------------------------------------------ 19:04 */
+
+/* Le ciel d'une fin de journée, et le soleil qui se couche derrière la
+   dernière phrase. Même rendu en clair et en sombre : c'est le soir. */
+.v-ciel {
+  background:
+    radial-gradient(70% 55% at 50% 100%, rgb(201 107 74 / 0.55), transparent 70%),
+    linear-gradient(180deg, #17120f 0%, #231913 55%, #3a2317 100%);
+}
+.v-soleil-couchant {
+  background: radial-gradient(
+    circle,
+    #f7c9a4 0%,
+    #eea07a 18%,
+    #c96b4a 34%,
+    rgb(201 107 74 / 0.35) 52%,
+    rgb(201 107 74 / 0) 70%
+  );
+  filter: blur(2px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .v-soleil-couchant {
+    animation: v-couchant 16s var(--v-ease-doux) infinite alternate;
+  }
+}
+@keyframes v-couchant {
+  to {
+    transform: translate(-50%, -30%);
+  }
+}

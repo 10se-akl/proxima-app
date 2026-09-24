@@ -36,7 +36,7 @@
 
 import Link from "next/link";
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import { Header, Footer } from "./LandingPage";
+import { Header, Footer } from "./Cadre";
 import { LogoInteractif } from "./LogoInteractif";
 import {
   AvantApres,

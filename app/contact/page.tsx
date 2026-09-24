@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/LandingPage";
+import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 import { SectionContact } from "@/components/marketing/SectionContact";
 
 export const metadata: Metadata = {

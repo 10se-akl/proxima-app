@@ -75,16 +75,24 @@ export default function manifest(): MetadataRoute.Manifest {
     // ce champ dans le manifest est simplement ignorée ailleurs, sans risque.
     // Les noms de champs ("titre"/"texte"/"fichiers") sont choisis pour
     // correspondre exactement à ce que lit app/api/partage/route.ts.
+    // 24/09 — 🔴 Corrigé : ce bloc suivait le type de Next.js
+    // (`params` en liste de paires nom/valeur), qui ne correspond pas à la
+    // norme Web Share Target. Chrome l'écartait en entier (« property
+    // 'share_target' ignored. Property 'params' type dictionary expected »)
+    // : Compyo n'apparaissait donc pas dans le menu Partager d'Android. La
+    // norme attend un dictionnaire title/text/url/files, dont les valeurs
+    // sont les noms des champs envoyés — ceux que lit la route. Le type de
+    // Next.js étant faux, le bloc est écrit selon la norme puis converti.
     share_target: {
       action: "/api/partage",
       method: "post",
       enctype: "multipart/form-data",
-      params: [
-        { name: "titre", value: "titre" },
-        { name: "texte", value: "texte" },
-        { name: "url", value: "url" },
-      ],
-      files: [{ name: "fichiers", accept: ["image/*"] }],
-    },
+      params: {
+        title: "titre",
+        text: "texte",
+        url: "url",
+        files: [{ name: "fichiers", accept: ["image/*"] }],
+      },
+    } as unknown as MetadataRoute.Manifest["share_target"],
   };
 }

@@ -1,5 +1,5 @@
 import { DemoPanel } from "@/components/marketing/DemoPanel";
-import { Reveal, SectionLabel } from "@/components/marketing/LandingPage";
+import { Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
 // Section dédiée à la génération de devis — l'IA propose les postes à
 // partir de la description du projet, mais ne fixe jamais les prix : un

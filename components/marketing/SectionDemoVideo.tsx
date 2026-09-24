@@ -1,4 +1,4 @@
-import { Reveal, SectionLabel } from "./LandingPage";
+import { Reveal, SectionLabel } from "./Cadre";
 import { VideoDemo } from "./VideoDemo";
 
 // ============================================================

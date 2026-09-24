@@ -1,7 +1,7 @@
 "use client";
 
 import { DemoPanel } from "./DemoPanel";
-import { Reveal, SectionLabel } from "./LandingPage";
+import { Reveal, SectionLabel } from "./Cadre";
 
 // ============================================================
 // Section dédiée "Planning" — remplace la carte générique de la grille

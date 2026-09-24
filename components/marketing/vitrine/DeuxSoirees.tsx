@@ -294,7 +294,7 @@ function Scene({ cote }: { cote: "sans" | "avec" }) {
           <Objet p={[17, 71, 13, -14]} m={[24, 79, 25, -14]}>
             <Calculatrice />
           </Objet>
-          <Objet p={[85, 60, 13, 12]} m={[79, 83, 22, 12]}>
+          <Objet p={[85, 60, 13, 12]} m={[74, 77, 28, 12]}>
             <TelephoneSurTable ecran="bg-[#101318]">
               <EcranMessagesNonLus />
             </TelephoneSurTable>
@@ -306,27 +306,33 @@ function Scene({ cote }: { cote: "sans" | "avec" }) {
           <div className="absolute inset-0 bg-[#0f1a26]/55 mix-blend-multiply" />
           <div className="absolute inset-0 bg-[radial-gradient(55%_60%_at_42%_48%,rgb(255_247_225/0.28),transparent_70%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(120%_100%_at_50%_50%,transparent_45%,rgb(0_0_0/0.55))]" />
+          <p className="absolute bottom-3 left-3 rounded-full bg-[#9f2b22] px-2.5 py-1 text-[12px] font-medium text-white shadow-lg sm:hidden">
+            14 messages non lus
+          </p>
         </>
       ) : (
         <>
-          <Objet p={[85, 70, 14, 9]} m={[80, 84, 26, 9]}>
+          <Objet p={[85, 70, 14, 9]} m={[88, 90, 21, 9]}>
             <Livre />
           </Objet>
-          <Objet p={[62, 47, 15, -5]} m={[68, 49, 28, -5]}>
+          <Objet p={[62, 47, 15, -5]} m={[71, 48, 36, -5]}>
             <TelephoneSurTable ecran="bg-[#FAF8F5]">
               <EcranCompyoAJour />
             </TelephoneSurTable>
           </Objet>
-          <Objet p={[66, 86, 12, 18]} m={[58, 90, 22, 18]}>
+          <Objet p={[66, 86, 12, 18]} m={[60, 92, 19, 18]}>
             <Cles />
           </Objet>
-          <Objet p={[84, 26, 11, 0]} m={[78, 15, 19, 0]}>
+          <Objet p={[84, 26, 11, 0]} m={[82, 12, 18, 0]}>
             <Tasse the />
           </Objet>
           {/* 19:04 : la lumière dorée du soir par la fenêtre */}
           <div className="absolute inset-0 bg-[#ffb070]/15 mix-blend-soft-light" />
           <div className="absolute inset-0 bg-[radial-gradient(90%_80%_at_78%_12%,rgb(255_205_150/0.45),transparent_65%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(130%_110%_at_50%_45%,transparent_55%,rgb(40_20_10/0.35))]" />
+          <p className="absolute bottom-3 right-3 rounded-full bg-[#2F8F5B] px-2.5 py-1 text-[12px] font-medium text-white shadow-lg sm:hidden">
+            ✓ Tout est à jour
+          </p>
         </>
       )}
     </div>

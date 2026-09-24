@@ -21,14 +21,14 @@ import { Carte, Coche, Etiquette } from "./outils";
 const SIGNATURE_AUTO =
   "M14 50C20 26 34 14 32 36S22 64 42 52 58 24 64 38 70 58 84 44 96 30 102 44 110 60 126 42 140 24 148 42 158 58 172 36M150 60C162 57 180 55 196 51";
 
-type Etape = { titre: string; detail: string; heure: string };
+type Etape = { titre: string; court: string; detail: string; heure: string };
 
 const ETAPES: Etape[] = [
-  { titre: "Relu par Compyo", detail: "Mentions obligatoires, TVA 10 %, validité 30 jours, assurance", heure: "13:58" },
-  { titre: "Envoyé à Mme Garnier", detail: "Un lien pour lire et signer", heure: "14:02" },
-  { titre: "Ouvert", detail: "Sur son téléphone", heure: "14:40" },
-  { titre: "Signé", detail: "Signature électronique, horodatée", heure: "15:12" },
-  { titre: "Acompte à facturer", detail: "Depuis le devis signé, en un geste · 30 % = 116,16 €", heure: "15:12" },
+  { titre: "Relu par Compyo", court: "Relu", detail: "Mentions obligatoires, TVA 10 %, validité 30 jours, assurance", heure: "13:58" },
+  { titre: "Envoyé à Mme Garnier", court: "Envoyé", detail: "Un lien pour lire et signer", heure: "14:02" },
+  { titre: "Ouvert", court: "Ouvert", detail: "Sur son téléphone", heure: "14:40" },
+  { titre: "Signé", court: "Signé", detail: "Signature électronique, horodatée", heure: "15:12" },
+  { titre: "Acompte à facturer", court: "Acompte", detail: "Depuis le devis signé, en un geste · 30 % = 116,16 €", heure: "15:12" },
 ];
 
 type Point = [number, number];
@@ -129,22 +129,22 @@ export function SceneSignature() {
   const heureSignature = mode === "signe" && parVisiteur ? "à l'instant" : ETAPES[3].heure;
 
   return (
-    <div ref={ref} className="grid items-center gap-10 px-5 pb-20 pt-8 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-2 lg:gap-12 lg:px-14 lg:py-16">
+    <div ref={ref} className="grid items-center gap-10 px-5 pb-20 pt-8 max-md:gap-3 max-md:px-4 max-md:pb-5 max-md:pt-3 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-2 lg:gap-12 lg:px-14 lg:py-16">
       {/* Le téléphone de la cliente */}
-      <div className="mx-auto w-full max-w-[15.5rem]">
-        <div className="v-telephone">
+      <div className="mx-auto w-full max-w-[15.5rem] max-md:max-w-none">
+        <div className="v-telephone v-cadre-souple">
           <div className="v-ecran bg-[#FAF8F5] text-[#1F2937]">
-            <div className="absolute left-1/2 top-[2.6cqw] h-[8.6cqw] w-[29cqw] -translate-x-1/2 rounded-full bg-black" />
-            <div className="flex h-full flex-col px-[6cqw] pb-[6cqw] pt-[16cqw]">
+            <div className="absolute left-1/2 top-[2.6cqw] h-[8.6cqw] w-[29cqw] -translate-x-1/2 rounded-full bg-black max-md:hidden" />
+            <div className="flex h-full flex-col px-[6cqw] pb-[6cqw] pt-[16cqw] max-md:px-[5cqw] max-md:pb-[5cqw] max-md:pt-[5cqw]">
               <div className="flex items-center gap-[2.5cqw]">
                 <span className="grid h-[9cqw] w-[9cqw] place-items-center rounded-full bg-[#1F2937] text-[3.4cqw] font-semibold text-white">
                   MP
                 </span>
                 <span className="text-[3.9cqw] font-semibold">Martin Plomberie</span>
               </div>
-              <p className="mt-[6cqw] font-mono text-[3cqw] uppercase tracking-[0.14em] text-[#5C7080]">Devis D-2026-048</p>
+              <p className="mt-[6cqw] font-mono text-[3cqw] uppercase tracking-[0.14em] text-[#5C7080] max-md:mt-[4cqw]">Devis D-2026-048</p>
               <p className="mt-[1cqw] text-[5.2cqw] font-semibold leading-tight">Fuite sous l&apos;évier</p>
-              <ul className="mt-[3.5cqw] space-y-[1.6cqw] text-[3.3cqw] text-[#1F2937]/75">
+              <ul className="mt-[3.5cqw] space-y-[1.6cqw] text-[3.3cqw] text-[#1F2937]/75 max-md:hidden">
                 {["Siphon et raccords", "Flexibles inox", "Fond du meuble", "Main-d'œuvre ½ j"].map((l) => (
                   <li key={l} className="flex items-center justify-between gap-[2cqw] border-b border-[#1F2937]/[0.07] pb-[1.4cqw]">
                     <span className="truncate">{l}</span>
@@ -152,20 +152,20 @@ export function SceneSignature() {
                   </li>
                 ))}
               </ul>
-              <div className="mt-[4cqw] flex items-baseline justify-between rounded-[3cqw] bg-[#F3EDE6] px-[4cqw] py-[3cqw]">
+              <div className="mt-[4cqw] flex items-baseline justify-between rounded-[3cqw] bg-[#F3EDE6] px-[4cqw] py-[3cqw] max-md:mt-[3cqw] max-md:py-[2cqw]">
                 <p className="text-[3.2cqw] text-[#5C7080]">Total TTC</p>
                 <p className="text-[6cqw] font-semibold tabular-nums tracking-tight">387,20&nbsp;€</p>
               </div>
 
-              <ul className="mt-[3.5cqw] space-y-[1cqw] text-[2.9cqw] leading-snug text-[#5C7080]">
+              <ul className="mt-[3.5cqw] space-y-[1cqw] text-[2.9cqw] leading-snug text-[#5C7080] max-md:hidden">
                 <li>Validité 30 jours · TVA 10 % (logement de plus de 2 ans)</li>
                 <li>Acompte de 30 % à la signature</li>
               </ul>
 
               <span className="min-h-[2cqw] flex-1" />
-              <p className="mt-[5cqw] text-[3.4cqw] font-medium">Bon pour accord</p>
+              <p className="mt-[5cqw] text-[3.4cqw] font-medium max-md:mt-[4cqw]">Bon pour accord</p>
               <div
-                className={`relative mt-[2cqw] aspect-[2.3/1] rounded-[3cqw] border-[1.5px] border-dashed bg-white ${
+                className={`relative mt-[2cqw] aspect-[2.3/1] rounded-[3cqw] max-md:aspect-[3.6/1] border-[1.5px] border-dashed bg-white ${
                   mode === "visiteur" ? "border-[#C96B4A]" : "border-[#1F2937]/20"
                 }`}
               >
@@ -234,7 +234,7 @@ export function SceneSignature() {
         </div>
 
         {/* À vous */}
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-3 max-md:mt-2.5">
           {mode === "visiteur" ? (
             <>
               <button
@@ -275,18 +275,18 @@ export function SceneSignature() {
       </div>
 
       {/* Ce que voit l'artisan */}
-      <Carte className="p-5 sm:p-7">
-        <div className="flex items-baseline justify-between gap-3">
+      <Carte className="p-5 max-md:px-3 max-md:py-2.5 sm:p-7">
+        <div className="flex items-baseline justify-between gap-3 max-md:hidden">
           <Etiquette>Suivi du devis</Etiquette>
           <Etiquette className="normal-case tracking-normal">D-2026-048</Etiquette>
         </div>
-        <ol className="mt-5">
+        <ol className="mt-5 max-md:mt-0 max-md:flex max-md:justify-between">
           {ETAPES.map((e, i) => {
             const fait = i < faites;
             return (
-              <li key={e.titre} className="relative flex gap-4 pb-6 last:pb-0">
+              <li key={e.titre} className="relative flex gap-4 pb-6 last:pb-0 max-md:flex-1 max-md:flex-col max-md:items-center max-md:gap-1.5 max-md:pb-0">
                 {i < ETAPES.length - 1 && (
-                  <span aria-hidden className="absolute left-[11px] top-7 h-[calc(100%-1.75rem)] w-px bg-ink/10">
+                  <span aria-hidden className="absolute left-[11px] top-7 h-[calc(100%-1.75rem)] w-px bg-ink/10 max-md:hidden">
                     <span
                       className="block h-full w-full origin-top bg-succes transition-transform duration-700"
                       style={{ transform: `scaleY(${i < faites - 1 ? 1 : 0})` }}
@@ -300,7 +300,8 @@ export function SceneSignature() {
                 >
                   <Coche className="h-3.5 w-3.5" />
                 </span>
-                <div className={`min-w-0 flex-1 transition-opacity duration-500 ${fait ? "opacity-100" : "opacity-35"}`}>
+                <p className={`text-[11.5px] font-medium transition-opacity duration-500 md:hidden ${fait ? "text-ink" : "text-ink/35"}`}>{e.court}</p>
+                <div className={`min-w-0 flex-1 transition-opacity duration-500 max-md:hidden ${fait ? "opacity-100" : "opacity-35"}`}>
                   <div className="flex items-baseline justify-between gap-3">
                     <p className="text-[14.5px] font-medium text-ink">{e.titre}</p>
                     <p className="shrink-0 font-mono text-[11px] tabular-nums text-steel">

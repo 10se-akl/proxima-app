@@ -85,13 +85,13 @@ export function SceneDevis() {
   const ttcAffiche = useGlisse(ttc);
 
   return (
-    <div ref={ref} className="grid gap-8 px-4 pb-20 pt-8 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-center lg:gap-12 lg:px-14 lg:py-16">
+    <div ref={ref} className="grid gap-8 px-4 pb-20 pt-8 max-md:gap-5 max-md:pb-5 max-md:pt-4 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)] lg:items-center lg:gap-12 lg:px-14 lg:py-16">
       {/* Le devis */}
       <Carte className="overflow-hidden">
-        <div className="flex items-start justify-between gap-4 border-b border-ink/[0.07] px-5 py-4 sm:px-7 sm:py-5">
+        <div className="flex items-start justify-between gap-4 border-b border-ink/[0.07] px-5 py-4 max-md:py-3 sm:px-7 sm:py-5">
           <div>
             <p className="font-display text-lg font-semibold text-ink">Devis · Mme Garnier</p>
-            <p className="mt-0.5 font-mono text-[11px] text-steel">D-2026-048 · fuite sous l&apos;évier</p>
+            <p className="mt-0.5 font-mono text-[11px] text-steel max-md:hidden">D-2026-048 · fuite sous l&apos;évier</p>
           </div>
           <span className="rounded-full bg-ink/[0.06] px-2.5 py-1 text-[11px] font-medium text-ink/60">Brouillon</span>
         </div>
@@ -110,19 +110,19 @@ export function SceneDevis() {
           {FOURNITURES.map((f, i) => (
             <li
               key={f.designation}
-              className={`flex items-baseline justify-between gap-4 border-b border-ink/[0.06] py-3.5 transition-all duration-700 ${
+              className={`flex items-baseline justify-between gap-4 border-b border-ink/[0.06] py-3.5 transition-all duration-700 max-md:py-2 ${
                 i < lignes ? "opacity-100" : "translate-y-2 opacity-0"
               }`}
             >
               <span className="min-w-0 text-[14px] leading-snug text-ink">
                 {f.designation}
-                <span className="mt-0.5 block font-mono text-[11px] text-steel">{f.quantite}</span>
+                <span className="mt-0.5 block font-mono text-[11px] text-steel max-md:hidden">{f.quantite}</span>
               </span>
               <span className="shrink-0 font-mono text-[13px] tabular-nums text-ink">{euros(f.montant)}</span>
             </li>
           ))}
           <li
-            className={`flex items-baseline justify-between gap-4 py-3.5 transition-all duration-700 ${
+            className={`flex items-baseline justify-between gap-4 py-3.5 transition-all duration-700 max-md:py-2 ${
               lignes >= 4 ? "opacity-100" : "translate-y-2 opacity-0"
             }`}
           >
@@ -138,17 +138,19 @@ export function SceneDevis() {
           </li>
         </ul>
 
-        <dl className="space-y-1.5 border-t border-ink/[0.07] bg-paper-warm/50 px-5 py-4 text-[13px] sm:px-7">
-          <div className="flex justify-between">
+        <dl className="space-y-1.5 border-t border-ink/[0.07] bg-paper-warm/50 px-5 py-4 text-[13px] max-md:py-3 sm:px-7">
+          <div className="flex justify-between max-md:hidden">
             <dt className="text-steel">Total HT</dt>
             <dd className="font-mono tabular-nums text-ink">{euros(htAffiche)}</dd>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between max-md:hidden">
             <dt className="text-steel">TVA {TVA} %</dt>
             <dd className="font-mono tabular-nums text-ink">{euros(centimes(ttcAffiche - htAffiche))}</dd>
           </div>
-          <div className="flex items-baseline justify-between pt-2">
-            <dt className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-steel">Total TTC</dt>
+          <div className="flex items-baseline justify-between pt-2 max-md:pt-0">
+            <dt className="font-mono text-[10.5px] uppercase tracking-[0.16em] text-steel">
+              Total TTC<span className="block normal-case tracking-normal md:hidden">dont TVA {TVA} %</span>
+            </dt>
             <dd className="font-display text-[1.7rem] font-semibold tabular-nums tracking-tight text-ink" aria-live="polite">
               {euros(ttcAffiche)}
             </dd>
@@ -158,10 +160,10 @@ export function SceneDevis() {
 
       {/* Les commandes : c'est l'artisan qui décide */}
       <div>
-        <Etiquette>À vous de corriger</Etiquette>
-        <fieldset className="mt-4">
+        <Etiquette className="max-md:hidden">À vous de corriger</Etiquette>
+        <fieldset className="mt-4 max-md:mt-0">
           <legend className="text-[14px] font-medium text-ink">Durée du chantier</legend>
-          <div className="mt-2.5 grid grid-cols-3 gap-1 rounded-full bg-ink/[0.06] p-1">
+          <div className="mt-2.5 max-md:mt-1.5 grid grid-cols-3 gap-1 rounded-full bg-ink/[0.06] p-1">
             {DUREES.map((option) => (
               <label
                 key={option.valeur}
@@ -183,7 +185,7 @@ export function SceneDevis() {
           </div>
         </fieldset>
 
-        <div className="mt-7">
+        <div className="mt-7 max-md:mt-4">
           <div className="flex items-baseline justify-between">
             <label htmlFor="taux-devis" className="text-[14px] font-medium text-ink">
               Votre taux horaire
@@ -206,7 +208,7 @@ export function SceneDevis() {
           </div>
         </div>
 
-        <p className="mt-8 max-w-sm text-[15px] leading-relaxed text-ink/70">
+        <p className="mt-8 max-w-sm text-[15px] leading-relaxed text-ink/70 max-md:hidden">
           <span className="font-medium text-ink">L&apos;IA écrit les lignes. Les prix, c&apos;est vous.</span>{" "}
           Une journée compte 8&nbsp;heures, pas 24 : le calcul le sait.
         </p>

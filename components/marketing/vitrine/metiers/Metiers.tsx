@@ -167,6 +167,10 @@ export function Metiers() {
   const [actif, setActif] = useState(0);
   const [vu, setVu] = useState(false);
   const [reduit, setReduit] = useState(false);
+  // Sur téléphone, la fiche montre un volet à la fois : ce qui se passe
+  // sur le chantier (la dictée et le devis), ou les questions posées
+  // avant de chiffrer. Empilés, les deux faisaient une fiche de 1 200 px.
+  const [volet, setVolet] = useState<"chantier" | "questions">("chantier");
   const section = useRef<HTMLDivElement>(null);
   const rail = useRef<HTMLDivElement>(null);
   const cartes = useRef<(HTMLButtonElement | null)[]>([]);
@@ -290,13 +294,13 @@ export function Metiers() {
       >
         <div
           ref={visuelFiche}
-          className="relative aspect-[4/3] overflow-hidden rounded-[1.5rem] sm:aspect-[16/10] lg:aspect-auto lg:min-h-[36rem]"
+          className="relative aspect-[16/10] overflow-hidden rounded-[1.5rem] lg:aspect-auto lg:min-h-[36rem]"
         >
           <Visuel m={m} grand />
           <div className="absolute inset-x-4 bottom-4 flex flex-wrap items-end justify-between gap-3 sm:inset-x-6 sm:bottom-6">
             <div>
               <p className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-white/70">Chantier type</p>
-              <p className="mt-1 max-w-[16rem] font-display text-lg font-semibold leading-tight text-white sm:text-xl">
+              <p className="mt-1 max-w-[16rem] font-display text-lg font-semibold leading-tight text-white max-sm:max-w-[11rem] max-sm:text-base sm:text-xl">
                 {m.exemple.chantier}
               </p>
             </div>
@@ -318,10 +322,10 @@ export function Metiers() {
           <h3 className="v-apparait mt-3 font-display text-[2.2rem] font-semibold leading-[1] tracking-[-0.03em] text-ink sm:text-5xl" style={{ "--d": "0.05s" } as CSSProperties}>
             {m.fiche.nom}.
           </h3>
-          <p className="v-apparait mt-4 max-w-xl text-[16px] leading-relaxed text-ink/65 sm:text-[17px]" style={{ "--d": "0.1s" } as CSSProperties}>
+          <p className="v-apparait mt-4 max-w-xl text-[16px] leading-relaxed text-ink/65 max-md:mt-3 max-md:text-[15px] sm:text-[17px]" style={{ "--d": "0.1s" } as CSSProperties}>
             {m.accroche}
           </p>
-          <ul className="mt-5 flex flex-wrap gap-2" aria-label="Ce que Compyo change pour ce métier">
+          <ul className="mt-5 flex flex-wrap gap-2 max-md:mt-4" aria-label="Ce que Compyo change pour ce métier">
             {m.atouts.map((a, i) => (
               <li
                 key={a}
@@ -333,11 +337,37 @@ export function Metiers() {
             ))}
           </ul>
 
-          <div className="mt-7 grid gap-5 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
-            <Demonstration m={m} />
-            <div className="v-apparait px-1" style={{ "--d": "0.3s" } as CSSProperties}>
-              <p className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-steel">Avant de chiffrer, Compyo demande</p>
-              <ul className="mt-3 space-y-2.5">
+          <div className="mt-6 grid grid-cols-2 gap-1 rounded-full bg-ink/[0.06] p-1 md:hidden">
+            {(
+              [
+                ["chantier", "Sur le chantier"],
+                ["questions", "Avant de chiffrer"],
+              ] as const
+            ).map(([cle, libelle]) => (
+              <button
+                key={cle}
+                type="button"
+                aria-pressed={volet === cle}
+                onClick={() => setVolet(cle)}
+                className={`rounded-full px-3 py-2 text-[13.5px] font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60 ${
+                  volet === cle ? "bg-surface text-ink shadow-[var(--v-ombre-legere)]" : "text-ink/55"
+                }`}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+
+          <div className="mt-7 grid gap-5 max-md:mt-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+            <div className={volet === "chantier" ? "" : "max-md:hidden"}>
+              <Demonstration m={m} />
+            </div>
+            <div
+              className={`v-apparait px-1 ${volet === "questions" ? "" : "max-md:hidden"}`}
+              style={{ "--d": "0.3s" } as CSSProperties}
+            >
+              <p className="font-mono text-[10.5px] uppercase tracking-[0.18em] text-steel max-md:hidden">Avant de chiffrer, Compyo demande</p>
+              <ul className="mt-3 space-y-2.5 max-md:mt-1">
                 {m.exemple.checklist.map((q) => (
                   <li key={q} className="flex gap-2.5 text-[14px] leading-snug text-ink/80">
                     <span aria-hidden className="mt-[0.45rem] h-1 w-1 shrink-0 rounded-full bg-signal" />
@@ -349,7 +379,7 @@ export function Metiers() {
             </div>
           </div>
 
-          <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-7">
+          <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-7 max-md:pt-5">
             <p className="text-[12.5px] leading-relaxed text-steel">
               Devis d&apos;exemple. Dans Compyo, les montants viennent de vos prix.
             </p>

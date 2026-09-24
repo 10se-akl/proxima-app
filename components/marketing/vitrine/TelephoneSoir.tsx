@@ -148,7 +148,7 @@ export function TelephoneSoir() {
           </div>
 
           {/* Les notifications : la plus récente en haut. */}
-          <div className="absolute inset-x-[3.6cqw] bottom-[19cqw] flex flex-col">
+          <div className="absolute inset-x-[3.6cqw] bottom-[19cqw] flex flex-col max-md:bottom-auto max-md:top-[50cqw]">
             {NOTIFICATIONS.map((n, i) => ({ n, i }))
               .reverse()
               .map(({ n, i }) => (
@@ -193,7 +193,7 @@ export function TelephoneSoir() {
       {/* L'ombre portée au sol : c'est elle qui pose l'objet dans la pièce. */}
       <div
         aria-hidden
-        className="absolute -bottom-10 left-1/2 h-10 w-[78%] -translate-x-1/2 rounded-[50%] bg-black/25 blur-2xl dark:bg-black/60"
+        className="absolute -bottom-10 left-1/2 h-10 w-[78%] -translate-x-1/2 rounded-[50%] bg-black/25 blur-2xl max-md:hidden dark:bg-black/60"
       />
     </div>
   );

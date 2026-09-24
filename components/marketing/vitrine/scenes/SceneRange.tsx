@@ -11,17 +11,17 @@ import { Taches } from "./Taches";
 // pour qu'on la comprenne d'un coup d'œil. À côté, les tâches du jour qui
 // se terminent.
 //
-// Deux dispositions : en étoile sur ordinateur, en arbre sur téléphone
-// (une étoile serrée dans 340 px devient illisible).
+// Deux dispositions : en étoile à partir de 640 px ; en dessous, le projet
+// puis ce qui s’y rattache en grille (une étoile serrée dans 340 px
+// devient illisible).
 // ============================================================
 
 type Noeud = {
   titre: string;
   detail: string;
   icone: ReactNode;
-  /** Position sur ordinateur, puis sur téléphone, en % du cadre. */
+  /** Position dans l’étoile (à partir de 640 px), en % du cadre. */
   pos: [number, number];
-  posM: [number, number];
 };
 
 const I = {
@@ -55,12 +55,12 @@ const I = {
 };
 
 const NOEUDS: Noeud[] = [
-  { titre: "Message", detail: "07:46 · partagé", icone: I.message, pos: [19, 29], posM: [26, 37] },
-  { titre: "Note vocale", detail: "0:14 · transcrite", icone: I.note, pos: [50, 12], posM: [74, 37] },
-  { titre: "4 photos", detail: "Rangées", icone: I.photo, pos: [81, 29], posM: [26, 62] },
-  { titre: "Devis signé", detail: "387,20 € TTC", icone: I.devis, pos: [81, 71], posM: [74, 62] },
-  { titre: "Acompte", detail: "116,16 € TTC", icone: I.euro, pos: [50, 88], posM: [26, 87] },
-  { titre: "Mercredi 10", detail: "8:00 – 12:00", icone: I.calendrier, pos: [19, 71], posM: [74, 87] },
+  { titre: "Message", detail: "07:46 · partagé", icone: I.message, pos: [19, 29] },
+  { titre: "Note vocale", detail: "0:14 · transcrite", icone: I.note, pos: [50, 12] },
+  { titre: "4 photos", detail: "Rangées", icone: I.photo, pos: [81, 29] },
+  { titre: "Devis signé", detail: "387,20 € TTC", icone: I.devis, pos: [81, 71] },
+  { titre: "Acompte", detail: "116,16 € TTC", icone: I.euro, pos: [50, 88] },
+  { titre: "Mercredi 10", detail: "8:00 – 12:00", icone: I.calendrier, pos: [19, 71] },
 ];
 
 function Icone({ children }: { children: ReactNode }) {
@@ -73,9 +73,9 @@ function Icone({ children }: { children: ReactNode }) {
 
 export function SceneRange() {
   return (
-    <div className="grid gap-10 px-4 pb-20 pt-8 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center lg:gap-10 lg:px-14 lg:py-16">
+    <div className="grid gap-10 px-4 pb-20 pt-8 max-md:gap-4 max-md:pb-5 max-md:pt-4 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-[minmax(0,1.3fr)_minmax(0,1fr)] lg:items-center lg:gap-10 lg:px-14 lg:py-16">
       <figure
-        className="relative mx-auto aspect-[4/5] w-full max-w-[26rem] sm:aspect-[5/4] sm:max-w-none"
+        className="relative mx-auto grid w-full grid-cols-2 gap-2 sm:block sm:aspect-[5/4]"
         aria-label="Le projet Garnier et tout ce qui s'y rattache : le message du client, la note vocale, quatre photos, le devis signé, l'acompte et le rendez-vous de mercredi."
         role="img"
       >
@@ -95,31 +95,16 @@ export function SceneRange() {
             />
           ))}
         </svg>
-        <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full text-ink/35 sm:hidden" aria-hidden>
-          {NOEUDS.map((n, i) => (
-            <path
-              key={n.titre}
-              className="v-fondu"
-              style={d(0.5 + i * 0.25)}
-              d={`M50 17C50 ${n.posM[1] - 12} ${n.posM[0]} ${n.posM[1] - 16} ${n.posM[0]} ${n.posM[1] - 5}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.2"
-              strokeDasharray="4 4"
-              vectorEffect="non-scaling-stroke"
-            />
-          ))}
-        </svg>
 
         {/* Le projet (le positionnement et l'animation sur deux boîtes :
             une animation de transform écraserait le centrage) */}
-        <div className="absolute left-1/2 top-[11%] w-[62%] -translate-x-1/2 -translate-y-1/2 sm:top-1/2 sm:w-[30%]">
+        <div className="col-span-2 mb-1 sm:absolute sm:left-1/2 sm:top-1/2 sm:mb-0 sm:w-[30%] sm:-translate-x-1/2 sm:-translate-y-1/2">
           <div
-            className="v-pop rounded-2xl bg-ink px-4 py-3 text-center text-paper shadow-[var(--v-ombre)] sm:py-4"
+            className="v-pop rounded-2xl bg-ink px-4 py-3 text-center text-paper shadow-[var(--v-ombre)] max-sm:flex max-sm:items-baseline max-sm:justify-center max-sm:gap-2 max-sm:py-2.5 sm:py-4"
             style={d(0.1)}
           >
-            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-paper/55">Projet</p>
-            <p className="mt-1 font-display text-[15px] font-semibold leading-tight sm:text-base">Mme Garnier</p>
+            <p className="font-mono text-[10px] uppercase tracking-[0.18em] text-paper/55 max-sm:hidden">Projet</p>
+            <p className="mt-1 font-display text-[15px] font-semibold leading-tight max-sm:mt-0 sm:text-base">Mme Garnier</p>
             <p className="text-[12px] text-paper/70">Fuite sous l&apos;évier</p>
           </div>
         </div>
@@ -128,18 +113,16 @@ export function SceneRange() {
         {NOEUDS.map((n, i) => (
           <div
             key={n.titre}
-            className="absolute left-[var(--xm)] top-[var(--ym)] w-[46%] -translate-x-1/2 -translate-y-1/2 sm:left-[var(--x)] sm:top-[var(--y)] sm:w-[35%] lg:w-[36%]"
+            className="sm:absolute sm:left-[var(--x)] sm:top-[var(--y)] sm:w-[35%] sm:-translate-x-1/2 sm:-translate-y-1/2 lg:w-[36%]"
             style={
               {
                 "--x": `${n.pos[0]}%`,
                 "--y": `${n.pos[1]}%`,
-                "--xm": `${n.posM[0]}%`,
-                "--ym": `${n.posM[1]}%`,
               } as CSSProperties
             }
           >
             <div
-              className="v-pop flex items-center gap-2.5 rounded-xl bg-surface px-3 py-2.5 shadow-[var(--v-ombre-legere)] ring-1 ring-ink/[0.06]"
+              className="v-pop flex items-center gap-2.5 rounded-xl bg-surface px-3 py-2.5 max-sm:gap-2 max-sm:px-2.5 max-sm:py-2 shadow-[var(--v-ombre-legere)] ring-1 ring-ink/[0.06]"
               style={d(0.8 + i * 0.25)}
             >
               <span className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-signal/10 text-signal">

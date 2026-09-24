@@ -203,7 +203,7 @@ export function Header({
           {connecte ? (
             <Link
               href="/dashboard"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
             >
               Dashboard
             </Link>
@@ -214,9 +214,9 @@ export function Header({
               </Link>
               <Link
                 href="/demander-acces"
-                className="hidden sm:inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
+                className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
               >
-                Rejoindre la bêta
+                Rejoindre<span className="hidden sm:inline"> la bêta</span>
               </Link>
             </>
           )}

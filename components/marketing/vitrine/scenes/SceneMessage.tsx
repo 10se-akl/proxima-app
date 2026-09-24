@@ -30,7 +30,7 @@ const CHAMPS = [
 
 export function SceneMessage() {
   return (
-    <div className="relative grid items-center gap-6 px-5 pb-20 pt-8 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_4.5rem_minmax(0,1fr)] lg:gap-4 lg:px-14 lg:py-16">
+    <div className="relative grid items-center gap-6 px-5 pb-20 pt-8 max-md:gap-0 max-md:px-4 max-md:pb-5 max-md:pt-5 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_4.5rem_minmax(0,1fr)] lg:gap-4 lg:px-14 lg:py-16">
       {/* La conversation */}
       <Carte className="v-entre relative mx-auto w-full max-w-[20rem] overflow-hidden" style={d(0.1)}>
         <div className="flex items-center gap-3 border-b border-ink/[0.06] px-4 py-3">
@@ -42,7 +42,7 @@ export function SceneMessage() {
             <p className="text-[11px] text-steel">Messages</p>
           </div>
         </div>
-        <div className="min-h-[15.5rem] space-y-3 bg-paper px-3.5 pb-24 pt-4">
+        <div className="min-h-[15.5rem] space-y-3 bg-paper px-3.5 pb-24 pt-4 max-md:min-h-[10rem] max-md:pb-12">
           <p className="text-center font-mono text-[10px] uppercase tracking-wider text-steel">Aujourd&apos;hui 07:46</p>
           <p
             className="v-pop max-w-[90%] origin-bottom-left rounded-2xl rounded-bl-md bg-surface px-3.5 py-2.5 text-[13.5px] leading-snug text-ink shadow-[var(--v-ombre-legere)] ring-1 ring-ink/[0.06]"
@@ -88,7 +88,7 @@ export function SceneMessage() {
 
       {/* Le lien entre les deux : vertical sur téléphone, horizontal sur
           ordinateur. */}
-      <svg aria-hidden viewBox="0 0 24 56" className="mx-auto h-12 w-6 text-signal lg:hidden">
+      <svg aria-hidden viewBox="0 0 24 56" className="mx-auto h-12 w-6 text-signal max-md:hidden lg:hidden">
         <path d="M12 2v46" stroke="currentColor" strokeWidth="1.6" strokeDasharray="3 5" strokeLinecap="round" />
         <path className="v-trace" pathLength={1} d="M12 2v46" stroke="currentColor" strokeWidth="1.6" style={d(3.4, { "--duree": "0.6s" })} />
         <path d="M6 44l6 7 6-7" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -100,7 +100,7 @@ export function SceneMessage() {
       </svg>
 
       {/* Le projet, qui se remplit tout seul */}
-      <div className="mx-auto w-full max-w-[21rem]">
+      <div className="relative z-10 mx-auto w-full max-w-[21rem] max-md:-mt-12 max-md:px-2">
         <Carte className="v-droite p-5 sm:p-6" style={d(3.7)}>
           <div className="flex items-center justify-between gap-3">
             <Etiquette>Nouveau projet</Etiquette>
@@ -116,14 +116,14 @@ export function SceneMessage() {
           </p>
           <dl className="mt-4 divide-y divide-ink/[0.07]">
             {CHAMPS.map((c, i) => (
-              <div key={c.libelle} className="v-entre flex items-baseline justify-between gap-4 py-2.5" style={d(4.4 + i * 0.28)}>
+              <div key={c.libelle} className="v-entre flex items-baseline justify-between gap-4 py-2.5 max-md:py-2" style={d(4.4 + i * 0.28)}>
                 <dt className="text-[12px] text-steel">{c.libelle}</dt>
                 <dd className="text-right text-[13.5px] font-medium text-ink">{c.valeur}</dd>
               </div>
             ))}
           </dl>
         </Carte>
-        <p className="v-entre mt-4 text-center text-[13px] text-steel" style={d(6)}>
+        <p className="v-entre mt-4 text-center text-[13px] text-steel max-md:hidden" style={d(6)}>
           Rien n&apos;a été tapé à la main.
         </p>
       </div>

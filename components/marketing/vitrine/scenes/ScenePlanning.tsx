@@ -108,7 +108,7 @@ export function ScenePlanning() {
   const occupantRefuse = refus ? occupant(refus.creneau) : null;
 
   return (
-    <div ref={ref} className="px-4 pb-20 pt-8 sm:px-10 sm:pb-24 sm:pt-12 lg:px-14 lg:py-16">
+    <div ref={ref} className="px-4 pb-20 pt-8 max-md:px-3 max-md:pb-5 max-md:pt-4 sm:px-10 sm:pb-24 sm:pt-12 lg:px-14 lg:py-16">
       <Carte className="mx-auto max-w-3xl p-4 sm:p-6">
         {/* À planifier */}
         <div className="flex min-h-[2.75rem] flex-wrap items-center justify-between gap-3 border-b border-ink/[0.07] pb-4">
@@ -215,7 +215,7 @@ export function ScenePlanning() {
       </Carte>
 
       <p
-        className={`mx-auto mt-6 max-w-3xl text-center text-[13.5px] text-steel transition-opacity duration-700 ${aide ? "opacity-100" : "opacity-0"}`}
+        className={`mx-auto mt-6 max-w-3xl text-center text-[13.5px] text-steel transition-opacity duration-700 max-md:mt-4 ${aide ? "opacity-100" : "opacity-0"}`}
       >
         Touchez un créneau pour déplacer le rendez-vous de Mme Garnier.
       </p>

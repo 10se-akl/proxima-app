@@ -39,15 +39,15 @@ export function Taches() {
 
   return (
     <div ref={ref}>
-      <Carte className="p-5 sm:p-6">
+      <Carte className="p-5 max-md:px-4 max-md:py-3.5 sm:p-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <Etiquette>Aujourd&apos;hui</Etiquette>
-            <p className="mt-1.5 font-display text-lg font-semibold text-ink">
+            <Etiquette className="max-md:hidden">Aujourd&apos;hui</Etiquette>
+            <p className="mt-1.5 font-display text-lg font-semibold text-ink max-md:mt-0">
               {fini ? "Journée bouclée" : `${TACHES.length - n} tâche${TACHES.length - n > 1 ? "s" : ""} restante${TACHES.length - n > 1 ? "s" : ""}`}
             </p>
           </div>
-          <svg viewBox="0 0 36 36" className="h-11 w-11 -rotate-90" aria-hidden>
+          <svg viewBox="0 0 36 36" className="h-11 w-11 -rotate-90 max-md:h-9 max-md:w-9" aria-hidden>
             <circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" className="text-ink/10" strokeWidth="3" />
             <circle
               cx="18"
@@ -63,10 +63,10 @@ export function Taches() {
             />
           </svg>
         </div>
-        <ul className="mt-4 space-y-1">
+        <ul className="mt-4 space-y-1 max-md:mt-2 max-md:space-y-0">
           {TACHES.map((t, i) => (
             <li key={t}>
-              <label className="flex cursor-pointer items-center gap-3 rounded-lg px-1.5 py-2 transition-colors hover:bg-ink/[0.03] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-signal/60">
+              <label className="flex cursor-pointer items-center gap-3 rounded-lg px-1.5 py-2 transition-colors max-md:py-1.5 hover:bg-ink/[0.03] has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-signal/60">
                 <input
                   type="checkbox"
                   checked={faites[i]}
@@ -94,7 +94,7 @@ export function Taches() {
             </li>
           ))}
         </ul>
-        <p className={`mt-3 font-mono text-[11px] text-steel transition-opacity duration-500 ${fini ? "opacity-100" : "opacity-0"}`}>
+        <p className={`mt-3 font-mono text-[11px] text-steel transition-opacity duration-500 max-md:hidden ${fini ? "opacity-100" : "opacity-0"}`}>
           18:52 · rien ne reste pour ce soir
         </p>
       </Carte>

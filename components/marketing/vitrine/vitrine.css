@@ -144,6 +144,22 @@
   container-type: inline-size;
   isolation: isolate;
 }
+/* Sur téléphone, un téléphone dessiné dans le téléphone du visiteur fait
+   des textes minuscules : là où c'est posé (la signature), le cadre
+   disparaît et l'écran devient une simple carte, à la largeur utile. */
+@media (max-width: 767px) {
+  .v-cadre-souple {
+    aspect-ratio: auto;
+    padding: 0;
+    background: none;
+    border-radius: 1.4rem;
+    box-shadow: var(--v-ombre);
+  }
+  .v-cadre-souple > .v-ecran {
+    height: auto;
+    border-radius: 1.4rem;
+  }
+}
 /* Le fond d'écran : un coucher de soleil, dans la couleur de la marque. */
 .v-fond-soir {
   background:
@@ -287,6 +303,20 @@
   /* Les barres de l'enregistrement vocal. */
   [data-pret] [data-scene][data-actif] .v-onde {
     animation: v-onde 0.9s var(--v-ease-doux) var(--d, 0s) 5 alternate both;
+  }
+}
+
+/* La place de chaque photo dans la pile : en carré de deux sur deux sur
+   ordinateur, en ligne de quatre sur téléphone (--pxo / --pxm, posés par
+   la scène). */
+.v-photo {
+  --px: var(--pxo);
+  --py: var(--pyo);
+}
+@media (max-width: 767px) {
+  .v-photo {
+    --px: var(--pxm);
+    --py: var(--pym);
   }
 }
 

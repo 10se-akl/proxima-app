@@ -22,11 +22,11 @@ const ONDE = [30, 52, 74, 46, 88, 62, 36, 70, 94, 58, 40, 66, 84, 50, 28, 60, 90
 
 type Sujet = "siphon" | "evier" | "meuble" | "arrivee";
 
-const PHOTOS: { sujet: Sujet; legende: string; heure: string; pile: [string, string, string] }[] = [
-  { sujet: "siphon", legende: "Siphon", heure: "10:16", pile: ["calc(50% + 6px)", "calc(50% + 6px)", "-9deg"] },
-  { sujet: "evier", legende: "Évier", heure: "10:16", pile: ["calc(-50% - 6px)", "calc(50% + 6px)", "7deg"] },
-  { sujet: "meuble", legende: "Fond du meuble", heure: "10:17", pile: ["calc(50% + 6px)", "calc(-50% - 6px)", "4deg"] },
-  { sujet: "arrivee", legende: "Arrivée d'eau", heure: "10:18", pile: ["calc(-50% - 6px)", "calc(-50% - 6px)", "-3deg"] },
+const PHOTOS: { sujet: Sujet; legende: string; heure: string; pile: [string, string, string]; pileM: string }[] = [
+  { sujet: "siphon", legende: "Siphon", heure: "10:16", pile: ["calc(50% + 6px)", "calc(50% + 6px)", "-9deg"], pileM: "calc(150% + 12px)" },
+  { sujet: "evier", legende: "Évier", heure: "10:16", pile: ["calc(-50% - 6px)", "calc(50% + 6px)", "7deg"], pileM: "calc(50% + 4px)" },
+  { sujet: "meuble", legende: "Fond du meuble", heure: "10:17", pile: ["calc(50% + 6px)", "calc(-50% - 6px)", "4deg"], pileM: "calc(-50% - 4px)" },
+  { sujet: "arrivee", legende: "Arrivée d'eau", heure: "10:18", pile: ["calc(-50% - 6px)", "calc(-50% - 6px)", "-3deg"], pileM: "calc(-150% - 12px)" },
 ];
 
 function PhotoChantier({ sujet }: { sujet: Sujet }) {
@@ -133,7 +133,7 @@ function PhotoChantier({ sujet }: { sujet: Sujet }) {
 export function SceneChantier() {
   const mots = TRANSCRIPTION.split(" ");
   return (
-    <div className="grid gap-10 px-5 pb-20 pt-8 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-14 lg:py-16">
+    <div className="grid gap-10 px-5 pb-20 pt-8 max-md:gap-5 max-md:px-4 max-md:pb-5 max-md:pt-5 sm:px-10 sm:pb-24 sm:pt-12 lg:grid-cols-2 lg:items-center lg:gap-12 lg:px-14 lg:py-16">
       {/* La note vocale */}
       <Carte className="v-entre p-5 sm:p-6" style={d(0.1)}>
         <div className="flex items-center justify-between gap-3">
@@ -159,7 +159,7 @@ export function SceneChantier() {
           </div>
           <span className="shrink-0 font-mono text-[12px] tabular-nums text-steel">0:14</span>
         </div>
-        <p className="mt-6 text-[15px] leading-relaxed text-ink/85 sm:text-[16px]">
+        <p className="mt-6 text-[15px] leading-relaxed text-ink/85 max-md:mt-4 sm:text-[16px]">
           {mots.map((mot, i) => (
             <span key={i} className="v-mot" style={d(1.1 + i * 0.09)}>
               {mot}{" "}
@@ -180,16 +180,16 @@ export function SceneChantier() {
           <Etiquette>Photos · Garnier</Etiquette>
           <Etiquette className="normal-case tracking-normal">4 photos</Etiquette>
         </div>
-        <div className="mt-4 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3 max-md:mt-3 max-md:grid-cols-4 max-md:gap-2">
           {PHOTOS.map((p, i) => (
             <figure
               key={p.sujet}
-              className="v-photo relative aspect-[4/3] overflow-hidden rounded-xl bg-ink/10 shadow-[var(--v-ombre-legere)] ring-1 ring-black/5"
-              style={d(3.2 + i * 0.12, { "--px": p.pile[0], "--py": p.pile[1], "--pr": p.pile[2] })}
+              className="v-photo relative aspect-[4/3] overflow-hidden rounded-xl bg-ink/10 max-md:aspect-[3/4] max-md:rounded-lg shadow-[var(--v-ombre-legere)] ring-1 ring-black/5"
+              style={d(3.2 + i * 0.12, { "--pxo": p.pile[0], "--pyo": p.pile[1], "--pr": p.pile[2], "--pxm": p.pileM, "--pym": "0px" })}
             >
               <PhotoChantier sujet={p.sujet} />
               <figcaption className="absolute inset-x-2 bottom-2 flex items-center justify-between gap-2">
-                <span className="truncate rounded-md bg-black/45 px-1.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
+                <span className="truncate rounded-md bg-black/45 px-1.5 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm max-md:hidden">
                   {p.legende}
                 </span>
                 <span className="font-mono text-[10px] text-white/80 [text-shadow:0_1px_2px_rgb(0_0_0/0.6)]">{p.heure}</span>

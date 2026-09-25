@@ -42,7 +42,7 @@ export function SceneMessage() {
             <p className="text-[11px] text-steel">Messages</p>
           </div>
         </div>
-        <div className="min-h-[15.5rem] space-y-3 bg-paper px-3.5 pb-24 pt-4 max-md:min-h-[10rem] max-md:pb-12">
+        <div className="min-h-[15.5rem] space-y-3 bg-paper px-3.5 pb-24 pt-4 max-md:min-h-[10rem] max-md:pb-20">
           <p className="text-center font-mono text-[10px] uppercase tracking-wider text-steel">Aujourd&apos;hui 07:46</p>
           <p
             className="v-pop max-w-[90%] origin-bottom-left rounded-2xl rounded-bl-md bg-surface px-3.5 py-2.5 text-[13.5px] leading-snug text-ink shadow-[var(--v-ombre-legere)] ring-1 ring-ink/[0.06]"
@@ -99,9 +99,13 @@ export function SceneMessage() {
         <path d="M58 6l7 6-7 6" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
 
-      {/* Le projet, qui se remplit tout seul */}
+      {/* Le projet, qui se remplit tout seul. Sur téléphone, il recouvre le
+          bas de la conversation : la marge sous la bulle (pb-20) est plus
+          haute que le recouvrement (-mt-12), pour que le texte du message
+          ne passe jamais dessous, et l'ombre vers le haut sépare les deux
+          cartes, de la même couleur en mode sombre. */}
       <div className="relative z-10 mx-auto w-full max-w-[21rem] max-md:-mt-12 max-md:px-2">
-        <Carte className="v-droite p-5 sm:p-6" style={d(3.7)}>
+        <Carte className="v-droite p-5 max-md:shadow-[0_-12px_28px_-14px_rgb(0_0_0/0.45)] max-md:ring-ink/[0.12] sm:p-6" style={d(3.7)}>
           <div className="flex items-center justify-between gap-3">
             <Etiquette>Nouveau projet</Etiquette>
             <span

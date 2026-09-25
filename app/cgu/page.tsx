@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import { LayoutJuridique } from "@/components/marketing/LayoutJuridique";
 
-export const metadata: Metadata = {
-  title: "Conditions générales d'utilisation",
-  // SEO (05/09) — voir le même correctif sur /mentions-legales : sans
-  // description propre, cette page héritait de celle de l'accueil.
-  description: "Conditions d'utilisation de Compyo : accès en bêta privée, rôle de l'IA, responsabilités de l'artisan et de l'éditeur.",
-};
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Conditions générales d'utilisation",
+  description:
+    "Conditions d'utilisation de Compyo : accès en bêta privée, rôle de l'IA, responsabilités de l'artisan et de l'éditeur.",
+  chemin: "/cgu",
+});
 
 export default function CguPage() {
   return (

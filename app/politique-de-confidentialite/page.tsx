@@ -1,13 +1,15 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import { LayoutJuridique } from "@/components/marketing/LayoutJuridique";
 
-export const metadata: Metadata = {
-  title: "Politique de confidentialité",
-  // SEO (05/09) — voir le même correctif sur /mentions-legales : sans
-  // description propre, cette page héritait de celle de l'accueil.
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Politique de confidentialité",
   description:
     "Quelles données Compyo collecte, pourquoi, et comment les artisans utilisateurs et leurs clients peuvent exercer leurs droits (RGPD).",
-};
+  chemin: "/politique-de-confidentialite",
+});
 
 export default function PolitiqueConfidentialitePage() {
   return (

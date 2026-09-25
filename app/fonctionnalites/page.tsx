@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import { Header, Footer } from "@/components/marketing/Cadre";
 import { DemoDevis } from "@/components/marketing/DemoDevis";
 import { DemoImport } from "@/components/marketing/DemoImport";
@@ -6,46 +7,20 @@ import { DemoPlanning } from "@/components/marketing/DemoPlanning";
 import { DemoNotesVocales } from "@/components/marketing/DemoNotesVocales";
 import { SectionSecurite } from "@/components/marketing/SectionSecurite";
 import { SectionNouveautes } from "@/components/marketing/SectionNouveautes";
-import { SITE_URL } from "@/lib/site";
 
-export const metadata: Metadata = {
-  // SEO (05/09) — le layout racine applique déjà un template "%s — Compyo"
-  // (voir app/layout.tsx) : garder "— Compyo" ici aussi produisait un
-  // titre dupliqué ("Fonctionnalités — Compyo — Compyo") dans l'onglet du
-  // navigateur et les résultats de recherche.
-  title: "Fonctionnalités",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Fonctionnalités",
   description:
-    "Devis et facturation électronique, import automatique des messages clients, planning avec alerte météo, notes vocales transcrites, adapté à 19 corps de métier — le détail de ce que fait Compyo pour les artisans du bâtiment.",
-};
+    "Projet créé depuis le message du client, notes vocales, photos, devis avec vos prix, signature en ligne, factures, planning : ce que fait Compyo.",
+  chemin: "/fonctionnalites",
+});
 
-// SEO/GEO (05/09) — cette page détaille les 4 fonctionnalités du produit,
-// c'était jusqu'ici la seule information non lisible par un moteur (humain
-// ou IA) qui ne lit QUE les données structurées : le JSON-LD global de
-// app/layout.tsx décrit Compyo comme "SoftwareApplication" mais sans
-// featureList. On référence ce même @id (${URL_SITE}/#logiciel) plutôt que
-// d'en redéclarer un second — un même produit, une seule entité — et on
-// n'ajoute que ce qui manque : la liste des fonctionnalités, reprise mot
-// pour mot du contenu réellement visible sur cette page juste en dessous
-// (jamais de données inventées, cohérent avec la note déjà présente dans
-// layout.tsx sur les champs volontairement omis).
-const DONNEES_STRUCTUREES_FONCTIONNALITES = {
-  "@context": "https://schema.org",
-  "@type": "SoftwareApplication",
-  "@id": `${SITE_URL}/#logiciel`,
-  featureList: [
-    "Génération de devis en quelques secondes à partir des notes de chantier, avec un moteur de calcul déterministe",
-    "Devis express pour chiffrer directement à la main une intervention déjà réalisée sur place",
-    "Facturation électronique : numérotation légale, acomptes, avoirs, export comptable",
-    "Import automatique d'une demande client depuis un message (SMS, WhatsApp, capture d'écran)",
-    "Planning unifié des rendez-vous et chantiers, avec détection des conflits de créneaux",
-    "Alerte météo sur le planning pour les chantiers extérieurs sensibles",
-    "Rappel client récurrent en un clic pour l'entretien saisonnier ou annuel",
-    "Champs et checklists adaptés à 19 corps de métier du bâtiment",
-    "Notes vocales dictées sur le chantier, transcrites et rattachées automatiquement au bon projet",
-    "Signature électronique du devis par le client, via un lien à envoyer",
-    "Postes fréquents : réutilisation en un clic des postes déjà chiffrés par l'artisan",
-  ],
-};
+// 25/09 — La liste des fonctionnalités vit maintenant dans les données
+// structurées globales (app/layout.tsx), présentes sur toutes les pages.
+// Celle d'ici, sous le même @id, en donnait une deuxième version,
+// différente : deux descriptions du même logiciel qui ne concordent pas.
 
 // Page dédiée aux fonctionnalités, séparée de l'accueil — à la demande
 // d'Axel : l'accueil ne montre plus que 4 grandes cartes très courtes
@@ -59,10 +34,6 @@ const DONNEES_STRUCTUREES_FONCTIONNALITES = {
 export default function FonctionnalitesPage() {
   return (
     <div>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(DONNEES_STRUCTUREES_FONCTIONNALITES) }}
-      />
       <Header />
 
       <div className="bg-paper">

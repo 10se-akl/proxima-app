@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
-export const metadata: Metadata = {
-  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
-  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
-  title: "Bêta privée",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Bêta privée",
   description:
     "Pourquoi Compyo se construit en bêta privée, sur candidature, avec un petit nombre d'artisans plutôt qu'en lancement ouvert — et comment rejoindre.",
-};
+  chemin: "/beta",
+});
 
 // Page dédiée à la bêta privée — même logique que /fonctionnalites (voir
 // app/fonctionnalites/page.tsx) : l'accueil ne parle plus du tout de la

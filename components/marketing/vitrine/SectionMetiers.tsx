@@ -26,7 +26,18 @@ export function SectionMetiers() {
         <div data-revele className="mt-12 max-md:mt-7 sm:mt-16">
           <Metiers />
         </div>
-        <p className="mt-10 text-center text-[14px] text-ink/55 max-md:mt-5">
+        {/* 25/09 — Un vrai lien vers la page pilier : les cartes sont des
+            boutons, et sans lui aucune page métier n'était reliée à
+            l'accueil. */}
+        <p className="mt-10 text-center max-md:mt-5">
+          <Link
+            href="/metiers"
+            className="inline-flex items-center gap-2 text-[15px] font-medium text-ink underline decoration-ink/25 underline-offset-4 transition hover:decoration-signal"
+          >
+            Les 17 métiers, page par page <span aria-hidden>→</span>
+          </Link>
+        </p>
+        <p className="mt-4 text-center text-[14px] text-ink/55">
           Votre métier n&apos;y est pas&nbsp;?{" "}
           <Link href="/contact" className="font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-signal">
             Dites-le-nous

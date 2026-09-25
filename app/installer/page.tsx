@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 import { AssistantInstallation } from "@/components/pwa/AssistantInstallation";
 
@@ -10,14 +11,15 @@ import { AssistantInstallation } from "@/components/pwa/AssistantInstallation";
 // navigateur, donc plus rien du tout pour qui l'avait déjà fermée.
 // ============================================================
 
-export const metadata: Metadata = {
-  title: "Installer l'application",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Installer l'application",
   description:
     "Installez Compyo sur votre téléphone ou votre ordinateur : un appui depuis votre écran d'accueil, sans passer par le navigateur.",
-  // Page utilitaire, pas une page de contenu : inutile qu'elle apparaisse
-  // dans les résultats de recherche à côté des vraies pages du site.
-  robots: { index: false, follow: true },
-};
+  chemin: "/installer",
+  indexer: false,
+});
 
 export default function InstallerPage() {
   return (

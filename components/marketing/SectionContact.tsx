@@ -13,9 +13,10 @@ export function SectionContact() {
       <div className="max-w-2xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
         <Reveal>
           <SectionLabel>Nous contacter</SectionLabel>
-          <h2 className="font-display text-2xl sm:text-4xl font-semibold tracking-tight">
+          {/* Seule page qui l'utilise : /contact, dont c'est le titre (h1). */}
+          <h1 className="font-display text-2xl sm:text-4xl font-semibold tracking-tight">
             Une question ? Écrivez-nous directement.
-          </h2>
+          </h1>
           <p className="mt-5 text-base text-ink/60 leading-relaxed">
             Compyo est encore un petit projet en bêta privée — pas une grosse équipe support.
             Mais chaque message est lu et vous aurez une vraie réponse, rapidement.

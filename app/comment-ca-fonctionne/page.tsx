@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
-export const metadata: Metadata = {
-  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
-  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
-  title: "Comment ça fonctionne",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Comment ça fonctionne",
   description:
-    "Du premier appel du client à la fin du chantier : le parcours complet d'un projet avec Compyo, étape par étape — import automatique, notes vocales transcrites, devis généré par IA avec moteur de calcul déterministe, planning unifié.",
-};
+    "Du premier appel du client à la fin du chantier : le parcours d'un projet avec Compyo, étape par étape, de la note dictée au devis signé.",
+  chemin: "/comment-ca-fonctionne",
+});
 
 // Page dédiée au parcours complet d'un chantier avec Compyo — à la demande
 // d'Axel : l'accueil ne montre plus que la version compacte à 5 étapes

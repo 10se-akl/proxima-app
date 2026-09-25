@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
-export const metadata: Metadata = {
-  title: "Compyo est-il sérieux et sécurisé ? — Transparence",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Compyo est-il sérieux et sécurisé ? — Transparence",
   description:
-    "Qui a fait Compyo, où sont hébergées les données, qui y a accès, et pourquoi il n'y a pas encore de société : réponses factuelles aux questions qu'un artisan se pose avant de faire confiance à un nouvel outil.",
-};
+    "Qui fait Compyo, où sont hébergées les données, qui y a accès : des réponses factuelles avant de confier ses données clients à un nouvel outil.",
+  chemin: "/confiance",
+});
 
 // Page créée le 02/09 suite à un retour direct d'Axel : des artisans (et les
 // IA auxquelles ils posent la question) ne trouvaient nulle part de réponse
@@ -48,9 +52,9 @@ function Intro() {
           <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-6">
             Transparence
           </p>
-          <p className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
+          <h1 className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
             Compyo est-il sérieux ? Est-il sécurisé ?
-          </p>
+          </h1>
           <p className="mt-8 text-lg text-white/70 leading-relaxed max-w-2xl mx-auto">
             Des questions légitimes avant de confier ses données clients à un nouvel outil.
             Voici des réponses factuelles, sans réassurance vague.

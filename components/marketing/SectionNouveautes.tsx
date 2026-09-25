@@ -14,7 +14,10 @@ import { Reveal, SectionLabel } from "./Cadre";
 
 const nouveautes = [
   {
-    titre: "Facturation électronique",
+    // 25/09 — « Facturation électronique » désigne depuis la réforme de
+    // 2026 les factures structurées transmises par une plateforme agréée :
+    // ce que Compyo ne fait pas. Le titre dit ce qu'il fait.
+    titre: "Du devis à la facture",
     description:
       "Du devis accepté à la facture : numérotation légale automatique, gestion des acomptes et avoirs, mentions légales figées à l'émission, export comptable.",
   },
@@ -24,7 +27,7 @@ const nouveautes = [
       "Pour un dépannage déjà chiffré sur place (serrurier, vitrier, urgence) : un devis vide à remplir directement, sans passer par l'analyse IA.",
   },
   {
-    titre: "19 corps de métier couverts",
+    titre: "17 métiers, et la rénovation",
     description:
       "Champs, checklists et catégories de chantier adaptés à chaque métier — un carreleur et un paysagiste n'ont pas les mêmes besoins, Compyo ne leur montre pas les mêmes options.",
   },

@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
-export const metadata: Metadata = {
-  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
-  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
-  title: "À propos",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "À propos",
   description:
-    "Compyo est développé par Axel Thfoin, 15 ans, développeur indépendant, en bêta privée avec de vrais retours d'artisans du bâtiment. Pas de storytelling inventé, juste un outil construit sérieusement.",
-};
+    "Compyo est développé par Axel Thfoin, développeur indépendant de 15 ans, en bêta privée avec de vrais retours d'artisans du bâtiment.",
+  chemin: "/a-propos",
+});
 
 // Page "À propos", séparée de l'accueil — même logique que /fonctionnalites
 // et /pourquoi-compyo : l'accueil reste court, et c'est ici que quelqu'un
@@ -49,9 +51,9 @@ function Devise() {
     <section className="bg-anthracite">
       <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-20 pb-16 sm:pt-28 sm:pb-20 text-center">
         <Reveal>
-          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-6">
-            À propos
-          </p>
+          <h1 className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-6">
+            À propos de Compyo
+          </h1>
           <p className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
             Nous ne voulons pas remplacer les artisans.
             <br />

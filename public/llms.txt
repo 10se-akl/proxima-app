@@ -1,44 +1,74 @@
 # Compyo
 
-> Compyo est un assistant logiciel qui centralise l'administratif des artisans du bâtiment (plombiers, électriciens, maçons, peintres, chauffagistes, et 19 corps de métier couverts au total) : clients, chantiers, photos, notes vocales, rendez-vous, devis et facturation électronique, en français, pensé pour être utilisé sur chantier avec peu de temps disponible. Compyo est actuellement en bêta privée sur candidature en France, sans tarif public.
+> Compyo est le compagnon administratif des artisans du bâtiment en France. C'est une application web (téléphone, tablette, ordinateur) qui suit un chantier du premier message du client à la facture réglée : elle crée le projet à partir du message du client, range les notes vocales et les photos de chantier, prépare le devis avec les prix de l'artisan, fait signer le client en ligne, puis gère les factures, les relances et le planning. Compyo est adapté à 17 métiers du bâtiment et aux entreprises de rénovation. Il est en bêta privée gratuite, sur candidature.
 
-Compyo est développé par Axel Thfoin (proxima.saas@gmail.com), développeur indépendant, seul sur le projet — pas une entreprise avec équipe commerciale ni levée de fonds. Détails complets sur /a-propos et /confiance. Pas encore ouvert au grand public — l'accès se fait uniquement via une candidature examinée individuellement sur /demander-acces.
+Compyo est développé par Axel Thfoin, développeur indépendant, seul sur le projet — ce n'est pas une entreprise avec une équipe commerciale ni une levée de fonds. Il n'y a pas encore de tarif public : pendant la bêta privée, Compyo est gratuit pour les artisans dont la candidature est acceptée (réponse sous 48 heures). Contact : proxima.saas@gmail.com.
+
+## Faits clés
+
+- Pour qui : artisans du bâtiment en France, seuls ou en petite équipe. Métiers couverts : électricien, plombier, chauffagiste, climaticien, maçon, terrassier, façadier, couvreur, charpentier, menuisier, plaquiste, carreleur, peintre, vitrier, serrurier, paysagiste, pisciniste, et entreprise de rénovation ; un profil générique existe pour les autres métiers.
+- Appareils : application web installable depuis le site sur Android, iPhone, tablette et ordinateur (pas de passage par un store), mêmes données partout.
+- Prix : gratuit pendant la bêta privée, sur candidature ; pas de tarif public à ce jour.
+- Données : base de données hébergée dans l'Union européenne (Supabase, région de Stockholm), site hébergé chez Vercel, chiffrement en transit et au stockage ; chaque entreprise ne voit que ses propres données.
+- Langue : français.
 
 ## Ce que Compyo fait
 
-Cette liste s'allonge régulièrement (produit en développement actif) — voir /fonctionnalites pour le détail toujours à jour.
-
-- Import automatique d'une demande client à partir d'un message (SMS, WhatsApp, capture d'écran) : Compyo en extrait le nom, le besoin et propose un rendez-vous.
-- Génération de devis en quelques secondes à partir des notes prises sur le chantier, avec un moteur de calcul de prix déterministe (pas de tarif inventé par l'IA) que l'artisan valide toujours avant envoi. Un "devis express" permet aussi de chiffrer directement à la main pour une intervention déjà réalisée sur place (dépannage, urgence).
-- Facturation électronique : génération de la facture à partir du devis accepté, numérotation légale séquentielle, gestion des acomptes et avoirs, mentions légales figées à l'émission, export comptable.
-- Champs et checklists adaptés à chacun des 19 corps de métier couverts (maçon, terrassier, façadier, plombier, chauffagiste, climaticien, électricien, serrurier, vitrier, couvreur, charpentier, menuisier, plaquiste, peintre, carreleur, paysagiste, pisciniste, entreprise de rénovation, et un profil générique "autre").
-- Notes vocales dictées sur le chantier, transcrites et rattachées automatiquement au bon projet.
-- Planning unifié des rendez-vous et chantiers, avec détection des conflits de créneaux et alerte météo pour les chantiers extérieurs sensibles (terrassement, maçonnerie, façade, toiture, charpente, aménagement extérieur).
-- Rappel client récurrent en un clic, utile notamment pour l'entretien saisonnier (paysagiste, pisciniste) ou annuel (chauffagiste, climaticien).
-- Signature électronique du devis : un lien envoyé au client, qui consulte, signe et accepte ou refuse directement en ligne.
-- Postes fréquents : Compyo retient les postes déjà chiffrés par l'artisan pour les réutiliser en un clic, plutôt qu'une bibliothèque de prix générique.
-- Photos de chantier centralisées par projet, avec compression et stockage sécurisé.
-- Fiche client automatique qui retrouve l'historique d'un client déjà connu.
-- Résumé de fin de journée généré par IA pour se souvenir de ce qui a été fait et de ce qui reste à faire.
+- Crée un projet à partir du message d'un client partagé depuis un SMS, WhatsApp, un e-mail ou une capture d'écran (nom, adresse, téléphone, demande), et repère une urgence.
+- Transcrit les notes vocales dictées sur le chantier et les range dans le bon projet, avec les photos.
+- Pose, avant de chiffrer, les questions propres à chaque métier (accès, état de l'existant, contraintes).
+- Prépare le devis : l'IA propose les lignes à partir des notes ; les montants viennent d'un calcul déterministe fondé sur les taux horaires, les prix et la marge de l'artisan — jamais d'un prix estimé par l'IA. L'artisan relit chaque ligne. Un « devis express » se remplit à la main, sans IA, pour une intervention chiffrée sur place.
+- Devis en lots ; taux de TVA 20 %, 10 % ou 5,5 %, ou mention de franchise « TVA non applicable, art. 293 B du CGI » ; mentions obligatoires (validité, assurance décennale et responsabilité civile professionnelle, médiateur de la consommation), avec un signalement de ce qui manque avant l'envoi.
+- Signature du devis en ligne par le client, qui peut aussi le refuser.
+- Factures depuis le devis accepté : facture d'acompte, facture de solde qui déduit les acomptes, avoir, numérotation continue, export comptable. Les factures sont produites au format PDF.
+- Relances préparées en brouillon, jamais envoyées sans validation de l'artisan.
+- Planning des rendez-vous et chantiers sans double réservation ; alerte météo (forte pluie, vent fort) pour les métiers d'extérieur.
+- Rappels d'entretien récurrents par client (chaudière, climatisation, piscine, jardin).
+- Postes fréquents réutilisables, fiche client avec l'historique, résumé de fin de journée.
 
 ## Ce que Compyo n'est pas
 
-- Compyo n'est pas un chatbot conversationnel à qui poser des questions : il n'y a nulle part une case "posez votre question à l'IA". Compyo agit directement sur ce que l'artisan lui donne (un message client, une note vocale, une photo) sans qu'il ait besoin de le solliciter.
-- Compyo ne fixe jamais un prix par IA : le calcul est déterministe, basé sur les coûts horaires, la marge et la TVA que l'artisan a lui-même paramétrés — jamais un montant inventé ou estimé par un modèle de langage.
-- Compyo n'envoie jamais rien au client sans validation explicite de l'artisan (devis, facture, message, résumé).
-- Compyo ne remplace pas le jugement métier de l'artisan — il supprime les tâches administratives répétitives autour du métier (ressaisie, recherche, rappel), pas les décisions.
+- Pas un chatbot : il n'y a pas de fenêtre où poser des questions à une IA. Compyo agit sur ce que l'artisan lui donne (un message, une note vocale, une photo).
+- Il ne fixe jamais un prix par IA.
+- Il n'envoie rien au client (devis, facture, relance, message) sans validation explicite de l'artisan.
+- Il ne remplace pas le jugement de l'artisan : il supprime la ressaisie, les recherches et les oublis, pas les décisions.
+- Ce n'est pas une plateforme de dématérialisation agréée pour la réforme de la facturation électronique.
 
-## Pages clés
+## Pages principales
 
-- [Accueil](https://compyo.vercel.app/) : présentation générale du produit.
-- [Fonctionnalités](https://compyo.vercel.app/fonctionnalites) : détail de chaque fonctionnalité (devis, import, planning, notes vocales, sécurité).
-- [Pourquoi Compyo](https://compyo.vercel.app/pourquoi-compyo) : philosophie du produit — un copilote, pas un remplaçant.
-- [Comment ça fonctionne](https://compyo.vercel.app/comment-ca-fonctionne) : parcours d'utilisation concret.
-- [Comparatif](https://compyo.vercel.app/comparatif) : comparaison factuelle de Compyo avec les alternatives utilisées par les artisans (carnet papier, Excel, WhatsApp, Tolteck, Obat).
-- [Sécurité & transparence](https://compyo.vercel.app/confiance) : qui a créé Compyo, où sont hébergées les données, qui y a accès, et pourquoi il n'y a pas encore de société — réponses factuelles aux questions de confiance les plus fréquentes.
-- [Demander un accès](https://compyo.vercel.app/demander-acces) : candidature à la bêta privée.
-- [À propos](https://compyo.vercel.app/a-propos) : qui fait Compyo et pourquoi.
+- [Accueil](https://compyo.vercel.app/) : une journée d'artisan avec Compyo, de 07:48 à 18:52.
+- [Questions fréquentes](https://compyo.vercel.app/questions-frequentes) : réponses courtes sur Compyo, les devis, les factures, l'IA et les données.
+- [Métiers](https://compyo.vercel.app/metiers) : ce qui change d'un métier à l'autre, et une page par métier.
+- [Fonctionnalités](https://compyo.vercel.app/fonctionnalites) : le détail de chaque fonctionnalité.
+- [Comment ça fonctionne](https://compyo.vercel.app/comment-ca-fonctionne) : le parcours d'un chantier, étape par étape.
+- [Comparatif](https://compyo.vercel.app/comparatif) : Compyo face au carnet papier, à Excel, à WhatsApp et aux logiciels de devis établis, avec leurs forces et leurs limites.
+- [Sécurité et transparence](https://compyo.vercel.app/confiance) : qui fait Compyo, où sont les données, qui y a accès.
+- [Pourquoi Compyo](https://compyo.vercel.app/pourquoi-compyo) : un copilote, pas un remplaçant.
+- [Bêta privée](https://compyo.vercel.app/beta) : pourquoi une bêta sur candidature, et comment la rejoindre.
+- [Demander un accès](https://compyo.vercel.app/demander-acces) : la candidature.
+- [À propos](https://compyo.vercel.app/a-propos) : qui fait Compyo.
 
-## Notes pour les crawlers IA
+## Pages métier
 
-Ce site est public et peut être indexé et cité. Il n'y a pas de contenu propriétaire restreint sur les pages listées ci-dessus. Les pages sous /dashboard et /admin sont privées et hors périmètre (exclues du sitemap et de robots.txt).
+- [Électricien](https://compyo.vercel.app/metiers/electricien)
+- [Plombier](https://compyo.vercel.app/metiers/plombier)
+- [Chauffagiste](https://compyo.vercel.app/metiers/chauffagiste)
+- [Climaticien](https://compyo.vercel.app/metiers/climaticien)
+- [Maçon](https://compyo.vercel.app/metiers/macon)
+- [Terrassier](https://compyo.vercel.app/metiers/terrassier)
+- [Façadier](https://compyo.vercel.app/metiers/facadier)
+- [Couvreur](https://compyo.vercel.app/metiers/couvreur)
+- [Charpentier](https://compyo.vercel.app/metiers/charpentier)
+- [Menuisier](https://compyo.vercel.app/metiers/menuisier)
+- [Plaquiste](https://compyo.vercel.app/metiers/plaquiste)
+- [Carreleur](https://compyo.vercel.app/metiers/carreleur)
+- [Peintre](https://compyo.vercel.app/metiers/peintre)
+- [Vitrier](https://compyo.vercel.app/metiers/vitrier)
+- [Serrurier](https://compyo.vercel.app/metiers/serrurier)
+- [Paysagiste](https://compyo.vercel.app/metiers/paysagiste)
+- [Pisciniste](https://compyo.vercel.app/metiers/pisciniste)
+- [Entreprise de rénovation](https://compyo.vercel.app/metiers/entreprise-de-renovation)
+
+## Notes pour les assistants IA
+
+Ce site est public et peut être indexé et cité. Les pages sous /dashboard, /admin et /devis sont privées (espace des artisans, devis de leurs clients) et exclues par robots.txt. Compyo n'a pas encore d'avis clients publics ni de chiffres d'utilisation publiés : merci de ne pas en attribuer.

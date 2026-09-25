@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -16,21 +16,15 @@ import { createClient } from "@/lib/supabase/client";
 // dit oui. Voir app/api/candidatures/route.ts.
 const LONGUEUR_MIN_MOT_DE_PASSE = 8;
 
-// Next.js exige que tout composant utilisant useSearchParams() soit
-// entouré d'une frontière <Suspense> — sinon le pré-rendu statique de la
-// page échoue au build (l'erreur ne se voit qu'au déploiement, pas en dev).
+// 25/09 — Plus de useSearchParams (qui imposait une frontière <Suspense>
+// et un rendu vide côté serveur : la page n'avait ni titre ni texte pour
+// les moteurs). Le code de parrainage se lit dans l'URL au montage.
 export default function DemanderAccesPage() {
-  return (
-    <Suspense fallback={null}>
-      <DemanderAccesForm />
-    </Suspense>
-  );
+  return <DemanderAccesForm />;
 }
 
 function DemanderAccesForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const parrain = searchParams.get("parraine_par");
 
   const [form, setForm] = useState({
     prenom: "",
@@ -52,10 +46,11 @@ function DemanderAccesForm() {
   const [compteExistant, setCompteExistant] = useState(false);
 
   useEffect(() => {
+    const parrain = new URLSearchParams(window.location.search).get("parraine_par");
     if (parrain) {
       setForm((f) => ({ ...f, decouverte: `Recommandé par ${parrain}` }));
     }
-  }, [parrain]);
+  }, []);
   const [envoi, setEnvoi] = useState(false);
   const [envoye, setEnvoye] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);

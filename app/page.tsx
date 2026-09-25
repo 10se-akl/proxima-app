@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import { Accueil } from "@/components/marketing/vitrine/Accueil";
 import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 
@@ -20,15 +21,9 @@ import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 // l'aurait doublé.
 const TITRE = "Compyo — Le compagnon administratif des artisans du bâtiment";
 const DESCRIPTION =
-  "Vos soirées ne sont pas faites pour la paperasse. Du premier message du client à la facture réglée : Compyo crée le projet, range vos notes et vos photos, prépare le devis avec vos prix et suit la signature. Bêta privée.";
+  "Vos soirées ne sont pas faites pour la paperasse. Compyo crée le projet, range notes et photos, prépare le devis avec vos prix. Bêta privée gratuite.";
 
-export const metadata: Metadata = {
-  title: { absolute: TITRE },
-  description: DESCRIPTION,
-  alternates: { canonical: "/" },
-  openGraph: { title: TITRE, description: DESCRIPTION, url: "/" },
-  twitter: { title: TITRE, description: DESCRIPTION },
-};
+export const metadata: Metadata = metaPage({ titre: TITRE, description: DESCRIPTION, chemin: "/", titreAbsolu: true });
 
 export default function HomePage() {
   // Les avis Google se lisent côté serveur (clé d'API privée) : la section

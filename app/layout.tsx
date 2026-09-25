@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "gestion chantier",
     "assistant IA artisan",
     "plombier chauffagiste logiciel",
-    "facturation électronique artisan",
+    "logiciel facture artisan",
     "logiciel BTP tous corps de métier",
   ],
   authors: [{ name: "Compyo" }],
@@ -95,13 +95,35 @@ export const viewport: Viewport = {
   ],
 };
 
-// Données structurées (schema.org, format JSON-LD) — pas pour les
-// visiteurs humains, mais pour les moteurs de recherche ET les moteurs
-// génératifs (ChatGPT, Perplexity, AI Overviews...) qui s'en servent pour
-// comprendre sans ambiguïté ce qu'est Compyo, avant même de lire le texte
-// de la page. Deux types combinés : "Organization" (l'éditeur) et
-// "SoftwareApplication" (le produit) — description volontairement neutre
-// et factuelle (bêta privée, pas de faux chiffres, pas de note inventée).
+
+// ============================================================
+// Données structurées (Schema.org), présentes sur toutes les pages.
+//
+// 25/09 — Complétées pour que les moteurs de recherche ET les assistants
+// IA (ChatGPT, Perplexity, Gemini, Claude, Copilot) comprennent sans
+// ambiguïté ce qu'est Compyo : qui l'édite, le site, et le logiciel —
+// pour qui, sur quels appareils, à quelles conditions, et ce qu'il fait.
+//
+// Règle tenue : rien que de vérifiable sur le site. Pas de note, pas
+// d'avis, pas de nombre d'utilisateurs (aggregateRating et review restent
+// absents tant qu'il n'y a pas de vrais avis). La liste des fonctions ne
+// cite que ce que l'application fait réellement.
+// ============================================================
+const FONCTIONS = [
+  "Projet créé à partir du message du client (SMS, WhatsApp, e-mail, capture d'écran)",
+  "Notes vocales dictées sur le chantier, transcrites et rangées dans le bon projet",
+  "Photos de chantier rangées par projet",
+  "Questions à poser avant de chiffrer, propres à chaque métier",
+  "Devis préparé avec les prix de l'artisan (calcul déterministe, jamais un prix inventé par l'IA)",
+  "Devis en lots, taux de TVA 20 %, 10 % ou 5,5 %, mentions obligatoires vérifiées avant envoi",
+  "Signature du devis en ligne par le client",
+  "Factures, acomptes et avoirs depuis le devis, numérotation continue, export comptable",
+  "Relances préparées en brouillon, jamais envoyées sans validation",
+  "Planning des rendez-vous et chantiers sans double réservation, alerte météo pour les métiers d'extérieur",
+  "Rappels d'entretien récurrent (chaudière, climatisation, piscine, jardin)",
+  "Application web installable sur téléphone, tablette et ordinateur",
+];
+
 const DONNEES_STRUCTUREES = {
   "@context": "https://schema.org",
   "@graph": [
@@ -110,13 +132,16 @@ const DONNEES_STRUCTUREES = {
       "@id": `${URL_SITE}/#organisation`,
       name: "Compyo",
       url: URL_SITE,
-      logo: `${URL_SITE}/icon`,
+      logo: {
+        "@type": "ImageObject",
+        url: `${URL_SITE}/icons/icon-512.png`,
+        width: 512,
+        height: 512,
+      },
       email: "proxima.saas@gmail.com",
-      // Signal E-E-A-T (autorité/confiance) explicite : "qui est derrière
-      // Compyo" revient constamment comme question de confiance (voir
-      // /confiance, /a-propos) — un éditeur nommément identifié plutôt
-      // qu'une structure floue est ce que les moteurs classiques ET
-      // génératifs valorisent le plus pour ce type de question.
+      description:
+        "Compyo édite un assistant administratif pour les artisans du bâtiment en France : du message du client à la facture réglée.",
+      areaServed: { "@type": "Country", name: "France" },
       founder: { "@id": `${URL_SITE}/#fondateur` },
       sameAs: [],
     },
@@ -126,26 +151,48 @@ const DONNEES_STRUCTUREES = {
       name: "Axel Thfoin",
       jobTitle: "Développeur indépendant",
       worksFor: { "@id": `${URL_SITE}/#organisation` },
+      url: `${URL_SITE}/a-propos`,
+    },
+    {
+      "@type": "WebSite",
+      "@id": `${URL_SITE}/#site`,
+      name: "Compyo",
+      url: URL_SITE,
+      inLanguage: "fr-FR",
+      description: DESCRIPTION,
+      publisher: { "@id": `${URL_SITE}/#organisation` },
     },
     {
       "@type": "SoftwareApplication",
       "@id": `${URL_SITE}/#logiciel`,
       name: "Compyo",
+      alternateName: "Compyo, le compagnon administratif des artisans du bâtiment",
       applicationCategory: "BusinessApplication",
-      operatingSystem: "Web",
-      description: DESCRIPTION,
+      applicationSubCategory: "Logiciel de devis, factures et suivi de chantier pour artisans du bâtiment",
+      operatingSystem: "Web, Android, iOS, Windows, macOS",
+      description:
+        "Compyo est un assistant administratif pour les artisans du bâtiment : il crée le projet à partir du message du client, range les notes vocales et les photos de chantier, prépare le devis avec les prix de l'artisan, suit la signature en ligne, puis la facture et les relances. L'artisan valide tout ce qui part chez le client.",
       url: URL_SITE,
+      image: `${URL_SITE}/opengraph-image`,
+      screenshot: `${URL_SITE}/compyo-demo-vertical-affiche.jpg`,
       inLanguage: "fr-FR",
-      audience: {
-        "@type": "Audience",
-        audienceType: "Artisans du bâtiment",
+      isAccessibleForFree: true,
+      featureList: FONCTIONS,
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "EUR",
+        description: "Bêta privée gratuite, sur candidature, pour les artisans du bâtiment en France.",
+        eligibleRegion: { "@type": "Country", name: "France" },
+        url: `${URL_SITE}/demander-acces`,
       },
+      audience: {
+        "@type": "BusinessAudience",
+        audienceType:
+          "Artisans du bâtiment : électriciens, plombiers, chauffagistes, climaticiens, menuisiers, plaquistes, carreleurs, peintres, maçons, couvreurs, charpentiers, piscinistes, paysagistes, terrassiers, serruriers, vitriers, façadiers, entreprises de rénovation",
+      },
+      creator: { "@id": `${URL_SITE}/#fondateur` },
       publisher: { "@id": `${URL_SITE}/#organisation` },
-      // Pas de champ "offers"/"aggregateRating" : le produit est en bêta
-      // privée sur candidature, sans tarif public ni avis clients réels —
-      // en inventer ferait du contenu structuré trompeur, contre-productif
-      // pour le SEO comme pour le GEO (les moteurs pénalisent les données
-      // structurées qui ne correspondent pas à la page réelle).
     },
   ],
 };

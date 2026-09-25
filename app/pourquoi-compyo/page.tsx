@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
-export const metadata: Metadata = {
-  title: "Pourquoi Compyo — Un copilote, pas un remplaçant",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Pourquoi Compyo — Un copilote, pas un remplaçant",
   description:
-    "Compyo ne remplace pas les artisans, il supprime les tâches répétitives. Découvrez la philosophie du produit : l'IA propose, l'artisan décide et garde toujours le contrôle.",
-};
+    "Compyo ne remplace pas les artisans, il supprime les tâches répétitives : l'IA propose, l'artisan décide et garde toujours le contrôle.",
+  chemin: "/pourquoi-compyo",
+});
 
 // Page dédiée à la philosophie / vision du produit, séparée de l'accueil —
 // même logique que /fonctionnalites (voir app/fonctionnalites/page.tsx) :
@@ -44,11 +48,11 @@ function IntroPhilosophie() {
           <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-6">
             Pourquoi Compyo
           </p>
-          <p className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
+          <h1 className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
             Nous ne voulons pas remplacer les artisans.
             <br />
             Nous voulons supprimer les tâches répétitives.
-          </p>
+          </h1>
           <p className="mt-8 text-lg sm:text-xl text-white/70 leading-relaxed">
             Compyo travaille avec eux. Pas à leur place.
           </p>

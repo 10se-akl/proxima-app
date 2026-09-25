@@ -1,16 +1,18 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import { createClient } from "@/lib/supabase/server";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 import { CarteMentale } from "@/components/carte-mentale/CarteMentale";
 import { CATEGORIES } from "@/lib/retours/taxonomie";
 
-export const metadata: Metadata = {
-  // SEO (05/09) — voir même correctif que /fonctionnalites : le layout
-  // racine applique déjà "%s — Compyo", garder le suffixe ici le dupliquait.
-  title: "Carte mentale",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Carte mentale",
   description:
     "Les grands thèmes remontés par les artisans qui utilisent Compyo, regroupés automatiquement par IA — sans jamais révéler qui a dit quoi.",
-};
+  chemin: "/carte-mentale",
+});
 
 // ============================================================
 // Refonte "Retours produit" → carte mentale (Module 16, voir

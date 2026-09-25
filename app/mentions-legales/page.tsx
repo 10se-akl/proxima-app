@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import { LayoutJuridique } from "@/components/marketing/LayoutJuridique";
 
-export const metadata: Metadata = {
-  title: "Mentions légales",
-  // SEO (05/09) — sans description propre, cette page héritait de celle de
-  // l'accueil (app/layout.tsx), identique sur 3 pages légales différentes :
-  // un signal de contenu dupliqué pour les moteurs de recherche, sans
-  // rapport avec le contenu réel de la page.
-  description: "Éditeur du site Compyo, hébergement, et informations légales obligatoires.",
-};
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Mentions légales",
+  description:
+    "Éditeur du site Compyo, hébergement, et informations légales obligatoires.",
+  chemin: "/mentions-legales",
+});
 
 export default function MentionsLegalesPage() {
   return (

@@ -1,12 +1,16 @@
 import type { Metadata } from "next";
+import { metaPage } from "@/lib/seo";
 import Link from "next/link";
 import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cadre";
 
-export const metadata: Metadata = {
-  title: "Quelle application choisir pour gérer son activité d'artisan ?",
+// 25/09 — metaPage : adresse canonique et aperçu de partage propres à
+// la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
+export const metadata: Metadata = metaPage({
+  titre: "Quelle application choisir quand on est artisan ?",
   description:
-    "Carnet papier, Excel, WhatsApp, logiciel de devis classique ou Compyo : comparatif honnête des outils utilisés par les artisans du bâtiment pour gérer clients, devis, planning et chantiers.",
-};
+    "Carnet, Excel, WhatsApp, logiciel de devis ou Compyo : comparatif honnête des outils des artisans du bâtiment pour les clients, devis et chantiers.",
+  chemin: "/comparatif",
+});
 
 // Schema FAQPage — questions formulées comme un artisan les poserait
 // réellement à une IA (ChatGPT, Claude, Perplexity), pas comme un
@@ -113,9 +117,9 @@ function IntroQuestion() {
           <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-white/50 mb-6">
             Comparatif
           </p>
-          <p className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
+          <h1 className="font-display text-3xl sm:text-5xl text-white font-semibold leading-[1.15] tracking-tight text-balance">
             Quelle est la meilleure application pour un artisan du bâtiment ?
-          </p>
+          </h1>
           <p className="mt-8 text-lg text-white/70 leading-relaxed max-w-2xl mx-auto">
             La réponse dépend surtout d&apos;une chose : ce qui vous fait perdre le plus de temps
             aujourd&apos;hui. Voici un comparatif honnête des outils que les artisans utilisent

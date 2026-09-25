@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { FICHES_REDIGEES } from "@/lib/metiersPages";
 
 // ============================================================
 // Le cadre commun des pages du site vitrine (24/09) : l'en-tête, le pied
@@ -22,13 +23,32 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 // nativement (la classe .reveal n'a d'effet que si l'utilisateur n'a pas
 // demandé de réduire les animations, voir globals.css).
 // ============================================================
+// useLayoutEffect n'existe pas côté serveur (React le signale) : même
+// effet, sans l'avertissement.
+const useEffetAvantAffichage = typeof window === "undefined" ? useEffect : useLayoutEffect;
+
+// 25/09 — Le contenu n'est plus caché avant le JavaScript. Avant, `.reveal`
+// mettait tout à opacity 0 dès le HTML : sur une 4G moyenne, le titre de
+// chaque page intérieure attendait le chargement des scripts pour
+// apparaître (mesuré : l'« élément le plus grand » vu par Google était le
+// logo de l'en-tête, pas le titre), et un script en échec laissait la page
+// blanche. Maintenant le masque ne s'applique qu'une fois la page prête
+// (classe `reveal-pret` sur <html>, voir globals.css), et ce qui est déjà
+// à l'écran à ce moment-là est marqué visible avant le premier affichage :
+// rien ne clignote, seul ce qui est plus bas apparaît en glissant.
 function useRevealOnScroll<T extends HTMLElement>() {
   const ref = useRef<T>(null);
   const [visible, setVisible] = useState(false);
 
-  useEffect(() => {
+  useEffetAvantAffichage(() => {
     const noeud = ref.current;
     if (!noeud) return;
+    document.documentElement.classList.add("reveal-pret");
+    const r = noeud.getBoundingClientRect();
+    if (r.top < window.innerHeight && r.bottom > 0) {
+      setVisible(true);
+      return;
+    }
     const observateur = new IntersectionObserver(
       ([entree]) => {
         if (entree.isIntersecting) {
@@ -103,12 +123,14 @@ export function SectionLabel({ children }: { children: React.ReactNode }) {
 const LIENS_NAV = [
   { href: "/", label: "Accueil", principal: false },
   { href: "/fonctionnalites", label: "Fonctionnalités", principal: true },
-  { href: "/#metiers", label: "Métiers", principal: true },
+  // 25/09 — la page pilier des métiers, plus une ancre de l'accueil.
+  { href: "/metiers", label: "Métiers", principal: true },
   { href: "/comment-ca-fonctionne", label: "Comment ça fonctionne", principal: true },
   { href: "/pourquoi-compyo", label: "Pourquoi Compyo", principal: false },
   { href: "/carte-mentale", label: "Carte mentale", principal: false },
   { href: "/beta", label: "Bêta", principal: false },
   { href: "/a-propos", label: "À propos", principal: false },
+  { href: "/questions-frequentes", label: "Questions fréquentes", principal: false },
   { href: "/contact", label: "Contact", principal: true },
   // 20/09 — Onglet à part entière, pas seulement un lien de pied de page :
   // installer l'app est une action que l'artisan doit pouvoir retrouver
@@ -392,6 +414,9 @@ export function Footer() {
             <Link href="/a-propos" className="hover:text-white transition-colors">
               À propos
             </Link>
+            <Link href="/questions-frequentes" className="hover:text-white transition-colors">
+              Questions fréquentes
+            </Link>
             <Link href="/contact" className="hover:text-white transition-colors">
               Contact
             </Link>
@@ -404,6 +429,26 @@ export function Footer() {
             </Link>
           </nav>
         </div>
+
+        {/* 25/09 — Une page par métier, accessible de partout : pour
+            l'artisan qui cherche la sienne, et pour les moteurs qui ne
+            trouvaient ces pages que par le sitemap. */}
+        <nav aria-label="Compyo pour votre métier" className="pt-6 border-t border-white/10">
+          <p className="text-center sm:text-left text-[11px] font-mono uppercase tracking-[0.18em] text-white/40">
+            <Link href="/metiers" className="hover:text-white/80 transition-colors">
+              Compyo pour votre métier
+            </Link>
+          </p>
+          <ul className="mt-3 flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-1.5 text-xs text-white/55">
+            {FICHES_REDIGEES.map((f) => (
+              <li key={f.slug}>
+                <Link href={`/metiers/${f.slug}`} className="hover:text-white transition-colors">
+                  {f.nom}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
         <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/50">

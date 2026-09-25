@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 
 // ============================================================
 // « Une journée avec Compyo » (24/09) — le fil conducteur de l'accueil.
@@ -12,20 +12,23 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 //   - Le bouton « Rejouer » d'une scène la relance.
 //   - L'horloge suit la lecture : sur grand écran (1280 px et plus), une
 //     colonne collante à gauche ; sur tablette, une barre fine sous
-//     l'en-tête ; sur téléphone, la même barre au-dessus d'un carrousel.
-//     Ses aiguilles tournent jusqu'à l'heure du chapitre en cours.
+//     l'en-tête. Ses aiguilles tournent jusqu'à l'heure du chapitre en
+//     cours.
 //
-// Sur téléphone (moins de 768 px, 80 % des visiteurs), la journée est un
-// carrousel qu'on fait glisser du doigt : une scène par écran, la suivante
-// dépassant sur le bord. Empilées, les six scènes faisaient plus de
-// 7 000 px, la moitié de la page.
+// Sur téléphone (moins de 768 px, 80 % des visiteurs), la journée se
+// regarde comme une story (25/09) : elle tient en un écran, six segments
+// en haut se remplissent l'un après l'autre et font avancer les scènes
+// toutes seules. Au premier toucher, le visiteur prend la main : il fait
+// glisser, ou se sert des flèches. Chaque scène rejoue en arrivant. La
+// barre collante de la tablette, qui s'ajoutait à l'en-tête et répétait le
+// titre de la carte, n'existe plus à cette taille.
 //
 // Les scènes elles-mêmes restent rendues côté serveur (sauf celles qui se
 // manipulent) : le texte est dans le HTML, lisible sans JavaScript et par
 // les moteurs de recherche.
 // ============================================================
 
-export type Chapitre = { heure: string; titre: string };
+export type Chapitre = { heure: string; titre: string; /** Téléphone : durée de la scène dans la story, en secondes. */ duree?: number };
 
 const TELEPHONE = "(max-width: 767px)";
 
@@ -83,41 +86,45 @@ function Cadran({ heure, className = "" }: { heure: string; className?: string }
   );
 }
 
+/** Relancer une scène depuis le début. */
+function jouer(scene: Element, depuisLeDebut: boolean) {
+  if (depuisLeDebut) {
+    scene.removeAttribute("data-actif");
+    // Forcer le navigateur à constater la suppression, sinon les
+    // animations CSS ne repartent pas de zéro.
+    void (scene as HTMLElement).offsetWidth;
+  }
+  scene.setAttribute("data-actif", "");
+  scene.dispatchEvent(new CustomEvent("v-joue"));
+}
+
 export function Journee({ chapitres, children }: { chapitres: Chapitre[]; children: ReactNode }) {
   const racine = useRef<HTMLDivElement>(null);
   const piste = useRef<HTMLDivElement>(null);
   const [pret, setPret] = useState(false);
   const [courant, setCourant] = useState(0);
+  const [telephone, setTelephone] = useState(false);
+  // La story : elle avance seule tant que le visiteur n'a pas pris la main.
+  const [lecture, setLecture] = useState(true);
+  const [aLEcran, setALEcran] = useState(false);
+  const [reduit, setReduit] = useState(false);
 
   useEffect(() => {
     const el = racine.current;
     const p = piste.current;
     if (!el || !p) return;
     setPret(true);
+    const moinsDeMouvement = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setReduit(moinsDeMouvement);
+    if (moinsDeMouvement) setLecture(false);
 
-    const jouer = (scene: Element) => {
-      scene.setAttribute("data-actif", "");
-      scene.dispatchEvent(new CustomEvent("v-joue"));
-    };
-
-    // Une scène joue quand elle arrive à l'écran — dans le carrousel
-    // aussi : l'observateur tient compte du défilement horizontal.
     const scenes = [...el.querySelectorAll("[data-scene]")];
-    const activation = new IntersectionObserver(
-      (entrees) => {
-        for (const e of entrees) {
-          if (!e.isIntersecting) continue;
-          jouer(e.target);
-          activation.unobserve(e.target);
-        }
-      },
-      { threshold: 0.3 }
-    );
-    scenes.forEach((s) => activation.observe(s));
-
     const blocs = [...el.querySelectorAll<HTMLElement>("[data-chapitre]")];
     const ecran = window.matchMedia(TELEPHONE);
 
+    // Ordinateur et tablette : une scène joue quand elle arrive à l'écran.
+    // Sur téléphone, c'est la story qui les lance (voir plus bas).
+    let activation: IntersectionObserver | null = null;
     // Ordinateur et tablette : le chapitre qui traverse le milieu de
     // l'écran. Téléphone : la carte la plus centrée dans le carrousel.
     let suivi: IntersectionObserver | null = null;
@@ -139,13 +146,27 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
       });
     };
     const brancher = () => {
+      activation?.disconnect();
+      activation = null;
       suivi?.disconnect();
       suivi = null;
       p.removeEventListener("scroll", surDefilement);
+      setTelephone(ecran.matches);
       if (ecran.matches) {
         p.addEventListener("scroll", surDefilement, { passive: true });
         surDefilement();
       } else {
+        activation = new IntersectionObserver(
+          (entrees) => {
+            for (const e of entrees) {
+              if (!e.isIntersecting) continue;
+              jouer(e.target, false);
+              activation?.unobserve(e.target);
+            }
+          },
+          { threshold: 0.3 }
+        );
+        scenes.filter((s) => !s.hasAttribute("data-actif")).forEach((s) => activation?.observe(s));
         suivi = new IntersectionObserver(
           (entrees) => {
             for (const e of entrees) {
@@ -160,27 +181,35 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
     brancher();
     ecran.addEventListener("change", brancher);
 
+    // La story n'avance que lorsqu'elle occupe l'écran.
+    const presence = new IntersectionObserver(([e]) => setALEcran(e.isIntersecting), { threshold: 0.55 });
+    presence.observe(el);
+
     const surClic = (e: MouseEvent) => {
       const bouton = (e.target as HTMLElement).closest("[data-rejouer]");
       const scene = bouton?.closest("[data-scene]");
-      if (!scene) return;
-      scene.removeAttribute("data-actif");
-      // Forcer le navigateur à constater la suppression, sinon les
-      // animations CSS ne repartent pas de zéro.
-      void (scene as HTMLElement).offsetWidth;
-      jouer(scene);
+      if (scene) jouer(scene, true);
     };
     el.addEventListener("click", surClic);
 
     return () => {
-      activation.disconnect();
+      activation?.disconnect();
       suivi?.disconnect();
+      presence.disconnect();
       cancelAnimationFrame(image);
       ecran.removeEventListener("change", brancher);
       p.removeEventListener("scroll", surDefilement);
       el.removeEventListener("click", surClic);
     };
   }, []);
+
+  // Téléphone : la scène au centre rejoue chaque fois qu'elle y arrive, et
+  // quand la story revient à l'écran.
+  useEffect(() => {
+    if (!telephone || !aLEcran) return;
+    const scene = racine.current?.querySelectorAll("[data-chapitre]")[courant]?.querySelector("[data-scene]");
+    if (scene) jouer(scene, true);
+  }, [telephone, aLEcran, courant]);
 
   /** Aller à un chapitre : dans le carrousel sur téléphone, en faisant
    *  défiler la page ailleurs. */
@@ -197,43 +226,100 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
   };
 
   const chapitre = chapitres[courant] ?? chapitres[0];
+  const dernier = chapitres.length - 1;
+  const enLecture = telephone && lecture && aLEcran;
 
   return (
-    <div ref={racine} data-pret={pret ? "" : undefined} className="relative">
-      {/* Téléphone et tablette : la barre de l'heure, collée sous l'en-tête
-          tant que la journée est à l'écran. Sur téléphone, elle porte aussi
-          de quoi passer d'une scène à l'autre sans glisser, et rejouer. */}
-      <div className="sticky top-16 z-20 -mx-5 mb-4 border-b border-ink/10 bg-paper/85 px-5 py-2.5 backdrop-blur-md max-md:mb-5 sm:-mx-8 sm:px-8 xl:hidden">
-        <div className="flex items-center gap-3">
-          <Cadran heure={chapitre.heure} className="h-8 w-8 shrink-0 text-ink" />
-          <p className="min-w-0 flex-1 truncate text-[14px]">
-            <span className="font-mono tabular-nums text-signal">{chapitre.heure}</span>
-            <span className="mx-2 text-ink/25">·</span>
-            <span className="text-ink/85">{chapitre.titre}</span>
-          </p>
-          <div className="flex items-center gap-1.5 md:hidden">
-            {/* Sur téléphone, « Rejouer » vit ici plutôt que dans chaque
-                carte : il relance la scène affichée, et libère le bas des
-                cartes. */}
+    <div
+      ref={racine}
+      data-pret={pret ? "" : undefined}
+      data-sans-barre
+      className="relative max-md:flex max-md:h-[calc(100svh-4rem)] max-md:min-h-[36rem] max-md:flex-col"
+    >
+      {/* Tablette : la barre de l'heure, collée sous l'en-tête tant que la
+          journée est à l'écran. Téléphone : l'en-tête de la story — les
+          segments, l'heure, et de quoi reprendre la main. */}
+      <div className="sticky top-16 z-20 -mx-5 mb-4 border-b border-ink/10 bg-paper/85 px-5 py-2.5 backdrop-blur-md max-md:static max-md:order-first max-md:mx-0 max-md:mb-3 max-md:border-0 max-md:bg-transparent max-md:p-0 max-md:backdrop-blur-none sm:-mx-8 sm:px-8 xl:hidden">
+        {/* Téléphone : les segments de la story, en haut. */}
+        <div className="flex gap-1 md:hidden">
+          {chapitres.map((c, i) => (
             <button
+              key={c.heure}
               type="button"
               onClick={() => {
-                const scene = racine.current?.querySelectorAll("[data-chapitre]")[courant]?.querySelector("[data-scene]");
-                scene?.querySelector<HTMLButtonElement>("[data-rejouer]")?.click();
+                setLecture(false);
+                allerA(i);
               }}
-              aria-label={`Rejouer la scène : ${chapitre.titre}`}
-              className="grid h-10 w-10 place-items-center rounded-full text-ink/70 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
+              aria-label={`Aller à ${c.heure}, ${c.titre}`}
+              aria-current={i === courant ? "step" : undefined}
+              className="group min-h-0 flex-1 py-2 focus-visible:outline-none"
             >
-              <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" aria-hidden>
-                <path d="M13 8a5 5 0 1 1-1.5-3.55M13 2.5V5h-2.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <span className="relative block h-[3px] overflow-hidden rounded-full bg-ink/15 group-focus-visible:ring-2 group-focus-visible:ring-signal/60">
+                <span
+                  key={i === courant ? `${courant}-${lecture}` : undefined}
+                  // Avant : plein. Après : vide. En cours : se remplit tant
+                  // que la story avance, plein si le visiteur a pris la main.
+                  className={`absolute inset-0 origin-left rounded-full bg-signal ${
+                    i < courant ? "" : i > courant ? "scale-x-0" : lecture && telephone && !reduit ? "v-segment" : ""
+                  }`}
+                  style={
+                    i === courant
+                      ? ({ "--duree": `${chapitres[i].duree ?? 7}s`, animationPlayState: enLecture ? "running" : "paused" } as CSSProperties)
+                      : undefined
+                  }
+                  onAnimationEnd={() => {
+                    if (i !== courant || !lecture) return;
+                    if (courant < dernier) allerA(courant + 1);
+                    else setLecture(false);
+                  }}
+                />
+              </span>
             </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-3 max-md:mt-1.5">
+          <Cadran heure={chapitre.heure} className="h-8 w-8 shrink-0 text-ink" />
+          <p className="min-w-0 flex-1 truncate text-[14px] max-md:text-[15px]">
+            <span className="font-mono tabular-nums text-signal">{chapitre.heure}</span>
+            <span className="mx-2 text-ink/25 max-md:hidden">·</span>
+            <span className="text-ink/85 max-md:hidden">{chapitre.titre}</span>
+            <span className="ml-2 text-ink/40 md:hidden">
+              {courant + 1}/{chapitres.length}
+            </span>
+          </p>
+          <div className="flex items-center gap-1.5 md:hidden">
+            {!reduit && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (!lecture && courant === dernier) allerA(0);
+                  setLecture((v) => !v);
+                }}
+                aria-label={lecture ? "Mettre la journée en pause" : "Lire la journée"}
+                className="grid h-10 w-10 place-items-center rounded-full text-ink/70 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
+              >
+                {lecture ? (
+                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden>
+                    <rect x="3.5" y="2.5" width="3" height="11" rx="1" />
+                    <rect x="9.5" y="2.5" width="3" height="11" rx="1" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden>
+                    <path d="M4.5 2.8v10.4a.8.8 0 0 0 1.2.7l8.3-5.2a.8.8 0 0 0 0-1.4L5.7 2.1a.8.8 0 0 0-1.2.7Z" />
+                  </svg>
+                )}
+              </button>
+            )}
             {([-1, 1] as const).map((sens) => (
               <button
                 key={sens}
                 type="button"
-                onClick={() => allerA(Math.max(0, Math.min(chapitres.length - 1, courant + sens)))}
-                disabled={sens === -1 ? courant === 0 : courant === chapitres.length - 1}
+                onClick={() => {
+                  setLecture(false);
+                  allerA(Math.max(0, Math.min(dernier, courant + sens)));
+                }}
+                disabled={sens === -1 ? courant === 0 : courant === dernier}
                 aria-label={sens === 1 ? "Moment suivant" : "Moment précédent"}
                 className="grid h-10 w-10 place-items-center rounded-full bg-surface text-ink shadow-[var(--v-ombre-legere)] ring-1 ring-ink/10 transition disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
               >
@@ -244,9 +330,9 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
             ))}
           </div>
         </div>
-        {/* La progression : six traits, qu'on peut toucher pour sauter à un
-            moment de la journée. */}
-        <div className="mt-1.5 flex gap-1.5 max-md:mt-2.5">
+        {/* Tablette : la progression, six traits qu'on peut toucher pour
+            sauter à un moment de la journée. */}
+        <div className="mt-1.5 flex gap-1.5 max-md:hidden">
           {chapitres.map((c, i) => (
             <button
               key={c.heure}
@@ -266,7 +352,7 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
         </div>
       </div>
 
-      <div className="xl:grid xl:grid-cols-[14rem_minmax(0,1fr)] xl:gap-16 2xl:grid-cols-[15rem_minmax(0,1fr)] 2xl:gap-20">
+      <div className="max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col xl:grid xl:grid-cols-[14rem_minmax(0,1fr)] xl:gap-16 2xl:grid-cols-[15rem_minmax(0,1fr)] 2xl:gap-20">
         {/* Ordinateur : la colonne de l'heure, collante. */}
         <nav aria-label="Les heures de la journée" className="hidden xl:block">
           <div className="sticky top-28">
@@ -305,10 +391,13 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
             `relative` n'est pas décoratif : sans lui, les textes réservés
             aux lecteurs d'écran (position absolue) des cartes hors champ
             se rattachaient à un parent hors du carrousel, échappaient au
-            rognage et élargissaient toute la page. */}
+            rognage et élargissaient toute la page.
+            Le premier toucher arrête la lecture automatique : le visiteur
+            a pris la main. */}
         <div
           ref={piste}
-          className="max-md:relative max-md:-mx-5 max-md:flex max-md:snap-x max-md:snap-mandatory max-md:gap-3 max-md:overflow-x-auto max-md:overscroll-x-contain max-md:px-[6vw] max-md:pb-3 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
+          onPointerDown={() => telephone && setLecture(false)}
+          className="max-md:relative max-md:-mx-5 max-md:flex max-md:min-h-0 max-md:flex-1 max-md:snap-x max-md:snap-mandatory max-md:gap-3 max-md:overflow-x-auto max-md:overscroll-x-contain max-md:px-[6vw] max-md:pb-1 max-md:[scrollbar-width:none] max-md:[&::-webkit-scrollbar]:hidden"
         >
           {children}
         </div>

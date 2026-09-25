@@ -14,19 +14,27 @@ function Surtitre({ children }: { children: React.ReactNode }) {
 }
 
 export function SectionDeuxSoirees() {
+  // Sur téléphone, le titre voyage avec la table épinglée (DeuxSoirees).
   return (
-    <section aria-labelledby="titre-soirees" className="px-5 pb-8 pt-24 sm:px-8 sm:pt-36">
+    <section
+      id="deux-soirees"
+      aria-labelledby="titre-soirees"
+      className="scroll-mt-16 px-5 pb-8 pt-24 max-md:px-0 max-md:pb-0 max-md:pt-6 sm:px-8 sm:pt-36"
+    >
       <div className="mx-auto max-w-7xl">
-        <Surtitre>Le soir</Surtitre>
-        <h2
-          id="titre-soirees"
-          className="mt-6 max-w-4xl text-balance font-display text-[2.6rem] font-semibold leading-[1] tracking-[-0.035em] text-ink sm:text-7xl"
-        >
-          Même journée. Deux soirées.
-        </h2>
-        <div className="mt-12 sm:mt-16">
-          <DeuxSoirees />
-        </div>
+        <DeuxSoirees
+          entete={
+            <>
+              <Surtitre>Le soir</Surtitre>
+              <h2
+                id="titre-soirees"
+                className="mt-6 max-w-4xl text-balance font-display text-[2.6rem] font-semibold leading-[1] tracking-[-0.035em] text-ink max-md:mt-3 max-md:text-[2.3rem] sm:text-7xl"
+              >
+                Même journée. Deux soirées.
+              </h2>
+            </>
+          }
+        />
       </div>
     </section>
   );
@@ -37,10 +45,10 @@ const DESCRIPTION_DEMO =
 
 export function SectionEnVrai() {
   return (
-    <section aria-labelledby="titre-en-vrai" className="px-5 py-24 sm:px-8 sm:py-36">
+    <section aria-labelledby="titre-en-vrai" className="px-5 py-24 max-md:pb-12 max-md:pt-16 sm:px-8 sm:py-36">
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
-          <div>
+          <div data-revele>
             <Surtitre>En vrai</Surtitre>
             <h2
               id="titre-en-vrai"
@@ -49,7 +57,7 @@ export function SectionEnVrai() {
               Une minute. Sans coupe.
             </h2>
           </div>
-          <p className="max-w-xs text-[16px] leading-relaxed text-ink/60">
+          <p className="max-w-xs text-[16px] leading-relaxed text-ink/60 max-md:hidden">
             Le même parcours, filmé dans l&apos;application.
           </p>
         </div>
@@ -62,8 +70,10 @@ export function SectionEnVrai() {
             <VideoDemo src="/compyo-demo.mp4" affiche="/compyo-demo-affiche.jpg" description={DESCRIPTION_DEMO} />
           </div>
         </div>
-        <div className="mx-auto mt-10 max-w-[330px] sm:hidden">
-          <div className="aspect-[9/16] overflow-hidden rounded-[1.8rem] bg-paper-warm shadow-[var(--v-ombre)] ring-1 ring-ink/10">
+        {/* Téléphone : la vidéo verticale en pleine largeur, comme un
+            réel — la plus grande image de la page. */}
+        <div data-sans-barre data-revele className="mx-auto mt-8 max-w-[26rem] sm:hidden">
+          <div className="aspect-[9/16] max-h-[calc(100svh-6rem)] overflow-hidden rounded-[1.8rem] bg-paper-warm shadow-[var(--v-ombre)] ring-1 ring-ink/10 max-md:mx-auto">
             <VideoDemo
               src="/compyo-demo-vertical.mp4"
               affiche="/compyo-demo-vertical-affiche.jpg"
@@ -71,7 +81,7 @@ export function SectionEnVrai() {
             />
           </div>
         </div>
-        <p className="mt-5 text-center text-[13px] text-steel">
+        <p className="mt-5 text-center text-[13px] text-steel max-md:mt-4 max-md:text-[12.5px]">
           Reconstitution d&apos;un parcours réel dans l&apos;application, sans étape coupée.
         </p>
       </div>
@@ -91,7 +101,7 @@ export function SectionSoiree() {
         </div>
       )}
 
-      <div className="mx-auto max-w-4xl px-5 pb-40 pt-32 text-center sm:px-8 sm:pb-56 sm:pt-44">
+      <div className="mx-auto max-w-4xl px-5 pb-40 pt-32 text-center max-md:flex max-md:min-h-[100svh] max-md:flex-col max-md:justify-center max-md:pb-24 max-md:pt-20 sm:px-8 sm:pb-56 sm:pt-44">
         <p className="font-mono text-[13px] tracking-[0.2em] text-white/60">19:04</p>
         <h2
           id="titre-soiree"
@@ -105,6 +115,7 @@ export function SectionSoiree() {
         <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-5">
           <Link
             href="/demander-acces"
+            data-cache-barre
             className="rounded-full bg-signal px-9 py-4 text-[15px] font-medium text-white shadow-[0_14px_40px_-12px_rgb(201_107_74/0.95)] transition-transform duration-300 hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#17120f]"
           >
             Rejoindre la bêta

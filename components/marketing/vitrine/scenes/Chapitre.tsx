@@ -52,7 +52,7 @@ export function Chapitre({
 
       <div
         data-scene
-        className="v-toile relative mt-9 rounded-[1.6rem] max-md:mt-4 max-md:flex max-md:flex-1 max-md:flex-col max-md:justify-center sm:mt-12 sm:rounded-[2.2rem]"
+        className="v-toile relative mt-9 rounded-[1.6rem] max-md:mt-4 max-md:flex max-md:min-h-0 max-md:flex-1 max-md:flex-col max-md:[justify-content:safe_center] sm:mt-12 sm:rounded-[2.2rem]"
         style={
           {
             "--soleil-x": soleil[0],

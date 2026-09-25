@@ -600,3 +600,180 @@
     transform: translate(-50%, -30%);
   }
 }
+
+/* ============================================================
+   Téléphone (25/09) — l'accueil conçu pour le pouce.
+
+   Tout ce qui suit ne vit que sous 768 px : l'ordinateur ne change pas.
+   Mêmes règles qu'ailleurs (transform et opacity seulement, un état final
+   visible sans JavaScript ni animation).
+   ============================================================ */
+
+@media (max-width: 767px) {
+  /* Le hero n'est plus un mur éclairé : c'est le ciel du soir, dans les
+     deux thèmes (comme la dernière section — la page s'ouvre et se
+     referme sur la même soirée). */
+  .v-mur {
+    background: #17110e;
+  }
+}
+.v-ciel-hero {
+  background:
+    radial-gradient(130% 60% at 50% 112%, rgb(238 160 122 / 0.85) 0%, rgb(201 107 74 / 0.6) 28%, rgb(110 58 40 / 0.35) 52%, transparent 74%),
+    linear-gradient(180deg, #110c0a 0%, #1b1310 50%, #2e1b14 100%);
+}
+.v-soleil-hero {
+  transform: translate(-50%, -42%);
+  background: radial-gradient(closest-side, rgb(255 205 160 / 0.5), rgb(232 140 100 / 0.18) 55%, rgb(232 140 100 / 0) 100%);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .v-soleil-hero {
+    animation: v-respire 10s var(--v-ease-doux) infinite alternate;
+  }
+  .v-rebond {
+    animation: v-rebond 2.6s var(--v-ease-doux) infinite;
+  }
+  @media (max-width: 767px) {
+    /* L'arrivée : la promesse monte, ligne après ligne. Le titre ne part
+       pas de l'invisible (c'est lui que le navigateur mesure comme
+       « premier contenu ») : il glisse seulement. */
+    .v-hero-texte > * {
+      animation: v-leve 1.1s var(--v-ease) both;
+    }
+    .v-hero-texte > h1 {
+      animation-name: v-glisse;
+      animation-delay: 0.05s;
+    }
+    .v-hero-texte > :nth-child(3) {
+      animation-delay: 0.25s;
+    }
+    .v-hero-texte > :nth-child(4) {
+      animation-delay: 0.35s;
+    }
+  }
+}
+@keyframes v-respire {
+  to {
+    transform: translate(-50%, -46%) scale(1.07);
+    opacity: 0.8;
+  }
+}
+@keyframes v-rebond {
+  0%,
+  60%,
+  100% {
+    transform: none;
+  }
+  30% {
+    transform: translate3d(0, 3px, 0);
+  }
+}
+@keyframes v-leve {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 22px, 0);
+  }
+}
+@keyframes v-glisse {
+  from {
+    transform: translate3d(0, 26px, 0);
+  }
+}
+
+/* Ce qui apparaît en arrivant à l'écran : [data-revele] monte et se
+   révèle ; Rythme.tsx pose [data-vu] quand l'élément arrive. Le masque ne
+   s'applique qu'une fois la page prête ([data-anime] sur .vitrine) : sans
+   JavaScript, tout est visible. */
+@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+  .vitrine[data-anime] [data-revele] {
+    transition:
+      opacity 0.9s var(--v-ease) var(--d, 0s),
+      transform 1.1s var(--v-ease) var(--d, 0s);
+  }
+  .vitrine[data-anime] [data-revele]:not([data-vu]) {
+    opacity: 0;
+    transform: translate3d(0, 32px, 0);
+  }
+}
+
+/* La barre d'action flottante : elle monte du bas quand le bouton du hero
+   a quitté l'écran, et s'efface là où elle gênerait. */
+.v-barre {
+  transform: translate3d(0, calc(100% + 2rem), 0);
+  transition: transform 0.55s var(--v-ease);
+}
+.v-barre[data-visible] {
+  transform: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-barre {
+    transition: none;
+  }
+}
+
+/* La story de la journée (Journee.tsx) : le segment en cours se remplit
+   pendant la durée de la scène. */
+.v-segment {
+  animation: v-segment var(--duree, 7s) linear both;
+}
+@keyframes v-segment {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Téléphone : la feuille d'un métier monte du bas pendant que la carte
+   grandit jusqu'à son visuel (metiers/Metiers.tsx), et redescend à la
+   fermeture. */
+::view-transition-new(metier-feuille) {
+  animation: v-feuille-monte 0.6s var(--v-ease, cubic-bezier(0.22, 1, 0.36, 1)) both;
+}
+::view-transition-old(metier-feuille) {
+  animation: v-feuille-descend 0.4s cubic-bezier(0.4, 0, 1, 1) both;
+}
+@keyframes v-feuille-monte {
+  from {
+    transform: translate3d(0, 60%, 0);
+    opacity: 0;
+  }
+}
+@keyframes v-feuille-descend {
+  to {
+    transform: translate3d(0, 70%, 0);
+    opacity: 0;
+  }
+}
+
+/* La story doit tenir dans l'écran réel, barre d'adresse du navigateur
+   comprise : 660 à 750 px utiles sur la plupart des téléphones, pas
+   844. Les scènes sont dessinées pour environ 600 px de haut ; en
+   dessous, elles se réduisent d'un bloc (zoom agit sur la mise en page,
+   pas seulement sur l'image) plutôt que de déborder de leur toile. */
+@media (max-width: 767px) and (max-height: 760px) {
+  [data-chapitre] .v-toile > div:not([aria-hidden]) {
+    zoom: 0.86;
+  }
+}
+@media (max-width: 767px) and (max-height: 700px) {
+  [data-chapitre] .v-toile > div:not([aria-hidden]) {
+    zoom: 0.78;
+  }
+}
+@media (max-width: 767px) and (max-height: 630px) {
+  [data-chapitre] .v-toile > div:not([aria-hidden]) {
+    zoom: 0.7;
+  }
+}
+
+/* Le hero sur un écran court (barre d'adresse comprise) : le titre se
+   resserre et tient en trois lignes, pour que le bouton d'inscription
+   reste dans le premier écran. */
+@media (max-width: 767px) and (max-height: 760px) {
+  .v-hero-texte > h1 {
+    font-size: 2.4rem;
+  }
+  .v-hero-texte > p:first-child {
+    display: none;
+  }
+}

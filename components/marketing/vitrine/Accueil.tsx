@@ -4,6 +4,7 @@ import { Hero } from "./Hero";
 import { SectionJournee } from "./SectionJournee";
 import { SectionMetiers } from "./SectionMetiers";
 import { SectionDeuxSoirees, SectionEnVrai, SectionSoiree } from "./Sections";
+import { Rythme } from "./Rythme";
 import "./vitrine.css";
 
 // ============================================================
@@ -28,12 +29,18 @@ import "./vitrine.css";
 //
 // Les emplacements photo sont prêts (photos.ts) : les visuels actuels
 // sont dessinés et tiennent seuls.
+//
+// Téléphone (25/09, 80 % des visiteurs) : pas le même site en plus étroit,
+// mais une suite d'écrans pensés pour le pouce — le hero est l'écran
+// verrouillé de l'artisan, les deux soirées basculent au défilement, la
+// journée se regarde comme une story, chaque métier s'ouvre dans une
+// feuille, et l'inscription reste sous le pouce (Rythme.tsx).
 // ============================================================
 
 export function Accueil({ avis }: { avis?: ReactNode } = {}) {
   return (
     <div className="vitrine bg-paper text-ink">
-      <Header />
+      <Header ctaTelephone={false} />
       <main>
         <Hero />
         <SectionDeuxSoirees />
@@ -45,7 +52,10 @@ export function Accueil({ avis }: { avis?: ReactNode } = {}) {
         {avis}
         <SectionSoiree />
       </main>
-      <Footer />
+      <div data-sans-barre>
+        <Footer />
+      </div>
+      <Rythme />
     </div>
   );
 }

@@ -19,7 +19,7 @@ import { CompyoMark } from "@/components/marketing/CompyoMark";
 // mouvement : les quatre notifications sont là d'emblée, immobiles.
 // ============================================================
 
-const NOTIFICATIONS = [
+export const NOTIFICATIONS = [
   { titre: "Nouveau projet", texte: "Mme Garnier · fuite sous l'évier. Créé depuis son message.", heure: "18:41" },
   { titre: "Relance prête", texte: "Facture F-031, échue depuis 3 jours. À relire avant envoi.", heure: "18:52" },
   { titre: "Devis signé", texte: "M. Lefèvre · salle de bains · 8 460,00 € TTC", heure: "19:03" },
@@ -30,13 +30,12 @@ const PREMIERE = 900;
 const INTERVALLE = 1800;
 const PAUSE = 7000;
 
-export function TelephoneSoir() {
+/** Combien de notifications sont arrivées : elles arrivent une à une, en
+ *  boucle lente, seulement quand `cadre` est à l'écran et l'onglet
+ *  visible. Partagé par le téléphone dessiné (ordinateur) et l'écran
+ *  verrouillé plein écran du téléphone (EcranSoir.tsx). */
+export function useNotificationsSoir(cadre: React.RefObject<HTMLElement>, boucle = true) {
   const [visibles, setVisibles] = useState(0);
-  const cadre = useRef<HTMLDivElement>(null);
-  const ecran = useRef<HTMLDivElement>(null);
-
-  // Les notifications, en boucle lente, seulement quand le téléphone est
-  // à l'écran et l'onglet visible.
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setVisibles(NOTIFICATIONS.length);
@@ -51,8 +50,10 @@ export function TelephoneSoir() {
       if (n < NOTIFICATIONS.length) {
         n += 1;
         setVisibles(n);
+        if (n === NOTIFICATIONS.length && !boucle) return;
         minuteur = window.setTimeout(suivante, n === NOTIFICATIONS.length ? PAUSE : INTERVALLE);
       } else {
+        if (!boucle) return;
         // Tout repart de zéro, doucement.
         n = 0;
         setVisibles(0);
@@ -76,6 +77,13 @@ export function TelephoneSoir() {
       window.clearTimeout(minuteur);
     };
   }, []);
+  return visibles;
+}
+
+export function TelephoneSoir() {
+  const cadre = useRef<HTMLDivElement>(null);
+  const ecran = useRef<HTMLDivElement>(null);
+  const visibles = useNotificationsSoir(cadre);
 
   // L'inclinaison qui suit la souris : écrite directement dans le style,
   // sans passer par React (aucun rendu à chaque mouvement).

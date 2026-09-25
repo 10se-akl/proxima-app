@@ -11,6 +11,10 @@ import { CompyoMark } from "@/components/marketing/CompyoMark";
 // lus, le café froid. À droite, 19:04 avec Compyo : le téléphone à jour,
 // les clés, un verre. Le visiteur fait glisser la séparation.
 //
+// Sur téléphone (25/09), pas de poignée : la table reste épinglée à
+// l'écran, et c'est en faisant défiler la page qu'on passe de 21:47 à
+// 19:04.
+//
 // Tout est dessiné en CSS/SVG. Les objets sont posés en pourcentage de la
 // table et dimensionnés en unités de conteneur (cqw) : la scène garde ses
 // proportions à toutes les tailles. Deux compositions, une en largeur
@@ -339,17 +343,38 @@ function Scene({ cote }: { cote: "sans" | "avec" }) {
   );
 }
 
-export function DeuxSoirees() {
+/** De 0 à 1 : la courbe douce d'un geste (lente au départ et à l'arrivée). */
+function adoucir(t: number) {
+  const v = Math.max(0, Math.min(1, t));
+  return v * v * (3 - 2 * v);
+}
+
+const TELEPHONE = "(max-width: 767px)";
+
+export function DeuxSoirees({ entete }: { entete?: ReactNode }) {
   const [x, setX] = useState(50);
+  const [telephone, setTelephone] = useState(false);
   const cadre = useRef<HTMLDivElement>(null);
+  const piste = useRef<HTMLDivElement>(null);
+  const avec = useRef<HTMLDivElement>(null);
+  const avecDedans = useRef<HTMLDivElement>(null);
+  const curseur = useRef<HTMLSpanElement>(null);
   const tire = useRef(false);
   const touche = useRef(false);
 
-  // Une première invitation, une seule fois : la séparation glisse
-  // doucement à gauche puis à droite, pour montrer qu'elle bouge.
+  useEffect(() => {
+    const ecran = window.matchMedia(TELEPHONE);
+    const suivre = () => setTelephone(ecran.matches);
+    suivre();
+    ecran.addEventListener("change", suivre);
+    return () => ecran.removeEventListener("change", suivre);
+  }, []);
+
+  // Ordinateur : une première invitation, une seule fois — la séparation
+  // glisse doucement à gauche puis à droite, pour montrer qu'elle bouge.
   useEffect(() => {
     const el = cadre.current;
-    if (!el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (telephone || !el || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let image = 0;
     const obs = new IntersectionObserver(
       ([e]) => {
@@ -371,7 +396,47 @@ export function DeuxSoirees() {
       obs.disconnect();
       cancelAnimationFrame(image);
     };
-  }, []);
+  }, [telephone]);
+
+  // Téléphone (25/09) : pas de poignée à tirer. La table reste épinglée à
+  // l'écran pendant qu'on descend, et c'est le défilement lui-même qui
+  // fait passer la soirée de 21:47 à 19:04. On ne touche qu'aux
+  // transformations, écrites directement dans le style (aucun rendu React
+  // par image) : la soirée « avec » est une fenêtre qui glisse de droite à
+  // gauche, son contenu glisse d'autant en sens inverse et reste immobile
+  // à l'écran.
+  useEffect(() => {
+    const p = piste.current;
+    const fenetre = avec.current;
+    const dedans = avecDedans.current;
+    if (!telephone || !p || !fenetre || !dedans) return;
+    let image = 0;
+    const placer = () => {
+      image = 0;
+      const r = p.getBoundingClientRect();
+      const course = r.height - (window.innerHeight - 64);
+      const avance = course > 0 ? (64 - r.top) / course : 0;
+      // Un temps d'arrêt au début (on voit 21:47) et à la fin (19:04).
+      const t = adoucir((avance - 0.12) / 0.7);
+      const pourcent = 100 - t * 100;
+      fenetre.style.transform = `translate3d(${pourcent}%,0,0)`;
+      dedans.style.transform = `translate3d(${-pourcent}%,0,0)`;
+      if (curseur.current) curseur.current.style.transform = `scaleX(${t})`;
+    };
+    const demander = () => {
+      if (!image) image = requestAnimationFrame(placer);
+    };
+    placer();
+    window.addEventListener("scroll", demander, { passive: true });
+    window.addEventListener("resize", demander);
+    return () => {
+      cancelAnimationFrame(image);
+      window.removeEventListener("scroll", demander);
+      window.removeEventListener("resize", demander);
+      fenetre.style.transform = "";
+      dedans.style.transform = "";
+    };
+  }, [telephone]);
 
   const placer = (clientX: number) => {
     const r = cadre.current?.getBoundingClientRect();
@@ -380,62 +445,97 @@ export function DeuxSoirees() {
   };
 
   return (
-    <div>
-      <div
-        ref={cadre}
-        className="relative aspect-[4/5] w-full select-none overflow-hidden rounded-[1.8rem] shadow-[var(--v-ombre)] [container-type:inline-size] [touch-action:pan-y] sm:aspect-[16/9] sm:rounded-[2.4rem]"
-        onPointerDown={(e) => {
-          touche.current = true;
-          tire.current = true;
-          (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
-          placer(e.clientX);
-        }}
-        onPointerMove={(e) => tire.current && placer(e.clientX)}
-        onPointerUp={() => (tire.current = false)}
-        onPointerCancel={() => (tire.current = false)}
-      >
-        <Scene cote="sans" />
-        <div className="absolute inset-0" style={{ clipPath: `inset(0 0 0 ${x}%)` }}>
-          <Scene cote="avec" />
+    // La piste : sur téléphone, plus haute que l'écran — c'est la longueur
+    // du défilement pendant lequel la table reste épinglée.
+    // La barre d'inscription s'efface pendant la bascule (data-sans-barre) :
+    // sur un écran court, elle masquait le bas de la table.
+    <div ref={piste} data-sans-barre className="max-md:relative max-md:h-[235svh]">
+      <div className="max-md:sticky max-md:top-16 max-md:flex max-md:h-[calc(100svh-4rem)] max-md:flex-col max-md:justify-center max-md:overflow-hidden">
+        {entete && <div className="max-md:px-5">{entete}</div>}
+        <div className="mt-12 max-md:mt-6 sm:mt-16">
+          <div
+            ref={cadre}
+            className="relative aspect-[4/5] w-full select-none overflow-hidden rounded-[1.8rem] shadow-[var(--v-ombre)] [container-type:inline-size] [touch-action:pan-y] max-md:rounded-none max-md:shadow-none sm:aspect-[16/9] sm:rounded-[2.4rem]"
+            onPointerDown={(e) => {
+              if (telephone) return;
+              touche.current = true;
+              tire.current = true;
+              (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+              placer(e.clientX);
+            }}
+            onPointerMove={(e) => !telephone && tire.current && placer(e.clientX)}
+            onPointerUp={() => (tire.current = false)}
+            onPointerCancel={() => (tire.current = false)}
+          >
+            <p className="sr-only">
+              À gauche, 21 h 47 sans Compyo : le carnet raturé, les post-it, la calculatrice, quatorze messages non
+              lus. À droite, 19 h 04 avec Compyo : le téléphone indique que tout est à jour, les clés sont posées.
+            </p>
+            <Scene cote="sans" />
+            <div
+              ref={avec}
+              className="absolute inset-0 overflow-hidden"
+              style={telephone ? undefined : { clipPath: `inset(0 0 0 ${x}%)` }}
+            >
+              <div ref={avecDedans} className="absolute inset-0">
+                <Scene cote="avec" />
+              </div>
+              {/* Téléphone : la séparation voyage avec la fenêtre. */}
+              <span aria-hidden className="absolute inset-y-0 left-0 w-[2px] bg-white/90 shadow-[0_0_14px_rgb(0_0_0/0.45)] md:hidden" />
+            </div>
+
+            {/* Les deux heures */}
+            <p className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-medium text-white backdrop-blur-md sm:left-6 sm:top-6 sm:px-3.5 sm:py-1.5 sm:text-[13px]">
+              <span className="font-mono tabular-nums">21:47</span> · Sans<span className="hidden sm:inline"> Compyo</span>
+            </p>
+            <p className="pointer-events-none absolute right-3 top-3 rounded-full bg-signal px-2.5 py-1 text-[11.5px] font-medium text-white shadow-[0_8px_20px_-8px_rgb(201_107_74/0.9)] sm:right-6 sm:top-6 sm:px-3.5 sm:py-1.5 sm:text-[13px]">
+              <span className="font-mono tabular-nums">19:04</span> · Avec<span className="hidden sm:inline"> Compyo</span>
+            </p>
+
+            {/* Ordinateur : la séparation et sa poignée */}
+            <div
+              className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 bg-white/90 shadow-[0_0_12px_rgb(0_0_0/0.4)] max-md:hidden"
+              style={{ left: `${x}%` }}
+            />
+            <button
+              type="button"
+              role="slider"
+              aria-label="Comparer les deux soirées"
+              aria-valuemin={0}
+              aria-valuemax={100}
+              aria-valuenow={Math.round(x)}
+              aria-valuetext={x < 50 ? "Surtout la soirée avec Compyo" : x > 50 ? "Surtout la soirée sans Compyo" : "Moitié-moitié"}
+              onKeyDown={(e) => {
+                const pas = e.shiftKey ? 20 : 5;
+                if (e.key === "ArrowLeft") setX((v) => Math.max(0, v - pas));
+                else if (e.key === "ArrowRight") setX((v) => Math.min(100, v + pas));
+                else if (e.key === "Home") setX(0);
+                else if (e.key === "End") setX(100);
+                else return;
+                touche.current = true;
+                e.preventDefault();
+              }}
+              className="absolute top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize place-items-center rounded-full bg-white text-[#1F2937] shadow-[0_10px_30px_-8px_rgb(0_0_0/0.6)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal/60 max-md:hidden"
+              style={{ left: `${x}%` }}
+            >
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
+                <path d="M9 6l-5 6 5 6M15 6l5 6-5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </button>
+          </div>
+          <p className="mt-5 text-center text-[13.5px] text-steel max-md:hidden">Glissez la poignée pour comparer.</p>
+
+          {/* Téléphone : où en est la soirée. Le trait se remplit en
+              descendant ; pas de mode d'emploi à lire. */}
+          <div aria-hidden className="mx-5 mt-5 flex items-center gap-3 font-mono text-[11px] tabular-nums md:hidden">
+            <span className="text-ink/50">21:47</span>
+            <span className="relative h-[3px] flex-1 overflow-hidden rounded-full bg-ink/10">
+              <span ref={curseur} className="absolute inset-0 origin-left scale-x-0 rounded-full bg-signal" />
+            </span>
+            <span className="text-signal">19:04</span>
+          </div>
         </div>
-
-        {/* Les deux heures */}
-        <p className="pointer-events-none absolute left-3 top-3 rounded-full bg-black/55 px-2.5 py-1 text-[11.5px] font-medium text-white backdrop-blur-md sm:left-6 sm:top-6 sm:px-3.5 sm:py-1.5 sm:text-[13px]">
-          <span className="font-mono tabular-nums">21:47</span> · Sans<span className="hidden sm:inline"> Compyo</span>
-        </p>
-        <p className="pointer-events-none absolute right-3 top-3 rounded-full bg-signal px-2.5 py-1 text-[11.5px] font-medium text-white shadow-[0_8px_20px_-8px_rgb(201_107_74/0.9)] sm:right-6 sm:top-6 sm:px-3.5 sm:py-1.5 sm:text-[13px]">
-          <span className="font-mono tabular-nums">19:04</span> · Avec<span className="hidden sm:inline"> Compyo</span>
-        </p>
-
-        {/* La séparation et sa poignée */}
-        <div className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 bg-white/90 shadow-[0_0_12px_rgb(0_0_0/0.4)]" style={{ left: `${x}%` }} />
-        <button
-          type="button"
-          role="slider"
-          aria-label="Comparer les deux soirées"
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-valuenow={Math.round(x)}
-          aria-valuetext={x < 50 ? "Surtout la soirée avec Compyo" : x > 50 ? "Surtout la soirée sans Compyo" : "Moitié-moitié"}
-          onKeyDown={(e) => {
-            const pas = e.shiftKey ? 20 : 5;
-            if (e.key === "ArrowLeft") setX((v) => Math.max(0, v - pas));
-            else if (e.key === "ArrowRight") setX((v) => Math.min(100, v + pas));
-            else if (e.key === "Home") setX(0);
-            else if (e.key === "End") setX(100);
-            else return;
-            touche.current = true;
-            e.preventDefault();
-          }}
-          className="absolute top-1/2 grid h-12 w-12 -translate-x-1/2 -translate-y-1/2 cursor-ew-resize place-items-center rounded-full bg-white text-[#1F2937] shadow-[0_10px_30px_-8px_rgb(0_0_0/0.6)] transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal/60"
-          style={{ left: `${x}%` }}
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden>
-            <path d="M9 6l-5 6 5 6M15 6l5 6-5 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </button>
       </div>
-      <p className="mt-5 text-center text-[13.5px] text-steel">Glissez la poignée pour comparer.</p>
     </div>
   );
 }

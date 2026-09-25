@@ -736,3 +736,21 @@
     transform: translateY(28px);
   }
 }
+
+/* Le menu du site sur téléphone (components/marketing/Cadre.tsx, 25/09) :
+   le panneau apparaît, puis ses liens montent l'un après l'autre. */
+@media (prefers-reduced-motion: no-preference) {
+  .menu-mobile {
+    animation: feuille-fondu 0.25s ease-out;
+  }
+  .menu-mobile-lien {
+    animation: menu-lien 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--i, 0) * 35ms + 40ms);
+  }
+}
+@keyframes menu-lien {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+}

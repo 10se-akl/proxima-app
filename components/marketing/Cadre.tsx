@@ -119,7 +119,12 @@ const LIENS_NAV = [
 
 export function Header({
   masquerToggleTheme = false,
+  ctaTelephone = true,
 }: {
+  // 25/09 : l'accueil a sa propre barre d'inscription en bas de l'écran
+  // sur téléphone, sous le pouce (vitrine/Rythme.tsx) — le bouton du haut
+  // y ferait doublon.
+  ctaTelephone?: boolean;
   // Audit sécurité/bugs (05/09) — 🟠 : LandingImmersive.tsx force son
   // propre thème sombre en permanence (voir .theme-sombre-fixe dans
   // globals.css), indépendamment du réglage clair/sombre global du
@@ -137,6 +142,22 @@ export function Header({
   // qu'on ne sait pas encore, pour éviter un flash incorrect au premier
   // rendu (voir plus bas, connecte === null n'affiche ni l'un ni l'autre).
   const [connecte, setConnecte] = useState<boolean | null>(null);
+
+  // Menu ouvert (téléphone et tablette) : la page derrière ne défile plus,
+  // Échap le ferme.
+  useEffect(() => {
+    if (!menuOuvert) return;
+    const ancien = document.documentElement.style.overflow;
+    document.documentElement.style.overflow = "hidden";
+    const surTouche = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOuvert(false);
+    };
+    document.addEventListener("keydown", surTouche);
+    return () => {
+      document.documentElement.style.overflow = ancien;
+      document.removeEventListener("keydown", surTouche);
+    };
+  }, [menuOuvert]);
 
   useEffect(() => {
     // 24/09 — Supabase n'est chargé que si un cookie de session existe.
@@ -214,7 +235,9 @@ export function Header({
               </Link>
               <Link
                 href="/demander-acces"
-                className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
+                className={`inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap ${
+                  ctaTelephone ? "" : "max-md:hidden"
+                }`}
               >
                 Rejoindre<span className="hidden sm:inline"> la bêta</span>
               </Link>
@@ -243,21 +266,39 @@ export function Header({
       </div>
 
       {/* Panneau mobile : rendu conditionnellement (pas juste caché en
-          opacity) pour ne jamais intercepter de clics quand il est fermé. */}
+          opacity) pour ne jamais intercepter de clics quand il est fermé.
+          25/09 — plein écran sous l'en-tête, comme le menu d'une
+          application : de grands liens, faciles à toucher, qui arrivent
+          l'un après l'autre ; la page derrière ne défile plus, Échap
+          ferme. Il occupe tout l'écran restant (100dvh) et défile seul si
+          l'écran est court. */}
       {menuOuvert && (
-        <div className="lg:hidden border-t border-ink/10 bg-paper">
-          <nav className="max-w-6xl mx-auto px-5 sm:px-8 py-4 flex flex-col gap-1">
-            {LIENS_NAV.map((lien) => (
-              <Link
-                key={lien.href}
-                href={lien.href}
-                onClick={() => setMenuOuvert(false)}
-                className="py-2.5 text-sm font-medium text-ink/80 hover:text-ink transition-colors"
-              >
-                {lien.label}
-              </Link>
-            ))}
-            <div className="mt-2 pt-3 border-t border-ink/10 flex flex-col gap-3">
+        <div className="menu-mobile lg:hidden absolute inset-x-0 top-full h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-ink/10 bg-paper">
+          <nav aria-label="Menu" className="max-w-6xl mx-auto min-h-full px-5 sm:px-8 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col">
+            <ul>
+              {LIENS_NAV.map((lien, i) => (
+                <li
+                  key={lien.href}
+                  className="menu-mobile-lien border-b border-ink/[0.07]"
+                  style={{ "--i": i } as React.CSSProperties}
+                >
+                  <Link
+                    href={lien.href}
+                    onClick={() => setMenuOuvert(false)}
+                    className="flex items-center justify-between gap-4 py-3 font-display text-[1.35rem] font-semibold tracking-[-0.02em] text-ink transition-colors active:text-signal"
+                  >
+                    {lien.label}
+                    <span aria-hidden className="text-base font-normal text-ink/25">
+                      →
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+            <div
+              className="menu-mobile-lien mt-auto pt-6 flex flex-col gap-2.5"
+              style={{ "--i": LIENS_NAV.length } as React.CSSProperties}
+            >
               {/* Repéré (10/09) : le bouton mode sombre/clair de la barre
                   (juste au-dessus) est en "hidden sm:inline-block" — invisible
                   sur un téléphone en portrait — et n'avait jamais été repris
@@ -266,7 +307,7 @@ export function Header({
                   seul moyen de le voir était un écran large. */}
               {!masquerToggleTheme && (
                 <div className="flex items-center justify-between py-1">
-                  <span className="text-sm font-medium text-ink/80">Thème</span>
+                  <span className="text-sm font-medium text-ink/70">Thème</span>
                   <ThemeToggle className="text-lg leading-none text-ink/70 hover:text-ink transition-colors" />
                 </div>
               )}
@@ -274,25 +315,25 @@ export function Header({
                 <Link
                   href="/dashboard"
                   onClick={() => setMenuOuvert(false)}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-signal transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-[15px] font-semibold px-4 py-4 hover:bg-signal transition-colors"
                 >
                   Dashboard
                 </Link>
               ) : (
                 <>
                   <Link
-                    href="/login"
-                    onClick={() => setMenuOuvert(false)}
-                    className="py-1 text-sm text-ink/70 hover:text-ink"
-                  >
-                    Connexion
-                  </Link>
-                  <Link
                     href="/demander-acces"
                     onClick={() => setMenuOuvert(false)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-sm font-medium px-4 py-2.5 hover:bg-signal transition-colors"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-signal text-white text-[15px] font-semibold px-4 py-4 shadow-[0_12px_30px_-12px_rgb(201_107_74/0.9)] transition-transform active:scale-[0.98]"
                   >
                     Rejoindre la bêta privée
+                  </Link>
+                  <Link
+                    href="/login"
+                    onClick={() => setMenuOuvert(false)}
+                    className="py-2 text-center text-[15px] font-medium text-ink/70 hover:text-ink"
+                  >
+                    Connexion
                   </Link>
                 </>
               )}

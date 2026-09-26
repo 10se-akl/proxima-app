@@ -31,6 +31,25 @@ function Titre({ children, compte, action }: { children: ReactNode; compte?: num
 
 // ------------------------------------------------------------ Maintenant
 
+// Ce que fait l'IA, en une ligne, sous le bouton principal quand c'est
+// elle qui travaille : on sait avant d'appuyer, et on sait qu'on relira.
+const CE_QUE_FAIT_L_IA: Partial<Record<IdAction, string>> = {
+  generer_devis: "L'IA chiffre avec vos notes, vos photos et vos tarifs. Vous relisez tout avant l'envoi.",
+  mettre_a_jour_devis: "L'IA reprend le devis avec les nouvelles notes. Vous relisez avant l'envoi.",
+  relancer: "L'IA rédige la relance. Vous la relisez avant de l'envoyer.",
+  analyser: "L'IA résume vos notes et liste ce qu'il manque pour chiffrer.",
+};
+
+/** Le libellé d'une action, avec l'étincelle quand c'est l'IA. */
+function LibelleAction({ libelle, ia }: { libelle: string; ia?: boolean }) {
+  return (
+    <span className="inline-flex items-center gap-2">
+      {ia && <IconeEtincelle className="h-4 w-4 shrink-0" />}
+      {libelle}
+    </span>
+  );
+}
+
 const TONS: Record<ProchaineAction["ton"], string> = {
   neutre: "before:bg-ink/60",
   attente: "before:bg-steel",
@@ -71,20 +90,39 @@ export function Maintenant({
         </ul>
       )}
 
+      {/* Sur téléphone : le bouton principal sur toute la largeur, sous le
+          pouce ; les autres en dessous, plus discrets. */}
       {(point.principale || point.secondaires.length > 0) && (
-        <div className="mt-4 flex flex-wrap gap-2.5">
+        <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
           {point.principale && (
-            <Button onClick={() => surAction(point.principale!.id)} loading={chargement[point.principale.id]}>
-              {point.principale.libelle}
+            <Button
+              onClick={() => surAction(point.principale!.id)}
+              loading={chargement[point.principale.id]}
+              className="min-h-12 w-full justify-center sm:w-auto"
+            >
+              <LibelleAction libelle={point.principale.libelle} ia={point.principale.ia} />
             </Button>
           )}
+          {/* Ce que va faire l'IA, juste sous le bouton qui la lance. */}
+          {point.principale?.ia && CE_QUE_FAIT_L_IA[point.principale.id] && (
+            <p className="-mt-1 text-[13.5px] leading-snug text-ink/65 sm:order-last sm:mt-0 sm:w-full">
+              {CE_QUE_FAIT_L_IA[point.principale.id]}
+            </p>
+          )}
           {point.secondaires.map((a) => (
-            <Button key={a.id} variant="ghost" onClick={() => surAction(a.id)} loading={chargement[a.id]}>
-              {a.libelle}
+            <Button
+              key={a.id}
+              variant="ghost"
+              onClick={() => surAction(a.id)}
+              loading={chargement[a.id]}
+              className="min-h-12 w-full justify-center sm:w-auto"
+            >
+              <LibelleAction libelle={a.libelle} ia={a.ia} />
             </Button>
           ))}
         </div>
       )}
+
 
       {point.alerte && (
         <div className="mt-4 flex flex-col items-start gap-1 rounded-xl bg-alerte-orange/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
@@ -94,7 +132,7 @@ export function Maintenant({
             onClick={() => surAction(point.alerte!.action.id)}
             className="-my-1 min-h-0 py-1 text-left text-[14px] font-medium text-ink underline decoration-ink/30 underline-offset-2 hover:decoration-ink"
           >
-            {point.alerte.action.libelle}
+            <LibelleAction libelle={point.alerte.action.libelle} ia={point.alerte.action.ia} />
           </button>
         </div>
       )}
@@ -192,7 +230,12 @@ export function AFaire({
   const nbConseils = avantDeChiffrer ? avantDeChiffrer.infos.length + avantDeChiffrer.questions.length + avantDeChiffrer.checklist.length : 0;
 
   return (
-    <section aria-label="À faire" className="rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-ink/[0.08] sm:p-6">
+    // 27/09 — Vide, le bloc ne disait que « Rien en attente » : sur
+    // téléphone, il laisse la place au reste (ajouter passe par le « + »).
+    <section
+      aria-label="À faire"
+      className={`rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-ink/[0.08] sm:p-6 ${total === 0 && nbConseils === 0 ? "hidden sm:block" : ""}`}
+    >
       <Titre
         compte={total}
         action={

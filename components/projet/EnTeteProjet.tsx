@@ -198,23 +198,26 @@ export function EnTeteProjet({
         </div>
       </div>
 
+      {/* 27/09 — Sur téléphone, les trois gestes du chantier tiennent sur
+          une ligne, en trois boutons égaux (« Itinéraire » partait seul à
+          la ligne). */}
       {(telephone || adresse || surMessage) && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 grid auto-cols-fr grid-flow-col gap-2 sm:flex sm:flex-wrap">
           {telephone && (
             <a
               href={`tel:${telephone.replace(/\s/g, "")}`}
-              className="inline-flex min-h-12 items-center gap-2 rounded-full border border-ink/10 bg-surface px-4 py-2.5 text-[14px] font-medium text-ink transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+              className="flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-ink/10 bg-surface px-2 py-2 text-[14px] font-medium text-ink sm:inline-flex sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2.5 transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
             >
-              <IconeTelephone className="h-4 w-4 text-signal" /> Appeler
+              <IconeTelephone className="h-5 w-5 text-signal sm:h-4 sm:w-4" /> Appeler
             </a>
           )}
           {surMessage && (
             <button
               type="button"
               onClick={surMessage}
-              className="inline-flex min-h-12 items-center gap-2 rounded-full border border-ink/10 bg-surface px-4 py-2.5 text-[14px] font-medium text-ink transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+              className="flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-ink/10 bg-surface px-2 py-2 text-[14px] font-medium text-ink sm:inline-flex sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2.5 transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
             >
-              <IconeMessage className="h-4 w-4 text-signal" /> Message
+              <IconeMessage className="h-5 w-5 text-signal sm:h-4 sm:w-4" /> Message
             </button>
           )}
           {adresse && (
@@ -222,9 +225,9 @@ export function EnTeteProjet({
               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(adresse)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex min-h-12 max-w-full items-center gap-2 rounded-full border border-ink/10 bg-surface px-4 py-2.5 text-[14px] font-medium text-ink transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+              className="flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-ink/10 bg-surface px-2 py-2 text-[14px] font-medium text-ink sm:inline-flex sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2.5 max-w-full transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
             >
-              <IconeLieu className="h-4 w-4 shrink-0 text-signal" />
+              <IconeLieu className="h-5 w-5 shrink-0 text-signal sm:h-4 sm:w-4" />
               <span className="truncate">Itinéraire</span>
             </a>
           )}

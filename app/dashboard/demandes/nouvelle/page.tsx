@@ -151,6 +151,8 @@ export default function NouveauProjetPage() {
   >([]);
   const [brouillonRestaure, setBrouillonRestaure] = useState(false);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const [dicteePossible, setDicteePossible] = useState(false);
+  useEffect(() => setDicteePossible(obtenirClasseReconnaissance() !== null), []);
 
   const messageErreurPartage = MESSAGES_ERREUR_PARTAGE[searchParams.get("erreur") ?? ""] ?? null;
 
@@ -513,13 +515,17 @@ export default function NouveauProjetPage() {
               <label htmlFor="description-projet" className="text-xs font-medium text-ink/70">
                 Ce que veut le client
               </label>
-              <button
-                type="button"
-                onClick={dicter}
-                className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-              >
-                <IconeMicro className="h-4 w-4 text-signal" /> Dicter
-              </button>
+              {/* Seulement si le téléphone sait dicter ; sinon, le micro du
+                  clavier fait très bien l'affaire. */}
+              {dicteePossible && (
+                <button
+                  type="button"
+                  onClick={dicter}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+                >
+                  <IconeMicro className="h-4 w-4 text-signal" /> Dicter
+                </button>
+              )}
             </div>
             {brouillonRestaure && (
               <p className="mb-1.5 text-xs text-steel">

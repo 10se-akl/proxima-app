@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   FILTRES,
   cleJour,
   filtrerCarnet,
   grouperParPeriode,
   normaliser,
-  periodesOuvertesParDefaut,
   resumePeriode,
   type EntreeCarnet,
   type FiltreCarnet,
@@ -198,10 +197,16 @@ export function Carnet({
   const periodes = useMemo(() => grouperParPeriode(visibles, maintenant), [visibles, maintenant]);
   const mots = useMemo(() => normaliser(recherche).split(/\s+/).filter(Boolean), [recherche]);
 
-  const [ouvertes, setOuvertes] = useState<Set<string>>(() => periodesOuvertesParDefaut(grouperParPeriode(entrees, maintenant)));
-  // Un nouveau contenu (note dictée, photos) doit se voir tout de suite :
-  // la période la plus récente est toujours ouverte.
+  // 27/09 — Demande d'Axel : tout replié à l'ouverture, pour que la fiche
+  // reste propre ; chaque période s'ouvre d'un appui et montre son
+  // résumé (« 3 notes vocales · 12 photos ») en attendant. Seule
+  // exception : ce qu'on vient d'ajouter (note dictée, photos) s'ouvre,
+  // pour qu'on le voie arriver.
+  const [ouvertes, setOuvertes] = useState<Set<string>>(() => new Set());
+  const nbAuDepart = useRef(entrees.length);
   useEffect(() => {
+    if (entrees.length <= nbAuDepart.current) return;
+    nbAuDepart.current = entrees.length;
     const premiere = grouperParPeriode(entrees, maintenant)[0];
     if (premiere) setOuvertes((o) => (o.has(premiere.cle) ? o : new Set(o).add(premiere.cle)));
   }, [entrees, maintenant]);
@@ -255,7 +260,7 @@ export function Carnet({
                   aria-pressed={actif}
                   onClick={() => setFiltre(f.cle)}
                   disabled={n === 0 && f.cle !== "tout"}
-                  className={`shrink-0 rounded-full px-3 py-1.5 text-[13px] font-medium transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
+                  className={`min-h-11 shrink-0 rounded-full px-3.5 text-[14px] font-medium transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
                     actif ? "bg-ink text-paper" : "text-ink/60 hover:bg-ink/5 hover:text-ink"
                   }`}
                 >
@@ -287,7 +292,7 @@ export function Carnet({
                 onClick={() => basculer(p.cle)}
                 aria-expanded={ouverte}
                 disabled={cherche}
-                className="group flex w-full items-center gap-2 py-3 text-left focus-visible:outline-none"
+                className="group flex min-h-12 w-full items-center gap-2 py-3 text-left focus-visible:outline-none"
               >
                 <IconeChevron className={`h-4 w-4 shrink-0 text-ink/40 transition-transform duration-200 ${ouverte ? "rotate-90" : ""} ${cherche ? "opacity-0" : ""}`} />
                 <span className="font-mono text-[11.5px] uppercase tracking-[0.16em] text-ink/70 group-focus-visible:underline">{p.libelle}</span>

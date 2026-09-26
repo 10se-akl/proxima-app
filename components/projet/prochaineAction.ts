@@ -29,7 +29,10 @@ export type IdAction =
   | "ajouter"
   | "facturation";
 
-export type Action = { id: IdAction; libelle: string };
+// 27/09 — `ia` : l'action appelle l'IA. Retour d'Axel : « l'IA, faut
+// savoir où elle est ». Chaque bouton IA porte le même signal (l'étincelle
+// et « avec l'IA »), et le bouton principal dit ce qu'elle va faire.
+export type Action = { id: IdAction; libelle: string; ia?: boolean };
 
 export type ProchaineAction = {
   ton: "neutre" | "attente" | "succes" | "attention";
@@ -147,7 +150,7 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
   // --- Un devis existe (pas encore signé)
   if (e.devis && !engage) {
     const alerte = devisChange && e.devis.statut !== "brouillon"
-      ? { texte: "Le projet a changé depuis ce devis (note, photo ou note vocale).", action: { id: "mettre_a_jour_devis" as const, libelle: "Mettre à jour le devis" } }
+      ? { texte: "Le projet a changé depuis ce devis (note, photo ou note vocale).", action: { id: "mettre_a_jour_devis" as const, libelle: "Mettre à jour le devis avec l'IA", ia: true } }
       : undefined;
 
     if (e.devis.statut === "refuse") {
@@ -156,7 +159,7 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
         phrase: "Le client a refusé le devis.",
         details,
         principale: { id: "dupliquer_devis", libelle: "Repartir de ce devis" },
-        secondaires: [{ id: "generer_devis", libelle: "Faire un nouveau devis" }],
+        secondaires: [{ id: "generer_devis", libelle: "Nouveau devis avec l'IA", ia: true }],
       };
     }
     if (e.devis.statut === "brouillon") {
@@ -190,15 +193,17 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
             ? `Devis envoyé ${depuis(jours)}, toujours sans réponse.`
             : `Devis envoyé ${depuis(jours)}. En attente de la réponse du client.`,
       details,
-      principale: sansReponse ? { id: "relancer", libelle: "Préparer une relance" } : { id: "ouvrir_devis", libelle: "Voir le devis" },
+      principale: sansReponse ? { id: "relancer", libelle: "Préparer une relance avec l'IA", ia: true } : { id: "ouvrir_devis", libelle: "Voir le devis" },
       secondaires: sansReponse ? [{ id: "ouvrir_devis", libelle: "Voir le devis" }] : [],
       alerte,
     };
   }
 
   // --- Pas encore de devis
-  const secondaires: Action[] = [{ id: "devis_express", libelle: "Devis express" }];
-  if (e.peutAnalyser && !e.analyseAJour) secondaires.push({ id: "analyser", libelle: "Résumer mes notes" });
+  // « Devis express » ne disait pas ce que c'était : un devis vide, qu'on
+  // remplit soi-même, sans l'IA.
+  const secondaires: Action[] = [{ id: "devis_express", libelle: "Faire le devis moi-même" }];
+  if (e.peutAnalyser && !e.analyseAJour) secondaires.push({ id: "analyser", libelle: "Résumer mes notes avec l'IA", ia: true });
   const precisions = [...details];
   if (e.nbInfosManquantes > 0) {
     precisions.push(`${e.nbInfosManquantes} point${e.nbInfosManquantes > 1 ? "s" : ""} à vérifier avant de chiffrer`);
@@ -207,7 +212,7 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
     ton: "neutre",
     phrase: e.prochainRdv ? "Nouvelle demande. Visite prévue avant de chiffrer." : "Nouvelle demande, pas encore chiffrée.",
     details: precisions,
-    principale: { id: "generer_devis", libelle: "Préparer le devis" },
+    principale: { id: "generer_devis", libelle: "Préparer le devis avec l'IA", ia: true },
     secondaires,
   };
 }

@@ -3,7 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { EvenementPlanning, Priorite, TypeChantier } from "@/types";
+import type { Priorite } from "@/types";
+import {
+  changerStatutEvenement,
+  cleDateLocale,
+  estMemeJour,
+  supprimerEvenement,
+  type EvenementAvecProjet,
+} from "./actionsEvenement";
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 
@@ -26,33 +33,6 @@ const COULEUR_PRIORITE: Record<Priorite, string> = {
 };
 
 const COULEUR_TACHE_SANS_PROJET = "bg-ink/40 border-ink/40";
-
-type EvenementAvecProjet = EvenementPlanning & {
-  demandes?: {
-    nom_client?: string;
-    priorite?: Priorite;
-    type_chantier?: TypeChantier;
-    telephone_client?: string | null;
-  } | null;
-};
-
-function estMemeJour(a: Date, b: Date) {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
-
-// Clé locale (pas toISOString, qui bascule en UTC et peut décaler le jour
-// pour un événement en soirée) — doit correspondre au format des dates
-// renvoyées par l'API météo Open-Meteo ("AAAA-MM-JJ").
-function cleDateLocale(date: Date) {
-  const annee = date.getFullYear();
-  const mois = String(date.getMonth() + 1).padStart(2, "0");
-  const jour = String(date.getDate()).padStart(2, "0");
-  return `${annee}-${mois}-${jour}`;
-}
 
 function estPasse(jour: Date) {
   const debutAujourdhui = new Date();
@@ -198,56 +178,25 @@ function BlocEvenement({
   // de trace) ou "Modifier" (confond report et annulation) existaient.
   const annule = evenement.statut === "annule";
 
-  async function basculerTermine() {
+  // 27/09 — les trois actions sont partagées avec l'agenda du téléphone
+  // (voir actionsEvenement.ts).
+  async function agir(action: () => Promise<boolean>) {
     setEnCours(true);
     setErreur(false);
-    const { data, error } = await supabase
-      .from("evenements_planning")
-      .update({ statut: termine ? "a_faire" : "termine" })
-      .eq("id", evenement.id)
-      .select("id");
+    const ok = await action();
     setEnCours(false);
-    if (error || !data || data.length === 0) {
+    if (!ok) {
       setErreur(true);
       return;
     }
     setMenuOuvert(false);
     router.refresh();
   }
-
-  async function annuler() {
-    setEnCours(true);
-    setErreur(false);
-    const { data, error } = await supabase
-      .from("evenements_planning")
-      .update({ statut: "annule" })
-      .eq("id", evenement.id)
-      .select("id");
-    setEnCours(false);
-    if (error || !data || data.length === 0) {
-      setErreur(true);
-      return;
-    }
-    setMenuOuvert(false);
-    router.refresh();
-  }
-
-  async function supprimer() {
+  const basculerTermine = () => agir(() => changerStatutEvenement(supabase, evenement.id, termine ? "a_faire" : "termine"));
+  const annuler = () => agir(() => changerStatutEvenement(supabase, evenement.id, "annule"));
+  function supprimer() {
     if (!window.confirm(`Supprimer "${evenement.titre}" ?`)) return;
-    setEnCours(true);
-    setErreur(false);
-    const { data, error } = await supabase
-      .from("evenements_planning")
-      .delete()
-      .eq("id", evenement.id)
-      .select("id");
-    setEnCours(false);
-    if (error || !data || data.length === 0) {
-      setErreur(true);
-      return;
-    }
-    setMenuOuvert(false);
-    router.refresh();
+    agir(() => supprimerEvenement(supabase, evenement.id));
   }
 
   const { colonne, totalColonnes } = placement;

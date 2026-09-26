@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { GrilleAgenda } from "@/components/planning/GrilleAgenda";
+import { AgendaMobile } from "@/components/planning/AgendaMobile";
 import { getOrganisationId } from "@/lib/organisation";
 import { recupererAlertesMeteoSemaine } from "@/lib/meteo";
 
@@ -46,7 +47,7 @@ export default async function PlanningPage({
   const [{ data: evenementsBrut }, { data: parametres }] = await Promise.all([
     supabase
       .from("evenements_planning")
-      .select("*, demandes(nom_client, priorite, type_chantier, telephone_client)")
+      .select("*, demandes(nom_client, priorite, type_chantier, telephone_client, adresse_client)")
       .eq("organisation_id", organisationId)
       .gte("date_heure", lundi.toISOString())
       .lte("date_heure", dimanche.toISOString())
@@ -75,13 +76,31 @@ export default async function PlanningPage({
   })} — ${dimanche.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })}`;
 
   return (
-    <div className="p-8 max-w-5xl">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-5xl">
       {searchParams.rdvCree === "1" && (
-        <div className="mb-4 rounded-xl bg-[#2F8F5B]/10 border border-[#2F8F5B]/30 px-4 py-3 text-sm text-ink/80">
-          ✓ Un rendez-vous a été ajouté automatiquement au planning à partir du message du
-          client.
+        <div className="mb-4 rounded-xl bg-succes/10 border border-succes/30 px-4 py-3 text-sm text-ink/80">
+          ✓ Un rendez-vous a été ajouté au planning à partir du message du client.
         </div>
       )}
+
+      {/* 27/09 — Téléphone : un agenda (les jours en bande, la journée en
+          liste). La grille de la semaine reste pour l'ordinateur. */}
+      <div className="sm:hidden">
+        <div className="flex items-center justify-between gap-3">
+          <h1 className="font-display text-2xl font-semibold text-ink">Planning</h1>
+          <Link
+            href="/dashboard/planning/nouveau"
+            className="inline-flex min-h-12 items-center rounded-full px-4 text-[15px] font-medium text-ink ring-1 ring-ink/15"
+          >
+            + Ajouter
+          </Link>
+        </div>
+        <div className="mt-3">
+          <AgendaMobile key={offset} jours={jours} evenements={evenements} meteoParJour={alertesMeteo} offset={offset} />
+        </div>
+      </div>
+
+      <div className="hidden sm:block">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="font-display text-2xl font-semibold">Planning</h1>
@@ -133,6 +152,7 @@ export default async function PlanningPage({
 
       <div className="mt-4">
         <GrilleAgenda jours={jours} evenements={evenements} meteoParJour={alertesMeteo} />
+      </div>
       </div>
     </div>
   );

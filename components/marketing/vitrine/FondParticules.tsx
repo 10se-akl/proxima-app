@@ -174,8 +174,9 @@ export function FondParticules({ className = "" }: { className?: string }) {
       const nuage = new THREE.Points(geometrie, materiau);
       nuage.frustumCulled = false;
       // Téléphone : en haut, derrière le titre, dans le ciel du soir.
-      // Ordinateur : à droite, autour du téléphone dessiné.
-      nuage.position.set(telephone ? 8 : 62, telephone ? 30 : 0, 0);
+      // Ordinateur : au centre de l'en-tête (27/09, Axel : à droite, le
+      // téléphone dessiné le cachait presque entièrement).
+      nuage.position.set(telephone ? 8 : 0, telephone ? 30 : 0, 0);
       scene.add(nuage);
 
       const dimensionner = () => {

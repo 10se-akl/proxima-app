@@ -4,6 +4,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { BoutonRetour } from "@/components/dashboard/BoutonRetour";
 import { PremierLancement } from "@/components/onboarding/PremierLancement";
 import { PopupRappel } from "@/components/notes/PopupRappel";
+import { getOrganisationId } from "@/lib/organisation";
 
 export default async function DashboardLayout({
   children,
@@ -30,15 +31,26 @@ export default async function DashboardLayout({
     redirect("/candidature-en-cours");
   }
 
-  const { data: profil } = await supabase
-    .from("profils")
-    .select("nom, metier")
-    .eq("id", user.id)
-    .single();
+  const [{ data: profil }, organisationId] = await Promise.all([
+    supabase.from("profils").select("nom, metier").eq("id", user.id).single(),
+    getOrganisationId(supabase, user.id),
+  ]);
+
+  // 26/09 — la pastille de « Aujourd'hui » dans la navigation : seulement
+  // ce qui risque d'être oublié, c'est-à-dire les notes dont le rappel est
+  // passé sans qu'elles soient faites. Un simple comptage, sans les lignes.
+  const { count: nbEnRetard } = organisationId
+    ? await supabase
+        .from("notes")
+        .select("id", { count: "exact", head: true })
+        .eq("organisation_id", organisationId)
+        .eq("statut", "active")
+        .lt("rappel_a", new Date().toISOString())
+    : { count: 0 };
 
   return (
     <div className="flex flex-col sm:flex-row">
-      <Sidebar nomArtisan={profil?.nom ?? user.email ?? ""} />
+      <Sidebar nomArtisan={profil?.nom ?? user.email ?? ""} nbEnRetard={nbEnRetard ?? 0} />
       {/* Fond de l'app (06/09) — retour d'Axel : l'app "ne donne pas envie
           de l'ouvrir" comparée au site vitrine, qui lui a du relief (voir
           LandingImmersive). Un dégradé radial très discret (12% d'opacité,
@@ -46,7 +58,9 @@ export default async function DashboardLayout({
           car "signal" ne s'inverse jamais avec le mode) apporte un peu de
           la même chaleur sans jamais gêner la lisibilité du contenu, qui
           reste posé sur des cartes bg-surface opaques par-dessus. */}
-      <main className="flex-1 min-h-screen bg-[radial-gradient(ellipse_1200px_700px_at_top_left,rgb(var(--c-signal-clair)/0.14),transparent_65%)]">
+      {/* pb : sur téléphone, le contenu ne passe jamais sous la barre du
+          bas (voir Sidebar.tsx), zone de sécurité du téléphone comprise. */}
+      <main className="flex-1 min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0 bg-[radial-gradient(ellipse_1200px_700px_at_top_left,rgb(var(--c-signal-clair)/0.14),transparent_65%)]">
         {children}
       </main>
       <BoutonRetour />

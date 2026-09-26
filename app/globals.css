@@ -755,3 +755,12 @@
     transform: translate3d(0, 14px, 0);
   }
 }
+
+/* La barre de navigation du bas (components/dashboard/Sidebar.tsx, 26/09) :
+   sa hauteur, pour que les éléments fixés en bas de l'écran (carte
+   d'installation) se posent au-dessus d'elle plutôt que dessus. */
+@media (max-width: 639px) {
+  html:has([data-barre-bas]) {
+    --barre-bas: 4.5rem;
+  }
+}

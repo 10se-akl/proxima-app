@@ -207,7 +207,7 @@ export function InstallPWA() {
   const enUnGeste = !echecInstallation && (installationDirecte || (!modeIOS && !moteurRestreint));
 
   return (
-    <div className="pwa-carte-entree fixed inset-x-4 z-50 sm:inset-x-auto sm:right-6 sm:w-96 [bottom:calc(1rem+env(safe-area-inset-bottom))] sm:[bottom:calc(1.5rem+env(safe-area-inset-bottom))]">
+    <div className="pwa-carte-entree fixed inset-x-4 z-50 sm:inset-x-auto sm:right-6 sm:w-96 [bottom:calc(1rem+var(--barre-bas,0px)+env(safe-area-inset-bottom))] sm:[bottom:calc(1.5rem+env(safe-area-inset-bottom))]">
       <div className="rounded-2xl border border-ink/10 bg-surface shadow-lg shadow-ink/10 p-4">
         {installationReussie ? (
           <div className="flex items-center gap-3 py-1">

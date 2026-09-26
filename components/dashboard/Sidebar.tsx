@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -9,18 +9,43 @@ import { CompyoMark } from "@/components/marketing/CompyoMark";
 import { Avatar } from "@/components/ui/Avatar";
 import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
 import { CentreNotifications } from "@/components/notifications/CentreNotifications";
+import { Feuille } from "@/components/projet/Feuille";
+import { IconeChevron, IconePlus, IconePoints } from "@/components/projet/icones";
+import { FeuilleCapture } from "@/components/navigation/FeuilleCapture";
 import {
   IconeAccueil,
   IconeDossier,
   IconeDocument,
   IconeFacture,
   IconeBilan,
-  IconeEquipe,
   IconeCalendrier,
   IconeNote,
   IconeParametres,
-  IconeRetours,
 } from "@/components/ui/Icones";
+
+// ============================================================
+// La navigation de l'application (26/09 — « moins mais mieux », lot A).
+//
+// Avant : sur téléphone, un bouton menu en haut à droite ouvrait dix
+// entrées de même poids. Navigation cachée, trop riche, hors de portée du
+// pouce — le pire cas pour un artisan qui tient son téléphone d'une main,
+// au soleil, avec des gants (recherche-douleurs-artisans.md).
+//
+// Maintenant, sur téléphone, une barre fixe en bas de l'écran :
+//   Aujourd'hui · Projets · [+] · Planning · Plus
+// Le [+] ouvre la capture d'un nouveau projet ; c'est une action, pas une
+// destination. Sur une fiche projet, il ajoute à ce projet (voir
+// VueProjet.tsx, qui intercepte l'évènement « compyo:capture »).
+// « Plus » ouvre une feuille avec le reste : Devis, Factures, Notes,
+// Bilan, Paramètres, puis, à part, les idées et retours.
+//
+// Sur ordinateur, la même structure dans la barre latérale : les
+// destinations en haut, le reste en plus petit sous un séparateur.
+// Équipe vit dans Paramètres (onglet « Mon équipe »), la carte mentale
+// dans « Idées et retours » : ni l'une ni l'autre ne sert au quotidien.
+//
+// Plafond : quatre destinations plus la capture. Pas une de plus.
+// ============================================================
 
 // Audit sécurité (05/09) — le service worker (voir public/sw.js) a mis en
 // cache, jusqu'ici, le HTML rendu de /dashboard/* (Server Components avec
@@ -45,63 +70,38 @@ async function purgerCachePagesHorsLigne() {
   }
 }
 
-// Notes (29/08) — même niveau que Projets/Aujourd'hui/Planning dans la
-// nav, demande explicite du brief ("Ajouter un nouvel onglet 'Notes'.
-// Même niveau que : Projets / Aujourd'hui / Planning").
-const LIENS = [
-  { href: "/dashboard", label: "Accueil", Icone: IconeAccueil },
+const DESTINATIONS = [
+  { href: "/dashboard", label: "Aujourd'hui", Icone: IconeAccueil },
   { href: "/dashboard/demandes", label: "Projets", Icone: IconeDossier },
-  { href: "/dashboard/notes", label: "Notes", Icone: IconeNote },
+  { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
+];
+
+const SECONDAIRES = [
   { href: "/dashboard/devis", label: "Devis", Icone: IconeDocument },
   { href: "/dashboard/factures", label: "Factures", Icone: IconeFacture },
-  { href: "/dashboard/planning", label: "Planning", Icone: IconeCalendrier },
+  { href: "/dashboard/notes", label: "Notes", Icone: IconeNote },
   { href: "/dashboard/bilan", label: "Bilan", Icone: IconeBilan },
-  { href: "/dashboard/equipe", label: "Équipe", Icone: IconeEquipe },
-  { href: "/carte-mentale", label: "Carte mentale", Icone: IconeRetours },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
 ];
 
-// Navigation Module 16 : le site vitrine reste accessible sans jamais se
-// déconnecter (voir app/page.tsx) — ce petit bloc secondaire permet d'y
-// revenir directement depuis l'app.
-const LIENS_SITE = [
-  { href: "/", label: "Site vitrine" },
-  { href: "/contact", label: "Contact" },
-];
+function estActif(pathname: string, href: string) {
+  return href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(`${href}/`);
+}
 
-// Bloc "compte" en bas de la sidebar — un seul composant partagé entre la
-// version mobile (menu déplié) et la version desktop (aside), pour que les
-// deux ne divergent jamais. Refonte (retour d'Axel) : l'ancienne version
-// empilait 4-5 lignes hétérogènes (liens site, nom, thème, déconnexion)
-// sans hiérarchie claire. Nouvelle organisation en trois niveaux, du plus
-// important au moins important : identité (avatar + nom) → actions
-// courantes en une rangée d'icônes compactes → liens secondaires du site
-// vitrine, discrets tout en bas.
-function BlocCompteSidebar({
-  nomArtisan,
-  onNaviguer,
-  onDeconnexion,
-}: {
-  nomArtisan: string;
-  onNaviguer?: () => void;
-  onDeconnexion: () => void;
-}) {
+/** Ouvre la feuille « Faire un retour » (components/dashboard/BoutonRetour.tsx). */
+function ouvrirRetour() {
+  window.dispatchEvent(new CustomEvent("compyo:ouvrir-retour"));
+}
+
+// Bloc "compte" en bas de la barre latérale (ordinateur) : identité,
+// actions courantes en une rangée, liens du site vitrine tout en bas.
+function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; onDeconnexion: () => void }) {
   return (
     <div className="px-4 py-5 border-t border-white/10 flex flex-col gap-3">
       <div className="flex items-center gap-2.5 px-2">
         <Avatar nom={nomArtisan || "?"} taille={30} />
         <p className="text-sm text-white/80 font-medium truncate">{nomArtisan}</p>
       </div>
-
-      {/* Sprint Robustesse (30/08) — zones tactiles agrandies (32px → 44px,
-          recommandation Apple/Google) et espacement doublé (gap-1 → gap-2.5)
-          entre les 4 boutons : un artisan visant le thème pouvait toucher
-          "Se déconnecter" juste à côté par imprécision du doigt. L'icône
-          elle-même (taille={17} sur CentreNotifications, emoji des autres)
-          ne change pas visuellement — seule la zone cliquable grandit via
-          w-11 h-11 (44px) plutôt qu'un padding qui aurait aussi agrandi
-          l'icône. Le bouton "Se déconnecter" garde 44px mais reste
-          visuellement identique. */}
       <div className="flex items-center gap-2.5 px-2">
         <CentreNotifications />
         <ThemeToggle className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors" />
@@ -118,38 +118,51 @@ function BlocCompteSidebar({
           <span aria-hidden="true">⏻</span>
         </button>
       </div>
-
-      <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-white/5">
-        {LIENS_SITE.map((lien, i) => (
-          <span key={lien.href} className="flex items-center gap-2.5">
-            {i > 0 && <span className="text-white/20 text-xs" aria-hidden="true">·</span>}
-            <Link
-              href={lien.href}
-              onClick={onNaviguer}
-              className="text-xs text-white/40 hover:text-white/70 transition-colors"
-            >
-              {lien.label}
-            </Link>
-          </span>
-        ))}
+      <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-white/5 text-xs text-white/40">
+        <Link href="/" className="hover:text-white/70 transition-colors">
+          Site vitrine
+        </Link>
+        <span className="text-white/20" aria-hidden="true">
+          ·
+        </span>
+        <Link href="/contact" className="hover:text-white/70 transition-colors">
+          Contact
+        </Link>
       </div>
     </div>
   );
 }
 
-export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
+export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nbEnRetard?: number }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
-  const [menuOuvert, setMenuOuvert] = useState(false);
+  const [captureOuverte, setCaptureOuverte] = useState(false);
+  const [plusOuvert, setPlusOuvert] = useState(false);
+
+  // Une page peut prendre la capture à son compte (la fiche projet ajoute à
+  // son projet) ; sinon, la feuille « Nouveau projet ». D'autres écrans
+  // (états vides) ouvrent la même feuille par « compyo:ouvrir-capture ».
+  function capturer() {
+    const nonInterceptee = window.dispatchEvent(new CustomEvent("compyo:capture", { cancelable: true }));
+    if (nonInterceptee) setCaptureOuverte(true);
+  }
+  useEffect(() => {
+    const ouvrir = () => setCaptureOuverte(true);
+    window.addEventListener("compyo:ouvrir-capture", ouvrir);
+    return () => window.removeEventListener("compyo:ouvrir-capture", ouvrir);
+  }, []);
+
+  // Changer de page ferme les feuilles.
+  useEffect(() => {
+    setPlusOuvert(false);
+    setCaptureOuverte(false);
+  }, [pathname]);
 
   async function handleLogout() {
-    // Sprint Robustesse (30/08) — confirmation avant déconnexion, cohérent
-    // avec le pattern déjà utilisé pour les actions à conséquence ailleurs
-    // dans l'app (ex: suppression d'un rendez-vous). Utile en particulier
-    // maintenant que ce bouton est juste à côté de "Installer l'app" et
-    // "Thème" : un doigt qui touche la mauvaise icône ne déconnecte plus
-    // l'artisan sans qu'il l'ait vraiment voulu.
+    // Sprint Robustesse (30/08) — confirmation avant déconnexion : un doigt
+    // qui touche la mauvaise icône ne déconnecte pas l'artisan sans qu'il
+    // l'ait voulu.
     if (!window.confirm("Se déconnecter de Compyo ?")) return;
     await supabase.auth.signOut();
     await purgerCachePagesHorsLigne();
@@ -157,102 +170,239 @@ export function Sidebar({ nomArtisan }: { nomArtisan: string }) {
     router.refresh();
   }
 
+  const plusActif = SECONDAIRES.some((l) => estActif(pathname, l.href));
+
   return (
     <>
-      {/* Barre mobile : logo + bouton menu, remplace la sidebar sur petit écran.
-          bg-anthracite (fixe) plutôt que bg-ink : la sidebar/barre de nav est
-          un élément de chrome permanent, comme le pied de page du site
-          vitrine — elle reste sombre dans les deux modes plutôt que de
-          s'inverser en une barre claire en mode sombre. Le texte utilise
-          donc du blanc fixe (text-white/...), pas text-paper qui, lui,
-          deviendrait sombre en mode sombre et disparaîtrait. */}
-      {/* pt-[env(safe-area-inset-top)] : sur un iPhone à encoche/Dynamic
-          Island, l'app installée (mode "standalone") dessine désormais
-          jusque sous cette zone (viewport-fit=cover, voir app/layout.tsx)
-          — sans cette marge, le logo et le bouton menu se retrouveraient
-          partiellement masqués par l'encoche plutôt que dessous. */}
-      <div className="sm:hidden flex items-center justify-between bg-anthracite text-white px-4 min-h-14 [padding-top:calc(env(safe-area-inset-top)+0.5rem)] [padding-bottom:0.5rem]">
+      {/* Téléphone — en haut, le logo et les notifications, rien d'autre.
+          pt safe-area : sous l'encoche en application installée. */}
+      <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between bg-anthracite text-white pl-4 pr-1 min-h-12 [padding-top:env(safe-area-inset-top)]">
         <span className="flex items-center gap-2">
-          <CompyoMark variante="blanc" taille={24} />
-          <p className="font-display font-semibold">Compyo</p>
+          <CompyoMark variante="blanc" taille={22} />
+          <span className="font-display font-semibold">Compyo</span>
         </span>
-        {/* Sprint Robustesse (30/08) — zone tactile ~36×31px avant (p-2),
-            trop petite pour la norme 44×44px. w-11 h-11 (44px) avec un
-            flex centré garde les 3 barres visuellement identiques et à la
-            même place (la marge négative -mr-3 compense l'agrandissement
-            du padding pour que la barre reste alignée au bord droit comme
-            avant). */}
-        <button
-          onClick={() => setMenuOuvert(!menuOuvert)}
-          className="w-11 h-11 -mr-3 flex flex-col items-center justify-center"
-          aria-label="Menu"
-        >
-          <span className="block w-5 h-px bg-white mb-1.5" />
-          <span className="block w-5 h-px bg-white mb-1.5" />
-          <span className="block w-5 h-px bg-white" />
-        </button>
+        <CentreNotifications vers="bas" />
       </div>
 
-      {menuOuvert && (
-        <div className="sm:hidden bg-anthracite text-white px-3 pb-4">
-          <nav className="flex flex-col gap-1">
-            {LIENS.map((lien) => {
-              const actif = pathname === lien.href;
-              return (
-                <Link
-                  key={lien.href}
-                  href={lien.href}
-                  onClick={() => setMenuOuvert(false)}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-xl transition-colors ${
-                    actif
-                      ? "bg-white/10 text-white font-medium"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
-                  }`}
-                >
-                  <lien.Icone taille={17} />
-                  {lien.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <BlocCompteSidebar
-            nomArtisan={nomArtisan}
-            onNaviguer={() => setMenuOuvert(false)}
-            onDeconnexion={handleLogout}
-          />
-        </div>
-      )}
+      {/* Téléphone — la barre du bas, sous le pouce. */}
+      <nav
+        data-barre-bas
+        aria-label="Navigation principale"
+        className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-surface/95 backdrop-blur-md [padding-bottom:env(safe-area-inset-bottom)]"
+      >
+        <ul className="grid grid-cols-5 items-end">
+          {DESTINATIONS.slice(0, 2).map((d) => (
+            <li key={d.href}>
+              <OngletBas
+                href={d.href}
+                label={d.label}
+                actif={estActif(pathname, d.href)}
+                icone={<d.Icone taille={22} />}
+                pastille={d.href === "/dashboard" ? nbEnRetard : 0}
+              />
+            </li>
+          ))}
+          <li className="flex justify-center">
+            <button
+              type="button"
+              onClick={capturer}
+              aria-label="Nouveau projet"
+              className="group flex min-h-[4rem] w-full flex-col items-center justify-end gap-1 pb-1.5 focus-visible:outline-none"
+            >
+              <span className="grid h-14 w-14 -mt-6 place-items-center rounded-full bg-signal text-white shadow-[0_10px_24px_-10px_rgb(var(--c-signal)/0.9)] ring-4 ring-surface transition-transform group-active:scale-95 group-focus-visible:ring-signal/40">
+                <IconePlus className="h-7 w-7" />
+              </span>
+              <span className="text-[11px] font-medium text-ink/70">Nouveau</span>
+            </button>
+          </li>
+          <li>
+            <OngletBas
+              href="/dashboard/planning"
+              label="Planning"
+              actif={estActif(pathname, "/dashboard/planning")}
+              icone={<IconeCalendrier taille={22} />}
+            />
+          </li>
+          <li>
+            <button
+              type="button"
+              onClick={() => setPlusOuvert(true)}
+              aria-haspopup="dialog"
+              className={`relative flex min-h-[4rem] w-full flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
+                plusActif ? "text-ink font-semibold" : "text-ink/55"
+              }`}
+            >
+              {plusActif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
+              <IconePoints className="h-[22px] w-[22px]" />
+              <span className="text-[11px]">Plus</span>
+            </button>
+          </li>
+        </ul>
+      </nav>
 
-      {/* Sidebar classique, visible uniquement à partir de la taille tablette */}
+      <Feuille ouverte={plusOuvert} titre="Plus" surFermer={() => setPlusOuvert(false)}>
+        <ul className="flex flex-col">
+          {SECONDAIRES.map((l) => (
+            <li key={l.href}>
+              <Link
+                href={l.href}
+                onClick={() => setPlusOuvert(false)}
+                aria-current={estActif(pathname, l.href) ? "page" : undefined}
+                className="flex min-h-14 items-center gap-3.5 border-b border-ink/[0.06] text-[16px] text-ink"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/[0.06] text-ink/70">
+                  <l.Icone taille={19} />
+                </span>
+                <span className={`flex-1 ${estActif(pathname, l.href) ? "font-semibold" : ""}`}>{l.label}</span>
+                <IconeChevron className="h-4 w-4 text-ink/30" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+
+        <div className="mt-6">
+          <p className="text-[12px] text-ink/45">Idées et retours</p>
+          <div className="mt-1 flex flex-wrap gap-x-5">
+            <button
+              type="button"
+              onClick={() => {
+                setPlusOuvert(false);
+                ouvrirRetour();
+              }}
+              className="min-h-12 text-[14px] text-ink/70 underline decoration-ink/20 underline-offset-4"
+            >
+              Donner mon avis
+            </button>
+            <Link
+              href="/carte-mentale"
+              onClick={() => setPlusOuvert(false)}
+              className="flex min-h-12 items-center text-[14px] text-ink/70 underline decoration-ink/20 underline-offset-4"
+            >
+              Ce que disent les artisans
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3">
+          <div className="flex items-center gap-1 text-ink/60">
+            <ThemeToggle className="w-12 h-12 grid place-items-center rounded-xl hover:bg-ink/5 transition-colors" />
+            <BoutonInstallerDiscret compact className="w-12 h-12 grid place-items-center rounded-xl hover:bg-ink/5 transition-colors" />
+          </div>
+          <button type="button" onClick={handleLogout} className="min-h-12 px-2 text-[14px] text-ink/55 hover:text-ink">
+            Se déconnecter
+          </button>
+        </div>
+      </Feuille>
+
+      <FeuilleCapture ouverte={captureOuverte} surFermer={() => setCaptureOuverte(false)} />
+
+      {/* Ordinateur et tablette — la même structure, en barre latérale. */}
       <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-anthracite text-white min-h-screen flex-col justify-between">
         <div>
           <div className="px-6 py-6 border-b border-white/10 flex items-center gap-2.5">
             <CompyoMark variante="blanc" taille={26} />
             <p className="font-display font-semibold">Compyo</p>
           </div>
-          <nav className="mt-4 flex flex-col gap-1 px-3">
-            {LIENS.map((lien) => {
-              const actif = pathname === lien.href;
+          <div className="px-3 pt-4">
+            <button
+              type="button"
+              onClick={capturer}
+              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-xl bg-signal text-[15px] font-semibold text-white transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <IconePlus className="h-5 w-5" /> Nouveau projet
+            </button>
+          </div>
+          <nav aria-label="Navigation principale" className="mt-3 flex flex-col gap-1 px-3">
+            {DESTINATIONS.map((lien) => {
+              const actif = estActif(pathname, lien.href);
               return (
                 <Link
                   key={lien.href}
                   href={lien.href}
-                  className={`flex items-center gap-2.5 px-3 py-2.5 text-sm rounded-xl transition-colors ${
-                    actif
-                      ? "bg-white/10 text-white font-medium"
-                      : "text-white/60 hover:text-white hover:bg-white/5"
+                  aria-current={actif ? "page" : undefined}
+                  className={`relative flex items-center gap-2.5 px-3 py-3 text-[15px] rounded-xl transition-colors ${
+                    actif ? "bg-white/10 text-white font-semibold" : "text-white/70 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  <lien.Icone taille={17} />
+                  {actif && <span aria-hidden className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-white" />}
+                  <lien.Icone taille={18} />
+                  <span className="flex-1">{lien.label}</span>
+                  {lien.href === "/dashboard" && nbEnRetard > 0 && (
+                    <span className="rounded-full bg-signal px-1.5 text-[11px] font-semibold text-white" aria-label={`${nbEnRetard} en retard`}>
+                      {nbEnRetard}
+                    </span>
+                  )}
+                </Link>
+              );
+            })}
+          </nav>
+          <nav aria-label="Autres pages" className="mt-4 mx-3 border-t border-white/10 pt-3 flex flex-col">
+            {SECONDAIRES.map((lien) => {
+              const actif = estActif(pathname, lien.href);
+              return (
+                <Link
+                  key={lien.href}
+                  href={lien.href}
+                  aria-current={actif ? "page" : undefined}
+                  className={`flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-lg transition-colors ${
+                    actif ? "bg-white/10 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/5"
+                  }`}
+                >
+                  <lien.Icone taille={15} />
                   {lien.label}
                 </Link>
               );
             })}
+            <Link
+              href="/carte-mentale"
+              className="mt-2 px-3 py-2 text-[12px] text-white/35 hover:text-white/70 transition-colors"
+            >
+              Idées et retours
+            </Link>
           </nav>
         </div>
 
         <BlocCompteSidebar nomArtisan={nomArtisan} onDeconnexion={handleLogout} />
       </aside>
     </>
+  );
+}
+
+function OngletBas({
+  href,
+  label,
+  actif,
+  icone,
+  pastille = 0,
+}: {
+  href: string;
+  label: string;
+  actif: boolean;
+  icone: React.ReactNode;
+  pastille?: number;
+}) {
+  return (
+    <Link
+      href={href}
+      aria-current={actif ? "page" : undefined}
+      className={`relative flex min-h-[4rem] flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
+        actif ? "text-ink font-semibold" : "text-ink/55"
+      }`}
+    >
+      {/* L'onglet actif : un trait en plus de la couleur, jamais la couleur seule. */}
+      {actif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
+      <span className="relative">
+        {icone}
+        {pastille > 0 && (
+          <span
+            className="absolute -right-2.5 -top-1.5 min-w-[1.1rem] rounded-full bg-signal px-1 text-center text-[10.5px] font-semibold leading-[1.1rem] text-white"
+            aria-label={`${pastille} en retard`}
+          >
+            {pastille}
+          </span>
+        )}
+      </span>
+      <span className="text-[11px]">{label}</span>
+    </Link>
   );
 }

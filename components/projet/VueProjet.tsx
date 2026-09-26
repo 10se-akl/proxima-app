@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { statutAffiche } from "@/lib/devis/statut";
@@ -11,7 +11,7 @@ import { Carnet } from "./Carnet";
 import { construireCarnet } from "./entreesCarnet";
 import { EnTeteProjet, type EntreeMenu } from "./EnTeteProjet";
 import { Feuille } from "./Feuille";
-import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto, IconePlus } from "./icones";
+import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto } from "./icones";
 import { prochaineAction, type IdAction } from "./prochaineAction";
 import { Visionneuse } from "./Visionneuse";
 
@@ -29,7 +29,8 @@ import { Visionneuse } from "./Visionneuse";
 // signé — un seul fil, le plus récent d'abord, les mois anciens repliés,
 // avec une recherche.
 //
-// Et un seul geste pour ajouter quoi que ce soit : « + ».
+// Et un seul geste pour ajouter quoi que ce soit : le « + » de la barre
+// de navigation, qui sur cette page ajoute au projet.
 //
 // Ce composant ne parle pas à la base : la page lui donne les données, les
 // actions, et les formulaires existants (dictée, photos, note, factures)
@@ -117,6 +118,18 @@ export function VueProjet({
   const [photosOuvertes, setPhotosOuvertes] = useState(false);
   const [infosOuvertes, setInfosOuvertes] = useState(false);
   const [visionneuse, setVisionneuse] = useState<{ chemins: string[]; index: number } | null>(null);
+
+  // 26/09 — le [+] de la barre de navigation (Sidebar.tsx) ajoute à CE
+  // projet quand on est sur sa fiche : un seul bouton pour ajouter, pas
+  // deux « + » à l'écran.
+  useEffect(() => {
+    const surCapture = (e: Event) => {
+      e.preventDefault();
+      setAjout("choix");
+    };
+    window.addEventListener("compyo:capture", surCapture);
+    return () => window.removeEventListener("compyo:capture", surCapture);
+  }, []);
 
   const photos = projet.photos ?? [];
   const taches = useMemo(
@@ -310,15 +323,6 @@ export function VueProjet({
         </div>
       </div>
 
-      {/* Téléphone : un seul bouton pour tout ajouter, sous le pouce. */}
-      <button
-        type="button"
-        onClick={() => setAjout("choix")}
-        aria-label="Ajouter au projet"
-        className="fixed bottom-5 right-5 z-30 grid h-14 w-14 place-items-center rounded-full bg-signal text-white shadow-[0_12px_30px_-8px_rgb(201_107_74/0.9)] transition active:scale-95 [bottom:calc(1.25rem+env(safe-area-inset-bottom))] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal/40 sm:hidden"
-      >
-        <IconePlus className="h-6 w-6" />
-      </button>
 
       <Feuille
         ouverte={ajout !== null}

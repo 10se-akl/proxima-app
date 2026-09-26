@@ -15,7 +15,10 @@ import type { Note } from "@/types";
 // l'organisation — même donnée, même fonction de lecture que la section
 // Rappels d'Aujourd'hui (lib/notes/index.ts), jamais une requête séparée.
 // ============================================================
-export function CentreNotifications() {
+/** `vers="bas"` : dans la barre du haut sur téléphone (26/09), le panneau
+ *  s'ouvre vers le bas et se cale sur le bord droit. Par défaut, vers le
+ *  haut, depuis le bas de la barre latérale. */
+export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" } = {}) {
   const supabase = createClient();
   const conteneurRef = useRef<HTMLDivElement | null>(null);
   const [ouvert, setOuvert] = useState(false);
@@ -85,7 +88,9 @@ export function CentreNotifications() {
         onClick={() => setOuvert((v) => !v)}
         title="Notifications"
         aria-label="Notifications"
-        className="relative w-8 h-8 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+        className={`relative grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors ${
+          vers === "bas" ? "w-12 h-12" : "w-8 h-8"
+        }`}
       >
         <IconeCloche taille={17} />
         {enRetard.length > 0 && (
@@ -99,7 +104,11 @@ export function CentreNotifications() {
         // en "right-0" s'ouvre donc vers la GAUCHE du bouton, c'est-à-dire
         // hors de l'écran, puisque le bouton est déjà collé au bord gauche.
         // "left-0" ouvre vers la droite, dans la zone de contenu visible.
-        <div className="absolute left-0 bottom-full mb-2 z-30 w-80 max-h-96 overflow-y-auto rounded-xl border border-ink/10 bg-surface shadow-lg shadow-ink/10">
+        <div
+          className={`absolute z-30 max-h-96 overflow-y-auto rounded-xl border border-ink/10 bg-surface shadow-lg shadow-ink/10 ${
+            vers === "bas" ? "right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))]" : "left-0 bottom-full mb-2 w-80"
+          }`}
+        >
           <p className="px-4 pt-3.5 pb-2 font-mono text-[10px] tracking-[0.2em] uppercase text-steel">
             Notifications
           </p>

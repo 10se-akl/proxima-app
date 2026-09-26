@@ -121,16 +121,30 @@ export async function completerParametres(
     modifications: Partial<FormulaireParametres>;
   }
 ): Promise<Resultat> {
-  if (!params.actuels) {
-    // Aucun paramètre encore enregistré : on crée la ligne, valeurs par
-    // défaut comprises (exactement ce que ferait la page Paramètres).
-    return enregistrerParametres(supabase, {
-      organisationId: params.organisationId,
-      artisanId: params.artisanId,
-      form: { ...PARAMETRES_PAR_DEFAUT, ...params.modifications },
-    });
+  let actuels = params.actuels;
+  if (!actuels) {
+    // 27/09 — « Pas de paramètres connus » peut vouloir dire « la lecture
+    // a échoué » (réseau) : créer la ligne avec les valeurs par défaut
+    // écraserait alors les vrais réglages de l'artisan (tarifs, TVA…).
+    // On relit la base avant de décider.
+    const { data: existant, error: erreurLecture } = await supabase
+      .from("parametres_entreprise")
+      .select("*")
+      .eq("organisation_id", params.organisationId)
+      .maybeSingle();
+    if (erreurLecture) return { erreur: messageErreur(erreurLecture), parametres: null };
+    if (!existant) {
+      // Vraiment aucun paramètre encore enregistré : on crée la ligne,
+      // valeurs par défaut comprises (comme la page Paramètres).
+      return enregistrerParametres(supabase, {
+        organisationId: params.organisationId,
+        artisanId: params.artisanId,
+        form: { ...PARAMETRES_PAR_DEFAUT, ...params.modifications },
+      });
+    }
+    actuels = existant as ParametresEntreprise;
   }
-  const erreur = validerParametres({ ...PARAMETRES_PAR_DEFAUT, ...params.actuels, ...params.modifications });
+  const erreur = validerParametres({ ...PARAMETRES_PAR_DEFAUT, ...actuels, ...params.modifications });
   if (erreur) return { erreur, parametres: null };
   const { data, error } = await supabase
     .from("parametres_entreprise")

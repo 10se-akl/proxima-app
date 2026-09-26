@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { DemandeCard } from "@/components/dashboard/DemandeCard";
 import { IconeDossier } from "@/components/ui/Icones";
+import { BoutonCapture } from "@/components/accueil/BoutonCapture";
 import type { Projet } from "@/types";
 
 export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
@@ -65,10 +66,10 @@ export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
               <IconeDossier taille={20} className="text-signal" />
             </span>
             <p className="text-sm text-ink/50">
-              {projets.length === 0
-                ? "Aucun projet pour le moment. Créez-en un pour tester l'assistant IA."
-                : "Aucun résultat pour cette recherche."}
+              {projets.length === 0 ? "Aucun projet pour le moment." : "Aucun résultat pour cette recherche."}
             </p>
+            {/* L'état vide ouvre la même feuille que le [+] de la navigation. */}
+            {projets.length === 0 && <BoutonCapture />}
           </div>
         ) : (
           filtres.map((p) => <DemandeCard key={p.id} demande={p} />)

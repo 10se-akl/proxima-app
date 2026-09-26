@@ -773,4 +773,11 @@
   html:has([data-barre-bas]) {
     --barre-bas: 4.5rem;
   }
+  /* 27/09 — Pendant la saisie, la barre du bas s'efface : sur iPhone (et
+     certains navigateurs Android), une barre fixe peut remonter au-dessus
+     du clavier et cacher le champ ou le bouton « Valider ». On n'en a pas
+     besoin en tapant ; elle revient dès que le champ est quitté. */
+  html:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="button"], [type="submit"]), textarea, [contenteditable="true"]):focus) [data-barre-bas] {
+    display: none;
+  }
 }

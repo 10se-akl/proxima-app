@@ -98,8 +98,33 @@ export function ApercuPdf({ modele, delai = 450 }: { modele: ModeleDevis; delai?
     return () => observateur.disconnect();
   }, []);
 
+  // 27/09 — Sur téléphone, pour un devis déjà envoyé, l'aperçu est plus bas
+  // que « Partager » : le fabriquer dès l'ouverture téléchargeait ~700 Ko
+  // et occupait le téléphone pendant que l'artisan voulait juste partager
+  // le lien. On attend qu'il approche de l'écran ; sur ordinateur, où il
+  // est visible d'emblée, rien ne change.
+  const [proche, setProche] = useState(false);
   useEffect(() => {
-    if (!largeur) return;
+    const el = conteneurRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") {
+      setProche(true);
+      return;
+    }
+    const observateur = new IntersectionObserver(
+      (entrees) => {
+        if (entrees.some((e) => e.isIntersecting)) {
+          setProche(true);
+          observateur.disconnect();
+        }
+      },
+      { rootMargin: "600px 0px" }
+    );
+    observateur.observe(el);
+    return () => observateur.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!largeur || !proche) return;
     const tour = ++tourRef.current;
     setEtat((e) => (e === "chargement" ? e : "mise_a_jour"));
 
@@ -123,7 +148,7 @@ export function ApercuPdf({ modele, delai = 450 }: { modele: ModeleDevis; delai?
     }, delai);
 
     return () => clearTimeout(minuterie);
-  }, [cle, largeur, delai]);
+  }, [cle, largeur, delai, proche]);
 
   useEffect(
     () => () => {

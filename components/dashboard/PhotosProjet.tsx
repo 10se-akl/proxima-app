@@ -17,6 +17,7 @@ export function PhotosProjet({
 }) {
   const supabase = createClient();
   const inputRef = useRef<HTMLInputElement>(null);
+  const galerieRef = useRef<HTMLInputElement>(null);
   const [envoi, setEnvoi] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const [urls, setUrls] = useState<Record<string, string>>({});
@@ -154,7 +155,7 @@ export function PhotosProjet({
       });
     }
 
-    if (inputRef.current) inputRef.current.value = "";
+    for (const champ of [inputRef, galerieRef]) if (champ.current) champ.current.value = "";
   }
 
   async function supprimerPhoto(chemin: string) {
@@ -179,6 +180,11 @@ export function PhotosProjet({
 
   return (
     <div>
+      {/* 27/09 — Deux portes : l'appareil photo, et la galerie. Avant, un
+          seul champ avec capture="environment" ouvrait directement
+          l'appareil photo sur téléphone : impossible d'ajouter une photo
+          déjà prise, ou reçue du client par WhatsApp. Pendant l'envoi, les
+          deux sont inactifs (pas de second envoi par-dessus le premier). */}
       <input
         ref={inputRef}
         type="file"
@@ -189,12 +195,32 @@ export function PhotosProjet({
         className="hidden"
         id={`photos-input-${demandeId}`}
       />
-      <label
-        htmlFor={`photos-input-${demandeId}`}
-        className="inline-flex items-center gap-2 rounded-xl bg-ink text-paper text-sm font-medium px-4 py-2 transition-all duration-150 hover:bg-signal hover:scale-[1.02] hover:shadow-md active:scale-[0.98] cursor-pointer"
-      >
-        {envoi ? "Envoi en cours…" : "📷 Ajouter des photos"}
-      </label>
+      <input
+        ref={galerieRef}
+        type="file"
+        accept="image/*"
+        multiple
+        onChange={(e) => ajouterPhotos(e.target.files)}
+        className="hidden"
+        id={`photos-galerie-${demandeId}`}
+      />
+      <div className="flex flex-wrap gap-2">
+        <label
+          htmlFor={`photos-input-${demandeId}`}
+          aria-disabled={envoi}
+          className={`inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl bg-ink px-4 text-[15px] font-medium text-paper transition-colors hover:bg-ink/90 ${envoi ? "pointer-events-none opacity-60" : ""}`}
+        >
+          {envoi ? "Envoi en cours…" : "📷 Prendre une photo"}
+        </label>
+        {!envoi && (
+          <label
+            htmlFor={`photos-galerie-${demandeId}`}
+            className="inline-flex min-h-12 cursor-pointer items-center gap-2 rounded-xl px-4 text-[15px] font-medium text-ink ring-1 ring-ink/15 transition-colors hover:ring-ink/30"
+          >
+            Choisir dans la galerie
+          </label>
+        )}
+      </div>
 
       {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
 

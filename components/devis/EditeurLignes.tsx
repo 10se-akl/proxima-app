@@ -296,6 +296,7 @@ export function EditeurLignes({
               min={0}
               value={ligne.quantite}
               onChange={(e) => modifier(ligne.cle, "quantite", e.target.value)}
+              aria-label="Quantité"
               readOnly={ajustement}
               className={`${champ} ${ajustement ? "opacity-60" : ""}`}
             />
@@ -326,6 +327,7 @@ export function EditeurLignes({
               <input
                 value={ligne.unite}
                 onChange={(e) => modifier(ligne.cle, "unite", e.target.value)}
+                aria-label="Unité"
                 readOnly={ajustement}
                 className={`${champ} ${ajustement ? "opacity-60" : ""}`}
               />
@@ -339,6 +341,7 @@ export function EditeurLignes({
               min={0}
               value={ligne.prix_unitaire}
               onChange={(e) => modifier(ligne.cle, "prix_unitaire", e.target.value)}
+              aria-label="Prix unitaire (€)"
               readOnly={ajustement}
               className={`${champ} ${ajustement ? "opacity-60" : ""}`}
             />

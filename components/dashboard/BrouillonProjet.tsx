@@ -127,6 +127,7 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
           <select
             value={valeurs.typeChantier.valeur}
             onChange={(e) => majChamp("typeChantier", e.target.value as TypeChantier)}
+            aria-label="Type de chantier"
             className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
           >
             {TYPES_CHANTIER.map((t) => (
@@ -143,6 +144,7 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
           <select
             value={valeurs.priorite.valeur}
             onChange={(e) => majChamp("priorite", e.target.value === "urgent" ? "urgent" : "normal")}
+            aria-label="Urgence"
             className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
           >
             <option value="normal">Normal</option>

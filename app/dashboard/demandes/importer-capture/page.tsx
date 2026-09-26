@@ -331,6 +331,7 @@ export default function ImporterCapturePage() {
                     <select
                       value={l.destination}
                       onChange={(e) => changerDestination(l.index, e.target.value)}
+                      aria-label="Où importer ce message ?"
                       className="w-full sm:w-auto rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                     >
                       <option value="nouveau">Créer un nouveau projet</option>

@@ -212,8 +212,9 @@ export function MonCompte() {
         <form onSubmit={enregistrerProfil} className="flex flex-col gap-4">
           <Field label="Nom" required value={nom} onChange={(e) => setNom(e.target.value)} />
           <div>
-            <label className="block text-xs font-medium text-ink/70 mb-1.5">Métier</label>
+            <label htmlFor="metier-compte" className="block text-xs font-medium text-ink/70 mb-1.5">Métier</label>
             <select
+              id="metier-compte"
               value={metier}
               onChange={(e) => setMetier(e.target.value)}
               className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"

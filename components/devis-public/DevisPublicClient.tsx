@@ -291,10 +291,12 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                     Votre réponse
                   </p>
 
-                  <label className="block text-xs font-medium text-ink/70 mb-1.5">
+                  <label htmlFor="nom-signataire" className="block text-xs font-medium text-ink/70 mb-1.5">
                     Votre nom (requis pour accepter)
                   </label>
                   <input
+                    id="nom-signataire"
+                    autoComplete="name"
                     value={nomSignataire}
                     onChange={(e) => setNomSignataire(e.target.value)}
                     placeholder="Prénom Nom"

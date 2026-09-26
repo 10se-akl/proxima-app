@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
@@ -54,6 +54,7 @@ export function FormulaireNote({
   const router = useRouter();
   const supabase = createClient();
 
+  const idProjet = useId();
   const [demandeId, setDemandeId] = useState(projetIdFixe ?? "");
   const [titre, setTitre] = useState("");
   const [description, setDescription] = useState("");
@@ -287,8 +288,9 @@ export function FormulaireNote({
           )
         ) : (
           <div>
-            <label className="block text-xs font-medium text-ink/70 mb-1.5">Projet concerné</label>
+            <label htmlFor={idProjet} className="block text-xs font-medium text-ink/70 mb-1.5">Projet concerné</label>
             <select
+              id={idProjet}
               value={demandeId}
               onChange={(e) => {
                 setDemandeId(e.target.value);

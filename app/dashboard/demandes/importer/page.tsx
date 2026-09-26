@@ -286,6 +286,7 @@ export default function ImporterMessagePage() {
             placeholder={`Exemple :\n\nBonjour, je me présente M. Dupont. J'aimerais refaire ma salle de bain. Vous seriez dispo mardi vers 14h pour passer voir ? Mon numéro : 06 12 34 56 78`}
             value={message}
             onChange={(e) => setMessage(e.target.value)}
+            aria-label="Message du client"
             className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
           />
 

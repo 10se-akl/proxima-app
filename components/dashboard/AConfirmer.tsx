@@ -184,7 +184,7 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
                 </Button>
               </div>
               {erreurId === e.id && (
-                <p className="mt-2 text-[11px] text-[#C23B22]">
+                <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">
                   La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
                 </p>
               )}
@@ -223,6 +223,7 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
                       type="date"
                       value={nouvelleDate}
                       onChange={(ev) => setNouvelleDate(ev.target.value)}
+                      aria-label="Nouvelle date"
                       className="rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                     />
                   </div>
@@ -232,6 +233,7 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
                       type="time"
                       value={nouvelleHeure}
                       onChange={(ev) => setNouvelleHeure(ev.target.value)}
+                      aria-label="Heure"
                       className="rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
                     />
                   </div>
@@ -244,7 +246,7 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
                 </div>
               ) : null}
               {erreurId === e.id && (
-                <p className="mt-2 text-[11px] text-[#C23B22]">
+                <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">
                   La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
                 </p>
               )}

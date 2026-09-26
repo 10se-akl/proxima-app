@@ -156,7 +156,7 @@ function DemanderAccesForm() {
   return (
     <main className="min-h-screen bg-paper px-5 py-16">
       <div className="max-w-2xl mx-auto">
-        <Link href="/" className="text-sm text-ink/60 hover:text-ink">
+        <Link href="/" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink">
           ← Retour
         </Link>
 
@@ -174,19 +174,23 @@ function DemanderAccesForm() {
         <Card className="mt-8 p-6 sm:p-8">
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <div className="grid sm:grid-cols-2 gap-5">
-              <Field label="Prénom" required value={form.prenom} onChange={update("prenom")} />
-              <Field label="Nom" required value={form.nom} onChange={update("nom")} />
+              {/* 27/09 — autoComplete : le téléphone propose de remplir le
+                  formulaire d'un appui (nom, entreprise, numéro). */}
+              <Field label="Prénom" required autoComplete="given-name" value={form.prenom} onChange={update("prenom")} />
+              <Field label="Nom" required autoComplete="family-name" value={form.nom} onChange={update("nom")} />
               <Field
                 label="Entreprise"
+                autoComplete="organization"
                 value={form.entreprise}
                 onChange={update("entreprise")}
               />
 
               <div>
-                <label className="block text-xs font-medium text-ink/70 mb-1.5">
+                <label htmlFor="metier-candidature" className="block text-xs font-medium text-ink/70 mb-1.5">
                   Métier <span className="text-signal">*</span>
                 </label>
                 <select
+                  id="metier-candidature"
                   required
                   value={form.metier}
                   onChange={update("metier")}
@@ -205,6 +209,7 @@ function DemanderAccesForm() {
                 label="Téléphone"
                 type="tel"
                 required
+                autoComplete="tel"
                 value={form.telephone}
                 onChange={update("telephone")}
               />
@@ -245,10 +250,11 @@ function DemanderAccesForm() {
               </p>
 
               <div>
-                <label className="block text-xs font-medium text-ink/70 mb-1.5">
+                <label htmlFor="employes-candidature" className="block text-xs font-medium text-ink/70 mb-1.5">
                   Nombre d&apos;employés
                 </label>
                 <select
+                  id="employes-candidature"
                   value={form.nbEmployes}
                   onChange={update("nbEmployes")}
                   className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
@@ -262,10 +268,11 @@ function DemanderAccesForm() {
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-ink/70 mb-1.5">
+                <label htmlFor="devis-candidature" className="block text-xs font-medium text-ink/70 mb-1.5">
                   Devis réalisés par semaine
                 </label>
                 <select
+                  id="devis-candidature"
                   value={form.devisParSemaine}
                   onChange={update("devisParSemaine")}
                   className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
@@ -333,7 +340,7 @@ function DemanderAccesForm() {
               .
             </p>
 
-            <Button type="submit" disabled={envoi} className="self-start">
+            <Button type="submit" disabled={envoi} className="min-h-12 w-full sm:w-auto sm:self-start">
               {envoi ? "Envoi en cours…" : "Envoyer ma candidature"}
             </Button>
           </form>

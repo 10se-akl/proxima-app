@@ -142,7 +142,7 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
                 </button>
               </div>
               {erreurId === p.id && (
-                <p className="mt-2 text-[11px] text-[#C23B22]">
+                <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">
                   La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
                 </p>
               )}

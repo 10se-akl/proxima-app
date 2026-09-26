@@ -1107,6 +1107,7 @@ export default function DetailDemandePage({
                 <select
                   value={infos.type_chantier}
                   onChange={(e) => setInfos({ ...infos, type_chantier: e.target.value })}
+                  aria-label="Type de chantier"
                   className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
                 >
                   {TYPES_CHANTIER.map((t) => (

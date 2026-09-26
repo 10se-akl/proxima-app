@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { IconeDocument } from "@/components/ui/Icones";
 import { adresseEspaceDevis } from "@/lib/devis/actions";
@@ -64,25 +63,26 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
 
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="text"
-          value={recherche}
-          onChange={(e) => setRecherche(e.target.value)}
-          placeholder="Rechercher un client, un numéro de devis…"
-          className="flex-1 min-w-[200px] rounded-xl border border-ink/15 bg-surface px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-        />
-      </div>
+      <input
+        type="search"
+        value={recherche}
+        onChange={(e) => setRecherche(e.target.value)}
+        placeholder="Client, numéro de devis…"
+        aria-label="Rechercher un devis"
+        className="w-full min-h-12 rounded-2xl border border-ink/15 bg-surface px-4 text-[15px] transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
+      />
 
-      <div className="mt-3 flex flex-wrap gap-2">
+      {/* 27/09 — Des pastilles au pouce (44 px) sur une seule rangée qui
+          défile, plutôt que de petites étiquettes de 24 px sur deux lignes. */}
+      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
         {LABEL_STATUT_FILTRE.map((f) => (
           <button
             key={f.cle}
+            type="button"
             onClick={() => setFiltre(f.cle)}
-            className={`rounded-lg px-2.5 py-1 text-xs border transition-colors ${
-              filtre === f.cle
-                ? "bg-ink text-paper border-ink"
-                : "border-ink/15 text-ink/50 hover:border-ink/40 hover:text-ink/70"
+            aria-pressed={filtre === f.cle}
+            className={`min-h-11 shrink-0 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
+              filtre === f.cle ? "bg-ink text-paper" : "text-ink/70 ring-1 ring-ink/15 hover:text-ink"
             }`}
           >
             {f.label}
@@ -106,32 +106,24 @@ export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClie
           filtres.map((d) => {
             const { texte, classe } = statutAffiche(d, d.demandes?.statut);
             return (
-              <Link key={d.id} href={adresseEspaceDevis(d.id)}>
-                <Card className="p-3.5 flex items-center justify-between gap-3 flex-wrap transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06]">
-                  <div className="flex items-center gap-3">
-                    <Avatar nom={d.demandes?.nom_client ?? "?"} taille={32} />
-                    <span className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${classe}`}>
-                      {texte}
+              <Link
+                key={d.id}
+                href={adresseEspaceDevis(d.id)}
+                className="flex min-h-[4.5rem] items-center gap-3 rounded-2xl bg-surface px-4 py-3 ring-1 ring-ink/[0.07] transition-colors hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+              >
+                <Avatar nom={d.demandes?.nom_client ?? "?"} taille={40} />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="truncate text-[16px] font-semibold text-ink">{d.demandes?.nom_client ?? "Client"}</span>
+                    <span className="shrink-0 text-[15px] font-semibold tabular-nums text-ink">
+                      {d.total_estime.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
                     </span>
-                    <div>
-                      <p className="text-sm text-ink/80">
-                        {d.demandes?.nom_client ?? "Client"}{" "}
-                        <span className="text-ink/40 font-mono text-xs">{d.numero}</span>
-                      </p>
-                      <p className="text-xs text-ink/40">
-                        {d.envoye_le
-                          ? `Envoyé le ${new Date(d.envoye_le).toLocaleDateString("fr-FR")}`
-                          : `Créé le ${new Date(d.created_at).toLocaleDateString("fr-FR")}`}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-sm font-semibold text-ink whitespace-nowrap">
-                    {d.total_estime.toLocaleString("fr-FR", {
-                      style: "currency",
-                      currency: "EUR",
-                    })}
-                  </p>
-                </Card>
+                  </span>
+                  <span className="mt-0.5 flex items-center justify-between gap-3">
+                    <span className="truncate text-[13.5px] text-ink/65">{`${d.numero} · ${d.envoye_le ? `envoyé le ${new Date(d.envoye_le).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}` : `créé le ${new Date(d.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`}`}</span>
+                    <span className={`shrink-0 rounded-md px-2 py-0.5 text-[12px] font-medium ${classe}`}>{texte}</span>
+                  </span>
+                </span>
               </Link>
             );
           })

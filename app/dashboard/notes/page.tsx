@@ -108,22 +108,21 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-3xl mx-auto">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-2xl font-semibold text-ink">Notes</h1>
         <Link href="/dashboard/notes/nouvelle">
-          <Button>➕ Nouvelle note</Button>
+          <Button>Nouvelle note</Button>
         </Link>
       </div>
-      <p className="mt-2 text-sm text-ink/60">
-        Tout ce que vous ne devez pas oublier — un seul endroit, plus de post-it.
-      </p>
 
       {projetsPresents.length > 0 && (
-        <div className="mt-5 flex flex-wrap gap-2">
+        // 27/09 — Une rangée qui défile : avec vingt chantiers, les
+        // pastilles ne remplissent plus l'écran sur quatre lignes.
+        <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
           <button
             onClick={() => setFiltreProjet("")}
-            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+            className={`min-h-11 shrink-0 rounded-full px-4 text-[14px] font-medium transition-colors ${
               filtreProjet === "" ? "bg-ink text-paper" : "bg-paper-warm text-ink/60 hover:text-ink"
             }`}
           >
@@ -133,7 +132,7 @@ export default function NotesPage() {
             <button
               key={id}
               onClick={() => setFiltreProjet(id)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+              className={`min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 text-[14px] font-medium transition-colors ${
                 filtreProjet === id ? "bg-ink text-paper" : "bg-paper-warm text-ink/60 hover:text-ink"
               }`}
             >

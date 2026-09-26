@@ -37,29 +37,22 @@ export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
       .includes(recherche.toLowerCase())
   );
 
+  // 27/09 — Les chantiers terminés, quand on les affiche, passent après
+  // les autres : on cherche d'abord ce qui est en cours.
+  const tries = [...filtres].sort((a, b) => Number(a.statut === "termine") - Number(b.statut === "termine"));
+
   return (
     <div>
-      <div className="flex flex-wrap items-center gap-3">
-        <input
-          type="text"
-          value={recherche}
-          onChange={(e) => setRecherche(e.target.value)}
-          placeholder="Rechercher un nom, un téléphone, une adresse…"
-          className="flex-1 min-w-[200px] rounded-xl border border-ink/15 bg-surface px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-        />
-        {projetsTermines.length > 0 && (
-          <button
-            onClick={() => setAfficherTermines(!afficherTermines)}
-            className="text-xs text-ink/50 hover:text-ink underline whitespace-nowrap transition-colors"
-          >
-            {afficherTermines
-              ? "Masquer les projets terminés"
-              : `Afficher les projets terminés (${projetsTermines.length})`}
-          </button>
-        )}
-      </div>
+      <input
+        type="search"
+        value={recherche}
+        onChange={(e) => setRecherche(e.target.value)}
+        placeholder="Nom, téléphone, adresse…"
+        aria-label="Rechercher un projet"
+        className="w-full min-h-12 rounded-2xl border border-ink/15 bg-surface px-4 text-[15px] transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
+      />
 
-      <div className="mt-4 flex flex-col gap-3">
+      <div className="mt-4 flex flex-col gap-2">
         {filtres.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
@@ -72,9 +65,25 @@ export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
             {projets.length === 0 && <BoutonCapture />}
           </div>
         ) : (
-          filtres.map((p) => <DemandeCard key={p.id} demande={p} />)
+          tries.map((p) => <DemandeCard key={p.id} demande={p} />)
         )}
       </div>
+
+      {/* Tout en bas : l'historique ne se met jamais entre l'artisan et ses
+          chantiers en cours. */}
+      {projetsTermines.length > 0 && !recherche.trim() && (
+        <button
+          type="button"
+          onClick={() => setAfficherTermines(!afficherTermines)}
+          className="mt-4 inline-flex min-h-12 items-center text-[14px] font-medium text-ink/65 underline underline-offset-4 hover:text-ink"
+        >
+          {afficherTermines
+            ? "Masquer les projets terminés"
+            : projetsTermines.length === 1
+              ? "Voir le projet terminé"
+              : `Voir les ${projetsTermines.length} projets terminés`}
+        </button>
+      )}
     </div>
   );
 }

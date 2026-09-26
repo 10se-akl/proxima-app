@@ -28,13 +28,10 @@ export default async function DevisPage() {
   }));
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-4xl">
       <h1 className="font-display text-2xl font-semibold">Devis</h1>
-      <p className="mt-1.5 text-sm text-ink/50">
-        Tous vos devis, tous projets confondus. Cliquez sur un devis pour l&apos;ouvrir.
-      </p>
 
-      <div className="mt-8">
+      <div className="mt-5">
         <ListeDevisRecherchable devisList={devisList} />
       </div>
     </div>

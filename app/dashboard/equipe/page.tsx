@@ -27,7 +27,7 @@ export default async function EquipePage() {
 
   if (!membership) {
     return (
-      <div className="p-8 max-w-2xl mx-auto">
+      <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl mx-auto">
         <p className="text-sm text-ink/50">Aucune organisation associée à ce compte.</p>
       </div>
     );
@@ -49,7 +49,7 @@ export default async function EquipePage() {
   }));
 
   return (
-    <div className="p-8 max-w-2xl mx-auto">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl mx-auto">
       <h1 className="font-display text-2xl font-semibold">Équipe</h1>
       <p className="mt-1 text-sm text-ink/50">
         Toutes les personnes de votre équipe voient les mêmes projets, devis et planning.

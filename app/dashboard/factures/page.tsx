@@ -26,14 +26,9 @@ export default async function FacturesPage() {
   }));
 
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-4xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold">Factures</h1>
-          <p className="mt-1.5 text-sm text-ink/50">
-            Toutes vos factures, tous projets confondus. Cliquez sur une facture pour ouvrir le projet.
-          </p>
-        </div>
+        <h1 className="font-display text-2xl font-semibold">Factures</h1>
         {factures.length > 0 && (
           <a
             href="/api/factures/export-comptable"
@@ -44,7 +39,7 @@ export default async function FacturesPage() {
         )}
       </div>
 
-      <div className="mt-8">
+      <div className="mt-5">
         <ListeFacturesRecherchable factures={factures} />
       </div>
     </div>

@@ -16,6 +16,7 @@ import {
 } from "@/lib/parametres";
 import { IconeChevron } from "@/components/projet/icones";
 import { Engagements } from "@/components/confiance/Engagements";
+import { effacerBrouillon, ecrireBrouillon, empreinte, lireBrouillon } from "@/lib/brouillonLocal";
 
 type FormState = FormulaireParametres;
 
@@ -44,10 +45,26 @@ export function VueParametres({
 }) {
   const supabase = createClient();
 
-  const [form, setForm] = useState<FormState>(initial ?? PARAMETRES_PAR_DEFAUT);
+  // Rien ne se perd (lot H.2) — voir lib/brouillonLocal.ts : une saisie
+  // non enregistrée est gardée sur le téléphone et retrouvée à la
+  // réouverture, tant que les paramètres enregistrés n'ont pas changé.
+  const cleBrouillon = `compyo:brouillon-parametres:${organisationId ?? "aucune"}`;
+  const [baseBrouillon, setBaseBrouillon] = useState(() => empreinte(initial ?? PARAMETRES_PAR_DEFAUT));
+  const [retrouve, setRetrouve] = useState(() => lireBrouillon<FormState>(cleBrouillon, baseBrouillon));
+  const formRef = useRef<HTMLFormElement>(null);
+
+  const [form, setForm] = useState<FormState>(retrouve ?? initial ?? PARAMETRES_PAR_DEFAUT);
   // Ce qui est réellement enregistré : c'est lui qui donne l'état des
   // pastilles (une saisie non enregistrée n'est pas « complète »).
   const [enregistre, setEnregistre] = useState<FormState>(initial ?? PARAMETRES_PAR_DEFAUT);
+
+  useEffect(() => {
+    const minuteur = setTimeout(() => {
+      if (empreinte(form) === empreinte(enregistre)) effacerBrouillon(cleBrouillon);
+      else ecrireBrouillon(cleBrouillon, baseBrouillon, form);
+    }, 400);
+    return () => clearTimeout(minuteur);
+  }, [form, enregistre, cleBrouillon, baseBrouillon]);
   const [ouvert, setOuvert] = useState<Groupe | null>(null);
   const [enregistrement, setEnregistrement] = useState(false);
   const [confirme, setConfirme] = useState(false);
@@ -151,6 +168,9 @@ export function VueParametres({
       return;
     }
     setEnregistre(form);
+    setBaseBrouillon(empreinte(form));
+    setRetrouve(null);
+    effacerBrouillon(cleBrouillon);
     setConfirme(true);
   }
 
@@ -186,8 +206,36 @@ export function VueParametres({
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
       <h1 className="font-display text-[1.6rem] font-semibold leading-tight text-ink sm:text-3xl">Paramètres</h1>
 
+      {retrouve && (
+        <div className="mt-4 rounded-xl bg-ink/[0.04] px-4 py-3 text-[13.5px] text-ink/75">
+          <p>Des modifications non enregistrées ont été retrouvées.</p>
+          {erreur && !ouvert && <p className="mt-1 text-signal">{erreur}</p>}
+          <div className="mt-1 flex flex-wrap gap-x-5">
+            <button
+              type="button"
+              onClick={() => formRef.current?.requestSubmit()}
+              disabled={enregistrement}
+              className="inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-4"
+            >
+              {enregistrement ? "Enregistrement…" : "Les enregistrer"}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                effacerBrouillon(cleBrouillon);
+                setForm(enregistre);
+                setRetrouve(null);
+              }}
+              className="inline-flex min-h-11 items-center text-ink/60 underline underline-offset-4"
+            >
+              Les oublier
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="mt-5 overflow-hidden rounded-2xl bg-surface ring-1 ring-ink/10">
-      <form onSubmit={handleSubmit}>
+      <form ref={formRef} onSubmit={handleSubmit}>
         {groupe(
           "entreprise",
           "Entreprise",

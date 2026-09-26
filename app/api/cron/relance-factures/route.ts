@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { envoyerPush } from "@/lib/notifications/push";
+import { notifierRelances, type RelancePreparee } from "@/lib/notifications/budget";
 import { creerNote } from "@/lib/notes";
 import { messageRelanceFacture, AVERTISSEMENT_BROUILLON } from "@/lib/relances/templates";
 
@@ -59,6 +59,9 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+  // 26/09 (lot H.1) — une notification par artisan et par jour au plus,
+  // regroupée avec les relances de devis (voir lib/notifications/budget.ts).
+  const debutPassage = new Date();
   const maintenant = Date.now();
 
   // Factures encore dues : émises, jamais payées ni annulées, et jamais
@@ -145,20 +148,17 @@ export async function GET(request: NextRequest) {
         throw new Error(erreurNote ?? "Note de relance non créée");
       }
 
-      try {
-        await envoyerPush(supabase, {
-          artisanId: facture.artisan_id,
-          titre: "Facture impayée",
-          corps: nomClient
-            ? `${nomClient} — facture n° ${facture.numero}. Un brouillon de relance vous attend.`
-            : `La facture n° ${facture.numero} n'a pas encore été réglée.`,
-          // 26/09 — ouvre la feuille « Message au client », relance prête :
-          // notification, puis bouton SMS.
-          url: `/dashboard/demandes/${facture.demande_id}?message=relancePaiement&facture=${facture.id}`,
-        });
-      } catch (err) {
-        console.error("Push de relance facture non envoyé (la note existe)", facture.id, err);
-      }
+      const relance: RelancePreparee = {
+        artisanId: facture.artisan_id,
+        nomClient,
+        titre: "Facture impayée",
+        corps: nomClient
+          ? `${nomClient} — facture n° ${facture.numero}. Un brouillon de relance vous attend.`
+          : `La facture n° ${facture.numero} n'a pas encore été réglée.`,
+        // 26/09 — ouvre la feuille « Message au client », relance prête :
+        // notification, puis bouton SMS.
+        url: `/dashboard/demandes/${facture.demande_id}?message=relancePaiement&facture=${facture.id}`,
+      };
 
       // Marqué une fois la NOTIFICATION créée (jamais un envoi au client) :
       // garantit qu'une même facture n'est jamais reproposée.
@@ -166,7 +166,14 @@ export async function GET(request: NextRequest) {
         .from("factures")
         .update({ notifie_relance_le: new Date().toISOString() })
         .eq("id", facture.id);
+      return relance;
     })
+  );
+
+  await notifierRelances(
+    supabase,
+    resultats.flatMap((r) => (r.status === "fulfilled" ? [r.value] : [])),
+    debutPassage
   );
 
   let proposees = 0;

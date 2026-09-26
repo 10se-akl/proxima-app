@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { envoyerPush } from "@/lib/notifications/push";
+import { notifierRelances, type RelancePreparee } from "@/lib/notifications/budget";
 import { creerNote } from "@/lib/notes";
 import {
   messageRelanceDevisJ5,
@@ -36,6 +36,11 @@ import {
 // fail-closed, client admin (aucun utilisateur connecté sur un cron),
 // respect de la préférence "notifications désactivées" gérée en interne
 // par envoyerPush() (aucun code à dupliquer ici pour ça).
+//
+// 26/09 (lot H.1) — plus une notification par devis : tout ce qu'un
+// passage prépare pour un même artisan part en UNE notification, et aucune
+// si une relance a déjà été notifiée aujourd'hui (voir
+// lib/notifications/budget.ts).
 // ============================================================
 
 export const maxDuration = 60;
@@ -67,6 +72,7 @@ export async function GET(request: NextRequest) {
   }
 
   const supabase = createAdminClient();
+  const debutPassage = new Date();
   const maintenant = Date.now();
 
   // Tous les devis "envoyé" avec une date d'envoi — le filtrage par palier
@@ -176,23 +182,19 @@ export async function GET(request: NextRequest) {
         throw new Error(erreurNote ?? "Note de relance non créée");
       }
 
-      // Push = simple rappel vers la note qui existe déjà. Son échec
-      // (abonnement absent, navigateur qui a révoqué la permission...) ne
-      // doit pas faire recommencer tout le processus demain : la note,
-      // elle, est bien là.
-      try {
-        await envoyerPush(supabase, {
-          artisanId: devis.artisan_id,
-          titre: "Devis toujours sans réponse",
-          corps: nomClient
-            ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Un brouillon de relance vous attend.`
-            : `Un devis envoyé il y a ${joursDepuis} jours reste sans réponse.`,
-          // 26/09 — ouvre la feuille « Message au client », relance prête.
-          url: `/dashboard/demandes/${devis.demande_id}?message=relanceDevis&devis=${devis.id}`,
-        });
-      } catch (err) {
-        console.error("Push de relance non envoyé (la note existe)", devis.id, err);
-      }
+      // La notification part après, regroupée par artisan (lot H.1). Son
+      // échec éventuel (abonnement absent, permission révoquée...) ne fait
+      // pas recommencer le processus demain : la note, elle, est bien là.
+      const relance: RelancePreparee = {
+        artisanId: devis.artisan_id,
+        nomClient,
+        titre: "Devis toujours sans réponse",
+        corps: nomClient
+          ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Un brouillon de relance vous attend.`
+          : `Un devis envoyé il y a ${joursDepuis} jours reste sans réponse.`,
+        // 26/09 — ouvre la feuille « Message au client », relance prête.
+        url: `/dashboard/demandes/${devis.demande_id}?message=relanceDevis&devis=${devis.id}`,
+      };
 
       // Marqué une fois la NOTIFICATION créée (pas un envoi au client — il
       // n'y en a jamais ici) : garantit qu'un même devis n'est jamais
@@ -202,7 +204,14 @@ export async function GET(request: NextRequest) {
         .from("devis")
         .update({ [colonne]: new Date().toISOString() })
         .eq("id", devis.id);
+      return relance;
     })
+  );
+
+  await notifierRelances(
+    supabase,
+    resultats.flatMap((r) => (r.status === "fulfilled" ? [r.value] : [])),
+    debutPassage
   );
 
   // "proposees" et non "envoyees" : ce cron ne peut, par construction, rien

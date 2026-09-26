@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
@@ -21,6 +21,7 @@ import {
   type LigneEditee,
 } from "@/components/devis/EditeurLignes";
 import type { Devis, LigneDevisCalculee, LotDevis, ParametresEntreprise } from "@/types";
+import { effacerBrouillon, ecrireBrouillon, empreinte, lireBrouillon } from "@/lib/brouillonLocal";
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -35,6 +36,71 @@ function valeurPositive(valeur: string): number {
   const nombre = Number(valeur);
   return !Number.isFinite(nombre) || nombre < 0 ? 0 : nombre;
 }
+
+// Tout ce que l'artisan peut modifier sur cet écran — ce que garde le
+// brouillon local (lot H.2).
+type EtatEdition = {
+  lignes: LigneEditee[];
+  lots: LotDevis[];
+  deplacement: number;
+  margePct: number;
+  tvaPct: number;
+  commentaires: string;
+  objet: string;
+  validiteJours: string;
+  acomptePct: string;
+  dateDebut: string;
+  dureeEstimee: string;
+  chantierAilleurs: boolean;
+  adresseChantier: string;
+  mentionTvaReduite: string;
+  mentionModifieeManuellement: boolean;
+};
+
+function etatDepuisDevis(devis: Devis, parametres: ParametresEntreprise | null | undefined): EtatEdition {
+  return {
+    // Chaque ligne porte une clé stable et son origine (IA ou artisan) —
+    // voir components/devis/EditeurLignes.tsx. Le badge "IA" (audit pré-bêta
+    // du 09/09, point 🟡 n°19) repose sur cette origine : les lignes déjà là
+    // au chargement viennent de la génération.
+    lignes: versLignesEditees(devis.lignes, false),
+    lots: devis.lots ?? [],
+    deplacement: devis.deplacement,
+    margePct: devis.marge_pct,
+    tvaPct: devis.tva_pct,
+    commentaires: devis.commentaires ?? "",
+    // Conditions de l'offre (Module 42). Un devis créé depuis le 17/09 arrive
+    // déjà rempli (voir conditionsParDefaut) ; pour un devis plus ancien, on
+    // retombe sur les paramètres de l'entreprise, pour que l'artisan n'ait
+    // jamais de champ vide à remplir de lui-même.
+    objet: devis.objet ?? "",
+    validiteJours: String(devis.validite_jours ?? parametres?.devis_validite_jours ?? 30),
+    acomptePct:
+      devis.acompte_pct != null
+        ? String(devis.acompte_pct)
+        : parametres?.devis_acompte_pct != null
+          ? String(parametres.devis_acompte_pct)
+          : "",
+    dateDebut: devis.date_debut_prevue ?? "",
+    dureeEstimee: devis.duree_estimee ?? "",
+    // L'adresse du chantier n'est obligatoire que si elle diffère de celle du
+    // client : le champ reste masqué tant que l'artisan ne dit pas le
+    // contraire, pour éviter une saisie inutile dans la plupart des cas.
+    chantierAilleurs: Boolean(devis.adresse_chantier),
+    adresseChantier: devis.adresse_chantier ?? "",
+    // Mention TVA réduite (08/09) — suggérée automatiquement si le devis a
+    // déjà un taux réduit au chargement, sinon vide. Reste éditable, et se
+    // met à jour automatiquement UNIQUEMENT si l'artisan change le taux de
+    // TVA lui-même et n'a encore rien tapé — jamais écrasée une fois
+    // modifiée à la main (voir gestionnaireTvaPct plus bas).
+    mentionTvaReduite: devis.mention_tva_reduite ?? genererMentionTvaReduite(devis.tva_pct) ?? "",
+    mentionModifieeManuellement: Boolean(devis.mention_tva_reduite),
+  };
+}
+
+// Comparable d'un état à l'autre : les clés des lignes changent à chaque
+// chargement, elles ne comptent pas.
+const empreinteEtat = (e: EtatEdition) => empreinte({ ...e, lignes: e.lignes.map(({ cle: _cle, ...l }) => l) });
 
 // Étape intermédiaire entre "l'IA + le moteur métier ont préparé un
 // brouillon" et "le PDF part au client". L'artisan relit, ajuste
@@ -61,54 +127,113 @@ export function ValiderDevis({
 }) {
   const supabase = createClient();
 
-  // Chaque ligne porte une clé stable et son origine (IA ou artisan) —
-  // voir components/devis/EditeurLignes.tsx. Le badge "IA" (audit pré-bêta
-  // du 09/09, point 🟡 n°19) repose sur cette origine : les lignes déjà là
-  // au chargement viennent de la génération.
-  const [lignes, setLignes] = useState<LigneEditee[]>(() => versLignesEditees(devis.lignes, false));
-  const [lots, setLots] = useState<LotDevis[]>(devis.lots ?? []);
-  const lignesPropres = useMemo(() => lignesAEnregistrer(lignes), [lignes]);
-  const [deplacement, setDeplacement] = useState(devis.deplacement);
-  const [margePct, setMargePct] = useState(devis.marge_pct);
-  const [tvaPct, setTvaPct] = useState(devis.tva_pct);
-  const [commentaires, setCommentaires] = useState(devis.commentaires ?? "");
+  // Rien ne se perd (lot H.2) — voir lib/brouillonLocal.ts. Les
+  // modifications non validées restent sur le téléphone : un rechargement,
+  // une coupure au moment de valider ou un départ par la barre du bas ne
+  // les font plus perdre. Elles sont retrouvées à la réouverture, tant que
+  // le devis enregistré n'a pas changé entre-temps.
+  const cleBrouillon = `compyo:brouillon-devis:${devis.id}`;
+  const [baseBrouillon] = useState(() =>
+    empreinte([
+      devis.statut,
+      devis.lignes,
+      devis.lots,
+      devis.deplacement,
+      devis.marge_pct,
+      devis.tva_pct,
+      devis.commentaires,
+      devis.objet,
+      devis.validite_jours,
+      devis.acompte_pct,
+      devis.date_debut_prevue,
+      devis.duree_estimee,
+      devis.adresse_chantier,
+      devis.mention_tva_reduite,
+    ])
+  );
+  const [empreinteEnregistree] = useState(() => empreinteEtat(etatDepuisDevis(devis, parametres)));
+  const [retrouve] = useState(() =>
+    devis.statut === "brouillon" ? lireBrouillon<EtatEdition>(cleBrouillon, baseBrouillon) : null
+  );
+  const [depart] = useState(() => retrouve ?? etatDepuisDevis(devis, parametres));
+  const brouillonAbandonne = useRef(false);
 
-  // Conditions de l'offre (Module 42). Un devis créé depuis le 17/09 arrive
-  // déjà rempli (voir conditionsParDefaut) ; pour un devis plus ancien, on
-  // retombe sur les paramètres de l'entreprise, pour que l'artisan n'ait
-  // jamais de champ vide à remplir de lui-même.
-  const [objet, setObjet] = useState(devis.objet ?? "");
-  const [validiteJours, setValiditeJours] = useState<string>(
-    String(devis.validite_jours ?? parametres?.devis_validite_jours ?? 30)
-  );
-  const [acomptePct, setAcomptePct] = useState<string>(
-    devis.acompte_pct != null
-      ? String(devis.acompte_pct)
-      : parametres?.devis_acompte_pct != null
-        ? String(parametres.devis_acompte_pct)
-        : ""
-  );
-  const [dateDebut, setDateDebut] = useState(devis.date_debut_prevue ?? "");
-  const [dureeEstimee, setDureeEstimee] = useState(devis.duree_estimee ?? "");
-  // L'adresse du chantier n'est obligatoire que si elle diffère de celle du
-  // client : le champ reste masqué tant que l'artisan ne dit pas le
-  // contraire, pour éviter une saisie inutile dans la plupart des cas.
-  const [chantierAilleurs, setChantierAilleurs] = useState(Boolean(devis.adresse_chantier));
-  const [adresseChantier, setAdresseChantier] = useState(devis.adresse_chantier ?? "");
+  const [lignes, setLignes] = useState<LigneEditee[]>(depart.lignes);
+  const [lots, setLots] = useState<LotDevis[]>(depart.lots);
+  const lignesPropres = useMemo(() => lignesAEnregistrer(lignes), [lignes]);
+  const [deplacement, setDeplacement] = useState(depart.deplacement);
+  const [margePct, setMargePct] = useState(depart.margePct);
+  const [tvaPct, setTvaPct] = useState(depart.tvaPct);
+  const [commentaires, setCommentaires] = useState(depart.commentaires);
+  const [objet, setObjet] = useState(depart.objet);
+  const [validiteJours, setValiditeJours] = useState<string>(depart.validiteJours);
+  const [acomptePct, setAcomptePct] = useState<string>(depart.acomptePct);
+  const [dateDebut, setDateDebut] = useState(depart.dateDebut);
+  const [dureeEstimee, setDureeEstimee] = useState(depart.dureeEstimee);
+  const [chantierAilleurs, setChantierAilleurs] = useState(depart.chantierAilleurs);
+  const [adresseChantier, setAdresseChantier] = useState(depart.adresseChantier);
   const [enregistrement, setEnregistrement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
-  // Mention TVA réduite (08/09) — suggérée automatiquement si le devis a
-  // déjà un taux réduit au chargement, sinon vide. Reste éditable, et se
-  // met à jour automatiquement UNIQUEMENT si l'artisan change le taux de
-  // TVA lui-même et n'a encore rien tapé — jamais écrasée une fois modifiée
-  // à la main (voir gestionnaireTvaPct plus bas).
-  const [mentionTvaReduite, setMentionTvaReduite] = useState(
-    devis.mention_tva_reduite ?? genererMentionTvaReduite(devis.tva_pct) ?? ""
-  );
+  // Mention TVA réduite (08/09) — voir etatDepuisDevis.
+  const [mentionTvaReduite, setMentionTvaReduite] = useState(depart.mentionTvaReduite);
   const [mentionModifieeManuellement, setMentionModifieeManuellement] = useState(
-    Boolean(devis.mention_tva_reduite)
+    depart.mentionModifieeManuellement
   );
+
+  // Le brouillon local suit chaque modification (un peu après la frappe) ;
+  // revenu à l'identique de ce qui est enregistré, il est effacé.
+  useEffect(() => {
+    const etat: EtatEdition = {
+      lignes,
+      lots,
+      deplacement,
+      margePct,
+      tvaPct,
+      commentaires,
+      objet,
+      validiteJours,
+      acomptePct,
+      dateDebut,
+      dureeEstimee,
+      chantierAilleurs,
+      adresseChantier,
+      mentionTvaReduite,
+      mentionModifieeManuellement,
+    };
+    const minuteur = setTimeout(() => {
+      if (brouillonAbandonne.current || devis.statut !== "brouillon") return;
+      if (empreinteEtat(etat) === empreinteEnregistree) effacerBrouillon(cleBrouillon);
+      else ecrireBrouillon(cleBrouillon, baseBrouillon, etat);
+    }, 400);
+    return () => clearTimeout(minuteur);
+  }, [
+    lignes,
+    lots,
+    deplacement,
+    margePct,
+    tvaPct,
+    commentaires,
+    objet,
+    validiteJours,
+    acomptePct,
+    dateDebut,
+    dureeEstimee,
+    chantierAilleurs,
+    adresseChantier,
+    mentionTvaReduite,
+    mentionModifieeManuellement,
+    devis.statut,
+    cleBrouillon,
+    baseBrouillon,
+    empreinteEnregistree,
+  ]);
+
+  function revenirAuDevisEnregistre() {
+    brouillonAbandonne.current = true;
+    effacerBrouillon(cleBrouillon);
+    window.location.reload();
+  }
 
   function gestionnaireTvaPct(valeur: number) {
     setTvaPct(valeur);
@@ -339,6 +464,10 @@ export function ValiderDevis({
       return;
     }
 
+    // Enregistré : le brouillon local n'a plus de raison d'être.
+    brouillonAbandonne.current = true;
+    effacerBrouillon(cleBrouillon);
+
     const organisationId = await getOrganisationId(supabase, artisanId);
     if (organisationId) {
       await enregistrerEvenement(supabase, {
@@ -367,6 +496,19 @@ export function ValiderDevis({
         Changez tout ce que vous voulez : lignes, prix, conditions. Rien n&apos;est envoyé au
         client avant que vous validiez.
       </p>
+
+      {retrouve && (
+        <div className="mb-5 flex flex-wrap items-center gap-x-3 rounded-xl bg-ink/[0.04] px-4 py-2 text-[13.5px] text-ink/75">
+          <span className="py-2">Vos modifications non validées ont été retrouvées.</span>
+          <button
+            type="button"
+            onClick={revenirAuDevisEnregistre}
+            className="inline-flex min-h-11 items-center font-medium text-ink underline underline-offset-4"
+          >
+            Revenir au devis enregistré
+          </button>
+        </div>
+      )}
 
       <div className="mb-5">
         <TextareaField

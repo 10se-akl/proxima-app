@@ -3,6 +3,7 @@ import { TelephoneSoir } from "./TelephoneSoir";
 import { EcranSoir } from "./EcranSoir";
 import { CadrePhoto } from "./CadrePhoto";
 import { PHOTOS } from "./photos";
+import { FondParticules } from "./FondParticules";
 
 // ============================================================
 // Le hero (24/09). Un résultat, pas une technologie : le mot « IA »
@@ -61,6 +62,9 @@ export function Hero() {
         <LumiereFenetre />
       )}
       <CielSoir />
+      {/* 27/09 — Le nuage de particules, derrière le texte (voir
+          FondParticules.tsx : léger, en pause hors de l'écran). */}
+      <FondParticules />
 
       <div className="relative mx-auto grid max-w-7xl items-center gap-y-16 px-5 pb-20 pt-14 max-md:flex max-md:min-h-[calc(100svh-4rem)] max-md:flex-col max-md:items-stretch max-md:gap-y-0 max-md:pb-5 max-md:pt-7 sm:px-8 sm:pt-20 lg:min-h-[calc(100svh-4rem)] lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-x-12 lg:py-24">
         <div className="v-hero-texte">

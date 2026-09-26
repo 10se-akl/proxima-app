@@ -68,10 +68,21 @@ function Chiffre({
   precedent: ChiffresMois;
   reference: string;
 }) {
+  // 27/09 — Deux tuiles par ligne sur téléphone ne laissent qu'environ
+  // 110 px au chiffre : « 9 850,40 € » débordait déjà de sa tuile (et sur
+  // ordinateur, à quatre tuiles, « 24 850,40 € »). La taille suit
+  // maintenant la largeur de la tuile ET la longueur du texte (un chiffre
+  // fait ~0,52 fois sa hauteur de large), sans jamais dépasser la taille
+  // d'avant. Un navigateur qui ne connaît pas « cqi » garde la taille fixe.
   return (
-    <Card className="p-5">
+    <Card className="p-5 [container-type:inline-size]">
       <p className="text-xs text-ink/55">{titre}</p>
-      <p className="mt-1.5 font-display text-2xl font-semibold tabular-nums sm:text-[1.7rem]">{valeur}</p>
+      <p
+        className="mt-1.5 font-display text-2xl font-semibold tabular-nums [--taille-max:1.5rem] sm:text-[1.7rem] sm:[--taille-max:1.7rem]"
+        style={{ fontSize: `min(var(--taille-max), ${(182 / Math.max(valeur.length, 1)).toFixed(1)}cqi)` }}
+      >
+        {valeur}
+      </p>
       {detail && <p className="mt-0.5 text-xs text-ink/45">{detail}</p>}
       <Evolution actuel={actuel[cleChiffre]} precedent={precedent[cleChiffre]} reference={reference} />
     </Card>
@@ -123,7 +134,7 @@ export function VueBilan({
         <nav aria-label="Changer de mois" className="flex items-center gap-2">
           <Link
             href={`/dashboard/bilan?mois=${cle(precedent)}`}
-            className="grid h-10 w-10 place-items-center rounded-xl border border-ink/15 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
+            className="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
             aria-label={`Voir ${libelle(precedent)}`}
           >
             <span aria-hidden>‹</span>
@@ -131,7 +142,7 @@ export function VueBilan({
           {activite.enCours ? (
             <span
               aria-disabled
-              className="grid h-10 w-10 place-items-center rounded-xl border border-ink/10 text-ink/20"
+              className="grid h-11 w-11 place-items-center rounded-xl border border-ink/10 text-ink/20"
             >
               <span aria-hidden>›</span>
               <span className="sr-only">Pas de mois suivant</span>
@@ -139,14 +150,14 @@ export function VueBilan({
           ) : (
             <Link
               href={`/dashboard/bilan?mois=${cle(suivant)}`}
-              className="grid h-10 w-10 place-items-center rounded-xl border border-ink/15 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
+              className="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
               aria-label={`Voir ${libelle(suivant)}`}
             >
               <span aria-hidden>›</span>
             </Link>
           )}
           {!memeMois(mois, courant) && (
-            <Link href="/dashboard/bilan" className="ml-1 text-xs text-ink/55 underline hover:text-ink">
+            <Link href="/dashboard/bilan" className="ml-1 inline-flex min-h-11 items-center text-xs text-ink/55 underline hover:text-ink">
               Mois en cours
             </Link>
           )}

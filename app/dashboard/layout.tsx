@@ -60,7 +60,10 @@ export default async function DashboardLayout({
           reste posé sur des cartes bg-surface opaques par-dessus. */}
       {/* pb : sur téléphone, le contenu ne passe jamais sous la barre du
           bas (voir Sidebar.tsx), zone de sécurité du téléphone comprise. */}
-      <main className="flex-1 min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0 bg-[radial-gradient(ellipse_1200px_700px_at_top_left,rgb(var(--c-signal-clair)/0.14),transparent_65%)]">
+      {/* min-w-0 (27/09) : à côté de la barre latérale (tablette, téléphone
+          en paysage), un nom de client très long faisait déborder toute la
+          page de 144 px sur le côté au lieu d'être coupé par « … ». */}
+      <main className="flex-1 min-w-0 min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0 bg-[radial-gradient(ellipse_1200px_700px_at_top_left,rgb(var(--c-signal-clair)/0.14),transparent_65%)]">
         {children}
       </main>
       <BoutonRetour />

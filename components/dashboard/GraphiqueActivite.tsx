@@ -118,25 +118,30 @@ export function GraphiqueActivite({ points, moisActif }: { points: Point[]; mois
         </span>
       </figcaption>
 
-      <table className="sr-only">
-        <caption>Montants signés et encaissés, TTC, sur les six derniers mois</caption>
-        <thead>
-          <tr>
-            <th scope="col">Mois</th>
-            <th scope="col">Signé</th>
-            <th scope="col">Encaissé</th>
-          </tr>
-        </thead>
-        <tbody>
-          {points.map((p) => (
-            <tr key={`t-${p.mois.annee}-${p.mois.mois}`}>
-              <th scope="row">{libelle(p.mois)}</th>
-              <td>{euros(p.signe)}</td>
-              <td>{euros(p.encaisse)}</td>
+      {/* 27/09 — « sr-only » sur un <div> et non sur le <table> : un tableau
+          refuse de rétrécir à 1 px, et celui-ci élargissait toute la page
+          Bilan sur téléphone (barre du bas coupée, défilement de côté). */}
+      <div className="sr-only">
+        <table>
+          <caption>Montants signés et encaissés, TTC, sur les six derniers mois</caption>
+          <thead>
+            <tr>
+              <th scope="col">Mois</th>
+              <th scope="col">Signé</th>
+              <th scope="col">Encaissé</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {points.map((p) => (
+              <tr key={`t-${p.mois.annee}-${p.mois.mois}`}>
+                <th scope="row">{libelle(p.mois)}</th>
+                <td>{euros(p.signe)}</td>
+                <td>{euros(p.encaisse)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </figure>
   );
 }

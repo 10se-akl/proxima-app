@@ -136,12 +136,12 @@ export function CompletionMention({ pointId, contexte }: { pointId: string; cont
               value={valeurs[c.cle] ?? ""}
               onChange={(ev) => setValeurs((v) => ({ ...v, [c.cle]: ev.target.value }))}
               placeholder={c.placeholder}
-              className="mt-1 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-3 text-[16px] text-ink placeholder:text-ink/35 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+              className="mt-1 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-3 text-[16px] text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
             />
           </div>
         ))}
       </div>
-      {erreur && <p className="mt-2 text-[13px] text-signal">{erreur}</p>}
+      {erreur && <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">{erreur}</p>}
       <button
         type="submit"
         disabled={!complet || enCours}

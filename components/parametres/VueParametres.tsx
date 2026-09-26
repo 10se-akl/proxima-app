@@ -190,7 +190,7 @@ export function VueParametres({
   // comme avant (une saisie faite dans un autre groupe n'est pas perdue).
   const piedFormulaire = (
     <div className="mt-6 flex flex-col gap-3">
-      {erreur && <p className="text-sm text-signal">{erreur}</p>}
+      {erreur && <p className="text-sm text-signal-fonce dark:text-signal-clair">{erreur}</p>}
       {confirme && <p className="text-sm text-steel">Enregistré. Vos prochains devis l&apos;utiliseront.</p>}
       <button
         type="submit"
@@ -209,7 +209,7 @@ export function VueParametres({
       {retrouve && (
         <div className="mt-4 rounded-xl bg-ink/[0.04] px-4 py-3 text-[13.5px] text-ink/75">
           <p>Des modifications non enregistrées ont été retrouvées.</p>
-          {erreur && !ouvert && <p className="mt-1 text-signal">{erreur}</p>}
+          {erreur && !ouvert && <p className="mt-1 text-signal-fonce dark:text-signal-clair">{erreur}</p>}
           <div className="mt-1 flex flex-wrap gap-x-5">
             <button
               type="button"
@@ -655,11 +655,17 @@ function GroupeReplie({
           className="flex w-full min-h-14 items-center gap-3 px-4 text-left transition-colors hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 sm:px-5"
         >
           <span className="min-w-0 flex-1 text-[16px] font-medium text-ink">{titre}</span>
+          {/* Texte à l'encre (contraste suffisant en clair comme en sombre),
+              la couleur passe par le fond et la pastille. */}
           {manque !== null &&
             (manque === 0 ? (
-              <span className="shrink-0 rounded-full bg-succes/12 px-2.5 py-1 text-[12.5px] font-medium text-succes">Complet</span>
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-succes/12 px-2.5 py-1 text-[12.5px] font-medium text-ink/80">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-succes" />
+                Complet
+              </span>
             ) : (
-              <span className="shrink-0 rounded-full bg-alerte-orange/15 px-2.5 py-1 text-[12.5px] font-medium text-alerte-orange">
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-alerte-orange/15 px-2.5 py-1 text-[12.5px] font-medium text-ink/80">
+                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-alerte-orange" />
                 {manque} à compléter
               </span>
             ))}

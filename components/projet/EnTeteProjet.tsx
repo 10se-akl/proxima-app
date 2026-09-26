@@ -68,7 +68,7 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
         aria-expanded={ouvert}
         aria-label="Plus d'actions"
         onClick={() => setOuvert((v) => !v)}
-        className="grid h-10 w-10 place-items-center rounded-full border border-ink/10 bg-surface text-ink/70 transition hover:border-ink/25 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+        className="grid h-12 w-12 place-items-center rounded-full border border-ink/10 bg-surface text-ink/70 transition hover:border-ink/25 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
       >
         <IconePoints className="h-5 w-5" />
       </button>
@@ -170,7 +170,7 @@ export function EnTeteProjet({
       <div className="flex items-center justify-between gap-3">
         <Link
           href="/dashboard/demandes"
-          className="inline-flex items-center gap-1 rounded-lg py-1 pr-2 text-[13.5px] text-ink/55 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+          className="-ml-1 inline-flex min-h-12 items-center gap-1 rounded-lg pl-1 pr-3 text-[13.5px] text-ink/55 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
         >
           <IconeRetour className="h-4 w-4" /> Projets
         </Link>

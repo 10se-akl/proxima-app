@@ -114,7 +114,7 @@ export function Feuille({
             data-fermer
             onClick={surFermer}
             aria-label="Fermer"
-            className="grid h-9 w-9 place-items-center rounded-full text-ink/55 transition hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+            className="-mr-2 grid h-12 w-12 shrink-0 place-items-center rounded-full text-ink/55 transition hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
           >
             <IconeFermer className="h-4 w-4" />
           </button>

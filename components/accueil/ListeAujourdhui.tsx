@@ -57,7 +57,7 @@ export function ListeAujourdhui({ elements }: { elements: ElementJour[] }) {
 
   return (
     <BlocAccueil titre="Aujourd'hui" nombre={visibles.length} lienTous="/dashboard/planning">
-      {erreur && <p className="text-[13px] text-signal">Pas enregistré. Réessayez.</p>}
+      {erreur && <p className="text-[13px] text-signal-fonce dark:text-signal-clair">Pas enregistré. Réessayez.</p>}
       {visibles.slice(0, LIGNES_MAX).map((e) => (
         <LigneAccueil
           key={e.cle}

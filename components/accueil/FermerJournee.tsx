@@ -163,7 +163,7 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
         </span>
         <span className="min-w-0">
           <span className="block text-[17px] font-semibold text-ink">Journée fermée. Tout est noté.</span>
-          <span className="mt-0.5 block truncate text-[13.5px] text-ink/55">
+          <span className="mt-0.5 block truncate text-[13.5px] text-ink/65">
             Demain · {fermeture.demain ?? "rien de prévu"}
           </span>
         </span>
@@ -201,7 +201,7 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
                 <li key={e.cle} className="flex items-center gap-2">
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[15px] font-medium text-ink">{e.principal}</span>
-                    {e.secondaire && <span className="block truncate text-[13px] text-ink/55">{e.secondaire}</span>}
+                    {e.secondaire && <span className="block truncate text-[13px] text-ink/65">{e.secondaire}</span>}
                   </span>
                   <button
                     type="button"
@@ -228,8 +228,8 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
                 </li>
               ))}
             </ul>
-            {autres > 0 && <p className="mt-2 text-[13px] text-ink/55">Et {autres} de plus.</p>}
-            {erreur && <p className="mt-2 text-[13px] text-signal">Pas enregistré. Réessayez.</p>}
+            {autres > 0 && <p className="mt-2 text-[13px] text-ink/65">Et {autres} de plus.</p>}
+            {erreur && <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">Pas enregistré. Réessayez.</p>}
           </Ligne>
         )}
 

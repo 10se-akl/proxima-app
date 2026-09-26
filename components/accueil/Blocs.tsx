@@ -63,7 +63,7 @@ export function LigneAccueil({
         {repere && (
           <span
             className={`w-14 shrink-0 font-mono text-[13px] tabular-nums ${
-              repereAccent ? "font-semibold text-signal" : "text-ink/55"
+              repereAccent ? "font-semibold text-signal-fonce dark:text-signal-clair" : "text-ink/65"
             }`}
           >
             {repere}
@@ -71,7 +71,7 @@ export function LigneAccueil({
         )}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[15px] font-medium text-ink">{principal}</span>
-          {secondaire && <span className="block truncate text-[13px] text-ink/55">{secondaire}</span>}
+          {secondaire && <span className="block truncate text-[13px] text-ink/65">{secondaire}</span>}
         </span>
       </Link>
       {fin}

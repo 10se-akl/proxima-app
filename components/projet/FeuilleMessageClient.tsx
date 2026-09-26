@@ -220,7 +220,7 @@ export function ContenuMessageClient({
           placeholder="06 12 34 56 78"
           className="mt-2 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-4 text-[17px] text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
         />
-        {erreurNumero && <p className="mt-2 text-[14px] text-signal">Numéro incomplet ou non enregistré.</p>}
+        {erreurNumero && <p className="mt-2 text-[14px] text-signal-fonce dark:text-signal-clair">Numéro incomplet ou non enregistré.</p>}
         <button
           type="submit"
           disabled={enregistrement}

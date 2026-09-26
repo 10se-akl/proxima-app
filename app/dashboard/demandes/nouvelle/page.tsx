@@ -301,10 +301,11 @@ export default function NouveauProjetPage() {
     setEnregistrement(false);
   }
 
-  // "Premier contact sans friction" (26/08) — entrée directe depuis le menu
-  // "Nouveau projet" (voir components/dashboard/NouveauProjetMenu.tsx),
-  // option "Dictée vocale" : on lance l'écoute immédiatement au lieu de
-  // forcer un clic supplémentaire sur "🎙 Dicter" une fois la page ouverte.
+  // "Premier contact sans friction" (26/08) — entrée directe depuis le gros
+  // bouton « Parler » de la feuille « Nouveau projet » (voir
+  // components/navigation/FeuilleCapture.tsx, 26/09) : on lance l'écoute
+  // immédiatement au lieu de forcer un clic supplémentaire sur "🎙 Dicter"
+  // une fois la page ouverte.
   useEffect(() => {
     if (searchParams.get("dictee") === "1") {
       dicter();

@@ -60,8 +60,10 @@ function formatEuros(n: number) {
 
 const champ =
   "w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15";
+// 27/09 — 48 px sur téléphone (32 px avant) : la croix de suppression est
+// collée au libellé, un pouce ne doit pas la toucher par erreur.
 const boutonIcone =
-  "grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-ink/10 text-ink/45 transition-colors hover:border-ink/25 hover:text-ink disabled:opacity-30 disabled:hover:border-ink/10 disabled:hover:text-ink/45";
+  "grid h-12 w-12 shrink-0 place-items-center sm:h-8 sm:w-8 rounded-xl border border-ink/10 text-ink/45 transition-colors hover:border-ink/25 hover:text-ink disabled:opacity-30 disabled:hover:border-ink/10 disabled:hover:text-ink/45";
 
 export function EditeurLignes({
   lignes,

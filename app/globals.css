@@ -264,10 +264,20 @@
         partagés (Input.tsx, Select, Textarea...) utilisent text-sm (14px)
         pour la cohérence visuelle desktop : on ne les change pas, on relève
         juste la taille réelle du texte SAISI sur mobile uniquement, où le
-        défaut ne se produit qu'à cette largeur d'écran. */
+        défaut ne se produit qu'à cette largeur d'écran.
+        27/09 — !important : sans lui, la règle ne s'appliquait jamais. Une
+        classe utilitaire (text-sm) l'emporte sur un sélecteur d'élément,
+        et presque tous les champs en portent une : mesuré à 14 px sur un
+        écran de 390 px, donc un zoom à chaque champ touché sur iPhone. */
   @media (max-width: 640px) {
     input, select, textarea {
-      font-size: 16px;
+      font-size: 16px !important;
+    }
+    /* 27/09 — Les champs d'une ligne faisaient 42 px de haut : un peu
+       juste avec des gants. 48 px, comme les boutons. */
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]):not([type="hidden"]),
+    select {
+      min-height: 48px;
     }
   }
 

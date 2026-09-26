@@ -52,7 +52,7 @@ export default function MotDePasseOubliePage() {
   return (
     <main className="min-h-screen flex flex-col items-center justify-center px-5">
       <div className="w-full max-w-sm mb-4">
-        <Link href="/login" className="text-sm text-ink/60 transition-colors hover:text-ink">
+        <Link href="/login" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 transition-colors hover:text-ink">
           ← Retour à la connexion
         </Link>
       </div>

@@ -80,8 +80,15 @@ export async function middleware(request: NextRequest) {
     }
 
     if (!user && besoinSession) {
+      // 27/09 — L'écran demandé est gardé (« suite ») : une notification
+      // touchée après expiration de la session ramène, une fois reconnecté,
+      // sur la bonne fiche au lieu de l'accueil. Relu et vérifié par la
+      // page de connexion (chemin interne /dashboard uniquement).
       const url = request.nextUrl.clone();
+      const suite = `${request.nextUrl.pathname}${request.nextUrl.search}`;
       url.pathname = "/login";
+      url.search = "";
+      if (suite.startsWith("/dashboard") && suite !== "/dashboard") url.searchParams.set("suite", suite);
       return NextResponse.redirect(url);
     }
 

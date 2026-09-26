@@ -31,6 +31,9 @@ export function MiseAJourPWA() {
   function mettreAJour() {
     if (!enregistrement?.waiting) return;
     setMiseAJourEnCours(true);
+    // Prévient EnregistrerServiceWorker que CE changement de contrôleur est
+    // voulu : c'est le seul cas où il recharge la page.
+    window.dispatchEvent(new Event("compyo:sw-maj-acceptee"));
     // Le rechargement effectif est déclenché par le "controllerchange"
     // écouté dans EnregistrerServiceWorker.tsx, une fois que ce nouveau
     // worker a réellement pris le contrôle de la page — pas ici en dur,

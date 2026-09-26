@@ -62,9 +62,21 @@ export function EnregistrerServiceWorker() {
     // Une fois que l'artisan a validé la mise à jour (voir MiseAJourPWA),
     // le nouveau service worker prend le contrôle : on recharge la page
     // une seule fois à ce moment précis, jamais spontanément.
+    //
+    // 27/09 — Corrigé : « controllerchange » arrive AUSSI à la toute
+    // première visite, quand le service worker qui vient de s'installer
+    // prend le contrôle de la page (clients.claim() dans sw.js). La page
+    // se rechargeait alors toute seule quelques secondes après l'arrivée
+    // (lecture renvoyée en haut, candidature commencée effacée). On ne
+    // recharge plus que si l'artisan a appuyé sur « Mettre à jour ».
+    let majAcceptee = false;
+    const surMajAcceptee = () => {
+      majAcceptee = true;
+    };
+    window.addEventListener("compyo:sw-maj-acceptee", surMajAcceptee);
     let dejaRecharge = false;
     navigator.serviceWorker.addEventListener("controllerchange", () => {
-      if (dejaRecharge) return;
+      if (!majAcceptee || dejaRecharge) return;
       dejaRecharge = true;
       window.location.reload();
     });

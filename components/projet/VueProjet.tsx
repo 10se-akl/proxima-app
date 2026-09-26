@@ -270,21 +270,33 @@ export function VueProjet({
         }}
       />
 
-      {/* Juste après une capture : un seul geste pour rassurer le client. */}
+      {/* Juste après une capture : un seul geste pour rassurer le client,
+          par le canal qu'il a utilisé (un message partagé depuis WhatsApp
+          appelle une réponse sur WhatsApp). */}
       {vientDEtreCree && projet.telephone_client && !dejaContacte && (
-        <button
-          type="button"
-          onClick={() => {
-            const texte = accuse({ signature });
-            if (ouvrirMessage("sms", projet.telephone_client as string, texte)) {
-              tracerMessagePrepare(createClient(), { demandeId: projet.id, cle: "accuse", canal: "sms" });
-              setVientDEtreCree(false);
-            }
-          }}
-          className="mt-4 flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition motion-safe:active:scale-[0.99] sm:w-auto sm:px-6"
-        >
-          Répondre : bien reçu
-        </button>
+        <div className="mt-4 rounded-2xl bg-surface p-4 ring-1 ring-ink/10 sm:max-w-md">
+          <p className="text-[15px] font-medium text-ink">Répondre « bien reçu »</p>
+          <div className="mt-3 grid grid-cols-2 gap-2">
+            {(["sms", "whatsapp"] as const).map((canal) => (
+              <button
+                key={canal}
+                type="button"
+                onClick={() => {
+                  const texte = accuse({ signature });
+                  if (ouvrirMessage(canal, projet.telephone_client as string, texte)) {
+                    tracerMessagePrepare(createClient(), { demandeId: projet.id, cle: "accuse", canal });
+                    setVientDEtreCree(false);
+                  }
+                }}
+                className={`min-h-12 rounded-xl text-[15px] font-semibold transition motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
+                  canal === "sms" ? "bg-ink text-paper" : "text-ink ring-1 ring-ink/15"
+                }`}
+              >
+                {canal === "sms" ? "SMS" : "WhatsApp"}
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Téléphone : une colonne, dans l'ordre d'usage. Ordinateur : le

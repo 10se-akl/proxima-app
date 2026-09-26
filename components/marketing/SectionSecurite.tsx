@@ -66,7 +66,7 @@ export function SectionSecurite() {
         <div className="mt-10 text-center">
           <Link
             href="/politique-de-confidentialite"
-            className="text-sm text-ink/50 hover:text-ink underline"
+            className="inline-flex min-h-11 items-center text-sm text-ink/50 hover:text-ink underline"
           >
             Lire la politique de confidentialité complète →
           </Link>

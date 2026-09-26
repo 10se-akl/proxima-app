@@ -32,7 +32,7 @@ export function SectionMetiers() {
         <p className="mt-10 text-center max-md:mt-5">
           <Link
             href="/metiers"
-            className="inline-flex items-center gap-2 text-[15px] font-medium text-ink underline decoration-ink/25 underline-offset-4 transition hover:decoration-signal"
+            className="inline-flex min-h-11 items-center gap-2 text-[15px] font-medium text-ink underline decoration-ink/25 underline-offset-4 transition hover:decoration-signal"
           >
             Les 17 métiers, page par page <span aria-hidden>→</span>
           </Link>

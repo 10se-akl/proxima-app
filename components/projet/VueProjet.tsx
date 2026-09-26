@@ -240,15 +240,17 @@ export function VueProjet({
   const sousTitre = [typeChantier, projet.adresse_client].filter(Boolean).join(" · ");
   const statutDevis = devis ? statutAffiche(devis, projet.statut) : null;
 
+  // Tablette ou téléphone en paysage (27/09) : 44 px de haut au doigt,
+  // rien ne change à la souris.
   const barreAjout = (
     <div className="hidden items-center gap-1.5 sm:flex">
-      <button type="button" onClick={() => setAjout("vocal")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25">
+      <button type="button" onClick={() => setAjout("vocal")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
         <IconeMicro className="h-4 w-4 text-signal" /> Dicter
       </button>
-      <button type="button" onClick={() => setPhotosOuvertes(true)} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25">
+      <button type="button" onClick={() => setPhotosOuvertes(true)} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
         <IconePhoto className="h-4 w-4 text-signal" /> Photos
       </button>
-      <button type="button" onClick={() => setAjout("note")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25">
+      <button type="button" onClick={() => setAjout("note")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
         <IconeCrayon className="h-4 w-4 text-signal" /> Note
       </button>
     </div>

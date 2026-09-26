@@ -145,7 +145,7 @@ export default function PageMetier({ params }: { params: { slug: string } }) {
       <main className="px-5 sm:px-8">
         <section className="mx-auto max-w-5xl pt-14 sm:pt-24">
           <Reveal>
-            <nav aria-label="Fil d'Ariane" className="font-mono text-[11px] uppercase tracking-[0.22em] text-steel">
+            <nav aria-label="Fil d'Ariane" className="font-mono text-[11px] uppercase tracking-[0.22em] text-steel max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center">
               <Link href="/" className="hover:text-ink">
                 Accueil
               </Link>
@@ -270,7 +270,7 @@ export default function PageMetier({ params }: { params: { slug: string } }) {
               ))}
             </ul>
             <p className="mt-6 text-[14px] text-ink/60">
-              <Link href="/metiers" className="font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-signal">
+              <Link href="/metiers" className="inline-flex min-h-11 items-center font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-signal">
                 Les 17 métiers et les entreprises de rénovation
               </Link>
             </p>

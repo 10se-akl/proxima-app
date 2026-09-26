@@ -222,7 +222,7 @@ export function Header({
             cet endroit (mesuré via getBoundingClientRect), pour donner
             l'impression qu'il "devient" ce logo-ci plutôt que de simplement
             disparaître pendant qu'un autre apparaît. */}
-        <Link id="ancre-logo-entete" href="/" className="flex items-center gap-2.5 shrink-0">
+        <Link id="ancre-logo-entete" href="/" className="flex min-h-11 items-center gap-2.5 shrink-0">
           <CompyoMark taille={30} />
           <span className="font-display font-semibold tracking-tight">Compyo</span>
         </Link>
@@ -257,7 +257,7 @@ export function Header({
               </Link>
               <Link
                 href="/demander-acces"
-                className={`inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap ${
+                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:min-h-0 sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap ${
                   ctaTelephone ? "" : "max-md:hidden"
                 }`}
               >
@@ -273,7 +273,7 @@ export function Header({
             onClick={() => setMenuOuvert((v) => !v)}
             aria-expanded={menuOuvert}
             aria-label={menuOuvert ? "Fermer le menu" : "Ouvrir le menu"}
-            className="lg:hidden grid place-items-center w-9 h-9 rounded-full border border-ink/15 text-ink hover:border-ink/30 transition-colors shrink-0"
+            className="lg:hidden grid place-items-center w-11 h-11 rounded-full border border-ink/15 text-ink hover:border-ink/30 transition-colors shrink-0"
           >
             <span className="relative w-4 h-3 block">
               <span
@@ -369,6 +369,12 @@ export function Header({
 
 // ============================================================
 // Pied de page — sobre, sans lien mort.
+//
+// 27/09 — Sur téléphone, chaque lien fait 44 px de haut (15 avant) et sa
+// zone de toucher déborde de 8 px de chaque côté par un pseudo-élément
+// invisible : « CGU » ou « Bêta » se touchent au doigt sans que rien ne
+// bouge à l'écran (les liens sont espacés de 16 à 20 px, les zones se
+// rejoignent sans se chevaucher).
 // ============================================================
 export function Footer() {
   return (
@@ -389,7 +395,7 @@ export function Footer() {
           {/* Second niveau de navigation : le site étant maintenant réparti
               sur plusieurs pages, le pied de page redonne un accès complet
               à toutes, pas seulement aux pages légales. */}
-          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/60">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/60 max-sm:gap-y-0 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center max-sm:[&_a]:relative max-sm:[&_a]:before:absolute max-sm:[&_a]:before:inset-y-0 max-sm:[&_a]:before:-inset-x-2 max-sm:[&_a]:before:content-['']">
             <Link href="/fonctionnalites" className="hover:text-white transition-colors">
               Fonctionnalités
             </Link>
@@ -435,11 +441,11 @@ export function Footer() {
             trouvaient ces pages que par le sitemap. */}
         <nav aria-label="Compyo pour votre métier" className="pt-6 border-t border-white/10">
           <p className="text-center sm:text-left text-[11px] font-mono uppercase tracking-[0.18em] text-white/40">
-            <Link href="/metiers" className="hover:text-white/80 transition-colors">
+            <Link href="/metiers" className="inline-flex min-h-11 items-center hover:text-white/80 transition-colors sm:min-h-0">
               Compyo pour votre métier
             </Link>
           </p>
-          <ul className="mt-3 flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-1.5 text-xs text-white/55">
+          <ul className="mt-3 flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-1.5 text-xs text-white/55 max-sm:mt-1 max-sm:gap-y-0 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center max-sm:[&_a]:relative max-sm:[&_a]:before:absolute max-sm:[&_a]:before:inset-y-0 max-sm:[&_a]:before:-inset-x-2 max-sm:[&_a]:before:content-['']">
             {FICHES_REDIGEES.map((f) => (
               <li key={f.slug}>
                 <Link href={`/metiers/${f.slug}`} className="hover:text-white transition-colors">
@@ -451,7 +457,7 @@ export function Footer() {
         </nav>
 
         <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/50">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/50 max-sm:gap-y-0 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center max-sm:[&_a]:relative max-sm:[&_a]:before:absolute max-sm:[&_a]:before:inset-y-0 max-sm:[&_a]:before:-inset-x-2 max-sm:[&_a]:before:content-['']">
             <Link href="/mentions-legales" className="hover:text-white/80 transition-colors">
               Mentions légales
             </Link>
@@ -464,7 +470,7 @@ export function Footer() {
           </nav>
           <a
             href="mailto:proxima.saas@gmail.com"
-            className="font-mono text-xs text-white/40 hover:text-white/70 transition-colors"
+            className="inline-flex min-h-11 items-center font-mono text-xs text-white/40 hover:text-white/70 transition-colors sm:min-h-0"
           >
             proxima.saas@gmail.com
           </a>

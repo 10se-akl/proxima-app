@@ -242,7 +242,7 @@ export function AFaire({
           <button
             type="button"
             onClick={surAjouter}
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-medium text-ink/60 transition hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-medium text-ink/60 transition hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 [@media(pointer:coarse)]:min-h-11"
           >
             <IconePlus className="h-3.5 w-3.5" /> Ajouter
           </button>

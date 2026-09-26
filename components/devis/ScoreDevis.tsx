@@ -76,7 +76,7 @@ function Ligne({ point, completion }: { point: PointQualite; completion?: Contex
         {point.lien && !surPlace && (
           <Link
             href={point.lien.href}
-            className="mt-1 inline-block text-xs font-medium text-signal underline-offset-2 hover:underline"
+            className="mt-1 inline-block text-xs font-medium text-signal underline-offset-2 hover:underline max-sm:mt-0 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
           >
             {point.lien.texte} →
           </Link>

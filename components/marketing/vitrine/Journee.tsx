@@ -252,7 +252,7 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
               }}
               aria-label={`Aller à ${c.heure}, ${c.titre}`}
               aria-current={i === courant ? "step" : undefined}
-              className="group min-h-0 flex-1 py-2 focus-visible:outline-none"
+              className="group relative min-h-0 flex-1 py-2 before:absolute before:inset-x-0 before:-inset-y-[13px] before:content-[''] focus-visible:outline-none"
             >
               <span className="relative block h-[3px] overflow-hidden rounded-full bg-ink/15 group-focus-visible:ring-2 group-focus-visible:ring-signal/60">
                 <span
@@ -297,7 +297,7 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
                   setLecture((v) => !v);
                 }}
                 aria-label={lecture ? "Mettre la journée en pause" : "Lire la journée"}
-                className="grid h-10 w-10 place-items-center rounded-full text-ink/70 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
+                className="grid h-11 w-11 place-items-center rounded-full text-ink/70 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
               >
                 {lecture ? (
                   <svg viewBox="0 0 16 16" className="h-4 w-4" fill="currentColor" aria-hidden>
@@ -321,7 +321,7 @@ export function Journee({ chapitres, children }: { chapitres: Chapitre[]; childr
                 }}
                 disabled={sens === -1 ? courant === 0 : courant === dernier}
                 aria-label={sens === 1 ? "Moment suivant" : "Moment précédent"}
-                className="grid h-10 w-10 place-items-center rounded-full bg-surface text-ink shadow-[var(--v-ombre-legere)] ring-1 ring-ink/10 transition disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
+                className="grid h-11 w-11 place-items-center rounded-full bg-surface text-ink shadow-[var(--v-ombre-legere)] ring-1 ring-ink/10 transition disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
               >
                 <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none" aria-hidden>
                   <path d={sens === 1 ? "M6 3l5 5-5 5" : "M10 3L5 8l5 5"} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />

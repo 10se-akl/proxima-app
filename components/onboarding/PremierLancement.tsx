@@ -155,7 +155,7 @@ export function PremierLancement() {
             </p>
             <button
               onClick={() => setExempleOuvert(true)}
-              className="mt-3 text-xs text-signal underline underline-offset-2 hover:text-signal/80 transition-colors"
+              className="mt-0.5 inline-flex min-h-11 items-center text-xs text-signal underline underline-offset-2 hover:text-signal/80 transition-colors"
             >
               Voir un exemple de devis
             </button>
@@ -262,7 +262,7 @@ export function PremierLancement() {
           <div className="mt-8 flex items-center justify-between">
             <button
               onClick={terminer}
-              className="text-xs text-ink/40 hover:text-ink/70 transition-colors"
+              className="-ml-2 inline-flex min-h-11 items-center px-2 text-xs text-ink/40 hover:text-ink/70 transition-colors"
             >
               Passer
             </button>

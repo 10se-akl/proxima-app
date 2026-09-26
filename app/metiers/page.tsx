@@ -128,7 +128,7 @@ export default function PageMetiers() {
       <main className="px-5 sm:px-8">
         <section className="mx-auto max-w-5xl pt-14 sm:pt-24">
           <Reveal>
-            <nav aria-label="Fil d'Ariane" className="font-mono text-[11px] uppercase tracking-[0.22em] text-steel">
+            <nav aria-label="Fil d'Ariane" className="font-mono text-[11px] uppercase tracking-[0.22em] text-steel max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center">
               <Link href="/" className="hover:text-ink">
                 Accueil
               </Link>

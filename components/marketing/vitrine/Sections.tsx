@@ -123,7 +123,7 @@ export function SectionSoiree() {
           </Link>
           <Link
             href="/installer"
-            className="text-[15px] font-medium text-white/85 underline decoration-white/30 underline-offset-8 transition-colors hover:decoration-white"
+            className="inline-flex min-h-11 items-center text-[15px] font-medium text-white/85 underline decoration-white/30 underline-offset-8 transition-colors hover:decoration-white"
           >
             Installer l&apos;application
           </Link>

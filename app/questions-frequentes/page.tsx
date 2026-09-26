@@ -180,7 +180,7 @@ export default function PageQuestionsFrequentes() {
                 <a
                   key={t.id}
                   href={`#${t.id}`}
-                  className="rounded-full bg-surface px-4 py-2 text-[13.5px] font-medium text-ink/75 ring-1 ring-ink/10 transition hover:text-ink hover:ring-ink/25"
+                  className="inline-flex min-h-11 items-center rounded-full bg-surface px-4 py-2 text-[13.5px] font-medium text-ink/75 ring-1 ring-ink/10 transition hover:text-ink hover:ring-ink/25"
                 >
                   {t.titre}
                 </a>
@@ -203,7 +203,7 @@ export default function PageQuestionsFrequentes() {
                     {q.lien && (
                       <Link
                         href={q.lien.href}
-                        className="mt-3 inline-flex items-center gap-1.5 text-[14px] font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-signal"
+                        className="mt-3 inline-flex min-h-11 items-center gap-1.5 text-[14px] font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-signal"
                       >
                         {q.lien.texte} <span aria-hidden>→</span>
                       </Link>
@@ -227,7 +227,7 @@ export default function PageQuestionsFrequentes() {
             >
               Rejoindre la bêta
             </Link>
-            <Link href="/contact" className="text-[15px] font-medium text-ink underline decoration-ink/25 underline-offset-8 hover:decoration-ink">
+            <Link href="/contact" className="inline-flex min-h-11 items-center text-[15px] font-medium text-ink underline decoration-ink/25 underline-offset-8 hover:decoration-ink">
               Nous écrire
             </Link>
           </div>

@@ -22,11 +22,11 @@ export function LayoutJuridique({
     <div className="min-h-screen bg-paper">
       <header className="border-b border-ink/10">
         <div className="max-w-3xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
+          <Link href="/" className="flex min-h-11 items-center gap-2.5">
             <CompyoMark taille={26} />
             <span className="font-display font-semibold tracking-tight text-sm">Compyo</span>
           </Link>
-          <Link href="/" className="text-sm text-ink/60 hover:text-ink transition-colors">
+          <Link href="/" className="inline-flex min-h-11 items-center text-sm text-ink/60 hover:text-ink transition-colors">
             ← Retour à l&apos;accueil
           </Link>
         </div>
@@ -45,7 +45,7 @@ export function LayoutJuridique({
       </main>
 
       <footer className="border-t border-ink/10">
-        <div className="max-w-3xl mx-auto px-5 sm:px-8 py-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-ink/50">
+        <div className="max-w-3xl mx-auto px-5 sm:px-8 py-8 flex flex-wrap gap-x-6 gap-y-2 text-xs text-ink/50 max-sm:gap-y-0 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center">
           <Link href="/mentions-legales" className="hover:text-ink/80 transition-colors">
             Mentions légales
           </Link>

@@ -192,6 +192,8 @@ export function SceneDevis() {
             </label>
             <span className="font-mono text-[14px] tabular-nums text-ink">{euros(taux)}</span>
           </div>
+          {/* 27/09 — 44 px de haut pour le doigt (16 avant), marges négatives
+              pour garder exactement la place d'avant dans la scène. */}
           <input
             id="taux-devis"
             type="range"
@@ -200,7 +202,7 @@ export function SceneDevis() {
             step={1}
             value={taux}
             onChange={(e) => setTaux(Number(e.target.value))}
-            className="mt-3 w-full accent-[rgb(var(--c-signal))]"
+            className="-mb-3.5 -mt-0.5 h-11 w-full cursor-pointer accent-[rgb(var(--c-signal))]"
           />
           <div aria-hidden className="mt-1 flex justify-between font-mono text-[10px] text-steel">
             <span>40 €</span>

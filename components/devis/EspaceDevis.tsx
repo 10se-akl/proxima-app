@@ -253,7 +253,7 @@ export function VueEspaceDevis({
     <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-8">
       <Link
         href={`/dashboard/demandes/${projet.id}`}
-        className="text-xs text-ink/50 transition-colors hover:text-ink"
+        className="inline-flex min-h-11 items-center text-xs text-ink/50 transition-colors hover:text-ink"
       >
         ← Projet · {projet.nom_client}
       </Link>

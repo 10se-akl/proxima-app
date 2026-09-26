@@ -120,7 +120,7 @@ export function Hero() {
             </Link>
             <div className="mt-3.5 flex items-center justify-between px-1">
               <p className="font-mono text-[10.5px] tracking-wide text-white/45">Sur candidature · réponse sous 48 h</p>
-              <Link href="#deux-soirees" className="inline-flex items-center gap-1.5 text-[13px] font-medium text-white/75">
+              <Link href="#deux-soirees" className="inline-flex min-h-11 items-center gap-1.5 text-[13px] font-medium text-white/75">
                 La suite
                 <svg viewBox="0 0 16 16" className="v-rebond h-3.5 w-3.5" fill="none" aria-hidden>
                   <path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />

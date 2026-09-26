@@ -374,7 +374,7 @@ export function AssistantInstallation() {
           décoration — c'est ce qu'on demande à un bêta-testeur de copier
           quand "ça ne marche pas", plutôt que de deviner à distance. */}
       <details className="mt-4 rounded-2xl border border-ink/10 bg-surface/60 px-5 py-4">
-        <summary className="cursor-pointer text-sm font-medium text-ink/70 hover:text-ink">
+        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-ink/70 hover:text-ink">
           Ça ne marche pas ? Ouvrez le diagnostic
         </summary>
         <p className="mt-3 text-xs text-ink/55 leading-relaxed">
@@ -390,7 +390,7 @@ export function AssistantInstallation() {
           </Button>
           <a
             href="mailto:proxima.saas@gmail.com?subject=Installation%20Compyo"
-            className="text-xs text-ink/50 underline hover:text-ink"
+            className="inline-flex min-h-11 items-center text-xs text-ink/50 underline hover:text-ink"
           >
             Nous l&apos;envoyer par mail
           </a>

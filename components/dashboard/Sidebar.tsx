@@ -102,7 +102,9 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
         <Avatar nom={nomArtisan || "?"} taille={30} />
         <p className="text-sm text-white/80 font-medium truncate">{nomArtisan}</p>
       </div>
-      <div className="flex items-center gap-2.5 px-2">
+      {/* gap-1 (27/09) : quatre boutons de 44 px tiennent dans la barre
+          (192 px utiles) ; avec gap-2.5 ils se tassaient sous 44 px. */}
+      <div className="flex items-center gap-1 px-2">
         <CentreNotifications />
         <ThemeToggle className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors" />
         <BoutonInstallerDiscret
@@ -119,13 +121,13 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
         </button>
       </div>
       <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-white/5 text-xs text-white/40">
-        <Link href="/" className="hover:text-white/70 transition-colors">
+        <Link href="/" className="flex items-center hover:text-white/70 transition-colors [@media(pointer:coarse)]:min-h-11">
           Site vitrine
         </Link>
         <span className="text-white/20" aria-hidden="true">
           ·
         </span>
-        <Link href="/contact" className="hover:text-white/70 transition-colors">
+        <Link href="/contact" className="flex items-center hover:text-white/70 transition-colors [@media(pointer:coarse)]:min-h-11">
           Contact
         </Link>
       </div>
@@ -296,7 +298,10 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
 
       <FeuilleCapture ouverte={captureOuverte} surFermer={() => setCaptureOuverte(false)} />
 
-      {/* Ordinateur et tablette — la même structure, en barre latérale. */}
+      {/* Ordinateur et tablette — la même structure, en barre latérale.
+          27/09 — Sur écran tactile (tablette, téléphone en paysage), les
+          petits liens montent à 44 px de haut ; à la souris, rien ne
+          change. */}
       <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-anthracite text-white min-h-screen flex-col justify-between">
         <div>
           <div className="px-6 py-6 border-b border-white/10 flex items-center gap-2.5">
@@ -344,7 +349,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   key={lien.href}
                   href={lien.href}
                   aria-current={actif ? "page" : undefined}
-                  className={`flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-lg transition-colors ${
+                  className={`flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-lg transition-colors [@media(pointer:coarse)]:min-h-11 ${
                     actif ? "bg-white/10 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/5"
                   }`}
                 >
@@ -355,7 +360,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             })}
             <Link
               href="/carte-mentale"
-              className="mt-2 px-3 py-2 text-[12px] text-white/35 hover:text-white/70 transition-colors"
+              className="mt-2 flex items-center px-3 py-2 text-[12px] text-white/35 hover:text-white/70 transition-colors [@media(pointer:coarse)]:min-h-11"
             >
               Idées et retours
             </Link>

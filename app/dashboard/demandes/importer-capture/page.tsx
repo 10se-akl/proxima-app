@@ -247,23 +247,16 @@ export default function ImporterCapturePage() {
   }
 
   return (
-    <div className="p-8 max-w-3xl">
-      <Link href="/dashboard/demandes" className="text-sm text-ink/60 hover:text-ink transition-colors">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-3xl">
+      <Link href="/dashboard/demandes" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors">
         ← Retour aux projets
       </Link>
 
-      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">
-        Importer des captures d&apos;écran
-      </h1>
-      <p className="mt-2 text-sm text-ink/60">
-        Prenez une capture de chaque conversation (WhatsApp, SMS, une autre messagerie...) et
-        envoyez-les toutes en une fois. L&apos;IA lit chaque capture et vous propose de créer un
-        nouveau projet ou d&apos;ajouter le message à un chantier déjà suivi — rien n&apos;est
-        enregistré avant que vous confirmiez.
-      </p>
+      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Photos ou captures</h1>
+      <p className="mt-1 text-[15px] text-ink/65">Une capture par conversation. Rien n&apos;est enregistré avant que vous confirmiez.</p>
 
       {lignes.length === 0 && !importTermine && (
-        <Card className="mt-8 p-6">
+        <Card className="mt-5 p-4 sm:mt-8 sm:p-6">
           <input
             ref={inputRef}
             type="file"
@@ -284,7 +277,7 @@ export default function ImporterCapturePage() {
       )}
 
       {importTermine && (
-        <Card className="mt-8 p-6">
+        <Card className="mt-5 p-4 sm:mt-8 sm:p-6">
           <p className="text-sm text-ink/80">
             {importTermine.nbReussis} capture{importTermine.nbReussis > 1 ? "s" : ""} importée
             {importTermine.nbReussis > 1 ? "s" : ""}

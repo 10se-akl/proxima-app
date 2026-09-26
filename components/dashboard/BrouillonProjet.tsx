@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import type { BrouillonProjet as TypeBrouillonProjet, NiveauConfiance, TypeChantier } from "@/types";
@@ -16,19 +15,20 @@ import type { BrouillonProjet as TypeBrouillonProjet, NiveauConfiance, TypeChant
 // filets de sécurité côté serveur.
 // ============================================================
 
-const BADGE_CONFIANCE: Record<NiveauConfiance, { icone: string; titre: string }> = {
-  explicite: { icone: "🟢", titre: "Reconnu tel quel dans le message" },
-  deduit: { icone: "🟡", titre: "Estimé par l'IA à partir du contexte" },
-  absent: { icone: "🔴", titre: "Introuvable — à compléter" },
+// 27/09 — Un mot, et seulement quand il y a quelque chose à faire. Avant :
+// une pastille de couleur sur chaque champ (vert, jaune, rouge), à
+// déchiffrer champ par champ. Ce qui a été lu tel quel dans le message ne
+// porte plus rien.
+const MENTION_CONFIANCE: Record<NiveauConfiance, { texte: string; classe: string } | null> = {
+  explicite: null,
+  deduit: { texte: "à vérifier", classe: "text-steel" },
+  absent: { texte: "à compléter", classe: "text-signal-fonce dark:text-signal-clair" },
 };
 
 function BadgeConfiance({ niveau }: { niveau: NiveauConfiance }) {
-  const badge = BADGE_CONFIANCE[niveau];
-  return (
-    <span title={badge.titre} className="ml-1.5 text-xs align-middle select-none">
-      {badge.icone}
-    </span>
-  );
+  const mention = MENTION_CONFIANCE[niveau];
+  if (!mention) return null;
+  return <span className={`ml-1.5 font-normal ${mention.classe}`}>· {mention.texte}</span>;
 }
 
 // Revue métier (06/09) — liste élargie à 20 valeurs, voir types/index.ts.
@@ -79,14 +79,7 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
 
   return (
     <div className="space-y-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-base font-semibold text-ink">Brouillon préparé par l'IA</h2>
-          <p className="text-sm text-ink/60 mt-0.5">
-            Vérifiez et corrigez si besoin, puis créez le projet.
-          </p>
-        </div>
-      </div>
+      <p className="text-[15px] text-ink/70">Relisez, puis créez le projet.</p>
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
@@ -145,7 +138,7 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
         </div>
         <div>
           <label className="block text-xs font-medium text-ink/70 mb-1.5">
-            Urgence <BadgeConfiance niveau={valeurs.priorite.confiance} />
+            Urgence
           </label>
           <select
             value={valeurs.priorite.valeur}
@@ -202,7 +195,7 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
         <button
           type="button"
           onClick={() => setTexteOuvert((v) => !v)}
-          className="text-xs text-ink/50 hover:text-ink/70 underline underline-offset-2"
+          className="inline-flex min-h-11 items-center text-[14px] text-ink/65 underline underline-offset-4 hover:text-ink"
         >
           {texteOuvert ? "Masquer le message d'origine" : "Voir le message d'origine"}
         </button>
@@ -215,13 +208,18 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
 
       {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
-      <Button
-        onClick={() => onValider(valeurs)}
-        disabled={validationEnCours}
-        className="w-full"
-      >
-        {validationEnCours ? "Création en cours…" : "Créer le projet"}
-      </Button>
+      {/* Sur téléphone, le bouton reste sous le pouce pendant qu'on relit,
+          juste au-dessus de la barre du bas. */}
+      <div className="sticky bottom-[calc(var(--barre-bas,0px)+env(safe-area-inset-bottom)+1.75rem)] z-10 sm:static">
+        <button
+          type="button"
+          onClick={() => onValider(valeurs)}
+          disabled={validationEnCours}
+          className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper shadow-[0_10px_30px_-12px_rgb(var(--c-ink)/0.6)] transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:shadow-none"
+        >
+          {validationEnCours ? "Création en cours…" : "Créer le projet"}
+        </button>
+      </div>
     </div>
   );
 }

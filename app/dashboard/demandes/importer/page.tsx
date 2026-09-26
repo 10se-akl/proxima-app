@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
 import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
 import { ConfirmationRdv } from "@/components/dashboard/ConfirmationRdv";
 import {
@@ -215,7 +214,7 @@ export default function ImporterMessagePage() {
   // silencieux (même composant que le parcours de partage Android).
   if (correspondances.length > 0) {
     return (
-      <div className="p-8 max-w-2xl">
+      <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
         <Card className="p-6">
           <CorrespondanceProjetExistant
             correspondances={correspondances}
@@ -231,10 +230,10 @@ export default function ImporterMessagePage() {
 
   if (brouillon) {
     return (
-      <div className="p-8 max-w-2xl">
+      <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
         <Link
           href="/dashboard/demandes"
-          className="text-sm text-ink/60 hover:text-ink transition-colors"
+          className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors"
         >
           ← Retour aux projets
         </Link>
@@ -251,21 +250,36 @@ export default function ImporterMessagePage() {
   }
 
   return (
-    <div className="p-8 max-w-2xl">
-      <Link href="/dashboard/demandes" className="text-sm text-ink/60 hover:text-ink transition-colors">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
+      <Link href="/dashboard/demandes" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors">
         ← Retour aux projets
       </Link>
 
-      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">
-        Créer un projet à partir d&apos;un message
-      </h1>
-      <p className="mt-2 text-sm text-ink/60">
-        Collez le message reçu du client (SMS, email, WhatsApp...) tel quel. L&apos;IA prépare
-        un brouillon (nom, coordonnées si présentes, résumé) que vous validez avant la création.
-      </p>
+      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Coller un message</h1>
+      <p className="mt-1 text-[15px] text-ink/65">Le message du client, tel quel.</p>
 
-      <Card className="mt-8 p-6">
+      <Card className="mt-5 p-4 sm:p-6">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {/* 27/09 — Un appui pour coller le message copié : avec des gants,
+              l'appui long dans un champ puis « Coller » est un vrai effort.
+              Si le téléphone refuse l'accès au presse-papiers, le champ
+              reste là, comme avant. */}
+          {!message.trim() && (
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const texte = await navigator.clipboard.readText();
+                  if (texte.trim()) setMessage(texte);
+                } catch {
+                  // Accès refusé : on colle à la main dans le champ.
+                }
+              }}
+              className="w-full min-h-14 rounded-2xl text-[16px] font-semibold text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+            >
+              Coller le message copié
+            </button>
+          )}
           <textarea
             required
             rows={8}
@@ -277,13 +291,17 @@ export default function ImporterMessagePage() {
 
           {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
-          <Button type="submit" disabled={chargement || rechercheEnCours} className="self-start">
+          <button
+            type="submit"
+            disabled={chargement || rechercheEnCours}
+            className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:px-8"
+          >
             {rechercheEnCours
               ? "Recherche d'un projet en cours…"
               : chargement
                 ? "Analyse en cours…"
                 : "Préparer le brouillon"}
-          </Button>
+          </button>
         </form>
       </Card>
     </div>

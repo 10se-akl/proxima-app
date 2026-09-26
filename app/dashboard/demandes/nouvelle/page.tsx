@@ -13,8 +13,7 @@ import {
   type SpeechRecognitionInstance,
 } from "@/lib/dictee";
 import { Field } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { IconeMicro } from "@/components/projet/icones";
 import { LABEL_STATUT, LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 
 // Revue métier (06/09) — élargi de 7 à 18 branches, une par métier
@@ -278,12 +277,15 @@ export default function NouveauProjetPage() {
     recognition.lang = "fr-FR";
     recognition.continuous = true;
     recognition.interimResults = true;
+    // 27/09 — La dictée s'ajoute à ce qui est déjà écrit (un brouillon
+    // retrouvé, une phrase tapée) au lieu de le remplacer : rien ne se perd.
+    const dejaEcrit = description.trim();
     recognition.onresult = (event) => {
       let texte = "";
       for (let i = 0; i < event.results.length; i++) {
         texte += event.results[i][0].transcript;
       }
-      setDescription(texte);
+      setDescription(dejaEcrit ? `${dejaEcrit} ${texte}` : texte);
     };
     recognition.onend = () => setEnregistrement(false);
     recognition.onerror = (event) => {
@@ -295,6 +297,23 @@ export default function NouveauProjetPage() {
     recognitionRef.current = recognition;
     setEnregistrement(true);
   }
+
+  // 27/09 — À la fin de la dictée : un numéro dicté (« 06 12 34 56 78 »)
+  // remplit le champ téléphone s'il est vide, et le curseur va au nom du
+  // client, la seule chose qui reste à taper.
+  const ecoutait = useRef(false);
+  useEffect(() => {
+    if (enregistrement) {
+      ecoutait.current = true;
+      return;
+    }
+    if (!ecoutait.current) return;
+    ecoutait.current = false;
+    const numero = description.match(/(?:\+33\s?|0)[1-9](?:[\s.-]?\d{2}){4}/);
+    if (numero && !telephoneClient.trim()) setTelephoneClient(numero[0]);
+    if (!nomClient.trim()) document.getElementById("nom-client")?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enregistrement]);
 
   function arreterDictee() {
     recognitionRef.current?.stop();
@@ -398,12 +417,8 @@ export default function NouveauProjetPage() {
   }
 
   return (
-    <div className="p-8 max-w-lg">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg">
       <h1 className="font-display text-2xl font-semibold text-ink">Nouveau projet</h1>
-      <p className="mt-2 text-sm text-ink/60">
-        Juste l&apos;essentiel — le reste (adresse, type de chantier, email...) se
-        complète plus tard, directement depuis le projet.
-      </p>
 
       {messageErreurPartage && (
         <div className="mt-4 rounded-xl border border-signal/25 bg-signal/5 px-4 py-3">
@@ -411,13 +426,47 @@ export default function NouveauProjetPage() {
         </div>
       )}
 
-      <Card className="mt-6 p-6">
+      {/* 27/09 — Pendant la dictée, l'écran est tout entier à l'écoute : un
+          grand micro, le texte qui s'écrit en gros, un seul bouton. Avant,
+          on arrivait sur un formulaire, le clavier s'ouvrait sur « Nom du
+          client », et le seul signe d'écoute était un petit lien. */}
+      {enregistrement && (
+        <div className="mt-12 flex flex-col items-center text-center">
+          <button
+            type="button"
+            onClick={arreterDictee}
+            aria-label="Arrêter l'écoute"
+            className="relative grid h-28 w-28 place-items-center rounded-full bg-signal text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal/40"
+          >
+            <span aria-hidden className="absolute -inset-4 rounded-full bg-signal/15 motion-safe:animate-pulse" />
+            <IconeMicro className="relative h-11 w-11" />
+          </button>
+          <p className="mt-6 font-display text-xl font-semibold text-ink">Je vous écoute</p>
+          <p className="mt-1 text-[15px] text-ink/65">Le client, le chantier, son numéro.</p>
+          {description && (
+            <p className="mt-6 w-full rounded-2xl bg-surface p-4 text-left text-[17px] leading-relaxed text-ink ring-1 ring-ink/10">
+              {description}
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={arreterDictee}
+            className="mt-6 w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+          >
+            Terminé
+          </button>
+        </div>
+      )}
+
+      <div className={`mt-6 ${enregistrement ? "hidden" : ""}`}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
             <Field
+              id="nom-client"
               label="Nom du client"
               required
-              autoFocus
+              // Arrivé par « Parler », pas de clavier : on écoute d'abord.
+              autoFocus={searchParams.get("dictee") !== "1"}
               value={nomClient}
               onChange={(e) => setNomClient(e.target.value)}
               onBlur={() => verifierClientExistant("nom")}
@@ -460,27 +509,17 @@ export default function NouveauProjetPage() {
           />
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
-              <label className="text-xs font-medium text-ink/70">
-                Description rapide
+            <div className="flex items-center justify-between gap-3 mb-1.5">
+              <label htmlFor="description-projet" className="text-xs font-medium text-ink/70">
+                Ce que veut le client
               </label>
-              {!enregistrement ? (
-                <button
-                  type="button"
-                  onClick={dicter}
-                  className="text-xs text-ink/50 hover:text-ink underline transition-colors"
-                >
-                  🎙 Dicter plutôt que taper
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={arreterDictee}
-                  className="text-xs text-signal underline animate-pulse"
-                >
-                  ⏹ Arrêter l&apos;écoute
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={dicter}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+              >
+                <IconeMicro className="h-4 w-4 text-signal" /> Dicter
+              </button>
             </div>
             {brouillonRestaure && (
               <p className="mb-1.5 text-xs text-steel">
@@ -488,6 +527,7 @@ export default function NouveauProjetPage() {
               </p>
             )}
             <textarea
+              id="description-projet"
               required
               rows={3}
               placeholder="Ex : veut refaire sa salle de bain, douche à l'italienne"
@@ -499,11 +539,15 @@ export default function NouveauProjetPage() {
 
           {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
-          <Button type="submit" disabled={chargement} className="self-start">
+          <button
+            type="submit"
+            disabled={chargement}
+            className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+          >
             {chargement ? "Création…" : "Créer le projet"}
-          </Button>
+          </button>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

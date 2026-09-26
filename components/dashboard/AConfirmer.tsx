@@ -18,7 +18,11 @@ type EvenementAConfirmer = {
   demandes?: { nom_client?: string } | null;
 };
 
-export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }) {
+// 26/09 (lot B) — `integre` : rendu sans son propre titre, à l'intérieur
+// du bloc « À confirmer » de l'accueil, qui le fusionne avec la clôture
+// des chantiers (ConfirmerClotureProjet). Une question par ligne, un
+// bouton par réponse, directement sur la ligne.
+export function AConfirmer({ evenements, integre = false }: { evenements: EvenementAConfirmer[]; integre?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
   const [traites, setTraites] = useState<Set<string>>(new Set());
@@ -127,11 +131,7 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
   const restants = evenements.filter((e) => !traites.has(e.id));
   if (restants.length === 0) return null;
 
-  return (
-    <div className="mt-8">
-      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">
-        À confirmer
-      </p>
+  const liste = (
       <div className="flex flex-col gap-2">
         {restants.map((e) =>
           proposerPlanification.has(e.id) ? (
@@ -190,19 +190,28 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
               )}
             </Card>
           ) : (
-            <Card key={e.id} className="p-4">
-              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
-                {e.demandes?.nom_client && (
-                  <Avatar nom={e.demandes.nom_client} taille={22} />
+            <Card key={e.id} className="p-3 pl-4">
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-medium text-ink">
+                    {e.demandes?.nom_client ?? e.titre}
+                  </span>
+                  <span className="block truncate text-[13px] text-ink/55">
+                    Fait ? {e.demandes?.nom_client ? `${e.titre} · ` : ""}
+                    {new Date(e.date_heure).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                  </span>
+                </p>
+                {replanification !== e.id && (
+                  <>
+                    <button type="button" onClick={() => confirmerFait(e)} disabled={traitementId === e.id} className="min-h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper transition disabled:opacity-50">
+                      {traitementId === e.id ? "…" : "Oui"}
+                    </button>
+                    <button type="button" onClick={() => setReplanification(e.id)} className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink">
+                      Non
+                    </button>
+                  </>
                 )}
-                Avez-vous fait <span className="font-semibold">{e.titre}</span>
-                {e.demandes?.nom_client && ` (${e.demandes.nom_client})`} — prévu le{" "}
-                {new Date(e.date_heure).toLocaleDateString("fr-FR", {
-                  day: "numeric",
-                  month: "short",
-                })}{" "}
-                ?
-              </p>
+              </div>
 
               {replanification === e.id ? (
                 <div className="mt-3 flex flex-wrap items-end gap-2">
@@ -233,16 +242,7 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
                     Annuler
                   </Button>
                 </div>
-              ) : (
-                <div className="mt-3 flex gap-2">
-                  <Button onClick={() => confirmerFait(e)} disabled={traitementId === e.id}>
-                    {traitementId === e.id ? "…" : "✓ Oui, c'est fait"}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setReplanification(e.id)}>
-                    Non, replanifier
-                  </Button>
-                </div>
-              )}
+              ) : null}
               {erreurId === e.id && (
                 <p className="mt-2 text-[11px] text-[#C23B22]">
                   La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
@@ -252,6 +252,13 @@ export function AConfirmer({ evenements }: { evenements: EvenementAConfirmer[] }
           )
         )}
       </div>
+  );
+
+  if (integre) return liste;
+  return (
+    <div className="mt-8">
+      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">À confirmer</p>
+      {liste}
     </div>
   );
 }

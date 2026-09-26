@@ -1,21 +1,38 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Card } from "@/components/ui/Card";
-import { DemandeCard } from "@/components/dashboard/DemandeCard";
-import { AConfirmer } from "@/components/dashboard/AConfirmer";
-import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureProjet";
-import { ResumeJournee } from "@/components/dashboard/ResumeJournee";
-import { ConseilsCompagnon } from "@/components/dashboard/ConseilsCompagnon";
-import { MiniApercu } from "@/components/dashboard/MiniApercu";
-import { NouveauProjetMenu } from "@/components/dashboard/NouveauProjetMenu";
-import { NotesRappelsAujourdhui } from "@/components/notes/NotesRappelsAujourdhui";
-import { Avatar } from "@/components/ui/Avatar";
-import { IconeCoeur, IconeDossier } from "@/components/ui/Icones";
+import type { ElementJour } from "@/components/accueil/ListeAujourdhui";
+import { VueAccueil, type ActionAccueil } from "@/components/accueil/VueAccueil";
 import type { Projet } from "@/types";
 import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation } from "@/lib/notes";
 
-const SEUIL_RELANCE_JOURS = 7;
+// ============================================================
+// L'accueil (26/09 — « moins mais mieux », lot B).
+//
+// Une seule question : qu'est-ce que je dois faire ? Un jour chargé
+// empilait jusqu'à douze blocs sur téléphone (quatorze sur ordinateur),
+// dont trois conseillers. Maintenant, cinq blocs au plus, chacun affiché
+// seulement s'il a quelque chose à dire :
+//   1. Maintenant           — la prochaine action, une seule ;
+//   2. À confirmer          — des questions oui / non ;
+//   3. Aujourd'hui          — une liste triée par heure (rendez-vous,
+//                             notes, rappels ; le retard en tête) ;
+//   4. À faire de votre côté — ce que l'artisan doit produire ;
+//   5. En attente du client — devis sans réponse, factures impayées.
+// Sortis : la mini-démonstration et le panneau de conseils (l'artisan
+// utilise déjà l'application), les devis refusés (aucune action à faire,
+// ils restent dans la liste des devis), les paragraphes d'explication.
+// Principe : une information n'apparaît que si elle risque d'être oubliée.
+// ============================================================
+
+// Un devis envoyé apparaît dans « En attente du client » à partir de trois
+// jours sans réponse (au-delà, sans relance, il est souvent perdu), et
+// propose « Relancer » au premier palier des relances existantes (voir
+// app/api/cron/relance-devis/route.ts).
+const JOURS_AFFICHAGE_DEVIS = 3;
+const JOURS_RELANCE_DEVIS = 5;
+// Les factures : mêmes seuils que app/api/cron/relance-factures/route.ts.
+const JOURS_APRES_ECHEANCE = 3;
+const JOURS_SANS_ECHEANCE = 15;
 
 // Sans ça, Next.js peut servir une version mise en cache de cette page en
 // revenant dessus après avoir changé d'onglet ou de page (cache de routeur
@@ -24,6 +41,8 @@ const SEUIL_RELANCE_JOURS = 7;
 // n'avait jamais été enregistrée. Cette page dépend d'un état qui change à
 // chaque clic : elle doit toujours être recalculée, jamais servie en cache.
 export const dynamic = "force-dynamic";
+
+const JOUR_MS = 86400000;
 
 export default async function DashboardHome() {
   const supabase = createClient();
@@ -39,9 +58,8 @@ export default async function DashboardHome() {
   finAujourdhui.setHours(23, 59, 59, 999);
   const maintenant = new Date();
 
-  // Cinq requêtes indépendantes (aucune ne dépend du résultat d'une autre,
-  // seulement de l'utilisateur déjà connu) : les lancer en parallèle plutôt
-  // qu'en série réduit le temps de chargement d'autant, ce qui compte
+  // Requêtes indépendantes (aucune ne dépend du résultat d'une autre,
+  // seulement de l'utilisateur déjà connu) : en parallèle, ce qui compte
   // vraiment sur un chantier avec un réseau mobile faible.
   const [
     { data: profil },
@@ -52,6 +70,7 @@ export default async function DashboardHome() {
     { data: rdvConfirmesBrut },
     { data: evenementsFutursBrut },
     { data: journalEvenementsBrut },
+    { data: facturesDuesBrut },
     notesAvecRappel,
   ] = await Promise.all([
     supabase.from("profils").select("nom").eq("id", user?.id).single(),
@@ -69,13 +88,10 @@ export default async function DashboardHome() {
       .neq("statut", "annule")
       .order("date_heure", { ascending: true }),
     // Événements passés jamais confirmés (ni "fait", ni "annulé") : on ne
-    // suppose rien, on demande — voir composant AConfirmer. Ne filtre plus
-    // seulement "avant aujourd'hui" : un rendez-vous de 16h10 à 17h
-    // aujourd'hui doit déjà être proposé à la confirmation ce soir à
-    // 20h15, pas attendre demain matin. On calcule ensuite l'heure de fin
-    // estimée de chaque événement (durée renseignée, ou 60 min pour un
-    // rendez-vous / 15 min pour une tâche par défaut) et on ne garde que
-    // ceux déjà terminés.
+    // suppose rien, on demande — voir composant AConfirmer. On calcule
+    // ensuite l'heure de fin estimée de chaque événement (durée
+    // renseignée, ou 60 min pour un rendez-vous / 15 min pour une tâche
+    // par défaut) et on ne garde que ceux déjà terminés.
     supabase
       .from("evenements_planning")
       .select("id, type, titre, demande_id, date_heure, duree_minutes, demandes(nom_client)")
@@ -83,10 +99,8 @@ export default async function DashboardHome() {
       .eq("statut", "a_faire")
       .lt("date_heure", maintenant.toISOString())
       .order("date_heure", { ascending: false }),
-    // Rendez-vous déjà confirmés "fait" (voir ConfirmerClotureProjet) : sert
-    // de filet de sécurité pour la question "le chantier est-il terminé ?",
-    // qui autrement ne vivait que dans un état d'écran perdable dès que
-    // l'artisan change de page avant d'y répondre.
+    // Rendez-vous déjà confirmés "fait" (voir ConfirmerClotureProjet) : filet
+    // de sécurité pour la question "le chantier est-il terminé ?".
     supabase
       .from("evenements_planning")
       .select("demande_id")
@@ -100,26 +114,28 @@ export default async function DashboardHome() {
       .neq("statut", "annule")
       .gte("date_heure", maintenant.toISOString()),
     // Journal chantier vocal (06/09) — second signal de clôture en plus du
-    // rendez-vous confirmé "fait", voir plus bas et
-    // components/dashboard/NotesVocales.tsx pour la génération du signal.
+    // rendez-vous confirmé "fait", voir components/dashboard/NotesVocales.tsx.
     supabase
       .from("evenements_projet")
       .select("demande_id, metadata")
       .eq("organisation_id", organisationId)
       .eq("type", "journal_chantier_interprete")
       .order("created_at", { ascending: false }),
-    // Notes avec rappel (29/08, voir lib/notes/index.ts) — point 3 du
-    // brief : "Aujourd'hui" et "En retard".
+    // 26/09 — les factures encore dues, pour « En attente du client ».
+    supabase
+      .from("factures")
+      .select("id, numero, demande_id, date_emission, date_echeance, demandes(nom_client)")
+      .eq("organisation_id", organisationId)
+      .eq("statut", "emise")
+      .neq("type", "avoir"),
     organisationId
       ? listerNotesActivesOrganisation(supabase, organisationId, { avecRappelUniquement: true })
       : Promise.resolve([]),
   ]);
 
   // Supabase type "demandes(...)" comme un tableau au niveau TypeScript
-  // (relation jointe), même si demande_id est une clé étrangère qui ne
-  // pointe jamais vers plus d'un projet. On aplatit une bonne fois ici,
-  // pour toute donnée qui embarque cette jointe, plutôt que de forcer des
-  // casts un peu partout dans le JSX plus bas.
+  // (relation jointe), même si demande_id ne pointe jamais vers plus d'un
+  // projet. On aplatit une bonne fois ici.
   function aplatirDemandes<T extends { demandes?: unknown }>(
     lignes: T[] | null
   ): (Omit<T, "demandes"> & { demandes?: { nom_client?: string; statut?: string } | null })[] {
@@ -132,11 +148,10 @@ export default async function DashboardHome() {
   const devisListPlat = aplatirDemandes(devisList);
   const evenementsAujourdhuiPlat = aplatirDemandes(evenementsAujourdhui);
   const aConfirmerBrutPlat = aplatirDemandes(aConfirmerBrut);
+  const facturesDues = aplatirDemandes(facturesDuesBrut);
 
   // Marge de tolérance : un chantier déborde souvent sur l'horaire prévu.
-  // Sans elle, on demanderait "avez-vous fini ?" alors que l'artisan est
-  // encore sur place — faux et agaçant. On attend une heure de plus après
-  // la fin estimée avant de considérer qu'une réponse est due.
+  // On attend une heure de plus après la fin estimée avant de demander.
   const MARGE_CONFIRMATION_MIN = 60;
   const aConfirmer = aConfirmerBrutPlat.filter((e) => {
     const dureeParDefaut = e.type === "rendez_vous" ? 60 : 15;
@@ -148,46 +163,19 @@ export default async function DashboardHome() {
   });
 
   const listeProjets = (projets as Projet[] | null) ?? [];
-  // Un chantier marqué "terminé" (quel que soit le chemin emprunté pour y
-  // arriver — parcours guidé ou bouton "Marquer directement terminé") doit
-  // disparaître de TOUTE section de l'accueil, pas seulement de la liste
-  // des projets. Sans ça, un devis resté à l'état "envoyé" ou "à valider"
-  // sur un projet déjà clôturé continue de s'afficher en évidence
-  // (bordure colorée "Devis en attente") indéfiniment — c'est le bug
-  // remonté : un chantier terminé restait "en gros plan" sur l'accueil.
-  const idsProjetsTermines = new Set(
-    listeProjets.filter((p) => p.statut === "termine").map((p) => p.id)
-  );
-  const devisListActifs = devisListPlat.filter(
-    (d) => !d.demande_id || !idsProjetsTermines.has(d.demande_id)
-  );
-  // Idem pour les confirmations en attente : inutile de redemander "avez-vous
-  // fait ce rendez-vous ?" pour un chantier déjà clôturé.
-  const aConfirmerActifs = aConfirmer.filter(
-    (e) => !e.demande_id || !idsProjetsTermines.has(e.demande_id)
-  );
+  // Un chantier marqué "terminé" disparaît de TOUTE section de l'accueil.
+  const idsProjetsTermines = new Set(listeProjets.filter((p) => p.statut === "termine").map((p) => p.id));
+  const devisListActifs = devisListPlat.filter((d) => !d.demande_id || !idsProjetsTermines.has(d.demande_id));
+  const aConfirmerActifs = aConfirmer.filter((e) => !e.demande_id || !idsProjetsTermines.has(e.demande_id));
 
   // Filet de sécurité pour "le chantier est-il aussi terminé ?" (voir
   // ConfirmerClotureProjet) : tout projet actif dont au moins un
-  // rendez-vous a été confirmé fait, et pour lequel plus rien n'est prévu
-  // ensuite. Recalculé à chaque chargement — contrairement à la version
-  // affichée juste après la confirmation (dans AConfirmer), celle-ci ne
-  // peut pas se perdre si l'artisan change de page avant de répondre.
-  const idsAvecRdvConfirme = new Set(
-    (rdvConfirmesBrut ?? []).map((e) => e.demande_id).filter(Boolean)
-  );
-  const idsAvecEvenementFutur = new Set(
-    (evenementsFutursBrut ?? []).map((e) => e.demande_id).filter(Boolean)
-  );
+  // rendez-vous a été confirmé fait, et pour lequel plus rien n'est prévu.
+  const idsAvecRdvConfirme = new Set((rdvConfirmesBrut ?? []).map((e) => e.demande_id).filter(Boolean));
+  const idsAvecEvenementFutur = new Set((evenementsFutursBrut ?? []).map((e) => e.demande_id).filter(Boolean));
 
-  // Journal chantier vocal (06/09) — deuxième façon de détecter qu'un
-  // chantier est probablement terminé, en plus du rendez-vous confirmé
-  // "fait" ci-dessus : au moins deux comptes-rendus vocaux CONSÉCUTIFS
-  // (les plus récents en premier grâce à l'ordre de la requête) signalant
-  // "chantier_semble_termine". Le seuil de 2 évite qu'un seul
-  // compte-rendu ambigu déclenche une clôture prématurée (faux positif) —
-  // voir components/dashboard/NotesVocales.tsx pour la génération de ce
-  // signal à chaque note vocale interprétée.
+  // Journal chantier vocal (06/09) — au moins deux comptes-rendus vocaux
+  // consécutifs signalant "chantier_semble_termine".
   const SEUIL_SIGNAUX_CLOTURE = 2;
   const signauxParProjet = new Map<string, boolean[]>();
   for (const e of journalEvenementsBrut ?? []) {
@@ -198,11 +186,7 @@ export default async function DashboardHome() {
   }
   const idsAvecSignalCloture = new Set(
     Array.from(signauxParProjet.entries())
-      .filter(
-        ([, signaux]) =>
-          signaux.length >= SEUIL_SIGNAUX_CLOTURE &&
-          signaux.slice(0, SEUIL_SIGNAUX_CLOTURE).every(Boolean)
-      )
+      .filter(([, signaux]) => signaux.length >= SEUIL_SIGNAUX_CLOTURE && signaux.slice(0, SEUIL_SIGNAUX_CLOTURE).every(Boolean))
       .map(([id]) => id)
   );
 
@@ -215,561 +199,226 @@ export default async function DashboardHome() {
     )
     .map((p) => ({ id: p.id, nom_client: p.nom_client }));
 
-  // Un rendez-vous confirmé "fait" (statut termine, via AConfirmer) n'a plus
-  // rien à faire dans "Rendez-vous aujourd'hui" — sans ce filtre, confirmer
-  // qu'un rendez-vous est passé ne le fait jamais disparaître de l'accueil.
-  // On exclut aussi tout événement lié à un projet déjà clôturé.
+  // Un rendez-vous confirmé "fait" n'a plus rien à faire dans la journée.
   const rendezVousDuJour =
     evenementsAujourdhuiPlat?.filter(
-      (e) =>
-        e.type === "rendez_vous" &&
-        e.statut !== "termine" &&
-        (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
+      (e) => e.type === "rendez_vous" && e.statut !== "termine" && (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
     ) ?? [];
   const rappelsDuJour =
     evenementsAujourdhuiPlat?.filter(
-      (e) =>
-        e.type === "tache" &&
-        e.statut === "a_faire" &&
-        (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
+      (e) => e.type === "tache" && e.statut === "a_faire" && (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
     ) ?? [];
 
   // Notes avec rappel (29/08) — "En retard" prime sur "Aujourd'hui" : une
-  // note dont le rappel est passé y reste tant qu'elle n'est pas marquée
-  // terminée (point 3 du brief), jamais reclassée automatiquement.
-  const notesEnRetard = notesAvecRappel.filter(
-    (n) => new Date(n.rappel_a as string).getTime() < maintenant.getTime()
-  );
+  // note dont le rappel est passé y reste tant qu'elle n'est pas faite.
+  const notesEnRetard = notesAvecRappel.filter((n) => new Date(n.rappel_a as string).getTime() < maintenant.getTime());
   const notesAujourdhui = notesAvecRappel.filter((n) => {
     const t = new Date(n.rappel_a as string).getTime();
     return t >= maintenant.getTime() && t <= finAujourdhui.getTime();
   });
 
-  // Un projet fraîchement créé ("nouveau") n'a encore ni analyse ni devis :
-  // rien d'autre ne le fait remonter ailleurs sur cette page. Sans section
-  // dédiée et toujours visible, il peut rester invisible sur "Aujourd'hui"
-  // dès qu'autre chose est prévu ce jour-là — ce qui s'est produit en
-  // pratique et n'a aucun sens : un projet tout juste créé est justement
-  // ce qu'il faut traiter en premier.
   const projetsNouveaux = listeProjets.filter((p) => p.statut === "nouveau");
   const projetsSansDevis = listeProjets.filter((p) => p.statut === "analyse");
-  // Statuts introduits avec la validation du devis : un brouillon n'est pas
-  // "prêt", il attend encore une relecture ; un devis refusé ne doit pas
-  // apparaître comme "pas encore envoyé" — ce serait faux.
   const devisAValider = devisListActifs.filter((d) => d.statut === "brouillon");
   const devisPretsAEnvoyer = devisListActifs.filter((d) => d.statut === "a_valider");
-  const devisRefuses = devisListActifs.filter((d) => d.statut === "refuse");
 
-  const relances = devisListActifs
+  const joursDepuis = (iso: string) => Math.floor((maintenant.getTime() - new Date(iso).getTime()) / JOUR_MS);
+
+  const devisEnAttente = devisListActifs
     .filter((d) => d.statut === "envoye" && d.envoye_le)
-    .map((d) => ({
-      ...d,
-      joursDepuis: Math.floor(
-        (maintenant.getTime() - new Date(d.envoye_le as string).getTime()) / 86400000
-      ),
-    }))
-    .filter((d) => d.joursDepuis >= SEUIL_RELANCE_JOURS)
-    .sort((a, b) => b.joursDepuis - a.joursDepuis);
+    .map((d) => ({ ...d, jours: joursDepuis(d.envoye_le as string) }))
+    .filter((d) => d.jours >= JOURS_AFFICHAGE_DEVIS);
 
-  const premierPrenom = (profil?.nom ?? "").split(" ")[0];
-  const dateDuJour = maintenant.toLocaleDateString("fr-FR", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
-  const rienAFaire =
-    notesEnRetard.length === 0 &&
-    notesAujourdhui.length === 0 &&
-    rendezVousDuJour.length === 0 &&
-    rappelsDuJour.length === 0 &&
-    aConfirmerActifs.length === 0 &&
-    projetsAConfirmerTermine.length === 0 &&
-    projetsNouveaux.length === 0 &&
-    projetsSansDevis.length === 0 &&
-    devisAValider.length === 0 &&
-    devisPretsAEnvoyer.length === 0 &&
-    devisRefuses.length === 0 &&
-    relances.length === 0;
+  // Une facture n'apparaît qu'une fois échue (ou, sans échéance, après
+  // quinze jours) : avant, elle n'est pas « impayée », juste en cours.
+  // Un chantier terminé garde ses factures impayées : c'est précisément là
+  // qu'elles comptent.
+  const facturesImpayees = facturesDues
+    .map((f) => {
+      const reference = f.date_echeance ?? f.date_emission;
+      const jours = joursDepuis(reference);
+      const aRelancer = f.date_echeance ? jours >= JOURS_APRES_ECHEANCE : jours >= JOURS_SANS_ECHEANCE;
+      const affichee = f.date_echeance ? jours > 0 : jours >= JOURS_SANS_ECHEANCE;
+      return { ...f, jours, aRelancer, affichee };
+    })
+    .filter((f) => f.affichee);
 
-  // "Que dois-je faire maintenant ?" — une seule ligne, calculée à partir
-  // des mêmes données déjà chargées ci-dessus, sans appel IA. L'ordre
-  // reflète ce qui bloque le plus le reste si on ne le traite pas
-  // maintenant : une confirmation en attente avant un rendez-vous à venir,
-  // avant un devis à relire, etc. Le but n'est pas d'être exhaustif — les
-  // sections plus bas listent tout — mais de donner UNE réponse claire à
-  // un artisan qui n'a que 20 secondes entre deux chantiers.
   const prochaineAction = determinerProchaineAction({
-    aConfirmer: aConfirmerActifs,
-    projetsAConfirmerTermine,
     rendezVousDuJour,
     devisAValider,
     projetsNouveaux,
     devisPretsAEnvoyer,
     rappelsDuJour,
     projetsSansDevis,
-    devisRefuses,
-    relances,
+    devisEnAttente,
+    facturesImpayees,
+    maintenant,
   });
+  // L'élément mis en avant dans « Maintenant » n'est pas répété plus bas.
+  const pasMisEnAvant = (id: string) => prochaineAction?.id !== id;
 
-  const ordrePriorite = { urgent: 0, important: 1, normal: 2 };
-  // Les projets "nouveau" ont déjà leur propre section ci-dessous, toujours
-  // visible — inutile de les répéter ici.
-  const projetsPrioritaires = [...listeProjets]
-    .filter((p) => p.statut !== "termine" && p.statut !== "nouveau")
-    .sort(
-      (a, b) =>
-        (ordrePriorite[a.priorite ?? "normal"] ?? 2) -
-        (ordrePriorite[b.priorite ?? "normal"] ?? 2)
-    )
-    .slice(0, 4);
+  // ---- 3. Aujourd'hui : une seule liste triée par heure -----------------
+  const elementsJour: ElementJour[] = [
+    ...notesEnRetard.map((n) => ({
+      cle: `note-${n.id}`,
+      genre: "note" as const,
+      noteId: n.id,
+      date: n.rappel_a as string,
+      enRetard: true,
+      principal: n.titre,
+      secondaire: n.demandes?.nom_client,
+      href: n.demande_id ? `/dashboard/demandes/${n.demande_id}` : "/dashboard/notes",
+    })),
+    ...[
+      ...rendezVousDuJour.filter((e) => pasMisEnAvant(e.id)).map((e) => ({
+        cle: `rdv-${e.id}`,
+        genre: "rdv" as const,
+        date: e.date_heure,
+        enRetard: false,
+        principal: nomClientDe(e) ?? e.titre,
+        secondaire: nomClientDe(e) ? e.titre : undefined,
+        href: e.demande_id ? `/dashboard/demandes/${e.demande_id}` : "/dashboard/planning",
+      })),
+      ...notesAujourdhui.map((n) => ({
+        cle: `note-${n.id}`,
+        genre: "note" as const,
+        noteId: n.id,
+        date: n.rappel_a as string,
+        enRetard: false,
+        principal: n.titre,
+        secondaire: n.demandes?.nom_client,
+        href: n.demande_id ? `/dashboard/demandes/${n.demande_id}` : "/dashboard/notes",
+      })),
+      ...rappelsDuJour.filter((e) => pasMisEnAvant(e.id)).map((e) => ({
+        cle: `tache-${e.id}`,
+        genre: "tache" as const,
+        date: e.date_heure,
+        enRetard: false,
+        principal: e.titre,
+        secondaire: nomClientDe(e),
+        href: e.demande_id ? `/dashboard/demandes/${e.demande_id}` : "/dashboard/planning",
+      })),
+    ].sort((a, b) => Date.parse(a.date) - Date.parse(b.date)),
+  ];
 
-  if (listeProjets.length === 0) {
-    return (
-      // Mise en page à deux colonnes sur grand écran : le contenu principal
-      // reste étroit (max-w-2xl, plus lisible qu'une pleine largeur), et le
-      // panneau de conseils comble l'espace qui restait vide à droite sur
-      // un écran large (relevé directement par l'artisan qui teste l'app).
-      // Colonne masquée sous lg : sur mobile/tablette, pas de vide à combler.
-      <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
-        <div className="max-w-2xl flex-1 min-w-0">
-          <EnTeteAccueil dateDuJour={dateDuJour} premierPrenom={premierPrenom} />
-          {/* Même raison qu'en en-tête (voir EnTeteAccueil) : le découpage
-              du halo ne doit pas rogner le menu déroulant du bouton. */}
-          <Card className="relative mt-6 p-8 text-center">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
-            >
-              <span className="absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-signal/10 blur-3xl" />
-            </span>
-            <span className="relative inline-flex items-center justify-center w-12 h-12 rounded-full bg-signal/10 mb-4">
-              <IconeCoeur taille={24} className="text-signal" />
-            </span>
-            <p className="relative font-display text-lg font-semibold">Bienvenue sur Compyo.</p>
-            <p className="relative mt-2 text-sm text-ink/60 max-w-sm mx-auto">
-              Tout commence par un projet. Créez le premier dès qu&apos;un client vous
-              contacte — trente secondes suffisent, le reste se complète plus tard.
-            </p>
-            <div className="relative mt-6 flex items-center justify-center gap-3">
-              <NouveauProjetMenu libelle="+ Créer mon premier projet" />
-            </div>
-          </Card>
-        </div>
-        <aside className="hidden lg:block w-72 shrink-0">
-          <ConseilsCompagnon />
-          <MiniApercu />
-        </aside>
-      </div>
-    );
-  }
+  // ---- 4. À faire de votre côté ------------------------------------------
+  const aProduire = [
+    ...projetsNouveaux.map((p) => ({ id: p.id, demandeId: p.id, nom: p.nom_client, verbe: "Nouveau projet à cadrer" })),
+    ...projetsSansDevis.map((p) => ({ id: p.id, demandeId: p.id, nom: p.nom_client, verbe: "Devis à préparer" })),
+    ...devisAValider.map((d) => ({ id: d.id, demandeId: d.demande_id, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à relire" })),
+    ...devisPretsAEnvoyer.map((d) => ({ id: d.id, demandeId: d.demande_id, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à envoyer" })),
+  ].filter((l) => pasMisEnAvant(l.id));
+
+  // ---- 5. En attente du client --------------------------------------------
+  const enAttente = [
+    ...facturesImpayees.map((f) => ({
+      id: f.id,
+      jours: f.jours,
+      nom: nomClientDe(f) ?? `Facture ${f.numero}`,
+      quoi: "Facture impayée",
+      href: `/dashboard/demandes/${f.demande_id}`,
+      relance: f.aRelancer ? `/dashboard/demandes/${f.demande_id}?message=relancePaiement&facture=${f.id}` : null,
+    })),
+    ...devisEnAttente.map((d) => ({
+      id: d.id,
+      jours: d.jours,
+      nom: nomClientDe(d) ?? `Devis ${d.numero}`,
+      quoi: "Devis sans réponse",
+      href: d.demande_id ? `/dashboard/demandes/${d.demande_id}` : "/dashboard/devis",
+      relance:
+        d.demande_id && d.jours >= JOURS_RELANCE_DEVIS
+          ? `/dashboard/demandes/${d.demande_id}?message=relanceDevis&devis=${d.id}`
+          : null,
+    })),
+  ]
+    .filter((l) => pasMisEnAvant(l.id))
+    .sort((a, b) => b.jours - a.jours);
+
+  const premierPrenom = (profil?.nom ?? "").split(" ")[0];
+  const dateDuJour = maintenant.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
+  const rienAFaire =
+    !prochaineAction &&
+    elementsJour.length === 0 &&
+    aConfirmerActifs.length === 0 &&
+    projetsAConfirmerTermine.length === 0 &&
+    aProduire.length === 0 &&
+    enAttente.length === 0;
 
   return (
-    <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
-      <div className="max-w-2xl flex-1 min-w-0">
-      <EnTeteAccueil dateDuJour={dateDuJour} premierPrenom={premierPrenom}>
-        <NouveauProjetMenu />
-      </EnTeteAccueil>
-
-      <ProchaineAction action={prochaineAction} />
-
-      {/* Notes avec rappel (29/08) — point 3 du brief : "En retard" avant
-          "Aujourd'hui", tout de suite après l'action prioritaire calculée
-          ci-dessus, avant même les confirmations de rendez-vous — un
-          rappel que l'artisan s'est lui-même fixé mérite au moins autant
-          de visibilité qu'un rendez-vous du planning. */}
-      <NotesRappelsAujourdhui titre="Notes en retard" notes={notesEnRetard} accent />
-      <NotesRappelsAujourdhui titre="Notes à faire aujourd'hui" notes={notesAujourdhui} />
-
-      <AConfirmer evenements={aConfirmerActifs} />
-
-      <ConfirmerClotureProjet projets={projetsAConfirmerTermine} />
-
-      {projetsNouveaux.length > 0 && (
-        <Section titre="Nouveaux projets à cadrer">
-          {projetsNouveaux.map((p) => (
-            <LigneCliquable key={p.id} demandeId={p.id}>
-              <Avatar nom={p.nom_client || "?"} taille={32} />
-              <span className="text-sm text-ink/80">
-                🆕 {p.nom_client}{" "}
-                <span className="text-ink/40">— pas encore analysé</span>
-              </span>
-            </LigneCliquable>
-          ))}
-        </Section>
-      )}
-
-      {rienAFaire && (
-        <div className="mt-8">
-          <p className="text-sm text-ink/50 mb-4">
-            Rien de prévu aujourd&apos;hui. Vos projets les plus prioritaires :
-          </p>
-          {projetsPrioritaires.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
-                <IconeDossier taille={20} className="text-signal" />
-              </span>
-              <p className="text-sm text-ink/40">Aucun projet actif pour le moment.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {projetsPrioritaires.map((p) => (
-                <DemandeCard key={p.id} demande={p} />
-              ))}
-            </div>
-          )}
-          <Link
-            href="/dashboard/demandes"
-            className="mt-3 inline-block text-xs text-ink/50 hover:text-ink underline"
-          >
-            Voir tous mes projets →
-          </Link>
-        </div>
-      )}
-
-      {rendezVousDuJour.length > 0 && (
-        <Section titre="Rendez-vous aujourd'hui">
-          {rendezVousDuJour.map((e) => (
-            <LigneCliquable key={e.id} demandeId={e.demande_id}>
-              <span className="font-mono text-xs text-ink/40 w-12 shrink-0">
-                {new Date(e.date_heure).toLocaleTimeString("fr-FR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                })}
-              </span>
-              {nomClientDe(e) && <Avatar nom={nomClientDe(e) as string} taille={32} />}
-              <span className="text-sm text-ink/80">
-                {e.titre}
-                {nomClientDe(e) && (
-                  <span className="text-ink/40">
-                    {" "}
-                    — {nomClientDe(e)}
-                  </span>
-                )}
-              </span>
-            </LigneCliquable>
-          ))}
-        </Section>
-      )}
-
-      {rappelsDuJour.length > 0 && (
-        <Section titre="Rappels aujourd'hui">
-          {rappelsDuJour.map((r) => (
-            <LigneCliquable key={r.id} demandeId={r.demande_id}>
-              {nomClientDe(r) && <Avatar nom={nomClientDe(r) as string} taille={32} />}
-              <span className="text-sm text-ink/80">
-                📞 {r.titre}
-                {nomClientDe(r) && (
-                  <span className="text-ink/40">
-                    {" "}
-                    — {nomClientDe(r)}
-                  </span>
-                )}
-              </span>
-            </LigneCliquable>
-          ))}
-        </Section>
-      )}
-
-      {(projetsSansDevis.length > 0 ||
-        devisAValider.length > 0 ||
-        devisPretsAEnvoyer.length > 0) && (
-        <Section titre="Devis à terminer">
-          {projetsSansDevis.map((p) => (
-            <LigneCliquable key={p.id} demandeId={p.id}>
-              <Avatar nom={p.nom_client || "?"} taille={32} />
-              <span className="text-sm text-ink/80">
-                📄 {p.nom_client}{" "}
-                <span className="text-ink/40">— devis pas encore généré</span>
-              </span>
-            </LigneCliquable>
-          ))}
-          {devisAValider.map((d) => (
-            <LigneCliquable key={d.id} demandeId={d.demande_id}>
-              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
-              <span className="text-sm text-ink/80">
-                📄{" "}
-                {nomClientDe(d) ?? d.numero}{" "}
-                <span className="text-ink/40">— à relire et valider</span>
-              </span>
-            </LigneCliquable>
-          ))}
-          {devisPretsAEnvoyer.map((d) => (
-            <LigneCliquable key={d.id} demandeId={d.demande_id}>
-              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
-              <span className="text-sm text-ink/80">
-                📄{" "}
-                {nomClientDe(d) ?? d.numero}{" "}
-                <span className="text-ink/40">— prêt, pas encore envoyé</span>
-              </span>
-            </LigneCliquable>
-          ))}
-        </Section>
-      )}
-
-      {devisRefuses.length > 0 && (
-        <Section titre="Devis refusés">
-          {devisRefuses.map((d) => (
-            <LigneCliquable key={d.id} demandeId={d.demande_id} accent>
-              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
-              <span className="text-sm text-ink/80">
-                ✕{" "}
-                {nomClientDe(d) ?? d.numero}{" "}
-                <span className="text-ink/40">— à reprendre quand vous êtes prêt</span>
-              </span>
-            </LigneCliquable>
-          ))}
-        </Section>
-      )}
-
-      {relances.length > 0 && (
-        <Section titre="Devis en attente de réponse">
-          {relances.map((d) => (
-            <LigneCliquable key={d.id} demandeId={d.demande_id} accent>
-              {nomClientDe(d) && <Avatar nom={nomClientDe(d) as string} taille={32} />}
-              <span className="text-sm text-ink/80">
-                ⚠️{" "}
-                {nomClientDe(d) ?? d.numero}{" "}
-                <span className="text-ink/40">— envoyé depuis {d.joursDepuis} jours</span>
-              </span>
-            </LigneCliquable>
-          ))}
-        </Section>
-      )}
-
-      <ResumeJournee />
-      </div>
-      <aside className="hidden lg:block w-72 shrink-0">
-        <ConseilsCompagnon />
-        <MiniApercu />
-      </aside>
-    </div>
+    <VueAccueil
+      dateDuJour={dateDuJour}
+      titre={listeProjets.length === 0 ? "Bienvenue sur Compyo." : `Bonjour ${premierPrenom}`}
+      premierProjet={listeProjets.length === 0}
+      prochaineAction={prochaineAction}
+      aConfirmer={aConfirmerActifs}
+      chantiersAConfirmer={projetsAConfirmerTermine}
+      elementsJour={elementsJour}
+      aProduire={aProduire}
+      enAttente={enAttente}
+      rienAFaire={rienAFaire}
+    />
   );
 }
-
-type ActionSuggestion = { emoji: string; texte: string; demandeId: string | null };
 
 function nomClientDe(item: unknown): string | undefined {
   return (item as { demandes?: { nom_client?: string } })?.demandes?.nom_client;
 }
 
-// Retourne UNE seule action, la plus utile à traiter maintenant, ou null
-// s'il n'y a vraiment rien en attente. L'ordre des `if` EST la priorité :
-// on s'arrête à la première catégorie non vide.
+// UNE seule action, la plus utile à traiter maintenant, ou null. L'ordre
+// des `if` EST la priorité. Les confirmations n'y figurent plus : elles ont
+// leur bloc juste en dessous, avec les boutons pour y répondre.
 function determinerProchaineAction(listes: {
-  aConfirmer: { id: string; titre: string; demande_id: string | null; demandes?: { nom_client?: string } | null }[];
-  projetsAConfirmerTermine: { id: string; nom_client: string }[];
   rendezVousDuJour: { id: string; titre: string; demande_id: string | null; date_heure: string }[];
   devisAValider: { id: string; demande_id: string | null; numero: string }[];
   projetsNouveaux: Projet[];
   devisPretsAEnvoyer: { id: string; demande_id: string | null; numero: string }[];
   rappelsDuJour: { id: string; titre: string; demande_id: string | null }[];
   projetsSansDevis: Projet[];
-  devisRefuses: { id: string; demande_id: string | null; numero: string }[];
-  relances: { id: string; demande_id: string | null; numero: string; joursDepuis: number }[];
-}): ActionSuggestion | null {
-  const {
-    aConfirmer,
-    projetsAConfirmerTermine,
-    rendezVousDuJour,
-    devisAValider,
-    projetsNouveaux,
-    devisPretsAEnvoyer,
-    rappelsDuJour,
-    projetsSansDevis,
-    devisRefuses,
-    relances,
-  } = listes;
+  devisEnAttente: { id: string; demande_id: string | null; numero: string; jours: number }[];
+  facturesImpayees: { id: string; demande_id: string; numero: string; jours: number; aRelancer: boolean }[];
+  maintenant: Date;
+}): ActionAccueil | null {
+  const lien = (demandeId: string | null, repli: string) => (demandeId ? `/dashboard/demandes/${demandeId}` : repli);
 
-  if (aConfirmer.length > 0) {
-    const e = aConfirmer[0];
-    const nom = nomClientDe(e);
+  const prochainRdv = listes.rendezVousDuJour.find((e) => new Date(e.date_heure) >= new Date(listes.maintenant.getTime() - 60 * 60000));
+  if (prochainRdv) {
+    const heure = new Date(prochainRdv.date_heure)
+      .toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", timeZone: "Europe/Paris" })
+      .replace(":", "h");
     return {
-      emoji: "✅",
-      texte:
-        aConfirmer.length > 1
-          ? `Confirmer ${aConfirmer.length} rendez-vous passés`
-          : `Le rendez-vous${nom ? ` chez ${nom}` : ""} est-il terminé ?`,
-      demandeId: e.demande_id,
+      id: prochainRdv.id,
+      texte: nomClientDe(prochainRdv) ? `${heure} — ${nomClientDe(prochainRdv)}` : `${heure} — ${prochainRdv.titre}`,
+      detail: nomClientDe(prochainRdv) ? prochainRdv.titre : undefined,
+      href: lien(prochainRdv.demande_id, "/dashboard/planning"),
     };
   }
-  if (projetsAConfirmerTermine.length > 0) {
-    const p = projetsAConfirmerTermine[0];
+  const devis = listes.devisAValider[0];
+  if (devis) return { id: devis.id, texte: `Relire le devis ${nomClientDe(devis) ?? devis.numero}`, href: lien(devis.demande_id, "/dashboard/devis") };
+  const nouveau = listes.projetsNouveaux[0];
+  if (nouveau) return { id: nouveau.id, texte: `Cadrer le projet ${nouveau.nom_client}`, href: `/dashboard/demandes/${nouveau.id}` };
+  const pret = listes.devisPretsAEnvoyer[0];
+  if (pret) return { id: pret.id, texte: `Envoyer le devis ${nomClientDe(pret) ?? pret.numero}`, href: lien(pret.demande_id, "/dashboard/devis") };
+  const rappel = listes.rappelsDuJour[0];
+  if (rappel) return { id: rappel.id, texte: rappel.titre, href: lien(rappel.demande_id, "/dashboard/planning") };
+  const sansDevis = listes.projetsSansDevis[0];
+  if (sansDevis) return { id: sansDevis.id, texte: `Préparer le devis de ${sansDevis.nom_client}`, href: `/dashboard/demandes/${sansDevis.id}` };
+  const facture = listes.facturesImpayees.find((f) => f.aRelancer);
+  if (facture)
     return {
-      emoji: "✅",
-      texte: `Le chantier ${p.nom_client} est-il terminé ?`,
-      demandeId: p.id,
+      id: facture.id,
+      texte: `Relancer ${nomClientDe(facture) ?? `la facture ${facture.numero}`}`,
+      detail: `Facture ${facture.numero} impayée depuis ${facture.jours} j`,
+      href: `/dashboard/demandes/${facture.demande_id}?message=relancePaiement&facture=${facture.id}`,
     };
-  }
-  if (rendezVousDuJour.length > 0) {
-    const e = rendezVousDuJour[0];
-    const heure = new Date(e.date_heure).toLocaleTimeString("fr-FR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    const nom = nomClientDe(e);
+  const relance = listes.devisEnAttente.find((d) => d.jours >= JOURS_RELANCE_DEVIS);
+  if (relance)
     return {
-      emoji: "🗓️",
-      texte: `Rendez-vous à ${heure}${nom ? ` — ${nom}` : ""}`,
-      demandeId: e.demande_id,
+      id: relance.id,
+      texte: `Relancer ${nomClientDe(relance) ?? `le devis ${relance.numero}`}`,
+      detail: `Devis sans réponse depuis ${relance.jours} j`,
+      href: relance.demande_id
+        ? `/dashboard/demandes/${relance.demande_id}?message=relanceDevis&devis=${relance.id}`
+        : "/dashboard/devis",
     };
-  }
-  if (devisAValider.length > 0) {
-    const d = devisAValider[0];
-    return {
-      emoji: "📄",
-      texte: `Relire et valider le devis ${nomClientDe(d) ?? d.numero}`,
-      demandeId: d.demande_id,
-    };
-  }
-  if (projetsNouveaux.length > 0) {
-    const p = projetsNouveaux[0];
-    return { emoji: "🆕", texte: `Cadrer le nouveau projet — ${p.nom_client}`, demandeId: p.id };
-  }
-  if (devisPretsAEnvoyer.length > 0) {
-    const d = devisPretsAEnvoyer[0];
-    return {
-      emoji: "📤",
-      texte: `Envoyer le devis ${nomClientDe(d) ?? d.numero}`,
-      demandeId: d.demande_id,
-    };
-  }
-  if (rappelsDuJour.length > 0) {
-    const r = rappelsDuJour[0];
-    return { emoji: "📞", texte: r.titre, demandeId: r.demande_id };
-  }
-  if (projetsSansDevis.length > 0) {
-    const p = projetsSansDevis[0];
-    return { emoji: "📝", texte: `Générer le devis de ${p.nom_client}`, demandeId: p.id };
-  }
-  if (devisRefuses.length > 0) {
-    const d = devisRefuses[0];
-    return {
-      emoji: "✕",
-      texte: `Reprendre le devis refusé — ${nomClientDe(d) ?? d.numero}`,
-      demandeId: d.demande_id,
-    };
-  }
-  if (relances.length > 0) {
-    const d = relances[0];
-    return {
-      emoji: "⚠️",
-      texte: `Relancer ${nomClientDe(d) ?? d.numero} — envoyé depuis ${d.joursDepuis} jours`,
-      demandeId: d.demande_id,
-    };
-  }
   return null;
-}
-
-// Redesign accueil (06/09) — retour d'Axel : l'app "ne donne pas envie de
-// l'ouvrir" comparée au site vitrine. Ce bandeau, vu en premier à chaque
-// ouverture, remplace le simple <h1> texte par une carte avec un peu du
-// même relief que la landing (blob flouté en dégradé de la couleur de
-// marque) — sobre, pas de 3D ni d'animation ici : c'est un outil de
-// travail ouvert plusieurs fois par jour, pas une page d'accueil marketing.
-function EnTeteAccueil({
-  dateDuJour,
-  premierPrenom,
-  children,
-}: {
-  dateDuJour: string;
-  premierPrenom: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="relative rounded-3xl border border-ink/10 bg-surface px-6 py-6 sm:px-8 sm:py-7">
-      {/*
-        Vérification positionnement (11/09) — "overflow-hidden" était posé
-        sur la carte entière pour découper le halo décoratif ci-dessous.
-        Sans conséquence tant que l'en-tête ne contenait qu'un bouton-lien,
-        mais depuis que "+ Nouveau projet" y ouvre un vrai menu déroulant
-        (voir NouveauProjetMenu), ce même overflow rognait le menu, qui
-        s'ouvre vers le BAS, donc hors de la carte. Le découpage est
-        désormais porté par un calque dédié au halo seul : le visuel est
-        identique, le menu n'est plus rogné.
-      */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 overflow-hidden rounded-3xl"
-      >
-        <span className="absolute -right-14 -top-16 w-56 h-56 rounded-full bg-signal/10 blur-3xl" />
-      </span>
-      <div className="relative flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel capitalize">
-            {dateDuJour}
-          </p>
-          <h1 className="mt-1 font-display text-2xl sm:text-3xl font-semibold">
-            Bonjour {premierPrenom} 👋
-          </h1>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function ProchaineAction({ action }: { action: ActionSuggestion | null }) {
-  if (!action) {
-    return (
-      <div className="mt-6 p-4 rounded-2xl border border-ink/10 bg-paper-warm text-sm text-ink/50">
-        Rien d&apos;urgent pour l&apos;instant. 👍
-      </div>
-    );
-  }
-  const contenu = (
-    <div className="mt-6 p-4 rounded-2xl border border-ink bg-ink text-paper flex items-center gap-3 transition-all duration-200 hover:bg-ink/90 hover:-translate-y-0.5 hover:shadow-lg">
-      <span className="text-lg">{action.emoji}</span>
-      <div>
-        <p className="font-mono text-[10px] tracking-[0.2em] uppercase text-paper/50">
-          Maintenant
-        </p>
-        <p className="text-sm font-medium">{action.texte}</p>
-      </div>
-    </div>
-  );
-  return action.demandeId ? (
-    <Link href={`/dashboard/demandes/${action.demandeId}`}>{contenu}</Link>
-  ) : (
-    contenu
-  );
-}
-
-function Section({ titre, children }: { titre: string; children: React.ReactNode }) {
-  return (
-    <div className="mt-8">
-      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">
-        {titre}
-      </p>
-      <div className="flex flex-col gap-2">{children}</div>
-    </div>
-  );
-}
-
-function LigneCliquable({
-  demandeId,
-  accent,
-  children,
-}: {
-  demandeId: string | null;
-  accent?: boolean;
-  children: React.ReactNode;
-}) {
-  const contenu = (
-    // hover:border-signal/30 + léger décalage vers le haut : ces lignes
-    // mènent toutes vers la fiche d'un projet, mais rien ne le signalait
-    // visuellement avant (relevé : l'accueil "ne ressemble pas à des
-    // boutons"). Cohérent avec l'effet déjà utilisé sur la landing page.
-    <Card
-      className={`p-3.5 flex items-center gap-3 transition-all duration-200 hover:border-signal/30 hover:-translate-y-0.5 hover:shadow-md hover:shadow-ink/[0.06] ${
-        accent ? "border-signal/30 bg-signal/5" : ""
-      }`}
-    >
-      {children}
-    </Card>
-  );
-  return demandeId ? (
-    <Link href={`/dashboard/demandes/${demandeId}`}>{contenu}</Link>
-  ) : (
-    contenu
-  );
 }

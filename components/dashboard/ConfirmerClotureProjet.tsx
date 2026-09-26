@@ -52,7 +52,8 @@ function ajouterIgnore(id: string) {
 // de réponse "oui" — répondre "non" propose directement de planifier la
 // suite (sinon la question reviendrait le lendemain pour rien : on sait déjà
 // que ce n'est pas fini, ce qui manque c'est un prochain rendez-vous).
-export function ConfirmerClotureProjet({ projets }: { projets: ProjetAConfirmer[] }) {
+// 26/09 (lot B) — `integre` : voir AConfirmer, même bloc sur l'accueil.
+export function ConfirmerClotureProjet({ projets, integre = false }: { projets: ProjetAConfirmer[]; integre?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
   const [traites, setTraites] = useState<Set<string>>(() => lireIgnores());
@@ -107,11 +108,7 @@ export function ConfirmerClotureProjet({ projets }: { projets: ProjetAConfirmer[
   const restants = projets.filter((p) => !traites.has(p.id));
   if (restants.length === 0) return null;
 
-  return (
-    <div className="mt-8">
-      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">
-        Chantiers à confirmer
-      </p>
+  const liste = (
       <div className="flex flex-col gap-2">
         {restants.map((p) =>
           proposerPlanification.has(p.id) ? (
@@ -131,19 +128,18 @@ export function ConfirmerClotureProjet({ projets }: { projets: ProjetAConfirmer[
               </div>
             </Card>
           ) : (
-            <Card key={p.id} className="p-4">
-              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
-                <Avatar nom={p.nom_client || "?"} taille={22} />
-                Le chantier <span className="font-semibold">{p.nom_client}</span> est-il
-                terminé ? Aucun autre rendez-vous n&apos;est prévu pour ce projet.
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Button onClick={() => marquerTermine(p)} disabled={enCours === p.id}>
-                  {enCours === p.id ? "…" : "✓ Oui, chantier terminé"}
-                </Button>
-                <Button variant="ghost" onClick={() => pasEncore(p.id)}>
-                  Non, pas encore
-                </Button>
+            <Card key={p.id} className="p-3 pl-4">
+              <div className="flex items-center gap-2">
+                <p className="min-w-0 flex-1">
+                  <span className="block truncate text-[15px] font-medium text-ink">{p.nom_client}</span>
+                  <span className="block truncate text-[13px] text-ink/55">Chantier terminé ?</span>
+                </p>
+                <button type="button" onClick={() => marquerTermine(p)} disabled={enCours === p.id} className="min-h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper transition disabled:opacity-50">
+                  {enCours === p.id ? "…" : "Oui"}
+                </button>
+                <button type="button" onClick={() => pasEncore(p.id)} className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink">
+                  Non
+                </button>
               </div>
               {erreurId === p.id && (
                 <p className="mt-2 text-[11px] text-[#C23B22]">
@@ -154,6 +150,13 @@ export function ConfirmerClotureProjet({ projets }: { projets: ProjetAConfirmer[
           )
         )}
       </div>
+  );
+
+  if (integre) return liste;
+  return (
+    <div className="mt-8">
+      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">Chantiers à confirmer</p>
+      {liste}
     </div>
   );
 }

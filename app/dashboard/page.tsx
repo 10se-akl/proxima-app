@@ -4,6 +4,8 @@ import { VueAccueil, type ActionAccueil } from "@/components/accueil/VueAccueil"
 import type { Projet } from "@/types";
 import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation } from "@/lib/notes";
+import { aujourdhuiParis, minuitParis } from "@/lib/moisParis";
+import type { ElementSuspens, Fermeture } from "@/components/accueil/FermerJournee";
 
 // ============================================================
 // L'accueil (26/09 — « moins mais mieux », lot B).
@@ -22,7 +24,14 @@ import { listerNotesActivesOrganisation } from "@/lib/notes";
 // utilise déjà l'application), les devis refusés (aucune action à faire,
 // ils restent dans la liste des devis), les paragraphes d'explication.
 // Principe : une information n'apparaît que si elle risque d'être oubliée.
+//
+// Le soir (lot E) : à partir de HEURE_FERMETURE_JOURNEE, heure de Paris,
+// « Maintenant » devient « Fermer la journée » (components/accueil/
+// FermerJournee.tsx). Ce qui est en suspens y est traité, et n'est plus
+// répété dans « Aujourd'hui » ni dans « À confirmer ».
 // ============================================================
+
+const HEURE_FERMETURE_JOURNEE = 17;
 
 // Un devis envoyé apparaît dans « En attente du client » à partir de trois
 // jours sans réponse (au-delà, sans relance, il est souvent perdu), et
@@ -58,6 +67,16 @@ export default async function DashboardHome() {
   finAujourdhui.setHours(23, 59, 59, 999);
   const maintenant = new Date();
 
+  // Le jour à Paris (le serveur tourne en UTC) : pour « Fermer la journée ».
+  const jourParis = aujourdhuiParis(maintenant);
+  const debutJourParis = minuitParis(jourParis.annee, jourParis.mois, jourParis.jour);
+  const finJourParis = minuitParis(jourParis.annee, jourParis.mois, jourParis.jour + 1);
+  const finDemainParis = minuitParis(jourParis.annee, jourParis.mois, jourParis.jour + 2);
+  const heureParis = Number(
+    new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Paris", hour: "numeric", hourCycle: "h23" }).format(maintenant)
+  );
+  const estLeSoir = heureParis >= HEURE_FERMETURE_JOURNEE;
+
   // Requêtes indépendantes (aucune ne dépend du résultat d'une autre,
   // seulement de l'utilisateur déjà connu) : en parallèle, ce qui compte
   // vraiment sur un chantier avec un réseau mobile faible.
@@ -72,6 +91,8 @@ export default async function DashboardHome() {
     { data: journalEvenementsBrut },
     { data: facturesDuesBrut },
     notesAvecRappel,
+    { count: nbFacturesDuJour },
+    { data: premierRdvDemainBrut },
   ] = await Promise.all([
     supabase.from("profils").select("nom").eq("id", user?.id).single(),
     supabase.from("demandes").select("*").eq("organisation_id", organisationId),
@@ -131,6 +152,28 @@ export default async function DashboardHome() {
     organisationId
       ? listerNotesActivesOrganisation(supabase, organisationId, { avecRappelUniquement: true })
       : Promise.resolve([]),
+    // Le soir seulement : les factures émises aujourd'hui, et le premier
+    // rendez-vous de demain.
+    estLeSoir
+      ? supabase
+          .from("factures")
+          .select("id", { count: "exact", head: true })
+          .eq("organisation_id", organisationId)
+          .neq("type", "avoir")
+          .gte("date_emission", debutJourParis.toISOString())
+      : Promise.resolve({ count: 0 }),
+    estLeSoir
+      ? supabase
+          .from("evenements_planning")
+          .select("date_heure, titre, demandes(nom_client, adresse_client)")
+          .eq("organisation_id", organisationId)
+          .eq("type", "rendez_vous")
+          .eq("statut", "a_faire")
+          .gte("date_heure", finJourParis.toISOString())
+          .lt("date_heure", finDemainParis.toISOString())
+          .order("date_heure", { ascending: true })
+          .limit(1)
+      : Promise.resolve({ data: null }),
   ]);
 
   // Supabase type "demandes(...)" comme un tableau au niveau TypeScript
@@ -243,7 +286,29 @@ export default async function DashboardHome() {
     })
     .filter((f) => f.affichee);
 
-  const prochaineAction = determinerProchaineAction({
+  // ---- Le soir : Fermer la journée ------------------------------------------
+  // Actif à partir de 17 h, dès qu'il existe au moins un projet (un compte
+  // tout neuf n'a pas de journée à fermer).
+  const fermeture: Fermeture | null =
+    estLeSoir && listeProjets.length > 0
+      ? construireFermeture({
+          cleJour: `${jourParis.annee}-${String(jourParis.mois + 1).padStart(2, "0")}-${String(jourParis.jour).padStart(2, "0")}`,
+          debutJour: debutJourParis,
+          finJour: finJourParis,
+          maintenant,
+          projets: listeProjets,
+          devis: devisListPlat,
+          nbFactures: nbFacturesDuJour ?? 0,
+          evenementsDuJour: evenementsAujourdhuiPlat,
+          evenementsPasses: aConfirmerBrutPlat.filter((e) => !e.demande_id || !idsProjetsTermines.has(e.demande_id)),
+          notes: notesAvecRappel,
+          premierRdvDemain: aplatirDemandes(premierRdvDemainBrut as { date_heure: string; titre: string; demandes?: unknown }[] | null)[0] ?? null,
+        })
+      : null;
+  const idsEnSuspens = new Set(fermeture?.suspens.map((e) => e.id) ?? []);
+  const pasEnSuspens = (id: string) => !idsEnSuspens.has(id);
+
+  const prochaineActionDuJour = determinerProchaineAction({
     rendezVousDuJour,
     devisAValider,
     projetsNouveaux,
@@ -254,12 +319,14 @@ export default async function DashboardHome() {
     facturesImpayees,
     maintenant,
   });
+  // Le soir, « Fermer la journée » prend la place de « Maintenant ».
+  const prochaineAction = fermeture ? null : prochaineActionDuJour;
   // L'élément mis en avant dans « Maintenant » n'est pas répété plus bas.
   const pasMisEnAvant = (id: string) => prochaineAction?.id !== id;
 
   // ---- 3. Aujourd'hui : une seule liste triée par heure -----------------
   const elementsJour: ElementJour[] = [
-    ...notesEnRetard.map((n) => ({
+    ...notesEnRetard.filter((n) => pasEnSuspens(n.id)).map((n) => ({
       cle: `note-${n.id}`,
       genre: "note" as const,
       noteId: n.id,
@@ -270,7 +337,7 @@ export default async function DashboardHome() {
       href: n.demande_id ? `/dashboard/demandes/${n.demande_id}` : "/dashboard/notes",
     })),
     ...[
-      ...rendezVousDuJour.filter((e) => pasMisEnAvant(e.id)).map((e) => ({
+      ...rendezVousDuJour.filter((e) => pasMisEnAvant(e.id) && pasEnSuspens(e.id)).map((e) => ({
         cle: `rdv-${e.id}`,
         genre: "rdv" as const,
         date: e.date_heure,
@@ -279,7 +346,7 @@ export default async function DashboardHome() {
         secondaire: nomClientDe(e) ? e.titre : undefined,
         href: e.demande_id ? `/dashboard/demandes/${e.demande_id}` : "/dashboard/planning",
       })),
-      ...notesAujourdhui.map((n) => ({
+      ...notesAujourdhui.filter((n) => pasEnSuspens(n.id)).map((n) => ({
         cle: `note-${n.id}`,
         genre: "note" as const,
         noteId: n.id,
@@ -289,7 +356,7 @@ export default async function DashboardHome() {
         secondaire: n.demandes?.nom_client,
         href: n.demande_id ? `/dashboard/demandes/${n.demande_id}` : "/dashboard/notes",
       })),
-      ...rappelsDuJour.filter((e) => pasMisEnAvant(e.id)).map((e) => ({
+      ...rappelsDuJour.filter((e) => pasMisEnAvant(e.id) && pasEnSuspens(e.id)).map((e) => ({
         cle: `tache-${e.id}`,
         genre: "tache" as const,
         date: e.date_heure,
@@ -336,10 +403,12 @@ export default async function DashboardHome() {
 
   const premierPrenom = (profil?.nom ?? "").split(" ")[0];
   const dateDuJour = maintenant.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
+  const aConfirmerAffiches = aConfirmerActifs.filter((e) => pasEnSuspens(e.id));
   const rienAFaire =
+    !fermeture &&
     !prochaineAction &&
     elementsJour.length === 0 &&
-    aConfirmerActifs.length === 0 &&
+    aConfirmerAffiches.length === 0 &&
     projetsAConfirmerTermine.length === 0 &&
     aProduire.length === 0 &&
     enAttente.length === 0;
@@ -350,7 +419,8 @@ export default async function DashboardHome() {
       titre={listeProjets.length === 0 ? "Bienvenue sur Compyo." : `Bonjour ${premierPrenom}`}
       premierProjet={listeProjets.length === 0}
       prochaineAction={prochaineAction}
-      aConfirmer={aConfirmerActifs}
+      fermeture={fermeture}
+      aConfirmer={aConfirmerAffiches}
       chantiersAConfirmer={projetsAConfirmerTermine}
       elementsJour={elementsJour}
       aProduire={aProduire}
@@ -362,6 +432,73 @@ export default async function DashboardHome() {
 
 function nomClientDe(item: unknown): string | undefined {
   return (item as { demandes?: { nom_client?: string } })?.demandes?.nom_client;
+}
+
+const HEURE_PARIS = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", minute: "2-digit" });
+const heureCourte = (iso: string) => HEURE_PARIS.format(new Date(iso)).replace(":", "h");
+const pluriel = (n: number, un: string, plusieurs: string) => `${n} ${n > 1 ? plusieurs : un}`;
+
+// « Fermer la journée » : tout est calculé, rien n'est demandé à l'IA.
+function construireFermeture(d: {
+  cleJour: string;
+  debutJour: Date;
+  finJour: Date;
+  maintenant: Date;
+  projets: Projet[];
+  devis: { envoye_le?: string | null }[];
+  nbFactures: number;
+  evenementsDuJour: { type: string; statut: string; date_heure: string }[];
+  evenementsPasses: { id: string; type: string; titre: string; date_heure: string; demandes?: { nom_client?: string } | null }[];
+  notes: { id: string; titre: string; rappel_a: string | null; demandes?: { nom_client?: string } | null }[];
+  premierRdvDemain: { date_heure: string; titre: string; demandes?: { nom_client?: string; adresse_client?: string } | null } | null;
+}): Fermeture {
+  const debut = d.debutJour.getTime();
+  const depuisCeMatin = (iso: string | null | undefined) => !!iso && Date.parse(iso) >= debut;
+
+  // Aujourd'hui : des chiffres, pas des phrases. Rien si tout est à zéro.
+  const nbProjets = d.projets.filter((p) => depuisCeMatin(p.created_at)).length;
+  const nbDevis = d.devis.filter((x) => depuisCeMatin(x.envoye_le)).length;
+  const nbRdv = d.evenementsDuJour.filter((e) => e.type === "rendez_vous" && e.statut === "termine").length;
+  const bilan = [
+    nbProjets > 0 && pluriel(nbProjets, "projet capté", "projets captés"),
+    nbDevis > 0 && pluriel(nbDevis, "devis envoyé", "devis envoyés"),
+    d.nbFactures > 0 && pluriel(d.nbFactures, "facture émise", "factures émises"),
+    nbRdv > 0 && pluriel(nbRdv, "rendez-vous fait", "rendez-vous faits"),
+  ].filter((x): x is string => Boolean(x));
+
+  // En suspens : les notes dues aujourd'hui (et celles déjà en retard),
+  // puis les rendez-vous et rappels d'aujourd'hui passés sans confirmation.
+  // Les rendez-vous plus anciens restent dans « À confirmer » : ils
+  // demandent une vraie réponse (replanifier), pas un report.
+  const notes: ElementSuspens[] = d.notes
+    .filter((n) => n.rappel_a && Date.parse(n.rappel_a) < d.finJour.getTime())
+    .sort((a, b) => Date.parse(a.rappel_a as string) - Date.parse(b.rappel_a as string))
+    .map((n) => ({
+      cle: `note-${n.id}`,
+      genre: "note",
+      id: n.id,
+      principal: n.titre,
+      secondaire: n.demandes?.nom_client,
+      date: n.rappel_a as string,
+    }));
+  const evenements: ElementSuspens[] = d.evenementsPasses
+    .filter((e) => Date.parse(e.date_heure) >= debut && Date.parse(e.date_heure) < d.maintenant.getTime())
+    .sort((a, b) => Date.parse(a.date_heure) - Date.parse(b.date_heure))
+    .map((e) => ({
+      cle: `evenement-${e.id}`,
+      genre: "evenement",
+      id: e.id,
+      principal: e.demandes?.nom_client ?? e.titre,
+      secondaire: `${heureCourte(e.date_heure)} · ${e.demandes?.nom_client ? e.titre : e.type === "rendez_vous" ? "Rendez-vous" : "Rappel"}`,
+      date: e.date_heure,
+    }));
+
+  const r = d.premierRdvDemain;
+  const demain = r
+    ? [heureCourte(r.date_heure), r.demandes?.nom_client ?? r.titre, r.demandes?.adresse_client].filter(Boolean).join(" · ")
+    : null;
+
+  return { cleJour: d.cleJour, bilan, suspens: [...evenements, ...notes], demain };
 }
 
 // UNE seule action, la plus utile à traiter maintenant, ou null. L'ordre

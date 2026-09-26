@@ -281,7 +281,7 @@ export function VueProjet({
               setVientDEtreCree(false);
             }
           }}
-          className="mt-4 flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition active:scale-[0.99] sm:w-auto sm:px-6"
+          className="mt-4 flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition motion-safe:active:scale-[0.99] sm:w-auto sm:px-6"
         >
           Répondre : bien reçu
         </button>

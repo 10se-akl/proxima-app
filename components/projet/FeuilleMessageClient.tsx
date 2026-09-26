@@ -253,7 +253,7 @@ export function ContenuMessageClient({
                 onClick={() => {
                   if (ouvrirMessage(canal, ctx.telephone as string, s.texte)) surPrepare(s, canal);
                 }}
-                className={`min-h-12 rounded-xl text-[15px] font-semibold transition active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
+                className={`min-h-12 rounded-xl text-[15px] font-semibold transition motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
                   canal === "sms" ? "bg-ink text-paper" : "text-ink ring-1 ring-ink/15"
                 }`}
               >

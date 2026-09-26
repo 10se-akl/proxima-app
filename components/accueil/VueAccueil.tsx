@@ -4,6 +4,7 @@ import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureP
 import { BlocAccueil, LigneAccueil, LIGNES_MAX } from "./Blocs";
 import { ListeAujourdhui, type ElementJour } from "./ListeAujourdhui";
 import { BoutonCapture } from "./BoutonCapture";
+import { FermerJournee, type Fermeture } from "./FermerJournee";
 
 // ============================================================
 // L'affichage de l'accueil (26/09, lot B) — les cinq blocs, sans aucune
@@ -29,6 +30,7 @@ export function VueAccueil({
   titre,
   premierProjet,
   prochaineAction,
+  fermeture = null,
   aConfirmer,
   chantiersAConfirmer,
   elementsJour,
@@ -40,6 +42,8 @@ export function VueAccueil({
   titre: string;
   premierProjet: boolean;
   prochaineAction: ActionAccueil | null;
+  /** Le soir (lot E) : « Fermer la journée » à la place de « Maintenant ». */
+  fermeture?: Fermeture | null;
   aConfirmer: EvenementAConfirmer[];
   chantiersAConfirmer: { id: string; nom_client: string }[];
   elementsJour: ElementJour[];
@@ -57,8 +61,9 @@ export function VueAccueil({
         </h1>
       </header>
 
-      {/* 1. Maintenant — la seule suggestion de l'accueil. */}
-      {prochaineAction && <Maintenant action={prochaineAction} />}
+      {/* 1. Maintenant — la seule suggestion de l'accueil. Le soir :
+          Fermer la journée. */}
+      {fermeture ? <FermerJournee fermeture={fermeture} /> : prochaineAction && <Maintenant action={prochaineAction} />}
 
       {/* 2. À confirmer — des questions oui / non. */}
       {nbAConfirmer > 0 && (

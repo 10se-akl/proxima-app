@@ -60,7 +60,7 @@ export function FeuilleCapture({ ouverte, surFermer }: { ouverte: boolean; surFe
           onClick={surFermer}
           className="group flex flex-col items-center gap-3 focus-visible:outline-none"
         >
-          <span className="grid h-28 w-28 place-items-center rounded-full bg-signal text-white shadow-[0_18px_40px_-16px_rgb(var(--c-signal)/0.9)] transition-transform group-active:scale-95 group-focus-visible:ring-4 group-focus-visible:ring-signal/40">
+          <span className="grid h-28 w-28 place-items-center rounded-full bg-signal text-white shadow-[0_18px_40px_-16px_rgb(var(--c-signal)/0.9)] transition-transform motion-safe:group-active:scale-95 group-focus-visible:ring-4 group-focus-visible:ring-signal/40">
             {micro ? <IconeMicro className="h-12 w-12" /> : <IconeCrayon className="h-11 w-11" />}
           </span>
           <span className="font-display text-xl font-semibold text-ink">{micro ? "Parler" : "Écrire"}</span>

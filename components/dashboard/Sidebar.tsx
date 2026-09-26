@@ -209,7 +209,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               aria-label="Nouveau projet"
               className="group flex min-h-[4rem] w-full flex-col items-center justify-end gap-1 pb-1.5 focus-visible:outline-none"
             >
-              <span className="grid h-14 w-14 -mt-6 place-items-center rounded-full bg-signal text-white shadow-[0_10px_24px_-10px_rgb(var(--c-signal)/0.9)] ring-4 ring-surface transition-transform group-active:scale-95 group-focus-visible:ring-signal/40">
+              <span className="grid h-14 w-14 -mt-6 place-items-center rounded-full bg-signal text-white shadow-[0_10px_24px_-10px_rgb(var(--c-signal)/0.9)] ring-4 ring-surface transition-transform motion-safe:group-active:scale-95 group-focus-visible:ring-signal/40">
                 <IconePlus className="h-7 w-7" />
               </span>
               <span className="text-[11px] font-medium text-ink/70">Nouveau</span>

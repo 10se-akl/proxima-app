@@ -393,7 +393,7 @@ export default function NouveauProjetPage() {
     });
 
     effacerBrouillonDescription();
-    router.push(`/dashboard/demandes/${data.id}`);
+    router.push(`/dashboard/demandes/${data.id}?cree=1`);
   }
 
   return (

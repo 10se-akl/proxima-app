@@ -187,7 +187,8 @@ export async function GET(request: NextRequest) {
           corps: nomClient
             ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Un brouillon de relance vous attend.`
             : `Un devis envoyé il y a ${joursDepuis} jours reste sans réponse.`,
-          url: `/dashboard/demandes/${devis.demande_id}`,
+          // 26/09 — ouvre la feuille « Message au client », relance prête.
+          url: `/dashboard/demandes/${devis.demande_id}?message=relanceDevis&devis=${devis.id}`,
         });
       } catch (err) {
         console.error("Push de relance non envoyé (la note existe)", devis.id, err);

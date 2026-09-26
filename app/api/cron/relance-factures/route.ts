@@ -152,7 +152,9 @@ export async function GET(request: NextRequest) {
           corps: nomClient
             ? `${nomClient} — facture n° ${facture.numero}. Un brouillon de relance vous attend.`
             : `La facture n° ${facture.numero} n'a pas encore été réglée.`,
-          url: `/dashboard/demandes/${facture.demande_id}`,
+          // 26/09 — ouvre la feuille « Message au client », relance prête :
+          // notification, puis bouton SMS.
+          url: `/dashboard/demandes/${facture.demande_id}?message=relancePaiement&facture=${facture.id}`,
         });
       } catch (err) {
         console.error("Push de relance facture non envoyé (la note existe)", facture.id, err);

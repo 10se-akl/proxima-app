@@ -14,6 +14,9 @@ import { Feuille } from "./Feuille";
 import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto } from "./icones";
 import { prochaineAction, type IdAction } from "./prochaineAction";
 import { Visionneuse } from "./Visionneuse";
+import { FeuilleMessageClient, tracerMessagePrepare, type DemandeMessage } from "./FeuilleMessageClient";
+import { accuse, ouvrirMessage, type CleMessage, type Signature } from "@/lib/messagesClient";
+import { createClient } from "@/lib/supabase/client";
 
 // ============================================================
 // La fiche projet (24/09) — « le Point et le Carnet ».
@@ -90,7 +93,10 @@ export function VueProjet({
   memo,
   lienPlanifier,
   rendus,
+  signature,
 }: {
+  /** Pour signer les messages au client (nom de l'artisan, entreprise). */
+  signature?: Signature;
   projet: Projet;
   devis: Devis | null;
   notesVocales: NoteVocale[];
@@ -118,6 +124,24 @@ export function VueProjet({
   const [photosOuvertes, setPhotosOuvertes] = useState(false);
   const [infosOuvertes, setInfosOuvertes] = useState(false);
   const [visionneuse, setVisionneuse] = useState<{ chemins: string[]; index: number } | null>(null);
+  // 26/09 (lot D) — la feuille « Message au client ». Elle s'ouvre aussi
+  // toute seule quand on arrive d'une notification ou du bouton Relancer
+  // de l'accueil (?message=relancePaiement&facture=…), et la fiche propose
+  // « Répondre : bien reçu » quand on arrive d'une capture (?cree=1).
+  const [messageOuvert, setMessageOuvert] = useState(false);
+  const [demandeMessage, setDemandeMessage] = useState<DemandeMessage | null>(null);
+  const [vientDEtreCree, setVientDEtreCree] = useState(false);
+  useEffect(() => {
+    const p = new URLSearchParams(window.location.search);
+    const cle = p.get("message") as CleMessage | null;
+    if (cle === "relancePaiement" || cle === "relanceDevis") {
+      setDemandeMessage({ cle, factureId: p.get("facture"), devisId: p.get("devis") });
+      setMessageOuvert(true);
+    }
+    if (p.get("cree") === "1") setVientDEtreCree(true);
+    if (cle || p.get("cree")) window.history.replaceState(null, "", window.location.pathname);
+  }, []);
+  const dejaContacte = evenements.some((e) => e.type === "message_prepare");
 
   // 26/09 — le [+] de la barre de navigation (Sidebar.tsx) ajoute à CE
   // projet quand on est sur sa fiche : un seul bouton pour ajouter, pas
@@ -240,7 +264,28 @@ export function VueProjet({
         priorite={projet.priorite ?? "normal"}
         statut={projet.statut}
         entreesMenu={menu}
+        surMessage={() => {
+          setDemandeMessage(null);
+          setMessageOuvert(true);
+        }}
       />
+
+      {/* Juste après une capture : un seul geste pour rassurer le client. */}
+      {vientDEtreCree && projet.telephone_client && !dejaContacte && (
+        <button
+          type="button"
+          onClick={() => {
+            const texte = accuse({ signature });
+            if (ouvrirMessage("sms", projet.telephone_client as string, texte)) {
+              tracerMessagePrepare(createClient(), { demandeId: projet.id, cle: "accuse", canal: "sms" });
+              setVientDEtreCree(false);
+            }
+          }}
+          className="mt-4 flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition active:scale-[0.99] sm:w-auto sm:px-6"
+        >
+          Répondre : bien reçu
+        </button>
+      )}
 
       {/* Téléphone : une colonne, dans l'ordre d'usage. Ordinateur : le
           Point et le Carnet à gauche, le mémo et le dossier à droite, qui
@@ -380,6 +425,13 @@ export function VueProjet({
       {visionneuse && (
         <Visionneuse chemins={visionneuse.chemins} depart={visionneuse.index} urls={urlsPhotos} surFermer={() => setVisionneuse(null)} />
       )}
+
+      <FeuilleMessageClient
+        ouverte={messageOuvert}
+        surFermer={() => setMessageOuvert(false)}
+        demandeId={projet.id}
+        demande={demandeMessage}
+      />
     </div>
   );
 }

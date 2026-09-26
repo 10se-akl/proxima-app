@@ -297,7 +297,12 @@ export type TypeEvenementProjet =
   | "facture_payee"
   | "avoir_cree"
   // Journal chantier vocal (06/09) — voir app/api/ai/interpreter-note-vocale.
-  | "journal_chantier_interprete";
+  | "journal_chantier_interprete"
+  // 26/09 — un message au client préparé depuis Compyo (SMS ou WhatsApp,
+  // voir components/projet/FeuilleMessageClient.tsx). « Préparé », jamais
+  // « envoyé » : c'est l'artisan qui appuie sur envoyer. Aucune migration :
+  // la colonne type n'a pas de contrainte (voir supabase/schema.sql).
+  | "message_prepare";
 
 export type EvenementProjet = {
   id: string;

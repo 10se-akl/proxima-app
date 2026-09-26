@@ -64,6 +64,11 @@ export const IconeLoupe = (p: P) => (
     <path d="M16 16l4.5 4.5" />
   </Svg>
 );
+export const IconeMessage = (p: P) => (
+  <Svg {...p}>
+    <path d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7a2.5 2.5 0 0 1-2.5 2.5H11l-4 3.5V16h0.5A2.5 2.5 0 0 1 5 13.5z" />
+  </Svg>
+);
 export const IconePlus = (p: P) => (
   <Svg {...p}>
     <path d="M12 5v14M5 12h14" />

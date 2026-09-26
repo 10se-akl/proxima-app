@@ -12,7 +12,7 @@ import {
   type EntreeCarnet,
   type FiltreCarnet,
 } from "./entreesCarnet";
-import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEuro, IconeLoupe, IconeMicro, IconePhoto, IconePoint } from "./icones";
+import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEuro, IconeLoupe, IconeMessage, IconeMicro, IconePhoto, IconePoint } from "./icones";
 
 // ============================================================
 // Le Carnet (24/09) — voir entreesCarnet.ts pour la logique.
@@ -90,6 +90,7 @@ function IconeEntree({ e }: { e: EntreeCarnet }) {
   if (e.type === "rdv") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeCalendrier className="h-4 w-4" /></span>;
   const t = e.typeEvenement ?? "";
   if (t.startsWith("devis") || t === "analyse_ia") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeDocument className="h-4 w-4" /></span>;
+  if (t === "message_prepare") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeMessage className="h-4 w-4" /></span>;
   if (t.startsWith("facture") || t === "avoir_cree") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeEuro className="h-4 w-4" /></span>;
   return <span className={`${base} bg-paper text-ink/35`}><IconePoint className="h-4 w-4" /></span>;
 }

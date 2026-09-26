@@ -253,7 +253,7 @@ export default function RevuePartagePage() {
         return;
       }
 
-      router.push(`/dashboard/demandes/${donnees.projetId}`);
+      router.push(`/dashboard/demandes/${donnees.projetId}?cree=1`);
     } catch {
       setErreur("Impossible d'enregistrer le projet pour le moment.");
       setEtape("revue");

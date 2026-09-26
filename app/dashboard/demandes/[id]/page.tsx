@@ -1013,6 +1013,7 @@ export default function DetailDemandePage({
   return (
     <>
       <VueProjet
+        signature={{ nom: nomArtisan, entreprise: parametres?.nom_entreprise ?? null }}
         projet={demande}
         devis={devis}
         notesVocales={notesVocales}

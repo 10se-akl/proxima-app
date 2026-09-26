@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { IconeFermer } from "./icones";
 
 // ============================================================
@@ -79,7 +80,10 @@ export function Feuille({
 
   if (!ouverte) return null;
 
-  return (
+  // 26/09 — rendue dans <body> : ouverte depuis un bloc positionné (un
+  // rendez-vous du planning), elle doit couvrir tout l'écran quel que soit
+  // le parent qui l'appelle.
+  return createPortal(
     <div className="fixed inset-0 z-[70] flex items-end justify-center sm:items-center sm:p-6" role="presentation">
       <button
         type="button"
@@ -117,6 +121,7 @@ export function Feuille({
         </div>
         <div className="overflow-y-auto px-5 py-5 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">{children}</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

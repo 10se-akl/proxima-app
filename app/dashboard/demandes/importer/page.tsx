@@ -198,7 +198,7 @@ export default function ImporterMessagePage() {
       return;
     }
 
-    router.push(`/dashboard/demandes/${data.projetId}`);
+    router.push(`/dashboard/demandes/${data.projetId}?cree=1`);
   }
 
   if (propositionEnCours) {

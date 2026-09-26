@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { EvenementPlanning, Priorite, TypeChantier } from "@/types";
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
+import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 
 // Plage par défaut : couvre une journée de travail classique sans obliger
 // à scroller pour un artisan qui n'a jamais de rendez-vous hors de ces
@@ -136,6 +137,7 @@ function BlocEvenement({
   const router = useRouter();
   const supabase = createClient();
   const [menuOuvert, setMenuOuvert] = useState(false);
+  const [messageOuvert, setMessageOuvert] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState(false);
 
@@ -188,18 +190,6 @@ function BlocEvenement({
   const typeChantier = evenement.demandes?.type_chantier;
   const alerteMeteo =
     !!meteo?.risque && !!typeChantier && TYPES_CHANTIER_METEO_SENSIBLES.includes(typeChantier);
-  const telephone = evenement.demandes?.telephone_client;
-
-  function prevenirClientMeteo() {
-    if (!telephone) return;
-    const numero = telephone.replace(/[^\d+]/g, "");
-    const message = `Bonjour, en raison de la météo prévue (${meteo?.resume}), il est possible que je doive reporter notre rendez-vous du ${date.toLocaleDateString(
-      "fr-FR",
-      { day: "numeric", month: "long" }
-    )}. Je vous tiens au courant. Merci de votre compréhension.`;
-    window.open(`sms:${numero}?body=${encodeURIComponent(message)}`, "_self");
-    setMenuOuvert(false);
-  }
 
   const termine = evenement.statut === "termine";
   // Audit Cycle 2 (Agent Artisan terrain) : le statut "annule" existe dans
@@ -314,18 +304,18 @@ function BlocEvenement({
               alignMenuADroite ? "right-0" : "left-0"
             } ${alignMenuEnHaut ? "bottom-full mb-1" : "top-full mt-1"}`}
           >
-            {alerteMeteo && (
+            {/* 26/09 (lot D) — plus seulement la météo : la feuille « Message
+                au client » propose retard, rappel, décalage… et le message
+                météo en premier quand l'alerte est active. */}
+            {evenement.demande_id && (
               <button
-                onClick={prevenirClientMeteo}
-                disabled={!telephone}
-                title={
-                  telephone
-                    ? `Météo : ${meteo?.resume}`
-                    : "Aucun numéro de téléphone enregistré pour ce client"
-                }
-                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5 disabled:opacity-40"
+                onClick={() => {
+                  setMenuOuvert(false);
+                  setMessageOuvert(true);
+                }}
+                className="w-full min-h-12 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink font-medium border-b border-ink/5"
               >
-                ⚠️ Prévenir le client (météo)
+                {alerteMeteo ? "⚠️ " : ""}Prévenir le client
               </button>
             )}
             {evenement.demande_id && (
@@ -372,6 +362,15 @@ function BlocEvenement({
             )}
           </div>
         </>
+      )}
+
+      {evenement.demande_id && (
+        <FeuilleMessageClient
+          ouverte={messageOuvert}
+          surFermer={() => setMessageOuvert(false)}
+          demandeId={evenement.demande_id}
+          meteo={alerteMeteo ? { dateRdv: evenement.date_heure, resume: meteo?.resume ?? null } : null}
+        />
       )}
     </div>
   );

@@ -3,6 +3,7 @@ import { VideoDemo } from "@/components/marketing/VideoDemo";
 import { DeuxSoirees } from "./DeuxSoirees";
 import { CadrePhoto } from "./CadrePhoto";
 import { PHOTOS } from "./photos";
+import { Engagements } from "@/components/confiance/Engagements";
 
 // ============================================================
 // Les sections courtes de l'accueil (24/09) : la comparaison des deux
@@ -128,6 +129,9 @@ export function SectionSoiree() {
           </Link>
         </div>
         <p className="mt-8 font-mono text-[11px] tracking-wide text-white/45">Sur candidature · réponse sous 48 h</p>
+        {/* Lot G — à côté de l'appel à rejoindre la bêta, derrière son
+            drapeau (lib/confiance.ts). */}
+        <Engagements ton="sombre" className="mx-auto mt-10 max-w-sm" />
       </div>
     </section>
   );

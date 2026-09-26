@@ -15,6 +15,7 @@ import {
   type FormulaireParametres,
 } from "@/lib/parametres";
 import { IconeChevron } from "@/components/projet/icones";
+import { Engagements } from "@/components/confiance/Engagements";
 
 type FormState = FormulaireParametres;
 
@@ -564,7 +565,16 @@ export function VueParametres({
         {/* Hors du formulaire de l'entreprise : chacun a ses propres
             formulaires (inviter, enregistrer mon profil…). */}
         {groupe("equipe", "Équipe", null, <EquipeSection />)}
-        {groupe("compte", "Mon compte", null, <MonCompte />)}
+        {groupe(
+          "compte",
+          "Mon compte",
+          null,
+          <>
+            {/* Lot G — en haut de Mon compte, derrière son drapeau. */}
+            <Engagements className="mb-5" />
+            <MonCompte />
+          </>
+        )}
       </div>
     </div>
   );

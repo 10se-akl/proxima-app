@@ -27,18 +27,29 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
   // Sprint Robustesse (30/08) — voir `terminer()` ci-dessous.
   const [erreurTerminer, setErreurTerminer] = useState<string | null>(null);
 
+  // 27/09 — Sans réseau (ou session à renouveler), la lecture s'arrêtait en
+  // silence : le panneau restait sur « Chargement… » pour toujours. On le
+  // dit, avec de quoi réessayer.
+  const [erreurChargement, setErreurChargement] = useState(false);
+
   async function charger() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
-    const organisationId = await getOrganisationId(supabase, user.id);
-    if (!organisationId) return;
-    const donnees = await listerNotesActivesOrganisation(supabase, organisationId, {
-      avecRappelUniquement: true,
-    });
-    setNotes(donnees);
-    setChargement(false);
+    setErreurChargement(false);
+    setChargement(true);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const organisationId = user ? await getOrganisationId(supabase, user.id) : null;
+      if (!organisationId) throw new Error("Session ou organisation introuvable");
+      const donnees = await listerNotesActivesOrganisation(supabase, organisationId, {
+        avecRappelUniquement: true,
+      });
+      setNotes(donnees);
+    } catch {
+      setErreurChargement(true);
+    } finally {
+      setChargement(false);
+    }
   }
 
   useEffect(() => {
@@ -89,7 +100,7 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
         title="Notifications"
         aria-label="Notifications"
         className={`relative grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors ${
-          vers === "bas" ? "w-12 h-12" : "w-8 h-8"
+          vers === "bas" ? "w-12 h-12" : "w-11 h-11"
         }`}
       >
         <IconeCloche taille={17} />
@@ -117,6 +128,17 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
           )}
           {chargement ? (
             <p className="px-4 pb-4 text-xs text-ink/40">Chargement…</p>
+          ) : erreurChargement ? (
+            <div className="flex items-center justify-between gap-3 px-4 pb-3">
+              <p className="text-xs text-ink/60">Rappels indisponibles pour le moment.</p>
+              <button
+                type="button"
+                onClick={charger}
+                className="min-h-11 shrink-0 rounded-lg px-2 text-xs font-medium text-ink underline underline-offset-2"
+              >
+                Réessayer
+              </button>
+            </div>
           ) : notes.length === 0 ? (
             <p className="px-4 pb-4 text-xs text-ink/40">Rien en attente. 👍</p>
           ) : (
@@ -143,7 +165,10 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
                     onClick={() => terminer(note.id)}
                     title="Marquer comme terminé"
                     aria-label="Marquer comme terminé"
-                    className="text-ink/30 hover:text-ink transition-colors text-xs shrink-0"
+                    // 27/09 — 44 × 44 pour le doigt (le « ✓ » faisait 8 px de
+                    // large, collé au lien de la note). Marges négatives : la
+                    // ligne garde sa hauteur.
+                    className="-my-2.5 -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-ink/30 hover:text-ink transition-colors text-xs"
                   >
                     ✓
                   </button>

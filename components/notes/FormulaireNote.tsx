@@ -14,6 +14,7 @@ import {
 } from "@/lib/dictee";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
+import { IconeMicro } from "@/components/projet/icones";
 import { Card } from "@/components/ui/Card";
 import type { ImportanceNote } from "@/types";
 
@@ -34,7 +35,7 @@ type ProjetLeger = { id: string; nom_client: string };
 //
 // Permission de notification (philosophie du brief : jamais demandée au
 // chargement de l'app) : demanderAbonnementSiNecessaire() n'est appelée
-// qu'ici, uniquement si l'artisan a activé "Programmer un rappel" et
+// qu'ici, uniquement si l'artisan a activé « Me le rappeler » (anciennement "Programmer un rappel") et
 // valide le formulaire — le contexte le plus logique possible.
 // ============================================================
 export function FormulaireNote({
@@ -276,7 +277,7 @@ export function FormulaireNote({
   const projetSelectionne = projets?.find((p) => p.id === demandeId);
 
   return (
-    <Card className="p-6">
+    <Card className="p-4 sm:p-6">
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         {projetIdFixe ? (
           nomProjetFixe && (
@@ -320,17 +321,19 @@ export function FormulaireNote({
                 type="button"
                 onClick={dicter}
                 disabled={dicteeEnCours}
-                className="text-xs text-ink/50 hover:text-ink underline transition-colors disabled:opacity-50"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
               >
-                {dicteeEnCours ? "Analyse…" : "🎙 Dicter plutôt que taper"}
+                <IconeMicro className="h-4 w-4 text-signal" />
+                {dicteeEnCours ? "Analyse…" : "Dicter"}
               </button>
             ) : (
               <button
                 type="button"
                 onClick={arreterDictee}
-                className="text-xs text-signal underline animate-pulse"
+                className="inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full bg-signal px-3.5 text-[14px] font-semibold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
               >
-                ⏹ Arrêter l'écoute
+                <span aria-hidden className="h-2 w-2 rounded-full bg-white motion-safe:animate-pulse" />
+                Arrêter l&apos;écoute
               </button>
             ))}
         </div>
@@ -383,18 +386,17 @@ export function FormulaireNote({
         </div>
 
         <div>
-          <label className="flex items-center gap-2.5 text-sm text-ink/80 cursor-pointer">
+          {/* 27/09 — Toute la ligne se touche (48 px), plus seulement une case
+              de 16 px ; sans rappel, rien ne sonne : pas besoin de le dire. */}
+          <label className="flex min-h-12 cursor-pointer items-center gap-3 text-[15px] text-ink">
             <input
               type="checkbox"
               checked={avecRappel}
               onChange={(e) => setAvecRappel(e.target.checked)}
-              className="w-4 h-4 rounded border-ink/30 accent-signal"
+              className="h-5 w-5 rounded border-ink/30 accent-signal"
             />
-            Programmer un rappel
+            Me le rappeler
           </label>
-          <p className="mt-1 text-xs text-ink/40">
-            Jamais obligatoire — sans rappel, cette note n&apos;envoie aucune notification.
-          </p>
           {avecRappel && (
             <div className="mt-3 grid grid-cols-2 gap-3">
               <Field
@@ -419,7 +421,7 @@ export function FormulaireNote({
         {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
         <div className="flex items-center gap-3">
-          <Button type="submit" loading={chargement}>
+          <Button type="submit" loading={chargement} className="min-h-12 flex-1 sm:flex-none">
             {chargement ? "Enregistrement…" : "Enregistrer la note"}
           </Button>
           {onAnnuler && (

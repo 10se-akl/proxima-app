@@ -7,7 +7,6 @@ import { getOrganisationId } from "@/lib/organisation";
 import { recalculerDevis, genererMentionTvaReduite } from "@/lib/moteur-metier/calculerDevis";
 import { lignesDeVente } from "@/lib/moteur-metier/prixDeVente";
 import { obtenirPostesFrequents, type PosteFrequent } from "@/lib/postesFrequents";
-import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
@@ -782,11 +781,26 @@ export function ValiderDevis({
         </div>
       )}
 
-      {erreur && <p className="mt-4 text-sm text-signal">{erreur}</p>}
-
-      <Button onClick={validerDevis} disabled={enregistrement} className="mt-5">
-        {enregistrement ? "Validation…" : "Valider ce devis"}
-      </Button>
+      {/* 27/09 — Sur téléphone, un devis de vingt lignes faisait défiler
+          longtemps avant de trouver « Valider ». Le bouton reste sous le
+          pouce, au-dessus de la barre du bas, avec le total à jour ; une
+          erreur s'affiche juste au-dessus de lui, là où on regarde. */}
+      <div className="sticky bottom-[calc(var(--barre-bas,0px)+env(safe-area-inset-bottom)+1.75rem)] z-10 mt-5 sm:static">
+        {erreur && (
+          <p className="mb-2 rounded-xl bg-surface px-3 py-2 text-sm text-signal-fonce ring-1 ring-signal/30 dark:text-signal-clair sm:bg-transparent sm:p-0 sm:ring-0">
+            {erreur}
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={validerDevis}
+          disabled={enregistrement}
+          className="flex w-full min-h-14 items-center justify-between gap-3 rounded-2xl bg-ink px-5 text-paper shadow-[0_10px_30px_-12px_rgb(var(--c-ink)/0.6)] transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:justify-center sm:shadow-none"
+        >
+          <span className="text-[16px] font-semibold">{enregistrement ? "Validation…" : "Valider ce devis"}</span>
+          <span className="font-mono text-[15px] tabular-nums text-paper/80 sm:hidden">{formatEuros(totaux.total_ttc)}</span>
+        </button>
+      </div>
     </Card>
   );
 }

@@ -4,8 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
-import { listerRappelsAVoir, marquerNoteVue, COULEUR_POINT_IMPORTANCE } from "@/lib/notes";
-import { Button } from "@/components/ui/Button";
+import { listerRappelsAVoir, marquerNoteTerminee, marquerNoteVue, COULEUR_POINT_IMPORTANCE } from "@/lib/notes";
 import type { Note } from "@/types";
 
 // ============================================================
@@ -21,10 +20,11 @@ import type { Note } from "@/types";
 // de dépendance à un cron externe pour ce canal-là : si l'app est
 // ouverte, elle sait déjà, en interne, l'heure qu'il est.
 //
-// "Compris" (fermeture) écrit vu_le sur la note — jamais statut/
-// termine_le : voir la note reste active, seule la pop-up ne la
-// représentera plus (elle reste visible normalement dans "Notes en
-// retard"/"Aujourd'hui" sur l'accueil et le centre de notifications).
+// "Plus tard" (l'ancien "Compris") écrit vu_le sur la note — jamais
+// statut/termine_le : voir la note reste active, seule la pop-up ne la
+// représentera plus (elle reste visible normalement dans "Aujourd'hui"
+// sur l'accueil et le centre de notifications). "C'est fait" (27/09) la
+// termine en plus, comme la coche de l'accueil.
 // ============================================================
 const INTERVALLE_VERIFICATION_MS = 20_000;
 
@@ -72,9 +72,13 @@ export function PopupRappel() {
     };
   }, [verifier]);
 
-  async function comprisPour(note: Note) {
+  // 27/09 — « C'est fait » règle le rappel d'un geste : avant, « Compris »
+  // fermait la fenêtre mais la note restait due, et revenait en « Retard »
+  // sur l'accueil — il fallait la retrouver pour la cocher. « Plus tard »
+  // garde l'ancien comportement : la note reste dans la journée.
+  async function fermer(note: Note, fait: boolean) {
     setEnCours(true);
-    await marquerNoteVue(supabase, note.id);
+    await Promise.all([marquerNoteVue(supabase, note.id), fait ? marquerNoteTerminee(supabase, note.id, true) : null]);
     setFile((prev) => prev.filter((n) => n.id !== note.id));
     setEnCours(false);
     router.refresh();
@@ -84,6 +88,32 @@ export function PopupRappel() {
 
   const note = file[0];
 
+  return (
+    <FenetreRappel
+      note={note}
+      reste={file.length - 1}
+      enCours={enCours}
+      surFait={() => fermer(note, true)}
+      surPlusTard={() => fermer(note, false)}
+    />
+  );
+}
+
+/** L'affichage seul, sans requête. */
+export function FenetreRappel({
+  note,
+  reste,
+  enCours,
+  surFait,
+  surPlusTard,
+}: {
+  note: Note;
+  /** Les autres rappels en attente après celui-ci. */
+  reste: number;
+  enCours: boolean;
+  surFait: () => void;
+  surPlusTard: () => void;
+}) {
   return (
     <div
       className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-ink/40 backdrop-blur-sm p-0 sm:p-6"
@@ -111,20 +141,31 @@ export function PopupRappel() {
           </div>
         </div>
 
-        {file.length > 1 && (
+        {reste > 0 && (
           <p className="mt-4 text-xs text-ink/40">
-            +{file.length - 1} autre{file.length - 1 > 1 ? "s" : ""} rappel{file.length - 1 > 1 ? "s" : ""} en
+            +{reste} autre{reste > 1 ? "s" : ""} rappel{reste > 1 ? "s" : ""} en
             attente.
           </p>
         )}
 
-        <Button
-          onClick={() => comprisPour(note)}
-          disabled={enCours}
-          className="mt-5 w-full justify-center"
-        >
-          Compris
-        </Button>
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={surFait}
+            disabled={enCours}
+            className="min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+          >
+            C&apos;est fait
+          </button>
+          <button
+            type="button"
+            onClick={surPlusTard}
+            disabled={enCours}
+            className="min-h-14 rounded-2xl text-[16px] font-medium text-ink ring-1 ring-ink/15 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+          >
+            Plus tard
+          </button>
+        </div>
       </div>
     </div>
   );

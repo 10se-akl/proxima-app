@@ -83,8 +83,8 @@ function NouvelleNoteForm() {
   }
 
   return (
-    <div className="p-8 max-w-lg mx-auto">
-      <Link href="/dashboard/notes" className="text-sm text-ink/60 hover:text-ink transition-colors">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg mx-auto">
+      <Link href="/dashboard/notes" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors">
         ← Retour aux notes
       </Link>
       <h1 className="mt-4 mb-6 font-display text-2xl font-semibold text-ink">Nouvelle note</h1>

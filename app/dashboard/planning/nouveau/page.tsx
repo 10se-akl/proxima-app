@@ -354,8 +354,8 @@ function NouvelEvenementForm() {
   }
 
   return (
-    <div className="p-8 max-w-lg">
-      <Link href="/dashboard/planning" className="text-sm text-ink/60 hover:text-ink">
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg">
+      <Link href="/dashboard/planning" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink">
         ← Retour au planning
       </Link>
 
@@ -380,7 +380,7 @@ function NouvelEvenementForm() {
           }}
         />
       ) : (
-      <Card className="mt-8 p-6">
+      <Card className="mt-5 p-4 sm:mt-8 sm:p-6">
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div className="flex gap-2">
             <button
@@ -486,15 +486,37 @@ function NouvelEvenementForm() {
             />
           </div>
 
+          {/* 27/09 — La durée en un appui (30 min, 1 h, 2 h, demi-journée,
+              journée) plutôt qu'un nombre de minutes à taper. Une durée
+              déjà enregistrée qui ne tombe sur aucun choix reste affichée. */}
           {type === "rendez_vous" && (
-            <Field
-              label="Durée (minutes)"
-              type="number"
-              min={1}
-              required
-              value={dureeMinutes}
-              onChange={(e) => setDureeMinutes(Number(e.target.value))}
-            />
+            <fieldset>
+              <legend className="block text-xs font-medium text-ink/70 mb-1.5">Durée</legend>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { minutes: 30, libelle: "30 min" },
+                  { minutes: 60, libelle: "1 h" },
+                  { minutes: 120, libelle: "2 h" },
+                  { minutes: 240, libelle: "½ journée" },
+                  { minutes: 480, libelle: "Journée" },
+                  ...([30, 60, 120, 240, 480].includes(dureeMinutes)
+                    ? []
+                    : [{ minutes: dureeMinutes, libelle: dureeMinutes >= 60 ? `${Math.floor(dureeMinutes / 60)} h ${String(dureeMinutes % 60).padStart(2, "0")}` : `${dureeMinutes} min` }]),
+                ].map((d) => (
+                  <button
+                    key={d.minutes}
+                    type="button"
+                    aria-pressed={dureeMinutes === d.minutes}
+                    onClick={() => setDureeMinutes(d.minutes)}
+                    className={`min-h-11 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
+                      dureeMinutes === d.minutes ? "bg-ink text-paper" : "text-ink/75 ring-1 ring-ink/15 hover:text-ink"
+                    }`}
+                  >
+                    {d.libelle}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
           )}
 
           <TextareaField
@@ -506,13 +528,19 @@ function NouvelEvenementForm() {
 
           {erreur && <p className="text-sm text-signal">{erreur}</p>}
 
-          <Button type="submit" disabled={chargement} className="self-start">
+          <button
+            type="submit"
+            disabled={chargement}
+            className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:px-8"
+          >
             {chargement
               ? "Enregistrement…"
               : enModeEdition
               ? "Enregistrer les modifications"
-              : "Ajouter"}
-          </Button>
+              : type === "tache"
+              ? "Ajouter la tâche"
+              : "Ajouter le rendez-vous"}
+          </button>
         </form>
       </Card>
       )}

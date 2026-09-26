@@ -174,7 +174,8 @@ export function evaluerDevis(
         niveau: "attention",
         libelle: "TVA contradictoire",
         detail: `Vos paramètres indiquent « TVA non applicable (art. 293 B) », mais ce devis applique ${source.tva_pct} %. Corrigez l'un ou l'autre avant l'envoi.`,
-        lien: PARAMETRES,
+        // Le groupe « Mentions légales » s'ouvre directement (lot F).
+        lien: { texte: PARAMETRES.texte, href: `${PARAMETRES.href}#mentions` },
       },
     });
   }

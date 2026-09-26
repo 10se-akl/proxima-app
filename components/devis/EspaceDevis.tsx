@@ -169,7 +169,15 @@ export function EspaceDevis({ devisId }: { devisId: string }) {
     );
   }
 
-  return <VueEspaceDevis donnees={donnees} onRecharger={charger} />;
+  return (
+    <VueEspaceDevis
+      donnees={donnees}
+      onRecharger={charger}
+      // Une mention complétée depuis le score : le devis et son score se
+      // mettent à jour sans recharger (lot F).
+      onParametres={(parametres) => setDonnees((d) => (d ? { ...d, parametres } : d))}
+    />
+  );
 }
 
 // L'écran lui-même, séparé du chargement : il ne dépend que des données
@@ -177,9 +185,11 @@ export function EspaceDevis({ devisId }: { devisId: string }) {
 export function VueEspaceDevis({
   donnees,
   onRecharger,
+  onParametres,
 }: {
   donnees: DonneesEspaceDevis;
   onRecharger: () => Promise<void>;
+  onParametres?: (parametres: ParametresEntreprise) => void;
 }) {
   const [brouillon, setBrouillon] = useState<SourceDocumentDevis | null>(null);
   const [vue, setVue] = useState<"edition" | "apercu">("edition");
@@ -323,7 +333,14 @@ export function VueEspaceDevis({
         <section className={`min-w-0 space-y-4 ${estBrouillon && vue === "apercu" ? "hidden lg:block" : ""}`}>
           {/* Le score n'a de sens que tant qu'on peut encore corriger : une
               fois le devis parti, il est figé (voir mentions_legales). */}
-          {(estBrouillon || devis.statut === "a_valider") && <ScoreDevis evaluation={evaluation} />}
+          {(estBrouillon || devis.statut === "a_valider") && (
+            <ScoreDevis
+              evaluation={evaluation}
+              completion={
+                onParametres ? { parametres, organisationId, artisanId, surEnregistre: onParametres } : undefined
+              }
+            />
+          )}
           {estBrouillon ? (
             <ValiderDevis
               // Remonté à chaque nouvelle version chargée : l'éditeur repart

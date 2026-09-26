@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import type { EvaluationDevis, PointQualite } from "@/lib/devis/qualite";
+import { COMPLETIONS, CompletionMention, type ContexteCompletion } from "./CompletionMention";
 
 // ============================================================
 // Le score du devis, tel que l'artisan le voit (17/09).
@@ -11,6 +12,11 @@ import type { EvaluationDevis, PointQualite } from "@/lib/devis/qualite";
 // Il informe, il ne bloque rien : aucun bouton n'est désactivé par ce
 // score, et on le dit noir sur blanc. Replié quand tout va bien, ouvert
 // quand un point juridique manque vraiment.
+//
+// 26/09 (lot F) — une mention manquante se complète ici même : le champ,
+// une raison d'une ligne, « Enregistrer » (voir CompletionMention). Le
+// lien vers les paramètres ne reste que pour ce qui ne se règle pas d'un
+// champ (une TVA contradictoire).
 // ============================================================
 
 function couleur(score: number) {
@@ -46,7 +52,8 @@ function Anneau({ score }: { score: number }) {
   );
 }
 
-function Ligne({ point }: { point: PointQualite }) {
+function Ligne({ point, completion }: { point: PointQualite; completion?: ContexteCompletion }) {
+  const surPlace = point.niveau !== "ok" && completion && COMPLETIONS[point.id];
   const icone = point.niveau === "ok" ? "✓" : point.niveau === "attention" ? "!" : "•";
   const style =
     point.niveau === "ok"
@@ -59,10 +66,14 @@ function Ligne({ point }: { point: PointQualite }) {
       <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold ${style}`}>
         {icone}
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className={`text-sm ${point.niveau === "ok" ? "text-ink/55" : "font-medium text-ink"}`}>{point.libelle}</p>
-        {point.niveau !== "ok" && <p className="mt-0.5 text-xs leading-relaxed text-ink/60">{point.detail}</p>}
-        {point.lien && (
+        {surPlace ? (
+          <CompletionMention pointId={point.id} contexte={completion} />
+        ) : (
+          point.niveau !== "ok" && <p className="mt-0.5 text-xs leading-relaxed text-ink/60">{point.detail}</p>
+        )}
+        {point.lien && !surPlace && (
           <Link
             href={point.lien.href}
             className="mt-1 inline-block text-xs font-medium text-signal underline-offset-2 hover:underline"
@@ -75,7 +86,7 @@ function Ligne({ point }: { point: PointQualite }) {
   );
 }
 
-export function ScoreDevis({ evaluation }: { evaluation: EvaluationDevis }) {
+export function ScoreDevis({ evaluation, completion }: { evaluation: EvaluationDevis; completion?: ContexteCompletion }) {
   const manquesImportants = evaluation.conformite.some((p) => p.niveau === "attention");
   const [ouvert, setOuvert] = useState(manquesImportants);
 
@@ -112,7 +123,7 @@ export function ScoreDevis({ evaluation }: { evaluation: EvaluationDevis }) {
         <div className="mt-4 border-t border-ink/10 pt-2">
           <ul className="divide-y divide-ink/5">
             {aTrier(evaluation.conformite).map((p) => (
-              <Ligne key={p.id} point={p} />
+              <Ligne key={p.id} point={p} completion={completion} />
             ))}
           </ul>
           {evaluation.lisibilite.length > 0 && (
@@ -122,7 +133,7 @@ export function ScoreDevis({ evaluation }: { evaluation: EvaluationDevis }) {
               </p>
               <ul className="divide-y divide-ink/5">
                 {aTrier(evaluation.lisibilite).map((p) => (
-                  <Ligne key={p.id} point={p} />
+                  <Ligne key={p.id} point={p} completion={completion} />
                 ))}
               </ul>
             </>

@@ -158,7 +158,7 @@ export function FondParticules({ className = "" }: { className?: string }) {
       const uniformes = {
         uTemps: { value: 0 },
         uNombre: { value: nombre },
-        uRayon: { value: telephone ? 26 : 50 },
+        uRayon: { value: telephone ? 31 : 65 },
         uArrivee: { value: immobile ? 1 : 0 },
         uTaille: { value: telephone ? 3.4 : 3.6 },
         uSombre: { value: sombre ? 1 : 0 },

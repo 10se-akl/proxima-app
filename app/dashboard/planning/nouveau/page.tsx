@@ -487,8 +487,10 @@ function NouvelEvenementForm() {
           </div>
 
           {/* 27/09 — La durée en un appui (30 min, 1 h, 2 h, demi-journée,
-              journée) plutôt qu'un nombre de minutes à taper. Une durée
-              déjà enregistrée qui ne tombe sur aucun choix reste affichée. */}
+              journée) plutôt qu'un nombre de minutes à taper.
+              27/09 (Axel) — « 1 h 45, tu peux pas le choisir » : sous les
+              boutons, − / + ajustent au quart d'heure, et la durée exacte
+              est toujours écrite. */}
           {type === "rendez_vous" && (
             <fieldset>
               <legend className="block text-xs font-medium text-ink/70 mb-1.5">Durée</legend>
@@ -499,9 +501,6 @@ function NouvelEvenementForm() {
                   { minutes: 120, libelle: "2 h" },
                   { minutes: 240, libelle: "½ journée" },
                   { minutes: 480, libelle: "Journée" },
-                  ...([30, 60, 120, 240, 480].includes(dureeMinutes)
-                    ? []
-                    : [{ minutes: dureeMinutes, libelle: dureeMinutes >= 60 ? `${Math.floor(dureeMinutes / 60)} h ${String(dureeMinutes % 60).padStart(2, "0")}` : `${dureeMinutes} min` }]),
                 ].map((d) => (
                   <button
                     key={d.minutes}
@@ -515,6 +514,31 @@ function NouvelEvenementForm() {
                     {d.libelle}
                   </button>
                 ))}
+              </div>
+              <div className="mt-2 flex items-center gap-2">
+                <button
+                  type="button"
+                  aria-label="15 minutes de moins"
+                  onClick={() => setDureeMinutes((m) => Math.max(15, m - 15))}
+                  disabled={dureeMinutes <= 15}
+                  className="grid h-11 w-11 place-items-center rounded-full text-xl text-ink ring-1 ring-ink/15 transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+                >
+                  −
+                </button>
+                <span className="min-w-[5.5rem] text-center text-[15px] font-medium tabular-nums text-ink" aria-live="polite">
+                  {dureeMinutes >= 60
+                    ? `${Math.floor(dureeMinutes / 60)} h${dureeMinutes % 60 ? ` ${String(dureeMinutes % 60).padStart(2, "0")}` : ""}`
+                    : `${dureeMinutes} min`}
+                </span>
+                <button
+                  type="button"
+                  aria-label="15 minutes de plus"
+                  onClick={() => setDureeMinutes((m) => Math.min(1440, m + 15))}
+                  disabled={dureeMinutes >= 1440}
+                  className="grid h-11 w-11 place-items-center rounded-full text-xl text-ink ring-1 ring-ink/15 transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+                >
+                  +
+                </button>
               </div>
             </fieldset>
           )}

@@ -1,0 +1,350 @@
+{
+ "nouveau-plus": {
+  "largeur": 390,
+  "hauteur": 844,
+  "cibles": [
+   {
+    "x": 156,
+    "y": 780,
+    "w": 78,
+    "h": 64
+   }
+  ]
+ },
+ "nouveau-choix": {
+  "largeur": 390,
+  "hauteur": 422,
+  "cibles": [
+   {
+    "x": 20,
+    "y": 97,
+    "w": 350,
+    "h": 89
+   },
+   {
+    "x": 20,
+    "y": 196,
+    "w": 350,
+    "h": 108
+   },
+   {
+    "x": 20,
+    "y": 314,
+    "w": 350,
+    "h": 89
+   }
+  ]
+ },
+ "nouveau-coller": {
+  "largeur": 390,
+  "hauteur": 454,
+  "cibles": [
+   {
+    "x": 33,
+    "y": 112,
+    "w": 324,
+    "h": 56
+   },
+   {
+    "x": 33,
+    "y": 382,
+    "w": 324,
+    "h": 56
+   }
+  ]
+ },
+ "fiche-haut": {
+  "largeur": 390,
+  "hauteur": 413,
+  "cibles": [
+   {
+    "x": 16,
+    "y": 89,
+    "w": 114,
+    "h": 68
+   },
+   {
+    "x": 138,
+    "y": 89,
+    "w": 114,
+    "h": 68
+   },
+   {
+    "x": 260,
+    "y": 89,
+    "w": 114,
+    "h": 68
+   }
+  ]
+ },
+ "fiche-ajouter": {
+  "largeur": 390,
+  "hauteur": 389,
+  "cibles": [
+   {
+    "x": 20,
+    "y": 97,
+    "w": 169,
+    "h": 130
+   },
+   {
+    "x": 201,
+    "y": 97,
+    "w": 169,
+    "h": 130
+   },
+   {
+    "x": 20,
+    "y": 239,
+    "w": 169,
+    "h": 130
+   }
+  ]
+ },
+ "fiche-dicter": {
+  "largeur": 390,
+  "hauteur": 405,
+  "cibles": [
+   {
+    "x": 37,
+    "y": 324,
+    "w": 222,
+    "h": 44
+   }
+  ]
+ },
+ "devis-ia": {
+  "largeur": 390,
+  "hauteur": 332,
+  "cibles": [
+   {
+    "x": 36,
+    "y": 100,
+    "w": 318,
+    "h": 48
+   }
+  ]
+ },
+ "devis-score": {
+  "largeur": 390,
+  "hauteur": 365,
+  "cibles": [
+   {
+    "x": 37,
+    "y": 251,
+    "w": 316,
+    "h": 92
+   }
+  ]
+ },
+ "devis-lignes": {
+  "largeur": 390,
+  "hauteur": 844,
+  "cibles": [
+   {
+    "x": 86,
+    "y": 342,
+    "w": 194,
+    "h": 34
+   },
+   {
+    "x": 41,
+    "y": 688,
+    "w": 308,
+    "h": 56
+   }
+  ]
+ },
+ "devis-envoyer": {
+  "largeur": 390,
+  "hauteur": 330,
+  "cibles": [
+   {
+    "x": 41,
+    "y": 134,
+    "w": 154,
+    "h": 44
+   }
+  ]
+ },
+ "devis-partager": {
+  "largeur": 390,
+  "hauteur": 298,
+  "cibles": [
+   {
+    "x": 41,
+    "y": 178,
+    "w": 268,
+    "h": 44
+   }
+  ]
+ },
+ "devis-reponse": {
+  "largeur": 390,
+  "hauteur": 256,
+  "cibles": [
+   {
+    "x": 41,
+    "y": 86,
+    "w": 112,
+    "h": 46
+   },
+   {
+    "x": 161,
+    "y": 86,
+    "w": 89,
+    "h": 46
+   }
+  ]
+ },
+ "devis-relance": {
+  "largeur": 390,
+  "hauteur": 274,
+  "cibles": [
+   {
+    "x": 36,
+    "y": 100,
+    "w": 318,
+    "h": 48
+   }
+  ]
+ },
+ "facture-creer": {
+  "largeur": 390,
+  "hauteur": 240,
+  "cibles": [
+   {
+    "x": 41,
+    "y": 114,
+    "w": 181,
+    "h": 46
+   },
+   {
+    "x": 41,
+    "y": 172,
+    "w": 156,
+    "h": 46
+   }
+  ]
+ },
+ "facture-payee": {
+  "largeur": 390,
+  "hauteur": 354,
+  "cibles": [
+   {
+    "x": 146,
+    "y": 127,
+    "w": 86,
+    "h": 16
+   }
+  ]
+ },
+ "planning-semaine": {
+  "largeur": 390,
+  "hauteur": 472,
+  "cibles": [
+   {
+    "x": 325,
+    "y": 76,
+    "w": 49,
+    "h": 60
+   },
+   {
+    "x": 16,
+    "y": 192,
+    "w": 358,
+    "h": 91
+   }
+  ]
+ },
+ "planning-meteo": {
+  "largeur": 390,
+  "hauteur": 487,
+  "cibles": [
+   {
+    "x": 139,
+    "y": 97,
+    "w": 111,
+    "h": 72
+   }
+  ]
+ },
+ "planning-duree": {
+  "largeur": 390,
+  "hauteur": 464,
+  "cibles": [
+   {
+    "x": 33,
+    "y": 40,
+    "w": 168,
+    "h": 46
+   },
+   {
+    "x": 33,
+    "y": 402,
+    "w": 44,
+    "h": 44
+   }
+  ]
+ },
+ "journee-maintenant": {
+  "largeur": 390,
+  "hauteur": 253,
+  "cibles": [
+   {
+    "x": 16,
+    "y": 88,
+    "w": 358,
+    "h": 96
+   }
+  ]
+ },
+ "journee-rappel": {
+  "largeur": 390,
+  "hauteur": 326,
+  "cibles": [
+   {
+    "x": 25,
+    "y": 245,
+    "w": 166,
+    "h": 56
+   },
+   {
+    "x": 199,
+    "y": 245,
+    "w": 166,
+    "h": 56
+   }
+  ]
+ },
+ "journee-soir": {
+  "largeur": 390,
+  "hauteur": 380,
+  "cibles": [
+   {
+    "x": 217,
+    "y": 175,
+    "w": 54,
+    "h": 48
+   },
+   {
+    "x": 280,
+    "y": 175,
+    "w": 78,
+    "h": 48
+   }
+  ]
+ },
+ "demarrer-parametres": {
+  "largeur": 390,
+  "hauteur": 547,
+  "cibles": [
+   {
+    "x": 16,
+    "y": 129,
+    "w": 358,
+    "h": 56
+   }
+  ]
+ }
+}

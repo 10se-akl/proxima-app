@@ -120,6 +120,16 @@ export function IconeNote({ className, taille = 18 }: Props) {
   );
 }
 
+export function IconeGuide({ className, taille = 18 }: Props) {
+  // Livre ouvert : le guide d'utilisation (27/09).
+  return (
+    <svg {...base(taille)} className={className}>
+      <path d="M12 6.5C10.3 5.2 8 4.5 4.5 4.5v13c3.5 0 5.8.7 7.5 2 1.7-1.3 4-2 7.5-2v-13c-3.5 0-5.8.7-7.5 2Z" />
+      <path d="M12 6.5v13" />
+    </svg>
+  );
+}
+
 export function IconeCloche({ className, taille = 18 }: Props) {
   return (
     <svg {...base(taille)} className={className}>

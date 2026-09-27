@@ -19,6 +19,7 @@ import {
   IconeFacture,
   IconeBilan,
   IconeCalendrier,
+  IconeGuide,
   IconeNote,
   IconeParametres,
 } from "@/components/ui/Icones";
@@ -82,6 +83,8 @@ const SECONDAIRES = [
   { href: "/dashboard/notes", label: "Notes", Icone: IconeNote },
   { href: "/dashboard/bilan", label: "Bilan", Icone: IconeBilan },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
+  // 27/09 — Le guide d'utilisation, illustré (voir components/guide).
+  { href: "/dashboard/guide", label: "Guide", Icone: IconeGuide },
 ];
 
 function estActif(pathname: string, href: string) {

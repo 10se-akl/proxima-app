@@ -16,7 +16,7 @@ import {
   partagerPdfDevis,
   telechargerPdfDevis,
 } from "@/components/devis/pdf/genererPdf";
-import { adresseEspaceDevis } from "@/lib/devis/actions";
+import { adresseEspaceDevis, marquerDevisEnvoye } from "@/lib/devis/actions";
 import { mentionsEffectives, nomEntreprise } from "@/lib/devis/mentionsLegales";
 import {
   construireModeleDevis,
@@ -196,6 +196,13 @@ export function VueEspaceDevis({
   const [pdfEnCours, setPdfEnCours] = useState<"telechargement" | "partage" | null>(null);
   const [erreurPdf, setErreurPdf] = useState<string | null>(null);
   const [partageFichier, setPartageFichier] = useState(false);
+  // 27/09 (Axel) — Un devis « prêt à partir » envoyé en PDF (WhatsApp,
+  // mail) restait « à envoyer » : seul « Envoyer au client » le notait
+  // envoyé, et l'accueil continuait de réclamer « Envoyer le devis ».
+  // Après un PDF partagé ou téléchargé, on pose la question.
+  const [questionEnvoi, setQuestionEnvoi] = useState(false);
+  const [envoiEnCours, setEnvoiEnCours] = useState(false);
+  const [erreurEnvoi, setErreurEnvoi] = useState<string | null>(null);
 
   useEffect(() => setPartageFichier(partageDeFichierPossible()), []);
 
@@ -234,8 +241,10 @@ export function VueEspaceDevis({
     setErreurPdf(null);
     setPdfEnCours(type);
     try {
+      let parti = true;
       if (type === "telechargement") await telechargerPdfDevis(modele);
-      else await partagerPdfDevis(modele);
+      else parti = await partagerPdfDevis(modele);
+      if (parti && donnees.devis.statut === "a_valider") setQuestionEnvoi(true);
     } catch (e) {
       console.error("PDF du devis :", e);
       setErreurPdf("Le PDF n'a pas pu être préparé. Vérifiez votre connexion et réessayez.");
@@ -248,6 +257,26 @@ export function VueEspaceDevis({
   const estBrouillon = devis.statut === "brouillon";
   const statut = statutAffiche(devis, projet.statut);
   const totalAffiche = estBrouillon && brouillon ? brouillon.total_estime : devis.total_estime;
+
+  // Même action que « Envoyer au client » : le devis est figé tel quel.
+  async function noterEnvoye() {
+    setErreurEnvoi(null);
+    setEnvoiEnCours(true);
+    try {
+      const resultat = await marquerDevisEnvoye(
+        { supabase: createClient(), artisanId, organisationId },
+        { devis, demandeId: projet.id, parametres }
+      );
+      if (!resultat.ok) {
+        setErreurEnvoi(resultat.erreur);
+        return;
+      }
+      setQuestionEnvoi(false);
+      await onRecharger();
+    } finally {
+      setEnvoiEnCours(false);
+    }
+  }
 
   return (
     <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-8">
@@ -304,6 +333,21 @@ export function VueEspaceDevis({
         </div>
       </div>
       {erreurPdf && <p className="mt-2 text-sm text-signal">{erreurPdf}</p>}
+      {questionEnvoi && devis.statut === "a_valider" && (
+        <div className="mt-3 rounded-xl border border-ink/10 bg-surface px-4 py-3">
+          <p className="text-sm font-medium text-ink">Ce devis est parti chez le client ?</p>
+          <p className="mt-0.5 text-xs text-ink/50">Il sera noté envoyé et figé tel quel.</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button onClick={noterEnvoye} loading={envoiEnCours} disabled={envoiEnCours}>
+              Oui, il est envoyé
+            </Button>
+            <Button variant="ghost" onClick={() => setQuestionEnvoi(false)} disabled={envoiEnCours}>
+              Pas encore
+            </Button>
+          </div>
+          {erreurEnvoi && <p className="mt-2 text-sm text-signal">{erreurEnvoi}</p>}
+        </div>
+      )}
 
       {estBrouillon && (
         <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-ink/10 bg-surface p-1 lg:hidden" role="tablist">

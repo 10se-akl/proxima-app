@@ -166,7 +166,23 @@ export function SuiviDevis({
             Modifier (nouvelle version)
           </Button>
         </div>
-        <p className="mt-3 text-[11px] leading-relaxed text-ink/40">
+        {/* 27/09 (Axel) — Déjà envoyé en PDF ou à la main : le noter sans
+            passer par « Envoyer au client », dont le nom laisse croire
+            qu'il repartirait. */}
+        <p className="mt-2 text-sm text-ink/55">
+          Déjà envoyé autrement ?{" "}
+          <button
+            type="button"
+            onClick={() =>
+              executer("deja_envoye", () => marquerDevisEnvoye(ctx, { devis, demandeId: projet.id, parametres }))
+            }
+            disabled={enCours !== null}
+            className="inline-flex min-h-11 items-center font-medium text-ink underline decoration-ink/30 underline-offset-2 disabled:opacity-50"
+          >
+            {enCours === "deja_envoye" ? "Enregistrement…" : "Le noter comme envoyé"}
+          </button>
+        </p>
+        <p className="mt-1 text-[11px] leading-relaxed text-ink/40">
           Un devis validé ne se modifie plus : c&apos;est un engagement envers votre client. Pour
           le changer, créez une nouvelle version — celle-ci reste dans l&apos;historique.
         </p>

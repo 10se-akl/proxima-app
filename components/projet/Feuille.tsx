@@ -3,6 +3,7 @@
 import { useEffect, useId, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { IconeFermer } from "./icones";
+import { annoncerNavigation, protegerFeuilleDuRetour } from "@/lib/retourFeuilles";
 
 // ============================================================
 // Une « feuille » (24/09) : ce qui s'ouvre par-dessus la fiche projet pour
@@ -78,6 +79,13 @@ export function Feuille({
     };
   }, [ouverte]);
 
+  // 27/09 — Le geste « retour » du téléphone ferme la feuille au lieu de
+  // quitter la page (voir lib/retourFeuilles.ts).
+  useEffect(() => {
+    if (!ouverte) return;
+    return protegerFeuilleDuRetour(() => fermer.current());
+  }, [ouverte]);
+
   if (!ouverte) return null;
 
   // 26/09 — rendue dans <body> : ouverte depuis un bloc positionné (un
@@ -99,6 +107,20 @@ export function Feuille({
         aria-modal="true"
         aria-labelledby={idTitre}
         tabIndex={-1}
+        // Un lien vers un autre écran : la feuille le laisse naviguer sans
+        // toucher à l'historique (voir lib/retourFeuilles.ts).
+        onClickCapture={(e) => {
+          const lien = (e.target as HTMLElement).closest?.("a[href]") as HTMLAnchorElement | null;
+          if (
+            lien &&
+            lien.origin === window.location.origin &&
+            !lien.target &&
+            !lien.hasAttribute("download") &&
+            lien.pathname + lien.search !== window.location.pathname + window.location.search
+          ) {
+            annoncerNavigation();
+          }
+        }}
         className={`relative flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-[1.6rem] bg-paper shadow-2xl ring-1 ring-ink/10 outline-none feuille-panneau sm:rounded-[1.6rem] ${
           large ? "sm:max-w-2xl" : "sm:max-w-lg"
         }`}

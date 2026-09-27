@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { marquerRendezVousDuChantierFaits } from "@/components/planning/actionsEvenement";
 import { getOrganisationId } from "@/lib/organisation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -86,6 +87,8 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
         setErreurId(e.id);
         return;
       }
+      // 27/09 — Le planning suit (voir actionsEvenement.ts).
+      await marquerRendezVousDuChantierFaits(supabase, e.demande_id);
 
       const {
         data: { user },

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { marquerRendezVousDuChantierFaits } from "@/components/planning/actionsEvenement";
 import { getOrganisationId } from "@/lib/organisation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -75,6 +76,8 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
       setErreurId(p.id);
       return;
     }
+    // 27/09 — Le planning suit (voir actionsEvenement.ts).
+    await marquerRendezVousDuChantierFaits(supabase, p.id);
 
     const {
       data: { user },

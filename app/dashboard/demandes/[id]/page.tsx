@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
+import { marquerRendezVousDuChantierFaits } from "@/components/planning/actionsEvenement";
 import { Button } from "@/components/ui/Button";
 import { Field } from "@/components/ui/Input";
 import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
@@ -756,6 +757,9 @@ export default function DetailDemandePage({
         setErreur("Impossible de marquer le chantier terminé. Réessayez.");
         return;
       }
+      // 27/09 — Le planning suit : les rendez-vous du chantier jusqu'à ce
+      // soir passent en « fait » (voir actionsEvenement.ts).
+      await marquerRendezVousDuChantierFaits(supabase, demande.id);
       if (artisanId && organisationId) {
         await enregistrerEvenement(supabase, {
           demandeId: demande.id,

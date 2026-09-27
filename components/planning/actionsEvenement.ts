@@ -27,6 +27,28 @@ export async function changerStatutEvenement(
   return !error && !!data && data.length > 0;
 }
 
+/**
+ * Chantier terminé (27/09, remonté par Axel) : le planning le montrait
+ * encore « à faire ». Ses rendez-vous prévus jusqu'à ce soir passent en
+ * « fait ». Ne bougent pas : les tâches (terminer le chantier ne veut pas
+ * dire que « commander les rails » est fait) et les rendez-vous des jours
+ * suivants (réception, SAV) — l'artisan les garde ou les retire lui-même.
+ * Vrai si la mise à jour a réussi ; le projet, lui, est déjà terminé.
+ */
+export async function marquerRendezVousDuChantierFaits(supabase: SupabaseClient, demandeId: string): Promise<boolean> {
+  const finDeJournee = new Date();
+  finDeJournee.setHours(23, 59, 59, 999);
+  const { error } = await supabase
+    .from("evenements_planning")
+    .update({ statut: "termine" })
+    .eq("demande_id", demandeId)
+    .eq("type", "rendez_vous")
+    .eq("statut", "a_faire")
+    .lte("date_heure", finDeJournee.toISOString());
+  if (error) console.error("Rendez-vous du chantier terminé :", error);
+  return !error;
+}
+
 export async function supprimerEvenement(supabase: SupabaseClient, id: string): Promise<boolean> {
   const { data, error } = await supabase.from("evenements_planning").delete().eq("id", id).select("id");
   return !error && !!data && data.length > 0;

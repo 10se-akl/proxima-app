@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { marquerNoteTerminee } from "@/lib/notes";
@@ -13,13 +13,17 @@ import { LIGNES_MAX } from "./Blocs";
 // À partir de 17 h, le bloc « Maintenant » de l'accueil devient ce bloc.
 // Il ne sert pas à informer, il sert à vider la tête : trois lignes au
 // plus (Aujourd'hui, En suspens, Demain), un bouton « Fait » ou « Demain »
-// sur chaque élément en suspens, puis « C'est bon pour aujourd'hui ».
-// Pas de bilan, pas de notification, pas de série de jours.
-// Remplace ResumeJournee (un résumé à demander, qui ne fermait rien).
+// sur chaque élément en suspens. Pas de notification, pas de série de
+// jours. Remplace ResumeJournee (un résumé à demander, qui ne fermait rien).
 //
-// « Tout est noté » n'est écrit que si « En suspens » est réellement vide.
-// La journée fermée est mémorisée sur le téléphone (une clé datée) : le
-// lendemain, la clé ne correspond plus et l'accueil redevient normal.
+// « Tout est réglé » n'est écrit que si « En suspens » est réellement vide,
+// et s'affiche de lui-même.
+//
+// 27/09 (Axel) — Le bouton « C'est bon pour aujourd'hui » est retiré : il
+// ne faisait que remplacer ce bloc par un message calme, sans rien changer
+// d'autre (ni rappels ni notifications), ne se défaisait pas, et même Axel
+// ne savait pas à quoi il servait. Le message calme vient maintenant tout
+// seul quand il n'y a plus rien en suspens.
 // ============================================================
 
 /** Un élément non réglé du jour : une note due, ou un rendez-vous (ou un
@@ -46,7 +50,6 @@ export type Fermeture = {
 
 // Le lendemain matin : l'heure à laquelle une note reportée revient.
 const HEURE_REPORT_NOTE = 8;
-const CLE_STOCKAGE = "compyo:journee-fermee";
 
 type Actions = {
   fait: (e: ElementSuspens) => Promise<boolean>;
@@ -102,34 +105,12 @@ function actionsSupabase(): Actions {
   };
 }
 
-function lireFermee(cleJour: string): boolean {
-  try {
-    return window.localStorage.getItem(CLE_STOCKAGE) === cleJour;
-  } catch {
-    return false;
-  }
-}
-
-function ecrireFermee(cleJour: string) {
-  try {
-    window.localStorage.setItem(CLE_STOCKAGE, cleJour);
-  } catch {
-    // Navigation privée, stockage bloqué : l'état calme s'affiche quand
-    // même pour cette visite.
-  }
-}
-
 export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; actions?: Actions }) {
   const router = useRouter();
   const [agir] = useState<Actions>(() => actions ?? actionsSupabase());
   const [regles, setRegles] = useState<Set<string>>(new Set());
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState(false);
-  const [fermee, setFermee] = useState(false);
-
-  useEffect(() => {
-    setFermee(lireFermee(fermeture.cleJour));
-  }, [fermeture.cleJour]);
 
   const restants = fermeture.suspens.filter((e) => !regles.has(e.cle));
 
@@ -154,15 +135,18 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
     router.refresh();
   }
 
-  // L'état calme : seulement si plus rien n'est en suspens.
-  if (fermee && restants.length === 0) {
+  // L'état calme, de lui-même, dès que plus rien n'est en suspens.
+  if (restants.length === 0) {
     return (
-      <section aria-label="Journée fermée" className="mt-5 flex items-start gap-3.5 rounded-2xl bg-surface px-5 py-5 ring-1 ring-ink/10">
+      <section aria-label="Fermer la journée" className="mt-5 flex items-start gap-3.5 rounded-2xl bg-surface px-5 py-5 ring-1 ring-ink/10">
         <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-succes/12 text-succes">
           <IconeCoche className="h-5 w-5" />
         </span>
         <span className="min-w-0">
-          <span className="block text-[17px] font-semibold text-ink">Journée fermée. Tout est noté.</span>
+          <span className="block text-[17px] font-semibold text-ink">Tout est réglé pour aujourd&apos;hui.</span>
+          {fermeture.bilan.length > 0 && (
+            <span className="mt-0.5 block text-[13.5px] text-ink/65">Aujourd&apos;hui · {fermeture.bilan.join(" · ")}</span>
+          )}
           <span className="mt-0.5 block truncate text-[13.5px] text-ink/65">
             Demain · {fermeture.demain ?? "rien de prévu"}
           </span>
@@ -237,19 +221,6 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
           <span className="block truncate text-[15px] text-ink">{fermeture.demain ?? "Rien de prévu"}</span>
         </Ligne>
       </dl>
-
-      {restants.length === 0 && (
-        <button
-          type="button"
-          onClick={() => {
-            ecrireFermee(fermeture.cleJour);
-            setFermee(true);
-          }}
-          className="mt-4 w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition motion-safe:active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-        >
-          C&apos;est bon pour aujourd&apos;hui
-        </button>
-      )}
     </section>
   );
 }

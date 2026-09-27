@@ -11,7 +11,7 @@ import { Carnet } from "./Carnet";
 import { construireCarnet } from "./entreesCarnet";
 import { EnTeteProjet, type EntreeMenu } from "./EnTeteProjet";
 import { Feuille } from "./Feuille";
-import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto } from "./icones";
+import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto, IconePlus } from "./icones";
 import { prochaineAction, type IdAction } from "./prochaineAction";
 import { Visionneuse } from "./Visionneuse";
 import { FeuilleMessageClient, tracerMessagePrepare, type DemandeMessage } from "./FeuilleMessageClient";
@@ -152,7 +152,14 @@ export function VueProjet({
       setAjout("choix");
     };
     window.addEventListener("compyo:capture", surCapture);
-    return () => window.removeEventListener("compyo:capture", surCapture);
+    // 27/09 — Et le [+] le dit : « Ajouter » (voir Sidebar.tsx).
+    document.documentElement.dataset.captureLibelle = "Ajouter";
+    window.dispatchEvent(new Event("compyo:capture-libelle"));
+    return () => {
+      window.removeEventListener("compyo:capture", surCapture);
+      delete document.documentElement.dataset.captureLibelle;
+      window.dispatchEvent(new Event("compyo:capture-libelle"));
+    };
   }, []);
 
   const photos = projet.photos ?? [];
@@ -243,17 +250,28 @@ export function VueProjet({
   // Tablette ou téléphone en paysage (27/09) : 44 px de haut au doigt,
   // rien ne change à la souris.
   const barreAjout = (
-    <div className="hidden items-center gap-1.5 sm:flex">
-      <button type="button" onClick={() => setAjout("vocal")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
-        <IconeMicro className="h-4 w-4 text-signal" /> Dicter
+    <>
+      {/* Téléphone (27/09, Axel) : ajouter une note se fait là où on voit
+          les notes — le Carnet —, pas seulement par le [+] du bas. */}
+      <button
+        type="button"
+        onClick={() => setAjout("choix")}
+        className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 sm:hidden"
+      >
+        <IconePlus className="h-4 w-4" /> Ajouter
       </button>
-      <button type="button" onClick={() => setPhotosOuvertes(true)} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
-        <IconePhoto className="h-4 w-4 text-signal" /> Photos
-      </button>
-      <button type="button" onClick={() => setAjout("note")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
-        <IconeCrayon className="h-4 w-4 text-signal" /> Note
-      </button>
-    </div>
+      <div className="hidden items-center gap-1.5 sm:flex">
+        <button type="button" onClick={() => setAjout("vocal")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
+          <IconeMicro className="h-4 w-4 text-signal" /> Dicter
+        </button>
+        <button type="button" onClick={() => setPhotosOuvertes(true)} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
+          <IconePhoto className="h-4 w-4 text-signal" /> Photos
+        </button>
+        <button type="button" onClick={() => setAjout("note")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
+          <IconeCrayon className="h-4 w-4 text-signal" /> Note
+        </button>
+      </div>
+    </>
   );
 
   return (

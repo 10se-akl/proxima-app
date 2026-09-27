@@ -149,6 +149,19 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
     const nonInterceptee = window.dispatchEvent(new CustomEvent("compyo:capture", { cancelable: true }));
     if (nonInterceptee) setCaptureOuverte(true);
   }
+
+  // 27/09 (Axel) — « c'est le même bouton que pour créer un projet, pas
+  // instinctif » : sur la fiche, le [+] du téléphone ajoute au projet, il
+  // le dit donc (« Ajouter »). La page qui le prend à son compte pose le
+  // libellé (voir VueProjet). Sur ordinateur, « Nouveau projet » crée
+  // toujours un projet : les boutons d'ajout y sont déjà dans le Carnet.
+  const [libelleCapture, setLibelleCapture] = useState<string | null>(null);
+  useEffect(() => {
+    const lire = () => setLibelleCapture(document.documentElement.dataset.captureLibelle ?? null);
+    lire();
+    window.addEventListener("compyo:capture-libelle", lire);
+    return () => window.removeEventListener("compyo:capture-libelle", lire);
+  }, []);
   useEffect(() => {
     const ouvrir = () => setCaptureOuverte(true);
     window.addEventListener("compyo:ouvrir-capture", ouvrir);
@@ -208,13 +221,13 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             <button
               type="button"
               onClick={capturer}
-              aria-label="Nouveau projet"
+              aria-label={libelleCapture ? "Ajouter à ce projet" : "Nouveau projet"}
               className="group flex min-h-[4rem] w-full flex-col items-center justify-end gap-1 pb-1.5 focus-visible:outline-none"
             >
               <span className="grid h-14 w-14 -mt-6 place-items-center rounded-full bg-signal text-white shadow-[0_10px_24px_-10px_rgb(var(--c-signal)/0.9)] ring-4 ring-surface transition-transform motion-safe:group-active:scale-95 group-focus-visible:ring-signal/40">
                 <IconePlus className="h-7 w-7" />
               </span>
-              <span className="text-[11px] font-medium text-ink/70">Nouveau</span>
+              <span className="text-[11px] font-medium text-ink/70">{libelleCapture ?? "Nouveau"}</span>
             </button>
           </li>
           <li>
@@ -311,7 +324,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           <div className="px-3 pt-4">
             <button
               type="button"
-              onClick={capturer}
+              onClick={() => setCaptureOuverte(true)}
               className="flex w-full min-h-12 items-center justify-center gap-2 rounded-xl bg-signal text-[15px] font-semibold text-white transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               <IconePlus className="h-5 w-5" /> Nouveau projet

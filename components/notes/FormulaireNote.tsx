@@ -8,7 +8,9 @@ import { creerNote, LABEL_IMPORTANCE, COULEUR_POINT_IMPORTANCE } from "@/lib/not
 import { enregistrerEvenement } from "@/lib/timeline";
 import { demanderAbonnementSiNecessaire } from "@/lib/pwa/notifications";
 import {
+  assemblerTranscription,
   obtenirClasseReconnaissance,
+  titreDepuisTexte,
   messageErreurDictee,
   type SpeechRecognitionInstance,
 } from "@/lib/dictee";
@@ -142,11 +144,7 @@ export function FormulaireNote({
     recognition.interimResults = false;
     let texteFinal = "";
     recognition.onresult = (event) => {
-      let texte = "";
-      for (let i = 0; i < event.results.length; i++) {
-        texte += event.results[i][0].transcript;
-      }
-      texteFinal = texte;
+      texteFinal = assemblerTranscription(event.results);
     };
     recognition.onend = async () => {
       setEnregistrement(false);
@@ -159,9 +157,15 @@ export function FormulaireNote({
           body: JSON.stringify({ texte: texteFinal }),
         });
         const data = await res.json();
+        // 27/09 (Axel) — « la transcription ne va que dans le titre » :
+        // l'IA laissait la description vide quand elle jugeait le titre
+        // suffisant, et en cas d'échec tout partait, tronqué, dans le
+        // titre. Désormais rien de ce qui est dit ne se perd : si l'IA ne
+        // propose pas de description, c'est le texte dicté qui la remplit.
+        const texteDicte = texteFinal.trim();
         if (res.ok) {
           setTitre(data.titre);
-          setDescription(data.description || "");
+          setDescription(data.description?.trim() || (texteDicte !== String(data.titre ?? "").trim() ? texteDicte : ""));
           setImportance(data.importance);
           // Gap 2 — ne propose une pré-sélection que si le menu "Projet
           // concerné" est bien affiché (projetIdFixe absent) : sur la
@@ -171,13 +175,17 @@ export function FormulaireNote({
             setProjetSuggereNom(data.nomClientSuggere ?? null);
           }
         } else {
-          // Repli : le texte brut dicté reste utilisable tel quel dans le
-          // titre plutôt que de tout perdre si l'IA échoue.
-          setTitre(texteFinal.slice(0, 80));
+          // Repli : le début du texte dicté en titre, tout le texte en
+          // description — rien n'est perdu si l'IA échoue.
+          const titreRepli = titreDepuisTexte(texteDicte);
+          setTitre(titreRepli);
+          setDescription(titreRepli === texteDicte ? "" : texteDicte);
           setErreur(data.error ?? "L'IA n'a pas pu structurer la note — vérifiez le texte ci-dessous.");
         }
       } catch {
-        setTitre(texteFinal.slice(0, 80));
+        const titreRepli = titreDepuisTexte(texteFinal);
+        setTitre(titreRepli);
+        setDescription(titreRepli === texteFinal.trim() ? "" : texteFinal.trim());
         setErreur("Impossible de contacter l'IA — vérifiez le texte ci-dessous.");
       } finally {
         setDicteeEnCours(false);

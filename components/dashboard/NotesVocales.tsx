@@ -6,6 +6,7 @@ import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { creerNote } from "@/lib/notes";
 import {
+  assemblerTranscription,
   obtenirClasseReconnaissance,
   messageErreurDictee,
   type SpeechRecognitionInstance,
@@ -36,6 +37,9 @@ export function NotesVocales({
   const [sauvegarde, setSauvegarde] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  // 27/09 (Axel) — Toucher le texte arrête l'écoute : sinon chaque mot
+  // entendu réécrivait le champ, et on ne pouvait pas corriger ni effacer.
+  const ignorerResultats = useRef(false);
 
 
   const ClasseReconnaissance = obtenirClasseReconnaissance();
@@ -106,6 +110,7 @@ export function NotesVocales({
     setErreur(null);
     setTranscription("");
     setEditionManuelle(false);
+    ignorerResultats.current = false;
 
     const recognition = new ClasseReconnaissance();
     recognition.lang = "fr-FR";
@@ -113,11 +118,8 @@ export function NotesVocales({
     recognition.interimResults = true;
 
     recognition.onresult = (event) => {
-      let texte = "";
-      for (let i = 0; i < event.results.length; i++) {
-        texte += event.results[i][0].transcript;
-      }
-      setTranscription(texte);
+      if (ignorerResultats.current) return;
+      setTranscription(assemblerTranscription(event.results));
     };
     recognition.onend = () => setEnregistrement(false);
     recognition.onerror = (event) => {
@@ -272,7 +274,16 @@ export function NotesVocales({
           <textarea
             autoFocus={editionManuelle}
             value={transcription}
-            onChange={(e) => setTranscription(e.target.value)}
+            onFocus={() => {
+              if (!enregistrement) return;
+              ignorerResultats.current = true;
+              arreter();
+            }}
+            onChange={(e) => {
+              setTranscription(e.target.value);
+              // Vidé pour être retapé : le champ reste là.
+              setEditionManuelle(true);
+            }}
             rows={3}
             placeholder={editionManuelle ? "Ex : deux chevrons à remplacer, client veut refaire l'isolation…" : undefined}
             className="w-full text-sm text-ink/80 leading-relaxed rounded-xl border border-ink/10 bg-paper p-3 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"

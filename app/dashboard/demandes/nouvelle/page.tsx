@@ -8,6 +8,7 @@ import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { rechercherClientParTelephone, trouverOuCreerClient } from "@/lib/clients";
 import {
+  assemblerTranscription,
   obtenirClasseReconnaissance,
   messageErreurDictee,
   type SpeechRecognitionInstance,
@@ -283,10 +284,8 @@ export default function NouveauProjetPage() {
     // retrouvé, une phrase tapée) au lieu de le remplacer : rien ne se perd.
     const dejaEcrit = description.trim();
     recognition.onresult = (event) => {
-      let texte = "";
-      for (let i = 0; i < event.results.length; i++) {
-        texte += event.results[i][0].transcript;
-      }
+      // Android renvoie des résultats cumulés : voir assemblerTranscription.
+      const texte = assemblerTranscription(event.results);
       setDescription(dejaEcrit ? `${dejaEcrit} ${texte}` : texte);
     };
     recognition.onend = () => setEnregistrement(false);

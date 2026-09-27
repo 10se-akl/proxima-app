@@ -28,7 +28,13 @@ import type { Facture, ParametresEntreprise, TypeFacture } from "@/types";
 // ============================================================
 
 export async function POST(request: NextRequest) {
-  let corps: { devisId?: string; type?: TypeFacture; montantAcompteTTC?: number; dateEcheance?: string };
+  let corps: {
+    devisId?: string;
+    type?: TypeFacture;
+    montantAcompteTTC?: number;
+    dateEcheance?: string;
+    accepterDepassement?: boolean;
+  };
   try {
     corps = await request.json();
   } catch {
@@ -152,6 +158,12 @@ export async function POST(request: NextRequest) {
     // Audit (11/09) — 🟡 défense en profondeur du même garde-fou que
     // FacturesProjet.tsx (contrôle client) : aucune limite haute n'existait
     // côté serveur non plus.
+    //
+    // 27/09 (Axel) — « L'artisan garde la main » : dépasser le devis n'est
+    // plus interdit, mais demande une seconde confirmation explicite
+    // (accepterDepassement), après un avertissement qui dit la conséquence.
+    // Sans elle, on répond « depassement » : l'écran affiche l'avertissement
+    // au lieu d'une erreur.
     const { data: acomptesExistants } = await supabase
       .from("factures")
       .select("total_ttc")
@@ -159,9 +171,12 @@ export async function POST(request: NextRequest) {
       .eq("type", "acompte")
       .neq("statut", "annulee");
     const montantAcomptesExistants = (acomptesExistants ?? []).reduce((s, f) => s + f.total_ttc, 0);
-    if (montantAcomptesExistants + montantAcompteTTC! > plafondAcomptes + 0.01) {
+    if (!corps.accepterDepassement && montantAcomptesExistants + montantAcompteTTC! > plafondAcomptes + 0.01) {
       return NextResponse.json(
-        { error: "Ce montant d'acompte dépasse le total du devis." },
+        {
+          error: "Ce montant d'acompte dépasse le total du devis.",
+          depassement: { plafond: plafondAcomptes, dejaFacture: montantAcomptesExistants },
+        },
         { status: 400 }
       );
     }

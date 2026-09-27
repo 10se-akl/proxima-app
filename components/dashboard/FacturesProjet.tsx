@@ -56,6 +56,8 @@ export function FacturesProjet({
   const [montantAcompte, setMontantAcompte] = useState("");
   const [afficherFormAcompte, setAfficherFormAcompte] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Acompte au-delà du devis, en attente de la seconde confirmation.
+  const [depassement, setDepassement] = useState<{ total: number; plafond: number; deja: number } | null>(null);
   const [factureOuverteId, setFactureOuverteId] = useState<string | null>(null);
   const [actionEnCoursId, setActionEnCoursId] = useState<string | null>(null);
 
@@ -82,31 +84,29 @@ export function FacturesProjet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [devis.id]);
 
-  async function creerFacture(type: "facture" | "acompte") {
+  async function creerFacture(type: "facture" | "acompte", accepterDepassement = false) {
     setErreur(null);
     const montantAcompteTTC = type === "acompte" ? Number(montantAcompte.replace(",", ".")) : undefined;
     if (type === "acompte" && (!montantAcompteTTC || montantAcompteTTC <= 0)) {
       setErreur("Indiquez un montant d'acompte valide.");
       return;
     }
-    // Audit (11/09) — 🟡 aucune limite haute n'existait : une erreur de
-    // saisie (3000 au lieu de 300) créait une vraie facture d'acompte pour
-    // plus que le total du devis, sans le moindre avertissement — seul un
-    // avoir permettait ensuite de corriger. Bloqué avant l'envoi comme les
-    // autres garde-fous de ce module (double solde, montant nul...) ; si un
-    // acompte doit vraiment dépasser le devis initial (travaux
-    // supplémentaires convenus oralement), la bonne voie reste de mettre le
-    // devis à jour d'abord.
-    if (type === "acompte" && montantAcompteTTC) {
+    // Audit (11/09) — une erreur de saisie (3000 au lieu de 300) créait une
+    // vraie facture d'acompte pour plus que le devis, sans avertissement.
+    // 27/09 (Axel) — « L'artisan garde la main » : ce n'est plus bloqué,
+    // mais le premier « Créer » affiche un avertissement qui dit la
+    // conséquence, et seul « Créer quand même » crée la facture. Une faute
+    // de frappe se voit ; un vrai dépassement reste possible.
+    if (type === "acompte" && montantAcompteTTC && !accepterDepassement) {
       const montantAcomptesExistants = factures
         .filter((f) => f.type === "acompte" && f.statut !== "annulee")
         .reduce((s, f) => s + f.total_ttc, 0);
       if (montantAcomptesExistants + montantAcompteTTC > devis.total_estime + 0.01) {
-        setErreur(
-          `Ce montant dépasse le total du devis (${formatEuros(devis.total_estime)}${
-            montantAcomptesExistants > 0 ? `, dont ${formatEuros(montantAcomptesExistants)} déjà en acompte` : ""
-          }). Vérifiez avant de confirmer.`
-        );
+        setDepassement({
+          total: montantAcomptesExistants + montantAcompteTTC,
+          plafond: devis.total_estime,
+          deja: montantAcomptesExistants,
+        });
         return;
       }
     }
@@ -115,13 +115,24 @@ export function FacturesProjet({
       const res = await fetch("/api/factures/creer", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ devisId: devis.id, type, montantAcompteTTC }),
+        body: JSON.stringify({ devisId: devis.id, type, montantAcompteTTC, accepterDepassement: accepterDepassement || undefined }),
       });
       const donnees = await res.json();
       if (!res.ok) {
+        // Le serveur compte au plus juste (franchise de TVA : le plafond est
+        // le HT) : son refus mène au même avertissement, pas à une erreur.
+        if (type === "acompte" && donnees.depassement && montantAcompteTTC && !accepterDepassement) {
+          setDepassement({
+            total: donnees.depassement.dejaFacture + montantAcompteTTC,
+            plafond: donnees.depassement.plafond,
+            deja: donnees.depassement.dejaFacture,
+          });
+          return;
+        }
         setErreur(donnees.error || "Impossible de créer la facture.");
         return;
       }
+      setDepassement(null);
       setMontantAcompte("");
       setAfficherFormAcompte(false);
       await chargerFactures();
@@ -335,11 +346,39 @@ export function FacturesProjet({
             step="0.01"
             min={0}
             value={montantAcompte}
-            onChange={(e) => setMontantAcompte(e.target.value)}
+            onChange={(e) => {
+              setMontantAcompte(e.target.value);
+              // L'avertissement porte sur le montant affiché : on le retire
+              // dès que celui-ci change.
+              setDepassement(null);
+            }}
           />
-          <Button onClick={() => creerFacture("acompte")} loading={creationEnCours === "acompte"}>
-            {creationEnCours === "acompte" ? "Création…" : "Créer"}
+          <Button
+            onClick={() => creerFacture("acompte")}
+            loading={creationEnCours === "acompte" && !depassement}
+            disabled={depassement !== null}
+          >
+            {creationEnCours === "acompte" && !depassement ? "Création…" : "Créer"}
           </Button>
+        </div>
+      )}
+
+      {afficherFormAcompte && depassement && (
+        <div role="alert" className="mt-3 rounded-xl border border-alerte-orange/40 bg-alerte-orange/10 px-4 py-3">
+          <p className="text-sm font-medium text-ink">Attention : cet acompte dépasse le devis.</p>
+          <p className="mt-1 text-sm text-ink/70">
+            Avec lui, {formatEuros(depassement.total)} seront facturés sur un devis de {formatEuros(depassement.plafond)}
+            {depassement.deja > 0 ? ` (dont ${formatEuros(depassement.deja)} déjà en acompte)` : ""}. La facture de solde ne sera
+            plus possible sur ce devis.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button onClick={() => creerFacture("acompte", true)} loading={creationEnCours === "acompte"}>
+              {creationEnCours === "acompte" ? "Création…" : "Créer quand même"}
+            </Button>
+            <Button variant="ghost" onClick={() => setDepassement(null)} disabled={creationEnCours !== null}>
+              Corriger le montant
+            </Button>
+          </div>
         </div>
       )}
     </Card>

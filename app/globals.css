@@ -250,7 +250,13 @@
   html {
     scroll-behavior: smooth;
   }
+}
 
+/* Refonte (01/10) — ces quatre règles vivaient DANS le bloc
+   prefers-reduced-motion ci-dessus : un artisan qui active « Réduire les
+   animations » perdait les cibles de 44/48 px, les champs en 16 px
+   (zoom iOS) et le reste. Elles n'ont rien à voir avec le mouvement. */
+@media all {
   /* ============================================================
      PWA / mobile-first (cycle "Release Candidate" PWA) — règles globales,
      pas de bricolage page par page. Chacune corrige un défaut précis
@@ -312,7 +318,9 @@
   html, body {
     overscroll-behavior-y: none;
   }
+}
 
+@media (prefers-reduced-motion: no-preference) {
   /* Animation du contenu du mockup interactif de l'accueil (voir
      DemoInteractif.tsx) — se déclenche à chaque changement d'onglet grâce
      au `key={actif}` sur le conteneur React, qui force un remontage donc

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Audit Cycle 2 (Agents Sécurité + Scalabilité) : rien n'empêchait un compte
 // compromis, ou un script mal intentionné, d'appeler les routes /api/ai/*
@@ -36,9 +37,17 @@ const PLAFOND_PAR_HEURE = 80;
 const PLAFOND_PAR_JOUR = 300;
 
 export async function verifierLimiteIA(
-  supabase: SupabaseClient,
+  _supabase: SupabaseClient,
   organisationId: string
 ): Promise<{ autorise: true } | { autorise: false; message: string }> {
+  // Refonte (01/10) — le compteur lisait "logs" avec le client de
+  // l'utilisateur, or "logs" n'a AUCUNE politique SELECT (insert-only,
+  // Module 19) : la RLS renvoyait 0 ligne, le compte valait toujours 0 et
+  // les plafonds ne bloquaient jamais. On compte donc avec le client
+  // service_role, borné à un simple comptage sur l'organisation_id que la
+  // route appelante a déjà obtenu côté serveur (getMembership) — jamais une
+  // valeur venue du navigateur.
+  const supabase = createAdminClient();
   const ilYAUneHeure = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const ilYAUnJour = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 

@@ -30,18 +30,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { nom, email } = await request.json();
-  if (!nom || typeof nom !== "string" || !email || typeof email !== "string") {
+  const { nom, email: emailBrut } = await request.json();
+  if (!nom || typeof nom !== "string" || !emailBrut || typeof emailBrut !== "string") {
     return NextResponse.json({ error: "Nom et email requis" }, { status: 400 });
   }
+  const email = emailBrut.trim().toLowerCase();
 
   const admin = createAdminClient();
 
-  const { data: profilExistant } = await admin
+  // Refonte (01/10) — 🔴 "profils.email" est modifiable par son titulaire
+  // (policy update sur profils) : un compte sans équipe pouvait y écrire
+  // l'adresse qu'un patron s'apprêtait à inviter, et recevait alors le
+  // membership à la place de la vraie personne. On ne se fie donc qu'à
+  // l'e-mail du compte Auth, que l'utilisateur ne peut pas réécrire seul.
+  const { data: profilsMemeEmail } = await admin
     .from("profils")
     .select("id")
-    .eq("email", email)
-    .maybeSingle();
+    .ilike("email", email)
+    .limit(5);
+  let profilExistant: { id: string } | null = null;
+  for (const p of profilsMemeEmail ?? []) {
+    const { data } = await admin.auth.admin.getUserById(p.id);
+    if (data.user?.email?.toLowerCase() === email) {
+      profilExistant = p;
+      break;
+    }
+  }
   if (profilExistant) {
     // Audit (11/09) — 🟠 avant ce correctif, ce blocage était inconditionnel
     // dès qu'un profil existait pour cet email, y compris pour un compte

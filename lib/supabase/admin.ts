@@ -7,6 +7,8 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 // Exceptions connues, chacune justifiée dans son fichier :
 //   - app/api/cron/*                          (protégées par CRON_SECRET)
 //   - app/api/equipe/inviter                  (réservée au propriétaire)
+//   - lib/limiteIA.ts                         (comptage seul, sur un
+//     organisation_id obtenu côté serveur : "logs" n'a pas de SELECT RLS)
 //   - lib/candidatures/creerCompteCandidat.ts (Module 43 : la demande
 //     d'accès crée le compte « en attente » — seul appel public, borné
 //     à des champs privilégiés constants)

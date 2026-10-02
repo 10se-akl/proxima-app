@@ -5,6 +5,7 @@ import { BoutonRetour } from "@/components/dashboard/BoutonRetour";
 import { PremierLancement } from "@/components/onboarding/PremierLancement";
 import { PopupRappel } from "@/components/notes/PopupRappel";
 import { getOrganisationId } from "@/lib/organisation";
+import { BandeauReseau } from "@/components/ui/BandeauReseau";
 
 export default async function DashboardLayout({
   children,
@@ -64,6 +65,7 @@ export default async function DashboardLayout({
           en paysage), un nom de client très long faisait déborder toute la
           page de 144 px sur le côté au lieu d'être coupé par « … ». */}
       <main className="flex-1 min-w-0 min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0 bg-[radial-gradient(ellipse_1200px_700px_at_top_left,rgb(var(--c-signal-clair)/0.14),transparent_65%)]">
+        <BandeauReseau />
         {children}
       </main>
       <BoutonRetour />

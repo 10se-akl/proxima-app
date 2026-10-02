@@ -1,29 +1,22 @@
 import { Skeleton, SkeletonCarte } from "@/components/ui/Skeleton";
 
 // Squelette de l'accueil — voir components/ui/Skeleton.tsx pour le
-// raisonnement. Reprend la forme réelle de app/dashboard/page.tsx (bandeau
-// d'en-tête, carte "Maintenant", quelques lignes de section) plutôt qu'un
-// spinner générique.
+// raisonnement. Refonte (02/10) : reprend la forme réelle de
+// components/accueil/VueAccueil.tsx (date, titre, carte « Maintenant »,
+// un bloc de lignes) plutôt que l'ancien en-tête encadré et la colonne
+// de droite, qui n'existent plus.
 export default function ChargementAccueil() {
   return (
-    <div className="p-8 max-w-6xl mx-auto flex gap-10 items-start">
-      <div className="max-w-2xl flex-1 min-w-0">
-        <div className="rounded-3xl border border-ink/10 px-6 py-6 sm:px-8 sm:py-7">
-          <Skeleton className="h-3 w-32" />
-          <Skeleton className="h-8 w-56 mt-3" />
-        </div>
-
-        <Skeleton className="h-16 mt-6 rounded-2xl" />
-
-        <div className="mt-8 flex flex-col gap-2">
-          <Skeleton className="h-3 w-28 mb-1" />
-          <SkeletonCarte />
-          <SkeletonCarte />
-        </div>
+    <div className="max-w-2xl px-4 pb-8 pt-5 sm:p-8" aria-busy="true" aria-label="Chargement">
+      <Skeleton className="h-3 w-32 rounded-full" />
+      <Skeleton className="mt-3 h-8 w-56 rounded-full" />
+      <Skeleton className="mt-6 h-24 rounded-2xl" />
+      <Skeleton className="mt-7 h-5 w-28 rounded-full" />
+      <div className="mt-2.5 flex flex-col gap-2">
+        <SkeletonCarte />
+        <SkeletonCarte />
+        <SkeletonCarte />
       </div>
-      <aside className="hidden lg:block w-72 shrink-0">
-        <Skeleton className="h-40 rounded-2xl" />
-      </aside>
     </div>
   );
 }

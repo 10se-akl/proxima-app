@@ -6,6 +6,7 @@ import { PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
 import { VueParametres } from "@/components/parametres/VueParametres";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { FormulaireParametres } from "@/lib/parametres";
+import { SquelettePage } from "@/components/ui/Skeleton";
 
 // Paramètres — le chargement ; l'écran est dans
 // components/parametres/VueParametres.tsx (26/09, lot F).
@@ -82,7 +83,7 @@ export default function ParametresPage() {
     return <EtatErreur onReessayer={charger} className="px-4 pt-5 pb-8 sm:p-8" />;
   }
   if (!etat) {
-    return <div className="px-4 pt-5 pb-8 sm:p-8 text-sm text-ink/50">Chargement…</div>;
+    return <SquelettePage />;
   }
   return <VueParametres initial={etat.form} organisationId={etat.organisationId} />;
 }

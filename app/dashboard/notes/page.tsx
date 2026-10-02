@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/Button";
 import { IconeNote } from "@/components/ui/Icones";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { Note } from "@/types";
+import { SquelettePage } from "@/components/ui/Skeleton";
 
 // ============================================================
 // Page Notes — point 1 du brief : "Créer une vraie page dédiée. Elle doit
@@ -99,7 +100,7 @@ export default function NotesPage() {
   const aVenir = avecRappel.filter((n) => new Date(n.rappel_a as string).getTime() > finAujourdhui.getTime());
 
   if (chargement) {
-    return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
+    return <SquelettePage />;
   }
 
   // Sprint Robustesse (30/08) — voir le catch dans `charger` ci-dessus.

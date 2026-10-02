@@ -35,6 +35,7 @@ import type { Projet, Devis, NoteVocale, EvenementProjet, EvenementPlanning, Par
 import { VueProjet } from "@/components/projet/VueProjet";
 import { Feuille } from "@/components/projet/Feuille";
 import type { IdAction } from "@/components/projet/prochaineAction";
+import { SquelettePage } from "@/components/ui/Skeleton";
 
 // Revue métier (06/09) — dérivé de LABEL_TYPE_CHANTIER (components/
 // dashboard/DemandeCard.tsx) plutôt que dupliqué ici : une seule liste à
@@ -938,7 +939,7 @@ export default function DetailDemandePage({
   }
 
   if (!demande) {
-    return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
+    return <SquelettePage />;
   }
 
   // « Le projet a changé depuis le devis » : la détection et le choix de

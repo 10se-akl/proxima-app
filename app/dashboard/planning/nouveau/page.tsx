@@ -12,6 +12,7 @@ import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { TypeEvenement, Priorite } from "@/types";
+import { SquelettePage } from "@/components/ui/Skeleton";
 
 const COULEUR_PRIORITE: Record<Priorite, string> = {
   urgent: "bg-[#C23B22]",
@@ -350,7 +351,7 @@ function NouvelEvenementForm() {
   }
 
   if (chargementInitial) {
-    return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
+    return <SquelettePage />;
   }
 
   return (

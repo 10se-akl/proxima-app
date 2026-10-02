@@ -293,9 +293,11 @@
         change rien pour les gros boutons déjà conformes (min-height ne
         fait qu'imposer un PLANCHER), corrige silencieusement les petites
         icônes cliquables qui auraient pu passer entre les mailles. */
+  /* Refonte (02/10) — 48 px, la règle 17 de docs/langage-interface.md
+     (gants, pouce) : 44 px restait un plancher de bureau. */
   @media (max-width: 640px) {
     button, a[role="button"] {
-      min-height: 44px;
+      min-height: 48px;
     }
   }
 

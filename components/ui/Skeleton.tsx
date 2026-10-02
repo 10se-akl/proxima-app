@@ -8,23 +8,39 @@
 // laissait donc l'écran figé/blanc le temps de la requête, surtout
 // pénible sur un réseau de chantier faible.
 //
-// Un seul composant simple (pas de librairie externe) réutilisé par tous
-// les loading.tsx du dashboard, pour que chaque squelette ressemble
-// vraiment à la forme du contenu qui va arriver (header, cartes, lignes)
-// plutôt qu'un unique spinner générique au milieu de l'écran — ça
-// communique "c'est presque là" plus efficacement qu'une simple attente.
-// bg-ink/10 + animate-pulse (Tailwind natif, sans JS) : suit le thème
-// clair/sombre automatiquement, comme le reste du design system.
+// Refonte (02/10) — règle 11 de docs/langage-interface.md : le squelette
+// est la vraie ligne vidée (même hauteur, même rayon, même filet), et la
+// pulsation ne joue que si l'artisan n'a pas demandé moins de mouvement.
 // ============================================================
 export function Skeleton({ className = "" }: { className?: string }) {
-  return <div className={`animate-pulse rounded-xl bg-ink/10 ${className}`} />;
+  // rounded-xl par défaut, et pas rounded-full : dans la feuille générée par
+  // Tailwind, « full » passe après « 2xl » et écraserait l'arrondi demandé
+  // par l'appelant. Les barres de texte passent rounded-full elles-mêmes.
+  return <div className={`motion-safe:animate-pulse rounded-xl bg-ink/10 ${className}`} />;
 }
 
+/** Une ligne de liste vide, à la forme de components/accueil/Blocs.tsx. */
 export function SkeletonCarte({ className = "" }: { className?: string }) {
   return (
-    <div className={`rounded-2xl border border-ink/10 p-3.5 flex items-center gap-3 ${className}`}>
-      <Skeleton className="w-8 h-8 rounded-full shrink-0" />
-      <Skeleton className="h-4 flex-1 max-w-xs" />
+    <div className={`flex min-h-16 items-center gap-3 rounded-2xl bg-surface px-4 ring-1 ring-ink/15 ${className}`}>
+      <Skeleton className="h-4 w-12 shrink-0 rounded-full" />
+      <Skeleton className="h-4 max-w-xs flex-1 rounded-full" />
+    </div>
+  );
+}
+
+/** Le squelette d'une page « en-tête + lignes », pour les chargements
+ *  côté client (fiche, notes, paramètres, rendez-vous). */
+export function SquelettePage({ lignes = 4 }: { lignes?: number }) {
+  return (
+    <div className="max-w-2xl px-4 pb-8 pt-5 sm:p-8" aria-busy="true" aria-label="Chargement">
+      <Skeleton className="h-3 w-28 rounded-full" />
+      <Skeleton className="mt-3 h-7 w-56 rounded-full" />
+      <div className="mt-7 flex flex-col gap-2.5">
+        {Array.from({ length: lignes }, (_, i) => (
+          <SkeletonCarte key={i} />
+        ))}
+      </div>
     </div>
   );
 }

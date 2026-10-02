@@ -118,12 +118,23 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
   async function confirmerReplanifie(id: string) {
     if (!nouvelleDate || !nouvelleHeure || traitementId === id) return;
     setTraitementId(id);
+    setErreurId(null);
     const dateHeure = new Date(`${nouvelleDate}T${nouvelleHeure}`).toISOString();
-    await supabase
+    // Refonte (02/10) — règle 13 de docs/langage-interface.md : rien ne
+    // disparaît comme réussi avant qu'on ait lu le résultat. Avant, la
+    // carte partait même si l'enregistrement avait échoué (réseau coupé,
+    // chevauchement refusé par la base) : le rendez-vous restait à
+    // l'ancienne date sans que l'artisan le sache.
+    const { data, error } = await supabase
       .from("evenements_planning")
       .update({ date_heure: dateHeure })
-      .eq("id", id);
+      .eq("id", id)
+      .select("id");
     setTraitementId(null);
+    if (error || !data || data.length === 0) {
+      setErreurId(id);
+      return;
+    }
     setTraites((s) => new Set(s).add(id));
     setReplanification(null);
     setNouvelleDate("");

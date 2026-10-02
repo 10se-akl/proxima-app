@@ -70,8 +70,16 @@ export function retard(p: { signature?: Signature }): string {
   return signer("Bonjour, j'aurai un peu de retard aujourd'hui. Je vous tiens au courant très vite.", p.signature);
 }
 
-/** Rendez-vous à venir. */
-export function decalage(p: { dateRdv: string; signature?: Signature }): string {
+/** Rendez-vous à venir. Avec `nouvelleDate` (refonte 02/10 — le rendez-vous
+ *  vient d'être déplacé depuis l'accueil), le message propose la nouvelle
+ *  date au lieu d'annoncer un décalage sans suite. */
+export function decalage(p: { dateRdv: string; nouvelleDate?: string | null; signature?: Signature }): string {
+  if (p.nouvelleDate) {
+    return signer(
+      `Bonjour, je dois décaler notre rendez-vous du ${dateEnLettres(p.dateRdv)}. Je vous propose le ${dateEnLettres(p.nouvelleDate)} à ${heureCourte(p.nouvelleDate)}. Cela vous convient-il ?`,
+      p.signature
+    );
+  }
   return signer(
     `Bonjour, je dois décaler notre rendez-vous du ${dateEnLettres(p.dateRdv)}. Je reviens vers vous rapidement avec une nouvelle date.`,
     p.signature
@@ -212,7 +220,14 @@ function memeJourParis(a: Date, b: Date) {
 export function suggererMessages(
   ctx: ContexteMessage,
   maintenant: Date,
-  prioritaire?: { cle: CleMessage; factureId?: string | null; devisId?: string | null } | null
+  prioritaire?: {
+    cle: CleMessage;
+    factureId?: string | null;
+    devisId?: string | null;
+    /** Pour « decalage » : l'ancienne et la nouvelle date du rendez-vous. */
+    ancienneDate?: string | null;
+    nouvelleDate?: string | null;
+  } | null
 ): Suggestion[] {
   const s: Suggestion[] = [];
   const ajouter = (x: Suggestion | null) => {
@@ -252,6 +267,11 @@ export function suggererMessages(
   // Ce qui a été demandé explicitement (notification, bouton Relancer).
   if (prioritaire?.cle === "relancePaiement") ajouter(facture(prioritaire.factureId));
   if (prioritaire?.cle === "relanceDevis") ajouter(devis(prioritaire.devisId));
+  if (prioritaire?.cle === "decalage" && prioritaire.ancienneDate)
+    ajouter({
+      cle: "decalage",
+      texte: decalage({ dateRdv: prioritaire.ancienneDate, nouvelleDate: prioritaire.nouvelleDate, signature: ctx.signature }),
+    });
   // 6. L'alerte météo passe en premier quand elle est active.
   if (ctx.meteo) ajouter({ cle: "meteo", texte: meteo({ dateRdv: ctx.meteo.dateRdv, resumeMeteo: ctx.meteo.resume }) });
   // 1. Facture échue non payée.

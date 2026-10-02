@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 import { marquerNoteTerminee } from "@/lib/notes";
 import { IconeCoche } from "@/components/projet/icones";
 import { LIGNES_MAX } from "./Blocs";
+import { FeuilleDeplacer, type EvenementADeplacer } from "@/components/planning/FeuilleDeplacer";
+import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/FeuilleMessageClient";
+import { vibrer, vibrerEchec } from "@/lib/retour";
 
 // ============================================================
 // « Fermer la journée » (26/09 — « moins mais mieux », lot E).
@@ -36,6 +39,9 @@ export type ElementSuspens = {
   secondaire?: string;
   /** Échéance de la note, ou heure de l'événement. */
   date: string;
+  /** Un rendez-vous (pas une tâche) : il se déplace, il ne se reporte pas. */
+  rdv?: boolean;
+  demandeId?: string | null;
 };
 
 export type Fermeture = {
@@ -111,8 +117,43 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
   const [regles, setRegles] = useState<Set<string>>(new Set());
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState(false);
+  // Refonte (02/10 — duel C, lot 2) : un rendez-vous client ne se reporte
+  // plus en silence d'un appui sur « Demain ». « Déplacer » ouvre la feuille
+  // (demain même heure déjà rempli), puis le message au client avec la
+  // nouvelle date. Les notes et les tâches gardent « Demain ».
+  const [aDeplacer, setADeplacer] = useState<(EvenementADeplacer & { cle: string; demandeId: string | null }) | null>(null);
+  const [message, setMessage] = useState<{ demandeId: string; demande: DemandeMessage } | null>(null);
 
   const restants = fermeture.suspens.filter((e) => !regles.has(e.cle));
+
+  function apresDeplacement(nouvelleDate: string) {
+    if (!aDeplacer) return;
+    setRegles((s) => new Set(s).add(aDeplacer.cle));
+    const e = aDeplacer;
+    setADeplacer(null);
+    if (e.demandeId) {
+      setMessage({ demandeId: e.demandeId, demande: { cle: "decalage", ancienneDate: e.date_heure, nouvelleDate } });
+      return;
+    }
+    router.refresh();
+  }
+
+  const feuilles = (
+    <>
+      <FeuilleDeplacer evenement={aDeplacer} surFermer={() => setADeplacer(null)} surDeplace={(_, d) => apresDeplacement(d)} />
+      {message && (
+        <FeuilleMessageClient
+          ouverte
+          surFermer={() => {
+            setMessage(null);
+            router.refresh();
+          }}
+          demandeId={message.demandeId}
+          demande={message.demande}
+        />
+      )}
+    </>
+  );
 
   async function traiter(e: ElementSuspens, quoi: keyof Actions) {
     if (enCours) return;
@@ -123,6 +164,8 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
     setRegles((s) => new Set(s).add(e.cle));
     const ok = await agir[quoi](e);
     setEnCours(null);
+    if (ok) vibrer();
+    else vibrerEchec();
     if (!ok) {
       setRegles((s) => {
         const n = new Set(s);
@@ -138,6 +181,8 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
   // L'état calme, de lui-même, dès que plus rien n'est en suspens.
   if (restants.length === 0) {
     return (
+      <>
+      {feuilles}
       <section aria-label="Fermer la journée" className="mt-5 flex items-start gap-3.5 rounded-2xl bg-surface px-5 py-5 ring-1 ring-ink/10">
         <span aria-hidden className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-succes/12 text-succes">
           <IconeCoche className="h-5 w-5" />
@@ -152,6 +197,7 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
           </span>
         </span>
       </section>
+      </>
     );
   }
 
@@ -159,6 +205,8 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
   const autres = restants.length - visibles.length;
 
   return (
+    <>
+    {feuilles}
     <section aria-label="Fermer la journée" className="mt-5 rounded-2xl bg-surface px-4 py-4 ring-1 ring-ink/10 sm:px-5">
       <p className="font-mono text-[10.5px] uppercase tracking-[0.2em] text-steel">Fermer la journée</p>
 
@@ -198,16 +246,18 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
                   </button>
                   <button
                     type="button"
-                    onClick={() => traiter(e, "demain")}
+                    onClick={() =>
+                      e.rdv
+                        ? setADeplacer({ cle: e.cle, id: e.id, titre: e.principal, date_heure: e.date, nomClient: e.principal, demandeId: e.demandeId ?? null })
+                        : traiter(e, "demain")
+                    }
                     disabled={enCours !== null}
                     aria-label={
-                      e.genre === "note"
-                        ? `Demain matin : ${e.principal}`
-                        : `Déplacer à demain, même heure : ${e.principal}`
+                      e.rdv ? `Déplacer : ${e.principal}` : e.genre === "note" ? `Demain matin : ${e.principal}` : `Demain, même heure : ${e.principal}`
                     }
                     className="min-h-12 shrink-0 rounded-xl px-3 text-[15px] font-medium text-ink ring-1 ring-ink/15 transition motion-safe:active:scale-[0.97] disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
                   >
-                    Demain
+                    {e.rdv ? "Déplacer" : "Demain"}
                   </button>
                 </li>
               ))}
@@ -222,6 +272,7 @@ export function FermerJournee({ fermeture, actions }: { fermeture: Fermeture; ac
         </Ligne>
       </dl>
     </section>
+    </>
   );
 }
 

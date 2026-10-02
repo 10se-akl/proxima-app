@@ -457,7 +457,7 @@ function construireFermeture(d: {
   devis: { envoye_le?: string | null }[];
   nbFactures: number;
   evenementsDuJour: { type: string; statut: string; date_heure: string }[];
-  evenementsPasses: { id: string; type: string; titre: string; date_heure: string; demandes?: { nom_client?: string } | null }[];
+  evenementsPasses: { id: string; type: string; titre: string; date_heure: string; demande_id: string | null; demandes?: { nom_client?: string } | null }[];
   notes: { id: string; titre: string; rappel_a: string | null; demandes?: { nom_client?: string } | null }[];
   premierRdvDemain: { date_heure: string; titre: string; demandes?: { nom_client?: string; adresse_client?: string } | null } | null;
 }): Fermeture {
@@ -500,6 +500,8 @@ function construireFermeture(d: {
       principal: e.demandes?.nom_client ?? e.titre,
       secondaire: `${heureCourte(e.date_heure)} · ${e.demandes?.nom_client ? e.titre : e.type === "rendez_vous" ? "Rendez-vous" : "Rappel"}`,
       date: e.date_heure,
+      rdv: e.type === "rendez_vous",
+      demandeId: e.demande_id,
     }));
 
   const r = d.premierRdvDemain;

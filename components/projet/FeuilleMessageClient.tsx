@@ -33,7 +33,14 @@ import { Feuille } from "./Feuille";
 // de notifier l'artisan d'une facture qu'il vient de relancer lui-même.
 // ============================================================
 
-export type DemandeMessage = { cle: CleMessage; factureId?: string | null; devisId?: string | null };
+export type DemandeMessage = {
+  cle: CleMessage;
+  factureId?: string | null;
+  devisId?: string | null;
+  /** « decalage » depuis l'accueil : le rendez-vous vient d'être déplacé. */
+  ancienneDate?: string | null;
+  nouvelleDate?: string | null;
+};
 
 type Charge = { nomClient: string; ctx: ContexteMessage };
 

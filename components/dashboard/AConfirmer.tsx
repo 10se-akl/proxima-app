@@ -10,9 +10,13 @@ import { getOrganisationId } from "@/lib/organisation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { FeuilleDeplacer, type EvenementADeplacer } from "@/components/planning/FeuilleDeplacer";
+import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/FeuilleMessageClient";
 
 type EvenementAConfirmer = {
   id: string;
+  /** "rendez_vous" ou "tache" : seul un rendez-vous propose de prévenir le client. */
+  type?: string;
   titre: string;
   demande_id: string | null;
   date_heure: string;
@@ -27,9 +31,12 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
   const supabase = createClient();
   const router = useRouter();
   const [traites, setTraites] = useState<Set<string>>(new Set());
-  const [replanification, setReplanification] = useState<string | null>(null);
-  const [nouvelleDate, setNouvelleDate] = useState("");
-  const [nouvelleHeure, setNouvelleHeure] = useState("");
+  // Refonte (02/10 — duel C, lot 2) : « Non » ouvre la feuille « Déplacer »
+  // (demain même heure déjà rempli), puis, pour un rendez-vous client, le
+  // message au client avec la nouvelle date. Plus de formulaire en ligne
+  // qui déplaçait le rendez-vous sans jamais proposer de prévenir.
+  const [aDeplacer, setADeplacer] = useState<(EvenementADeplacer & { demandeId: string | null; rdv: boolean }) | null>(null);
+  const [message, setMessage] = useState<{ demandeId: string; demande: DemandeMessage } | null>(null);
   // Une fois un rendez-vous confirmé "fait", si un projet y est lié, on
   // propose (jamais on ne décide seul) de clôturer aussi le chantier —
   // c'est ce qui le fait disparaître de la liste des projets actifs.
@@ -115,35 +122,44 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
     setProposerPlanification((s) => new Set(s).add(e.id));
   }
 
-  async function confirmerReplanifie(id: string) {
-    if (!nouvelleDate || !nouvelleHeure || traitementId === id) return;
-    setTraitementId(id);
-    setErreurId(null);
-    const dateHeure = new Date(`${nouvelleDate}T${nouvelleHeure}`).toISOString();
-    // Refonte (02/10) — règle 13 de docs/langage-interface.md : rien ne
-    // disparaît comme réussi avant qu'on ait lu le résultat. Avant, la
-    // carte partait même si l'enregistrement avait échoué (réseau coupé,
-    // chevauchement refusé par la base) : le rendez-vous restait à
-    // l'ancienne date sans que l'artisan le sache.
-    const { data, error } = await supabase
-      .from("evenements_planning")
-      .update({ date_heure: dateHeure })
-      .eq("id", id)
-      .select("id");
-    setTraitementId(null);
-    if (error || !data || data.length === 0) {
-      setErreurId(id);
+  function apresDeplacement(e: EvenementADeplacer & { demandeId: string | null; rdv: boolean }, nouvelleDate: string) {
+    setTraites((t) => new Set(t).add(e.id));
+    setADeplacer(null);
+    if (e.rdv && e.demandeId) {
+      // Le rafraîchissement attend la fermeture du message : recalculé tout
+      // de suite, l'accueil pourrait retirer ce bloc, et la feuille avec.
+      setMessage({ demandeId: e.demandeId, demande: { cle: "decalage", ancienneDate: e.date_heure, nouvelleDate } });
       return;
     }
-    setTraites((s) => new Set(s).add(id));
-    setReplanification(null);
-    setNouvelleDate("");
-    setNouvelleHeure("");
     router.refresh();
   }
 
   const restants = evenements.filter((e) => !traites.has(e.id));
-  if (restants.length === 0) return null;
+
+  // Les feuilles vivent hors de la liste : après le déplacement, la ligne
+  // disparaît (et la liste peut devenir vide) pendant que le message au
+  // client reste ouvert.
+  const feuilles = (
+    <>
+      <FeuilleDeplacer
+        evenement={aDeplacer}
+        surFermer={() => setADeplacer(null)}
+        surDeplace={(_, d) => aDeplacer && apresDeplacement(aDeplacer, d)}
+      />
+      {message && (
+        <FeuilleMessageClient
+          ouverte
+          surFermer={() => {
+            setMessage(null);
+            router.refresh();
+          }}
+          demandeId={message.demandeId}
+          demande={message.demande}
+        />
+      )}
+    </>
+  );
+  if (restants.length === 0) return feuilles;
 
   const liste = (
       <div className="flex flex-col gap-2">
@@ -215,50 +231,27 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
                     {new Date(e.date_heure).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                   </span>
                 </p>
-                {replanification !== e.id && (
-                  <>
-                    <button type="button" onClick={() => confirmerFait(e)} disabled={traitementId === e.id} className="min-h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper transition disabled:opacity-50">
-                      {traitementId === e.id ? "…" : "Oui"}
-                    </button>
-                    <button type="button" onClick={() => setReplanification(e.id)} className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink">
-                      Non
-                    </button>
-                  </>
-                )}
+                <button type="button" onClick={() => confirmerFait(e)} disabled={traitementId === e.id} className="min-h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper transition disabled:opacity-50">
+                  {traitementId === e.id ? "…" : "Oui"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setADeplacer({
+                      id: e.id,
+                      titre: e.titre,
+                      date_heure: e.date_heure,
+                      nomClient: e.demandes?.nom_client,
+                      demandeId: e.demande_id,
+                      rdv: e.type !== "tache",
+                    })
+                  }
+                  className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink"
+                >
+                  Non
+                </button>
               </div>
 
-              {replanification === e.id ? (
-                <div className="mt-3 flex flex-wrap items-end gap-2">
-                  <div>
-                    <label className="block text-[11px] text-ink/50 mb-1">
-                      Nouvelle date
-                    </label>
-                    <input
-                      type="date"
-                      value={nouvelleDate}
-                      onChange={(ev) => setNouvelleDate(ev.target.value)}
-                      aria-label="Nouvelle date"
-                      className="rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] text-ink/50 mb-1">Heure</label>
-                    <input
-                      type="time"
-                      value={nouvelleHeure}
-                      onChange={(ev) => setNouvelleHeure(ev.target.value)}
-                      aria-label="Heure"
-                      className="rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                    />
-                  </div>
-                  <Button onClick={() => confirmerReplanifie(e.id)} disabled={traitementId === e.id}>
-                    {traitementId === e.id ? "…" : "Replanifier"}
-                  </Button>
-                  <Button variant="ghost" onClick={() => setReplanification(null)}>
-                    Annuler
-                  </Button>
-                </div>
-              ) : null}
               {erreurId === e.id && (
                 <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">
                   La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
@@ -270,11 +263,18 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
       </div>
   );
 
-  if (integre) return liste;
+  if (integre)
+    return (
+      <>
+        {liste}
+        {feuilles}
+      </>
+    );
   return (
     <div className="mt-8">
       <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">À confirmer</p>
       {liste}
+      {feuilles}
     </div>
   );
 }

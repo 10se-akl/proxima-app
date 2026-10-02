@@ -18,7 +18,7 @@ export async function enregistrerEvenement(
     detail?: string;
     metadata?: Record<string, unknown>;
   }
-) {
+): Promise<boolean> {
   // 21/09 — Le client Supabase ne lève JAMAIS d'exception quand la base
   // refuse une écriture : il renvoie { error }. Le try/catch seul ne
   // voyait donc rien, et un événement refusé (droits, contrainte, colonne
@@ -42,8 +42,11 @@ export async function enregistrerEvenement(
         error.message,
         error.details ?? ""
       );
+      return false;
     }
+    return true;
   } catch (err) {
     console.error("Échec de l'enregistrement de l'événement de timeline :", err);
+    return false;
   }
 }

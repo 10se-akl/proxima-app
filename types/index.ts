@@ -302,7 +302,11 @@ export type TypeEvenementProjet =
   // voir components/projet/FeuilleMessageClient.tsx). « Préparé », jamais
   // « envoyé » : c'est l'artisan qui appuie sur envoyer. Aucune migration :
   // la colonne type n'a pas de contrainte (voir supabase/schema.sql).
-  | "message_prepare";
+  | "message_prepare"
+  // Refonte (02/10, duel C lot 3) — réponse « Pas encore » à « Chantier
+  // terminé ? ». Sert seulement à ne plus reposer la question tant qu'aucun
+  // nouveau rendez-vous n'a été fait ; masqué au carnet.
+  | "chantier_pas_termine";
 
 export type EvenementProjet = {
   id: string;

@@ -10,33 +10,9 @@ import { getOrganisationId } from "@/lib/organisation";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
+import { vibrer, vibrerEchec } from "@/lib/retour";
 
 type ProjetAConfirmer = { id: string; nom_client: string };
-
-// "Plus tard" ne doit pas se réinitialiser à chaque changement d'onglet :
-// le composant est remonté à chaque navigation dans le tableau de bord, ce
-// qui vide tout état React. On garde donc la liste des chantiers ignorés
-// "pour aujourd'hui" dans le localStorage, remise à zéro chaque jour.
-function cleIgnores(): string {
-  return `compyo_cloture_ignoree_${new Date().toISOString().slice(0, 10)}`;
-}
-
-function lireIgnores(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const brut = window.localStorage.getItem(cleIgnores());
-    return brut ? new Set(JSON.parse(brut)) : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function ajouterIgnore(id: string) {
-  if (typeof window === "undefined") return;
-  const s = lireIgnores();
-  s.add(id);
-  window.localStorage.setItem(cleIgnores(), JSON.stringify(Array.from(s)));
-}
 
 // Filet de sécurité pour la question "le chantier est-il aussi terminé ?"
 // posée juste après avoir confirmé un rendez-vous fait (voir AConfirmer).
@@ -57,7 +33,7 @@ function ajouterIgnore(id: string) {
 export function ConfirmerClotureProjet({ projets, integre = false }: { projets: ProjetAConfirmer[]; integre?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
-  const [traites, setTraites] = useState<Set<string>>(() => lireIgnores());
+  const [traites, setTraites] = useState<Set<string>>(new Set());
   const [enCours, setEnCours] = useState<string | null>(null);
   const [proposerPlanification, setProposerPlanification] = useState<Set<string>>(new Set());
   const [erreurId, setErreurId] = useState<string | null>(null);
@@ -99,13 +75,35 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
     router.refresh();
   }
 
-  function pasEncore(id: string) {
-    setProposerPlanification((s) => new Set(s).add(id));
-  }
-
-  function ignorerPourAujourdhui(id: string) {
-    ajouterIgnore(id);
-    setTraites((s) => new Set(s).add(id));
+  // Refonte (02/10, duel C lot 3) — « Pas encore » écrit une trace
+  // (masquée au carnet) : la question ne revient qu'après un nouveau
+  // rendez-vous fait, au lieu de revenir chaque jour. Avant, rien n'était
+  // écrit et seul un « Plus tard » gardé dans le navigateur la cachait.
+  async function pasEncore(p: ProjetAConfirmer) {
+    setEnCours(p.id);
+    setErreurId(null);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const organisationId = user ? await getOrganisationId(supabase, user.id) : null;
+    const ok =
+      !!user &&
+      !!organisationId &&
+      (await enregistrerEvenement(supabase, {
+        demandeId: p.id,
+        artisanId: user.id,
+        organisationId,
+        type: "chantier_pas_termine",
+        titre: "Chantier pas encore terminé",
+      }));
+    setEnCours(null);
+    if (!ok) {
+      vibrerEchec();
+      setErreurId(p.id);
+      return;
+    }
+    vibrer();
+    setProposerPlanification((s) => new Set(s).add(p.id));
   }
 
   const restants = projets.filter((p) => !traites.has(p.id));
@@ -125,7 +123,7 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
                 <Link href={`/dashboard/planning/nouveau?projetId=${p.id}`}>
                   <Button>+ Planifier un rendez-vous</Button>
                 </Link>
-                <Button variant="ghost" onClick={() => ignorerPourAujourdhui(p.id)}>
+                <Button variant="ghost" onClick={() => setTraites((s) => new Set(s).add(p.id))}>
                   Plus tard
                 </Button>
               </div>
@@ -140,8 +138,8 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
                 <button type="button" onClick={() => marquerTermine(p)} disabled={enCours === p.id} className="min-h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper transition disabled:opacity-50">
                   {enCours === p.id ? "…" : "Oui"}
                 </button>
-                <button type="button" onClick={() => pasEncore(p.id)} className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink">
-                  Non
+                <button type="button" onClick={() => pasEncore(p)} disabled={enCours === p.id} className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink disabled:opacity-50">
+                  Pas encore
                 </button>
               </div>
               {erreurId === p.id && (

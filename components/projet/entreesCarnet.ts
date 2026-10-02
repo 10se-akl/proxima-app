@@ -42,6 +42,7 @@ export const FILTRES: { cle: FiltreCarnet; libelle: string; types: TypeEntree[] 
 // elle-même, les photos elles-mêmes, la note terminée), ou purement
 // techniques. Le Carnet ne montre chaque chose qu'une fois.
 const EVENEMENTS_EXCLUS = new Set<TypeEvenementProjet>([
+  "chantier_pas_termine",
   "note_ajoutee",
   "note_vocale_ajoutee",
   "photo_ajoutee",

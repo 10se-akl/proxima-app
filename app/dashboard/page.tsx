@@ -124,7 +124,7 @@ export default async function DashboardHome() {
     // de sécurité pour la question "le chantier est-il terminé ?".
     supabase
       .from("evenements_planning")
-      .select("demande_id")
+      .select("demande_id, date_heure")
       .eq("organisation_id", organisationId)
       .eq("type", "rendez_vous")
       .eq("statut", "termine"),
@@ -138,9 +138,9 @@ export default async function DashboardHome() {
     // rendez-vous confirmé "fait", voir components/dashboard/NotesVocales.tsx.
     supabase
       .from("evenements_projet")
-      .select("demande_id, metadata")
+      .select("demande_id, metadata, type, created_at")
       .eq("organisation_id", organisationId)
-      .eq("type", "journal_chantier_interprete")
+      .in("type", ["journal_chantier_interprete", "chantier_pas_termine"])
       .order("created_at", { ascending: false }),
     // 26/09 — les factures encore dues, pour « En attente du client ».
     supabase
@@ -214,7 +214,39 @@ export default async function DashboardHome() {
   // Filet de sécurité pour "le chantier est-il aussi terminé ?" (voir
   // ConfirmerClotureProjet) : tout projet actif dont au moins un
   // rendez-vous a été confirmé fait, et pour lequel plus rien n'est prévu.
-  const idsAvecRdvConfirme = new Set((rdvConfirmesBrut ?? []).map((e) => e.demande_id).filter(Boolean));
+  //
+  // Refonte (02/10, duel C lot 3) — la question n'était pas honnête :
+  //   - un simple métré confirmé « fait » la déclenchait, avant même un
+  //     devis : seul un rendez-vous fait APRÈS l'envoi d'un devis compte ;
+  //   - « Non » ne laissait aucune trace (seulement un « Plus tard » gardé
+  //     dans le navigateur, avec une clé en UTC) : la question revenait le
+  //     lendemain. « Pas encore » écrit maintenant un événement, et elle ne
+  //     revient qu'après un nouveau rendez-vous fait.
+  const premierEnvoiDevis = new Map<string, number>();
+  for (const d of devisListPlat) {
+    if (!d.demande_id || !d.envoye_le) continue;
+    const t = Date.parse(d.envoye_le);
+    const actuel = premierEnvoiDevis.get(d.demande_id);
+    if (actuel === undefined || t < actuel) premierEnvoiDevis.set(d.demande_id, t);
+  }
+  const dernierRdvFait = new Map<string, number>();
+  for (const e of rdvConfirmesBrut ?? []) {
+    if (!e.demande_id) continue;
+    const t = Date.parse(e.date_heure);
+    const envoi = premierEnvoiDevis.get(e.demande_id);
+    if (envoi === undefined || t < envoi) continue;
+    if (t > (dernierRdvFait.get(e.demande_id) ?? 0)) dernierRdvFait.set(e.demande_id, t);
+  }
+  const dernierPasEncore = new Map<string, number>();
+  for (const e of journalEvenementsBrut ?? []) {
+    if (e.type !== "chantier_pas_termine" || !e.demande_id || dernierPasEncore.has(e.demande_id)) continue;
+    dernierPasEncore.set(e.demande_id, Date.parse(e.created_at)); // trié du plus récent au plus ancien
+  }
+  const idsAvecRdvConfirme = new Set(
+    Array.from(dernierRdvFait.entries())
+      .filter(([id, t]) => t > (dernierPasEncore.get(id) ?? 0))
+      .map(([id]) => id)
+  );
   const idsAvecEvenementFutur = new Set((evenementsFutursBrut ?? []).map((e) => e.demande_id).filter(Boolean));
 
   // Journal chantier vocal (06/09) — au moins deux comptes-rendus vocaux
@@ -222,7 +254,7 @@ export default async function DashboardHome() {
   const SEUIL_SIGNAUX_CLOTURE = 2;
   const signauxParProjet = new Map<string, boolean[]>();
   for (const e of journalEvenementsBrut ?? []) {
-    if (!e.demande_id) continue;
+    if (!e.demande_id || e.type !== "journal_chantier_interprete") continue;
     const liste = signauxParProjet.get(e.demande_id) ?? [];
     liste.push(Boolean((e.metadata as { chantier_semble_termine?: boolean } | null)?.chantier_semble_termine));
     signauxParProjet.set(e.demande_id, liste);
@@ -230,6 +262,13 @@ export default async function DashboardHome() {
   const idsAvecSignalCloture = new Set(
     Array.from(signauxParProjet.entries())
       .filter(([, signaux]) => signaux.length >= SEUIL_SIGNAUX_CLOTURE && signaux.slice(0, SEUIL_SIGNAUX_CLOTURE).every(Boolean))
+      // Un « Pas encore » plus récent que le dernier compte-rendu vocal l'emporte.
+      .filter(([id]) => {
+        const dernierJournal = (journalEvenementsBrut ?? []).find(
+          (e) => e.demande_id === id && e.type === "journal_chantier_interprete"
+        );
+        return !dernierJournal || Date.parse(dernierJournal.created_at) > (dernierPasEncore.get(id) ?? 0);
+      })
       .map(([id]) => id)
   );
 

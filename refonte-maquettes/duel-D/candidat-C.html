@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat C — La fiche suit l'étape du projet</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Candidat C — la fiche suit l'étape du projet. Aucune couleur en dur :
+     tout passe par les variables de maquette.css. */
+  .page-t{flex-basis:100%;display:flex;justify-content:space-between;align-items:flex-start;gap:24px}
+  .page-t h1{font:800 24px/1.2 Manrope,sans-serif}
+  .page-t p{font:400 14px/20px Inter;color:rgb(var(--c-steel));max-width:860px;margin-top:6px}
+  .bascule{flex:none;min-height:48px;padding:0 16px;border-radius:16px;border:0;cursor:pointer;background:transparent;color:rgb(var(--c-ink));font:600 14px Inter;box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .6)}
+  .rang{flex-basis:100%;display:flex;flex-wrap:wrap;gap:48px 32px;align-items:flex-start}
+  .rang-t{flex-basis:100%;font:700 18px/1.3 Manrope,sans-serif;margin-top:12px}
+  .rang-t span{font:400 14px Inter;color:rgb(var(--c-steel));margin-left:8px}
+  .cadre > h2{min-height:18px}
+
+  .tel{height:740px;min-height:740px}
+  .haut{height:48px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgb(var(--c-paper-warm));border-bottom:1px solid rgb(var(--c-gris-clair));font:700 17px Manrope,sans-serif}
+  .ecran{flex:1;min-height:0;overflow:hidden;padding:8px 16px 0;margin-bottom:72px}
+  .barre .onglet{font-size:12px}
+  .barre .onglet.plus{min-height:56px;justify-content:flex-start;gap:2px}
+  .barre .onglet.plus span{margin-top:-2px}
+  .barre .btn-rond{width:56px;height:56px;margin-top:-28px;font-size:30px}
+
+  /* En-tête : une ligne nom, une ligne détail, trois gestes, trois étapes */
+  .tete .l1{display:flex;align-items:center;height:48px}
+  .ib{width:48px;height:48px;flex:none;display:grid;place-items:center;border-radius:99px;color:rgb(var(--c-ink))}
+  .ib.retour{margin-left:-12px}
+  .ib.points{margin-right:-12px}
+  .nom{flex:1;min-width:0;font:600 30px/36px Manrope,sans-serif;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .sous{padding-left:36px;font:400 14px/20px Inter;color:rgb(var(--c-steel));overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+  .sous.o{padding-left:0}
+  .alerte{color:rgb(var(--c-signal-fonce));font-weight:600}
+  .dark .alerte{color:rgb(var(--c-signal-clair))}
+  .tuiles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:12px}
+  .tuile{height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;border-radius:16px;background:rgb(var(--c-surface));box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .15);font:600 16px/20px Inter;color:rgb(var(--c-ink))}
+  .tuile .ico{width:20px;height:20px}
+  .etapes{margin-top:12px}
+  .etapes .barres{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+  .etapes .barres i{height:4px;border-radius:99px;background:rgb(var(--c-ink) / .12)}
+  .etapes .barres i.on{background:rgb(var(--c-ink))}
+  .etapes .noms{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:6px;font:400 14px/20px Inter;color:rgb(var(--c-steel))}
+  .etapes .noms b{color:rgb(var(--c-ink));font-weight:600}
+
+  /* Blocs, titres, lignes (langage-interface.md : règles 1, 2, 3, 7, 8) */
+  .bloc{margin-top:12px;background:rgb(var(--c-surface));border-radius:16px;box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .15);padding:16px}
+  .bloc h3{font:600 20px/28px Manrope,sans-serif}
+  .bloc .btn-plein{margin-top:12px}
+  .bloc .gros{margin-top:4px}
+  .bloc .btn-contour{margin-top:8px}
+  .det{font:400 14px/20px Inter;color:rgb(var(--c-steel))}
+  .det.centre{text-align:center;margin-top:2px}
+  .corps{font:400 16px/22px Inter;margin-top:8px}
+  .gros{font:500 30px/36px "IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .bt{margin-top:20px;display:flex;align-items:baseline;gap:6px;font:600 20px/28px Manrope,sans-serif}
+  .bt .n,.bloc h3 .n{font:400 14px Inter;color:rgb(var(--c-steel));font-variant-numeric:tabular-nums}
+  .lg{display:flex;align-items:stretch;height:64px;margin-top:8px;border-radius:16px;overflow:hidden;background:rgb(var(--c-surface));box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .15)}
+  .lg.mt12{margin-top:12px}
+  .lg.mt8{margin-top:8px}
+  .lg .zone{flex:1;min-width:0;display:flex;align-items:center;gap:12px;padding:0 16px}
+  .lg .rep{flex:none;display:grid;place-items:center;color:rgb(var(--c-ink))}
+  .lg .txt{flex:1;min-width:0}
+  .lg .t{font:600 16px/22px Inter;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lg .d{font:400 14px/20px Inter;color:rgb(var(--c-steel));white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .lg .fin{width:56px;flex:none;display:grid;place-items:center;border-left:1px solid rgb(var(--c-ink) / .15);color:rgb(var(--c-ink))}
+  .mt{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums}
+  .montant{flex:none;font-size:16px;font-weight:500}
+  .rond{width:28px;height:28px;border-radius:99px;border:2px solid rgb(var(--c-ink) / .45)}
+  .pastille-ok{width:28px;height:28px;flex:none;display:grid;place-items:center;border-radius:99px;background:rgb(var(--c-succes) / .1);color:rgb(var(--c-succes))}
+  .ico.p{width:16px;height:16px}
+
+  /* Boutons (règles 5 et 6) */
+  .btn-plein{min-height:56px;width:100%;border:0;border-radius:16px;background:rgb(var(--c-ink));color:rgb(var(--c-paper));font:600 16px Inter;display:flex;align-items:center;justify-content:center;gap:8px;padding:0 20px;cursor:pointer}
+  .btn-plein.auto{width:auto;flex:none}
+  .btn-contour{min-height:48px;width:100%;border:0;border-radius:16px;background:transparent;color:rgb(var(--c-ink));font:600 16px Inter;box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .6);cursor:pointer}
+  .btn-texte{min-height:48px;padding:0 12px;border:0;background:none;color:rgb(var(--c-ink));font:600 16px Inter;text-decoration:underline;text-decoration-color:rgb(var(--c-ink) / .3);text-underline-offset:4px;cursor:pointer}
+
+  /* La rangée de capture : sous le pouce aux étapes terrain */
+  .capt{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:8px;margin-top:12px}
+  .ct{height:56px;display:flex;align-items:center;justify-content:center;gap:8px;border-radius:16px;background:rgb(var(--c-surface));box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .6);font:600 16px Inter;color:rgb(var(--c-ink))}
+  .ct.plein{background:rgb(var(--c-ink));color:rgb(var(--c-paper));box-shadow:none}
+  .ct.plein.appui{background:rgb(var(--c-ink) / .75)}
+  .bloc .capt{margin-top:12px}
+
+  /* Trace, champ, gestes numérotés */
+  .trace{display:flex;align-items:center;gap:12px;min-height:48px;margin-top:12px;padding-left:12px;border-radius:16px;background:rgb(var(--c-succes) / .1);font:400 14px/20px Inter}
+  .trace .tr-t{flex:1}
+  .champ{display:flex;align-items:center;gap:10px;min-height:48px;margin-top:8px;padding:0 14px;border-radius:16px;background:rgb(var(--c-surface));box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .15);font:400 16px Inter;color:rgb(var(--c-steel))}
+  .g{position:absolute;top:-10px;right:-6px;width:28px;height:28px;border-radius:99px;display:grid;place-items:center;background:rgb(var(--c-ink));color:rgb(var(--c-paper));font:700 14px Inter;box-shadow:0 0 0 3px rgb(var(--c-paper))}
+
+  /* Sélecteur d'Android (hors Compyo) */
+  .feuille h3{font:600 20px/28px Manrope,sans-serif}
+  .grille{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+  .vign{position:relative;display:block;aspect-ratio:1;border-radius:8px;background:rgb(var(--c-gris-clair))}
+  .vign.b{background:rgb(var(--c-gris-clair))}
+  .vign.a{background:rgb(var(--c-steel) / .18)}
+  .vign.c{background:rgb(var(--c-steel) / .3)}
+  .vign.sel{box-shadow:inset 0 0 0 3px rgb(var(--c-ink))}
+  .cochev{position:absolute;left:6px;top:6px;width:24px;height:24px;border-radius:99px;display:grid;place-items:center;background:rgb(var(--c-ink));color:rgb(var(--c-paper))}
+  .vign .g{top:6px;right:6px}
+  .feuille.sys{padding-bottom:20px}
+
+  /* Ordinateur */
+  .ordi{min-height:700px}
+  .lat{width:180px;flex:none;padding:20px 12px;background:rgb(var(--c-paper-warm));border-right:1px solid rgb(var(--c-gris-clair));display:flex;flex-direction:column;gap:4px}
+  .lat .logo{font:800 20px Manrope,sans-serif;padding:0 8px 16px}
+  .lat a{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 12px;border-radius:16px;font:400 16px Inter;color:rgb(var(--c-ink))}
+  .lat a.actif{font-weight:600;background:rgb(var(--c-ink) / .08)}
+  .lat a.sec{font-size:14px;color:rgb(var(--c-steel));min-height:40px}
+  .lat hr{border:0;border-top:1px solid rgb(var(--c-gris-clair));margin:8px 0}
+  .princ{flex:1;min-width:0;padding:24px 32px;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:28px;align-items:start}
+  .col-g,.col-d{min-width:0}
+  .l1o{display:flex;flex-direction:column;gap:12px}
+  .l1o .nom{flex:none;font-size:30px}
+  .tuiles-o{display:flex;gap:8px;margin-bottom:4px}
+  .tuiles-o .tuile{flex-direction:row;gap:8px;height:48px;padding:0 16px}
+  .hero-o{display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .hero-o .gros{margin-top:4px}
+  .hero-o .btn-plein{margin-top:0}
+  .col-d .bloc:first-child{margin-top:0}
+  .col-d .bloc h3{margin-bottom:0}
+  .vignrang{display:flex;gap:8px;margin-top:12px}
+  .vignrang .vign{width:72px}
+  .note-maquette{margin-top:4px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><symbol id="i-tel" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol><symbol id="i-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11h-9l-4 4v-4H4z"/></symbol><symbol id="i-lieu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-5.6-6-10a6 6 0 0 1 12 0c0 4.4-6 10-6 10z"/><circle cx="12" cy="11" r="2"/></symbol><symbol id="i-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol><symbol id="i-micro" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></symbol><symbol id="i-note" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></symbol><symbol id="i-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol><symbol id="i-retour" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></symbol><symbol id="i-points" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="5" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.6" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.6" fill="currentColor" stroke="none"/></symbol><symbol id="i-loupe" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6"/><path d="M20 20l-4.5-4.5"/></symbol><symbol id="i-coche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></symbol><symbol id="i-doc" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4"/></symbol><symbol id="i-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol><symbol id="i-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11l8-7 8 7v9H4z"/></symbol><symbol id="i-dossier" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h7l2 2h9v11H3z"/></symbol><symbol id="i-etincelle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l1.8 5.2L19 11l-5.2 1.8L12 18l-1.8-5.2L5 11l5.2-1.8z"/></symbol><symbol id="i-cloche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4zM10 21h4"/></symbol><symbol id="i-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></symbol></defs></svg>
+
+<div class="page-t">
+  <div>
+    <h1>Candidat C — la fiche suit l'étape du projet</h1>
+    <p>Trois étapes lisibles, jamais choisies : Avant devis, Chantier, À facturer. L'en-tête reste identique ; la phrase, le bouton plein et le premier bloc changent. Aucun onglet, aucun rôle. Mme Garnier (salle de bain) traverse les trois étapes ; chaque écran est coupé à 360 × 740, ce qu'on voit sans défiler.</p>
+  </div>
+  <button class="bascule" onclick="document.documentElement.classList.toggle('dark')">Mode sombre</button>
+</div>
+
+<div class="rang"><h2 class="rang-t">1 · Une fiche, trois étapes<span>360 × 740, sans défiler</span></h2>
+
+  <div class="cadre">
+    <h2>Avant devis · projet nouveau</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">Mme Garnier</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous">Salle de bain · 12 rue des Lilas, Nantes</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : Avant devis">
+        <div class="barres"><i class="on"></i><i class=""></i><i class=""></i></div>
+        <div class="noms"><b>Avant devis</b><span>Chantier</span><span>À facturer</span></div>
+      </div>
+    </header>
+    <section class="bloc">
+      <h3>Pas encore chiffré</h3>
+      <button class="btn-plein"><svg class="ico" aria-hidden="true"><use href="#i-etincelle"/></svg>Préparer le devis avec l'IA</button>
+      <p class="det centre">Vous relisez avant l'envoi.</p>
+      <button class="btn-contour">Faire le devis moi-même</button>
+    </section>
+      <div class="capt">
+        <a class="ct" style="position:relative"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a>
+      </div><div class="lg "><div class="zone"><div class="txt"><div class="t">Remplacer la baignoire par une douche à l'italienne, carrelage…</div><div class="d">La demande de Mme Garnier</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><div class="lg "><div class="zone"><div class="txt"><div class="t">À vérifier avant de chiffrer</div><div class="d">Dimensions, arrivée d'eau, état du sol</div></div></div><span class="fin"><span class="mt">3</span></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    </div>
+    <p class="note-maquette">Le devis d'abord ; la demande dessous.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Avant devis · devis sans réponse</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">SCI Les Jardins</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous"><span class="alerte">Urgent</span> · Salle de bain · Résidence Les Terrasses</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : Avant devis">
+        <div class="barres"><i class="on"></i><i class=""></i><i class=""></i></div>
+        <div class="noms"><b>Avant devis</b><span>Chantier</span><span>À facturer</span></div>
+      </div>
+    </header>
+    <section class="bloc">
+      <h3>Devis sans réponse</h3>
+      <p class="det">Envoyé il y a 6 jours · 4 820 €</p>
+      <button class="btn-plein">Relancer le client</button>
+    </section>
+      <div class="capt">
+        <a class="ct" style="position:relative"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a>
+      </div><div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg></span><div class="txt"><div class="t">Devis envoyé</div><div class="d">D-2026-0051 · 24 sept.</div></div><span class="mt montant">4 820 €</span></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><div class="lg "><div class="zone"><div class="txt"><div class="t">Refaire la salle de bain des parties communes…</div><div class="d">La demande</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    </div>
+    <p class="note-maquette">Même forme : seules la phrase et l'action changent.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Chantier · jour 12</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">Mme Garnier</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous">Salle de bain · 12 rue des Lilas, Nantes</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : Chantier">
+        <div class="barres"><i class="on"></i><i class="on"></i><i class=""></i></div>
+        <div class="noms"><span>Avant devis</span><b>Chantier</b><span>À facturer</span></div>
+      </div>
+    </header>
+    <section class="bloc">
+      <h3>Chantier · jour 12</h3>
+      <p class="det">Prochain passage : jeudi 9 h</p>
+      
+      <div class="capt">
+        <a class="ct plein" style="position:relative"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a>
+      </div>
+    </section><div class="lg mt12"><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span><div class="txt"><div class="t">Code portail 4821 · carrelage gris perle</div><div class="d">À retenir · modifié hier</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span></div><h3 class="bt">À faire<span class="n">3</span></h3><div class="lg "><div class="zone"><div class="txt"><div class="t">Commander le siphon</div><div class="d"><span class="alerte">Retard</span> · hier</div></div></div><span class="fin"><span class="rond"></span></span></div><div class="lg "><div class="zone"><div class="txt"><div class="t">Appeler le carreleur</div><div class="d">Rappel · jeudi 8 h</div></div></div><span class="fin"><span class="rond"></span></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    </div>
+    <p class="note-maquette">Photo sous le pouce, le code du portail, les tâches.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>À facturer · chantier terminé</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">Mme Garnier</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous">Salle de bain · 12 rue des Lilas, Nantes</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : À facturer">
+        <div class="barres"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+        <div class="noms"><span>Avant devis</span><span>Chantier</span><b>À facturer</b></div>
+      </div>
+    </header>
+    <section class="bloc">
+      <p class="det">Chantier terminé · reste à facturer</p>
+      <p class="gros mt">3 374,00 €</p>
+      <button class="btn-plein">Créer la facture de solde</button>
+    </section><h3 class="bt">Argent</h3><div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg></span><div class="txt"><div class="t">Devis signé</div><div class="d">D-2026-0042 · 14 sept.</div></div><span class="mt montant">4 820 €</span></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><div class="lg "><div class="zone"><span class="rep"><span class="pastille-ok"><svg class="ico p" aria-hidden="true"><use href="#i-coche"/></svg></span></span><div class="txt"><div class="t">Acompte payé</div><div class="d">A-2026-0017 · 3 oct.</div></div><span class="mt montant">1 446 €</span></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><h3 class="bt">Carnet<span class="n">23</span></h3><div class="capt"><a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a><a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a><a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a></div><div class="champ"><svg class="ico" aria-hidden="true"><use href="#i-loupe"/></svg>Chercher : mesure, code, fenêtre…</div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    </div>
+    <p class="note-maquette">L'argent passe devant : un seul bouton plein.</p>
+  </div>
+</div>
+<div class="rang"><h2 class="rang-t">2 · Ajouter 3 photos<span>5 gestes depuis la galerie, 7 aujourd'hui</span></h2>
+
+  <div class="cadre">
+    <h2>Geste 1 · un appui sur Photo</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">Mme Garnier</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous">Salle de bain · 12 rue des Lilas, Nantes</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : Chantier">
+        <div class="barres"><i class="on"></i><i class="on"></i><i class=""></i></div>
+        <div class="noms"><span>Avant devis</span><b>Chantier</b><span>À facturer</span></div>
+      </div>
+    </header>
+    <section class="bloc">
+      <h3>Chantier · jour 12</h3>
+      <p class="det">Prochain passage : jeudi 9 h</p>
+      
+      <div class="capt">
+        <a class="ct plein appui" style="position:relative"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo<span class="g">1</span></a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a>
+      </div>
+    </section><div class="lg mt12"><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span><div class="txt"><div class="t">Code portail 4821 · carrelage gris perle</div><div class="d">À retenir · modifié hier</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span></div><h3 class="bt">À faire<span class="n">3</span></h3><div class="lg "><div class="zone"><div class="txt"><div class="t">Commander le siphon</div><div class="d"><span class="alerte">Retard</span> · hier</div></div></div><span class="fin"><span class="rond"></span></span></div><div class="lg "><div class="zone"><div class="txt"><div class="t">Appeler le carreleur</div><div class="d">Rappel · jeudi 8 h</div></div></div><span class="fin"><span class="rond"></span></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    </div>
+    <p class="note-maquette">Pas de [+] ni de feuille : Photo est déjà là.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Gestes 2 à 5 · choisir, Ajouter</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">Mme Garnier</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous">Salle de bain · 12 rue des Lilas, Nantes</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : Chantier">
+        <div class="barres"><i class="on"></i><i class="on"></i><i class=""></i></div>
+        <div class="noms"><span>Avant devis</span><b>Chantier</b><span>À facturer</span></div>
+      </div>
+    </header>
+    <section class="bloc">
+      <h3>Chantier · jour 12</h3>
+      <p class="det">Prochain passage : jeudi 9 h</p>
+      
+      <div class="capt">
+        <a class="ct plein" style="position:relative"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a>
+      </div>
+    </section><div class="lg mt12"><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span><div class="txt"><div class="t">Code portail 4821 · carrelage gris perle</div><div class="d">À retenir · modifié hier</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span></div><h3 class="bt">À faire<span class="n">3</span></h3><div class="lg "><div class="zone"><div class="txt"><div class="t">Commander le siphon</div><div class="d"><span class="alerte">Retard</span> · hier</div></div></div><span class="fin"><span class="rond"></span></span></div><div class="lg "><div class="zone"><div class="txt"><div class="t">Appeler le carreleur</div><div class="d">Rappel · jeudi 8 h</div></div></div><span class="fin"><span class="rond"></span></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    <div class="voile"></div>
+    <div class="feuille sys">
+      <h3>Photos</h3>
+      <div class="grille"><span class="vign a"></span><span class="vign b sel"><span class="cochev"><svg class="ico p" aria-hidden="true"><use href="#i-coche"/></svg></span><span class="g">2</span></span><span class="vign c"></span><span class="vign b"></span><span class="vign c sel"><span class="cochev"><svg class="ico p" aria-hidden="true"><use href="#i-coche"/></svg></span><span class="g">3</span></span><span class="vign a"></span><span class="vign c"></span><span class="vign a sel"><span class="cochev"><svg class="ico p" aria-hidden="true"><use href="#i-coche"/></svg></span><span class="g">4</span></span><span class="vign b"></span></div>
+      <button class="btn-plein" style="position:relative">Ajouter (3)<span class="g">5</span></button>
+    </div>
+    </div>
+    <p class="note-maquette">Sélecteur d'Android : trois appuis, puis Ajouter.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Retour sur la fiche</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">Mme Garnier</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous">Salle de bain · 12 rue des Lilas, Nantes</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : Chantier">
+        <div class="barres"><i class="on"></i><i class="on"></i><i class=""></i></div>
+        <div class="noms"><span>Avant devis</span><b>Chantier</b><span>À facturer</span></div>
+      </div>
+    </header><div class="trace"><span class="pastille-ok"><svg class="ico p" aria-hidden="true"><use href="#i-coche"/></svg></span><span class="tr-t">3 photos ajoutées</span><button class="btn-texte">Voir</button></div>
+    <section class="bloc">
+      <h3>Chantier · jour 12</h3>
+      <p class="det">Prochain passage : jeudi 9 h</p>
+      
+      <div class="capt">
+        <a class="ct plein" style="position:relative"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a>
+      </div>
+    </section><div class="lg mt12"><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span><div class="txt"><div class="t">Code portail 4821 · carrelage gris perle</div><div class="d">À retenir · modifié hier</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span></div><h3 class="bt">À faire<span class="n">3</span></h3><div class="lg "><div class="zone"><div class="txt"><div class="t">Commander le siphon</div><div class="d"><span class="alerte">Retard</span> · hier</div></div></div><span class="fin"><span class="rond"></span></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    </div>
+    <p class="note-maquette">La trace dit le fait ; les photos sont au Carnet.</p>
+  </div>
+</div>
+<div class="rang"><h2 class="rang-t">3 · Le coéquipier et le passage d'étape</h2>
+
+  <div class="cadre">
+    <h2>Kévin, apprenti · même fiche, après un défilement</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran"><div class="lg "><div class="zone"><div class="txt"><div class="t">Appeler le carreleur</div><div class="d">Rappel · jeudi 8 h</div></div></div><span class="fin"><span class="rond"></span></span></div><div class="lg mt8"><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg></span><div class="txt"><div class="t">Devis 4 820 € · signé</div><div class="d">Acompte de 1 446 € payé</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><h3 class="bt">Carnet<span class="n">23</span></h3><div class="champ"><svg class="ico" aria-hidden="true"><use href="#i-loupe"/></svg>Chercher : mesure, code, fenêtre…</div><div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg></span><div class="txt"><div class="t">3 photos</div><div class="d">Gérard · hier 16 h 40</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg></span><div class="txt"><div class="t">« Fenêtre côté jardin : 87 par 112… »</div><div class="d">Mardi 8 h 12</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span><div class="txt"><div class="t">Siphon livré, à poser jeudi</div><div class="d">Gérard · lundi 17 h 05</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg></span><div class="txt"><div class="t">Passage chantier</div><div class="d">Lundi 8 h</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div><div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg></span><div class="txt"><div class="t">Photo : cuve du receveur</div><div class="d">Gérard · vendredi</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    </div>
+    <p class="note-maquette">Même fiche ; le prénom, seulement pour les autres.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Menu « … » › Chantier terminé ?</h2>
+    <div class="tel">
+      <div class="haut"><span>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></div>
+      <div class="ecran">
+    <header class="tete">
+      <div class="l1">
+        <a class="ib retour" aria-label="Projets"><svg class="ico" aria-hidden="true"><use href="#i-retour"/></svg></a>
+        <h3 class="nom">Mme Garnier</h3>
+        <a class="ib points" aria-label="Plus d'actions"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg></a>
+      </div>
+      <p class="sous">Salle de bain · 12 rue des Lilas, Nantes</p>
+      <div class="tuiles">
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a>
+        <a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a>
+      </div>
+      <div class="etapes" aria-label="Étape : Chantier">
+        <div class="barres"><i class="on"></i><i class="on"></i><i class=""></i></div>
+        <div class="noms"><span>Avant devis</span><b>Chantier</b><span>À facturer</span></div>
+      </div>
+    </header>
+    <section class="bloc">
+      <h3>Chantier · jour 12</h3>
+      <p class="det">Prochain passage : jeudi 9 h</p>
+      
+      <div class="capt">
+        <a class="ct plein" style="position:relative"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a>
+        <a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a>
+      </div>
+    </section><div class="lg mt12"><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span><div class="txt"><div class="t">Code portail 4821 · carrelage gris perle</div><div class="d">À retenir · modifié hier</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg></span></div><h3 class="bt">À faire<span class="n">3</span></h3><div class="lg "><div class="zone"><div class="txt"><div class="t">Commander le siphon</div><div class="d"><span class="alerte">Retard</span> · hier</div></div></div><span class="fin"><span class="rond"></span></span></div><div class="lg "><div class="zone"><div class="txt"><div class="t">Appeler le carreleur</div><div class="d">Rappel · jeudi 8 h</div></div></div><span class="fin"><span class="rond"></span></span></div></div>
+      
+    <div class="barre">
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet plus"><div class="btn-rond">+</div><span>Nouveau</span></div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-points"/></svg>Plus</div>
+    </div>
+      
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3>Chantier terminé ?</h3>
+      <p class="det">La fiche passe à « À facturer ».</p>
+      <button class="btn-plein">Oui, chantier terminé</button>
+      <button class="btn-contour">Pas encore</button>
+    </div>
+    </div>
+    <p class="note-maquette">Seule porte vers À facturer ; jamais d'Annuler.</p>
+  </div>
+</div>
+<div class="rang"><h2 class="rang-t">4 · Le bureau du soir<span>ordinateur, souvent celui de la conjointe</span></h2>
+
+  <div class="cadre" style="width:1100px">
+    <h2>À facturer · ordinateur, le soir</h2>
+    <div class="ordi">
+      <nav class="lat">
+        <div class="logo">Compyo</div>
+        <a><svg class="ico" aria-hidden="true"><use href="#i-home"/></svg>Aujourd'hui</a>
+        <a class="actif"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</a>
+        <a><svg class="ico" aria-hidden="true"><use href="#i-cal"/></svg>Planning</a>
+        <hr>
+        <a class="sec">Devis</a><a class="sec">Factures</a><a class="sec">Bilan</a><a class="sec">Paramètres</a>
+      </nav>
+      <div class="princ">
+        <div class="col-g">
+          <div class="l1o">
+            <div><h3 class="nom">Mme Garnier</h3><p class="sous o">Salle de bain · 12 rue des Lilas, Nantes</p></div>
+            <div class="tuiles-o"><a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-tel"/></svg>Appeler</a><a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-msg"/></svg>Message</a><a class="tuile"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Itinéraire</a></div>
+          </div>
+          <div class="etapes" style="max-width:420px"><div class="barres"><i class="on"></i><i class="on"></i><i class="on"></i></div>
+            <div class="noms"><span>Avant devis</span><span>Chantier</span><b>À facturer</b></div></div>
+          <section class="bloc hero-o">
+            <div><p class="det">Chantier terminé · reste à facturer</p><p class="gros mt">3 374,00 €</p></div>
+            <button class="btn-plein auto">Créer la facture de solde</button>
+          </section>
+          <h3 class="bt">Argent</h3>
+          <div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-doc"/></svg></span><div class="txt"><div class="t">Devis signé</div><div class="d">D-2026-0042 · 14 sept.</div></div><span class="mt montant">4 820 €</span></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div>
+          <div class="lg "><div class="zone"><span class="rep"><span class="pastille-ok"><svg class="ico p" aria-hidden="true"><use href="#i-coche"/></svg></span></span><div class="txt"><div class="t">Acompte payé</div><div class="d">A-2026-0017 · 3 oct.</div></div><span class="mt montant">1 446 €</span></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div>
+          <h3 class="bt">Carnet<span class="n">23</span></h3>
+          <div class="capt" style="max-width:420px"><a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Photo</a><a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg>Dicter</a><a class="ct"><svg class="ico" aria-hidden="true"><use href="#i-note"/></svg>Note</a></div>
+          <div class="champ"><svg class="ico" aria-hidden="true"><use href="#i-loupe"/></svg>Chercher : mesure, code, fenêtre…</div>
+          <div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg></span><div class="txt"><div class="t">3 photos</div><div class="d">Gérard · hier 16 h 40</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div>
+          <div class="lg "><div class="zone"><span class="rep"><svg class="ico" aria-hidden="true"><use href="#i-micro"/></svg></span><div class="txt"><div class="t">« Fenêtre côté jardin : 87 par 112… »</div><div class="d">Kévin · mardi 8 h 12</div></div></div><span class="fin"><svg class="ico" aria-hidden="true"><use href="#i-chev"/></svg></span></div>
+        </div>
+        <div class="col-d">
+          <section class="bloc"><h3>À retenir</h3><p class="corps">Code portail 4821. Carrelage gris perle, joints anthracite. Client absent le jeudi matin.</p></section>
+          <section class="bloc"><h3>Client</h3>
+            <p class="corps">06 12 34 56 78</p><p class="corps">m.garnier@exemple.fr</p><p class="corps">12 rue des Lilas, Nantes</p>
+            <p class="det">Un autre chantier ensemble</p></section>
+          <section class="bloc"><h3>Photos <span class="n">14</span></h3>
+            <div class="vignrang"><span class="vign a"></span><span class="vign b"></span><span class="vign c"></span></div></section>
+        </div>
+      </div>
+    </div>
+    <p class="note-maquette" style="max-width:1100px">Même fiche qu'au téléphone, en deux colonnes : l'argent en haut à gauche, sans rôle ni réglage.</p>
+  </div>
+</div>
+</body>
+</html>

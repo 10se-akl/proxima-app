@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel D — Candidat B : un en-tête, une action, un fil</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+/* Maquette jetable : couleurs uniquement par les variables de maquette.css. */
+body { align-items: flex-start; }
+.rangee, .intro { flex: 1 0 100%; display: flex; flex-wrap: wrap; gap: 44px 32px; align-items: flex-start; }
+.rangee > h2.titre-rangee { flex: 1 0 100%; font: 600 20px/1.2 Manrope, sans-serif; margin-top: 12px; }
+.intro { flex-direction: column; gap: 8px; max-width: 860px; }
+.intro h1 { font: 600 30px/1.1 Manrope, sans-serif; letter-spacing: -.02em; }
+.intro p { font: 400 16px/1.45 Inter; color: rgb(var(--c-steel)); }
+.intro p b { color: rgb(var(--c-ink)); }
+.bascule { align-self: flex-start; min-height: 48px; padding: 0 16px; border-radius: 16px; border: 0; background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .6); font: 600 16px Inter; cursor: pointer; }
+
+.ico { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.ico.plein { fill: currentColor; stroke: none; }
+.ico.ok { width: 16px; height: 16px; color: rgb(var(--c-succes)); vertical-align: -3px; }
+
+.tel.fixe { height: 740px; min-height: 740px; }
+.tel .page { flex: 1; min-height: 0; padding: 0 16px; overflow: hidden; }
+
+/* Barre du haut de l'application (hors fiche) */
+.haut { flex: none; height: 48px; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font: 600 16px Manrope, sans-serif; }
+.dark .haut { color: rgb(var(--c-ink)); }
+.logo { display: flex; align-items: center; gap: 8px; }
+.logo i { width: 28px; height: 28px; border-radius: 99px; display: grid; place-items: center; box-shadow: inset 0 0 0 2px currentColor; font: 800 14px Manrope; font-style: normal; }
+
+/* En-tête de la fiche : un nom, une adresse, trois gestes */
+.nom { display: flex; align-items: center; gap: 4px; height: 56px; margin: 0 -12px; }
+.icb { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 99px; color: rgb(var(--c-ink)); flex: none; }
+.nom h1 { flex: 1; min-width: 0; font: 600 30px/1.1 Manrope, sans-serif; letter-spacing: -.02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sous { font: 400 14px/20px Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.contacts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 12px; }
+.contacts a { min-height: 64px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 600 16px Inter; color: rgb(var(--c-ink)); }
+
+/* Maintenant : une phrase, un détail, au plus une action */
+.maint { margin-top: 16px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); padding: 20px; }
+.maint .sur { font: 400 14px/20px Inter; color: rgb(var(--c-steel)); }
+.maint .phrase { margin-top: 4px; font: 600 20px/28px Manrope, sans-serif; color: rgb(var(--c-ink)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.maint .det { margin-top: 4px; font: 400 14px/20px Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.maint .det u { color: rgb(var(--c-ink)); font-weight: 600; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; }
+.plein-btn, .contour { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 56px; margin-top: 16px; border: 0; border-radius: 16px; font: 600 16px Inter; cursor: pointer; }
+.plein-btn { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.contour { background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .6); }
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
+.deux > * { margin-top: 0; }
+.aide { margin-top: 8px; font: 400 14px/20px Inter; color: rgb(var(--c-steel)); text-align: center; }
+
+/* Le fil : un bloc, des lignes de 64 px, quatre éléments au plus */
+.tit { display: flex; align-items: center; justify-content: space-between; height: 40px; margin: 16px 0 8px; }
+.tit h2 { font: 600 20px Manrope, sans-serif; color: rgb(var(--c-ink)); }
+.tit .nb { font: 400 14px Inter; color: rgb(var(--c-steel)); margin-left: 6px; }
+.tit .icb { margin-right: -12px; }
+.bloc { border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); overflow: hidden; }
+.bloc.haut-fil { margin-top: 16px; }
+.rang { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; min-height: 64px; padding: 12px 16px; border-top: 1px solid rgb(var(--c-ink) / .15); }
+.bloc > :first-child { border-top: 0; }
+.rang .txt { flex: 1; min-width: 0; }
+.q { font: 600 16px/22px Inter; color: rgb(var(--c-ink)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.q.doux { font-weight: 400; }
+.d { font: 400 14px/20px Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+.alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+.dark .alerte { color: rgb(var(--c-signal-clair)); }
+.fin { width: 56px; align-self: stretch; margin: -12px -16px -12px 0; border-left: 1px solid rgb(var(--c-ink) / .15); display: grid; place-items: center; flex: none; }
+.rond { width: 28px; height: 28px; border-radius: 99px; box-shadow: inset 0 0 0 1.5px rgb(var(--c-ink) / .5); }
+.vign { flex: 0 0 100%; display: flex; gap: 8px; padding-left: 36px; }
+.vign span { flex: 1; height: 64px; border-radius: 16px; background: linear-gradient(135deg, rgb(var(--c-steel) / .35), rgb(var(--c-paper-warm))); display: grid; place-items: center; font: 600 16px Inter; color: rgb(var(--c-ink)); }
+.vign span:nth-child(2) { background: linear-gradient(200deg, rgb(var(--c-steel) / .25), rgb(var(--c-gris-clair))); }
+.vign span:nth-child(3) { background: linear-gradient(45deg, rgb(var(--c-paper-warm)), rgb(var(--c-steel) / .4)); }
+.vign span.envoi { box-shadow: inset 0 0 0 1.5px rgb(var(--c-ink) / .4); background: rgb(var(--c-paper-warm)); font-weight: 400; font-size: 14px; color: rgb(var(--c-steel)); }
+.etiq { display: flex; align-items: center; gap: 8px; min-height: 56px; padding: 0 16px; border-top: 1px solid rgb(var(--c-ink) / .15); font: 400 14px Inter; color: rgb(var(--c-steel)); }
+.etiq b { font: 600 16px Inter; color: rgb(var(--c-ink)); }
+.etiq .ico { width: 18px; height: 18px; }
+.voir { display: flex; align-items: center; justify-content: center; min-height: 56px; border-top: 1px solid rgb(var(--c-ink) / .15); font: 600 16px Inter; color: rgb(var(--c-ink)); text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; }
+mark { background: rgb(var(--c-ink) / .15); color: inherit; border-radius: 4px; padding: 0 2px; }
+
+/* La barre d'action au pouce : Photo · Dicter · Écrire */
+.actions { position: absolute; left: 0; right: 0; bottom: 0; height: 72px; padding: 8px 16px; display: flex; gap: 8px; background: rgb(var(--c-surface)); border-top: 1px solid rgb(var(--c-ink) / .15); z-index: 3; }
+.actions button { flex: 1; min-height: 56px; border: 0; border-radius: 16px; background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .6); display: flex; align-items: center; justify-content: center; gap: 8px; font: 600 16px Inter; cursor: pointer; }
+.actions button.appui { background: rgb(var(--c-ink) / .12); }
+
+/* Feuilles */
+.feuille { box-shadow: 0 -8px 32px rgb(var(--c-ink) / .2); z-index: 4; padding-bottom: 16px; }
+.voile { z-index: 3; }
+.feuille h3 { font: 600 20px Manrope, sans-serif; color: rgb(var(--c-ink)); }
+.feuille .lig { display: flex; align-items: center; gap: 12px; min-height: 56px; font: 600 16px Inter; color: rgb(var(--c-ink)); border-top: 1px solid rgb(var(--c-ink) / .15); }
+.feuille .lig:first-of-type { border-top: 0; }
+.feuille .lig .ico:last-child:not(:first-child) { margin-left: auto; color: rgb(var(--c-steel)); }
+.feuille .plein-btn, .feuille .contour { margin-top: 0; }
+.texte-btn { display: flex; align-items: center; justify-content: center; min-height: 48px; font: 600 16px Inter; color: rgb(var(--c-ink)); text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; }
+.destructif { display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 16px; font: 600 16px Inter; color: rgb(var(--c-signal-fonce)); box-shadow: inset 0 0 0 1px rgb(var(--c-signal-fonce) / .5); }
+.dark .destructif { color: rgb(var(--c-signal-clair)); box-shadow: inset 0 0 0 1px rgb(var(--c-signal-clair) / .5); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.seg span { min-height: 48px; display: grid; place-items: center; border-radius: 16px; font: 600 16px Inter; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+.seg span.on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: none; }
+.zone { border-radius: 16px; background: rgb(var(--c-paper-warm)); padding: 16px; font: 400 16px/24px Inter; color: rgb(var(--c-ink)); min-height: 120px; }
+.zone .caret { display: inline-block; width: 2px; height: 20px; background: rgb(var(--c-ink)); vertical-align: -4px; }
+.micro { display: flex; align-items: center; gap: 12px; font: 600 16px Inter; color: rgb(var(--c-ink)); }
+.micro .pastille-mic { width: 48px; height: 48px; border-radius: 99px; display: grid; place-items: center; box-shadow: inset 0 0 0 2px rgb(var(--c-ink)); }
+.micro .point { width: 10px; height: 10px; border-radius: 99px; background: rgb(var(--c-alerte-orange)); margin-left: auto; }
+.clavier { position: absolute; left: 0; right: 0; bottom: 0; height: 250px; background: rgb(var(--c-paper-warm)); border-top: 1px solid rgb(var(--c-ink) / .15); display: grid; place-items: center; font: 400 14px Inter; color: rgb(var(--c-steel)); z-index: 5; }
+
+/* Repère de geste (comptage) */
+.geste { position: absolute; z-index: 6; width: 28px; height: 28px; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); display: grid; place-items: center; font: 600 14px "IBM Plex Mono", monospace; box-shadow: 0 0 0 4px rgb(var(--c-ink) / .18); }
+
+/* Appareil photo du téléphone */
+.tel.camera { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.tel.camera .vf { flex: 1; margin: 16px; border-radius: 16px; background: linear-gradient(160deg, rgb(var(--c-steel) / .55), rgb(var(--c-paper-warm) / .35)); display: grid; place-items: center; font: 400 14px Inter; color: rgb(var(--c-paper)); }
+.tel.camera .commandes { height: 120px; display: flex; align-items: center; justify-content: space-around; }
+.tel.camera .decl { width: 72px; height: 72px; border-radius: 99px; background: rgb(var(--c-paper)); box-shadow: 0 0 0 4px rgb(var(--c-ink)), 0 0 0 6px rgb(var(--c-paper)); }
+.tel.camera .ok-cam { width: 56px; height: 56px; border-radius: 99px; box-shadow: inset 0 0 0 2px rgb(var(--c-paper)); display: grid; place-items: center; }
+.tel.camera .haut-cam { padding: 16px 16px 0; font: 400 14px Inter; text-align: center; }
+
+/* Filtres du Carnet */
+.puces { display: flex; gap: 8px; margin: 8px 0; overflow: hidden; }
+.puces span { min-height: 48px; padding: 0 16px; display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; font: 600 16px Inter; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); white-space: nowrap; }
+.puces span.on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: none; }
+.puces span i { font: 400 14px Inter; font-style: normal; }
+.champ { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 16px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 2px rgb(var(--c-ink)); font: 400 16px Inter; color: rgb(var(--c-ink)); margin-top: 16px; }
+.champ .x { margin-left: auto; color: rgb(var(--c-steel)); }
+.nb-res { font: 400 14px/20px Inter; color: rgb(var(--c-steel)); margin: 4px 0 8px; }
+
+/* Ordinateur : le bureau du soir */
+.ordi { overflow: hidden; }
+.lateral { width: 240px; flex: none; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); padding: 20px 16px; display: flex; flex-direction: column; gap: 8px; font: 400 16px Inter; }
+.dark .lateral { color: rgb(var(--c-ink)); }
+.lateral .nouveau { min-height: 48px; border-radius: 16px; background: rgb(var(--c-signal)); color: #fff; display: flex; align-items: center; justify-content: center; font: 600 16px Inter; margin: 16px 0 8px; }
+.lateral a { min-height: 48px; display: flex; align-items: center; padding: 0 12px; border-radius: 16px; }
+.lateral a.actif { background: rgb(var(--c-paper) / .14); font-weight: 600; }
+.dark .lateral a.actif { background: rgb(var(--c-ink) / .14); }
+.lateral .pied { margin-top: auto; font-size: 14px; color: rgb(var(--c-paper) / .7); padding: 0 12px; }
+.dark .lateral .pied { color: rgb(var(--c-ink) / .7); }
+.principal { flex: 1; padding: 32px; }
+.col { max-width: 672px; margin: 0 auto; }
+.col .nom { margin: 0; }
+.col .nom h1 { flex: none; }
+.col .contacts { display: flex; gap: 8px; }
+.col .contacts a { flex-direction: row; min-height: 48px; padding: 0 16px; gap: 8px; }
+.col .maint .plein-btn, .col .maint .contour { width: auto; padding: 0 24px; display: inline-flex; }
+.barre-ordi { display: flex; gap: 8px; margin: 8px 0 12px; flex-wrap: wrap; }
+.barre-ordi span { min-height: 48px; padding: 0 16px; border-radius: 16px; display: inline-flex; align-items: center; gap: 8px; font: 600 16px Inter; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .6); }
+.barre-ordi .rech { margin-left: auto; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); color: rgb(var(--c-steel)); font-weight: 400; min-width: 220px; }
+.tit-ordi { display: flex; align-items: center; justify-content: space-between; margin: 24px 0 8px; }
+.tit-ordi h2 { font: 600 20px Manrope, sans-serif; }
+.tit-ordi .nb { font: 400 14px Inter; color: rgb(var(--c-steel)); margin-left: 6px; }
+</style>
+</head>
+<body>
+
+<!-- Icônes -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 1 1 12 0v5l1.5 2h-15z"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-retour" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-points" viewBox="0 0 24 24"><circle class="p" cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-tel" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-lieu" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-11a6 6 0 1 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2.2"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-micro" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-crayon" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/><path d="M14 7l3 3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9a4 4 0 1 0 0 6M8 11h5M8 13h5"/></symbol>
+  <symbol id="i-coche" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M9 3v4M15 3v4"/></symbol>
+  <symbol id="i-loupe" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M16 16l4 4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+  <symbol id="i-ia" viewBox="0 0 24 24"><path d="M12 3l2 6 6 2-6 2-2 6-2-6-6-2 6-2z"/></symbol>
+  <symbol id="i-epingle" viewBox="0 0 24 24"><path d="M9 3h6l-1 6 3 3H7l3-3zM12 12v9"/></symbol>
+  <symbol id="i-point" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2.5"/></symbol>
+  <symbol id="i-tache" viewBox="0 0 24 24"><path d="M5 7h14M5 12h14M5 17h9"/></symbol>
+  <symbol id="i-croix" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-galerie" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="14" rx="2"/><path d="M4 16l5-5 4 4 3-3 4 4"/></symbol>
+  <symbol id="i-chantier" viewBox="0 0 24 24"><path d="M4 20h16M6 20V10l6-5 6 5v10"/></symbol>
+</svg>
+
+<div class="intro">
+  <h1>Candidat B — Un en-tête, une action, un fil</h1>
+  <p><b>Sans défiler à 360 × 740 :</b> avant, l'en-tête (260 px) et le haut de « Maintenant ». Après, l'en-tête (152 px), « Maintenant », les trois lignes à retenir et à faire, et le début du Carnet. Un seul bouton plein par écran. Plus de bloc « À retenir », « Dossier » ni « Facturation » : tout arrive dans le Carnet.</p>
+  <button class="bascule" onclick="document.documentElement.classList.toggle('dark')">Mode clair / sombre</button>
+</div>
+
+<!-- ============ 1. LES QUATRE ÉTATS ============ -->
+<section class="rangee">
+<h2 class="titre-rangee">1. Les états de la fiche, à 360 × 740, sans défiler</h2>
+
+<!-- Nouveau, juste capturé -->
+<div class="cadre">
+  <h2>Nouveau, juste capturé</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb" aria-label="Retour aux projets"><svg class="ico"><use href="#i-retour"/></svg></a><h1>Mme Garnier</h1><a class="icb" aria-label="Plus d'actions"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous">Plafond suspendu · 12 rue des Lilas, Nantes</p>
+        <div class="contacts">
+          <a><svg class="ico"><use href="#i-tel"/></svg>Appeler</a>
+          <a><svg class="ico"><use href="#i-msg"/></svg>Message</a>
+          <a><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</a>
+        </div>
+      </header>
+      <section class="maint">
+        <p class="sur">Maintenant</p>
+        <p class="phrase">Nouvelle demande.</p>
+        <p class="det">Dites « bien reçu » au client.</p>
+        <div class="deux"><button class="plein-btn">SMS</button><button class="contour">WhatsApp</button></div>
+      </section>
+      <div class="tit"><h2>Carnet <span class="nb">2</span></h2></div>
+      <div class="bloc">
+        <div class="rang"><svg class="ico"><use href="#i-msg"/></svg><div class="txt"><p class="q">« Bonjour, je voudrais refaire le plafond du salon… »</p><p class="d">La demande · WhatsApp · il y a 8 min</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-point"/></svg><div class="txt"><p class="q doux">Projet créé</p><p class="d">Depuis un message partagé · il y a 8 min</p></div></div>
+      </div>
+    </div>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">« Bien reçu » devient l'action unique : SMS ou WhatsApp, puis envoyer.</p>
+</div>
+
+<!-- Nouveau, à chiffrer -->
+<div class="cadre">
+  <h2>Nouveau, à chiffrer</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb" aria-label="Retour aux projets"><svg class="ico"><use href="#i-retour"/></svg></a><h1>M. Benali</h1><a class="icb" aria-label="Plus d'actions"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous"><span class="alerte">Urgent</span> · Cloisons · 27 av. de la Gare, Rezé</p>
+        <div class="contacts">
+          <a><svg class="ico"><use href="#i-tel"/></svg>Appeler</a>
+          <a><svg class="ico"><use href="#i-msg"/></svg>Message</a>
+          <a><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</a>
+        </div>
+      </header>
+      <section class="maint">
+        <p class="sur">Maintenant</p>
+        <p class="phrase">Pas encore chiffré.</p>
+        <p class="det"><u>3 points à vérifier</u> avant de chiffrer</p>
+        <button class="plein-btn"><svg class="ico"><use href="#i-ia"/></svg>Préparer le devis</button>
+        <p class="aide">Vous relisez avant l'envoi.</p>
+      </section>
+      <div class="tit"><h2>Carnet <span class="nb">4</span></h2></div>
+      <div class="bloc">
+        <div class="rang"><svg class="ico"><use href="#i-micro"/></svg><div class="txt"><p class="q">« Cloison de 12 m, deux portes, 2,60 m de haut… »</p><p class="d">Note vocale · aujourd'hui 8 h 52</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-photo"/></svg><div class="txt"><p class="q">1 photo</p><p class="d">Aujourd'hui 8 h 50</p></div><div class="vign"><span></span></div></div>
+      </div>
+    </div>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">Un seul bouton ; « Faire le devis moi-même » passe dans le menu ⋯.</p>
+</div>
+
+<!-- En chantier -->
+<div class="cadre">
+  <h2>En chantier</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb" aria-label="Retour aux projets"><svg class="ico"><use href="#i-retour"/></svg></a><h1>M. Roux</h1><a class="icb" aria-label="Plus d'actions"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous">Cloisons placo · 8 rue des Tilleuls, Rezé</p>
+        <div class="contacts">
+          <a><svg class="ico"><use href="#i-tel"/></svg>Appeler</a>
+          <a><svg class="ico"><use href="#i-msg"/></svg>Message</a>
+          <a><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</a>
+        </div>
+      </header>
+      <section class="maint">
+        <p class="sur">Maintenant</p>
+        <p class="phrase">Chantier en cours, jour 12.</p>
+        <p class="det">Prochain passage : demain 8 h</p>
+      </section>
+      <div class="bloc haut-fil">
+        <div class="rang"><svg class="ico"><use href="#i-epingle"/></svg><div class="txt"><p class="q">À retenir</p><p class="d">Portail 4812A · peinture RAL 9010</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-tache"/></svg><div class="txt"><p class="q">Rappeler le plombier</p><p class="d"><span class="alerte">Retard</span> · hier 17 h</p></div><span class="fin"><span class="rond"></span></span></div>
+        <div class="rang"><svg class="ico"><use href="#i-tache"/></svg><div class="txt"><p class="q">Commander les plaques</p><p class="d">Rappel demain 7 h</p></div><span class="fin"><span class="rond"></span></span></div>
+      </div>
+      <div class="tit"><h2>Carnet <span class="nb">14</span></h2><a class="icb" aria-label="Chercher dans le carnet"><svg class="ico"><use href="#i-loupe"/></svg></a></div>
+      <div class="bloc">
+        <div class="rang"><svg class="ico"><use href="#i-micro"/></svg><div class="txt"><p class="q">« Rails posés au salon, reste la cuisine… »</p><p class="d">Note vocale · aujourd'hui 8 h 15</p></div></div>
+      </div>
+    </div>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">Au chantier, la barre est l'action : « Maintenant » n'a pas de bouton.</p>
+</div>
+
+<!-- À facturer -->
+<div class="cadre">
+  <h2>À facturer</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb" aria-label="Retour aux projets"><svg class="ico"><use href="#i-retour"/></svg></a><h1>Mme Lefèvre</h1><a class="icb" aria-label="Plus d'actions"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous">Doublage et isolation · 3 impasse du Port, Saint-Herblain</p>
+        <div class="contacts">
+          <a><svg class="ico"><use href="#i-tel"/></svg>Appeler</a>
+          <a><svg class="ico"><use href="#i-msg"/></svg>Message</a>
+          <a><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</a>
+        </div>
+      </header>
+      <section class="maint">
+        <p class="sur">Maintenant</p>
+        <p class="phrase">Chantier terminé.</p>
+        <p class="det">Reste à facturer : <span class="m">2 940 €</span> sur <span class="m">4 900 €</span></p>
+        <button class="plein-btn">Facturer le solde</button>
+      </section>
+      <div class="tit"><h2>Carnet <span class="nb">22</span></h2><a class="icb" aria-label="Chercher dans le carnet"><svg class="ico"><use href="#i-loupe"/></svg></a></div>
+      <div class="bloc">
+        <div class="rang"><svg class="ico"><use href="#i-chantier"/></svg><div class="txt"><p class="q doux">Chantier terminé</p><p class="d">Hier 17 h 30</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-photo"/></svg><div class="txt"><p class="q">8 photos</p><p class="d">Hier 17 h 12</p></div><div class="vign"><span></span><span></span><span class="plus">+6</span></div></div>
+      </div>
+    </div>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">Seul bouton plein : « Facturer le solde », qui ouvre la facturation existante.</p>
+</div>
+</section>
+
+<!-- ============ 2. AJOUTER 3 PHOTOS ============ -->
+<section class="rangee">
+<h2 class="titre-rangee">2. Ajouter 3 photos : Photo (1), déclencheur (2), valider (3), trois fois = 9 gestes. Aujourd'hui : 11.</h2>
+
+<div class="cadre">
+  <h2>Un appui sur « Photo »</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb" aria-label="Retour aux projets"><svg class="ico"><use href="#i-retour"/></svg></a><h1>M. Roux</h1><a class="icb" aria-label="Plus d'actions"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous">Cloisons placo · 8 rue des Tilleuls, Rezé</p>
+        <div class="contacts">
+          <a><svg class="ico"><use href="#i-tel"/></svg>Appeler</a>
+          <a><svg class="ico"><use href="#i-msg"/></svg>Message</a>
+          <a><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</a>
+        </div>
+      </header>
+      <section class="maint">
+        <p class="sur">Maintenant</p>
+        <p class="phrase">Chantier en cours, jour 12.</p>
+        <p class="det">Prochain passage : demain 8 h</p>
+      </section>
+      <div class="bloc haut-fil">
+        <div class="rang"><svg class="ico"><use href="#i-epingle"/></svg><div class="txt"><p class="q">À retenir</p><p class="d">Portail 4812A · peinture RAL 9010</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-tache"/></svg><div class="txt"><p class="q">Rappeler le plombier</p><p class="d"><span class="alerte">Retard</span> · hier 17 h</p></div><span class="fin"><span class="rond"></span></span></div>
+        <div class="rang"><svg class="ico"><use href="#i-tache"/></svg><div class="txt"><p class="q">Commander les plaques</p><p class="d">Rappel demain 7 h</p></div><span class="fin"><span class="rond"></span></span></div>
+      </div>
+    </div>
+    <span class="geste" style="left:104px;bottom:60px">1</span>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button class="appui"><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">Photo ouvre l'appareil tout de suite : plus de [+] ni de feuille intermédiaire.</p>
+</div>
+
+<div class="cadre">
+  <h2>L'appareil du téléphone</h2>
+  <div class="tel fixe camera">
+    <p class="haut-cam">Appareil photo du téléphone (hors Compyo)</p>
+    <div class="vf">Aperçu du chantier</div>
+    <div class="commandes"><span style="width:56px"></span><span class="decl"></span><span class="ok-cam"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+    <span class="geste" style="left:166px;bottom:112px">2</span>
+    <span class="geste" style="right:20px;bottom:128px">3</span>
+  </div>
+  <p class="note-maquette">Une photo par prise : on repasse par Photo pour la 2e et la 3e.</p>
+</div>
+
+<div class="cadre">
+  <h2>De retour dans le Carnet</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="tit"><h2>Carnet <span class="nb">15</span></h2><a class="icb" aria-label="Chercher dans le carnet"><svg class="ico"><use href="#i-loupe"/></svg></a></div>
+      <div class="bloc">
+        <div class="rang"><svg class="ico"><use href="#i-photo"/></svg><div class="txt"><p class="q">3 photos</p><p class="d">À l'instant · <svg class="ico ok"><use href="#i-coche"/></svg> envoyées</p></div><div class="vign"><span></span><span></span><span></span></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-micro"/></svg><div class="txt"><p class="q">« Rails posés au salon, reste la cuisine… »</p><p class="d">Note vocale · aujourd'hui 8 h 15</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-photo"/></svg><div class="txt"><p class="q">6 photos</p><p class="d">Hier 17 h 05</p></div><div class="vign"><span></span><span></span><span class="plus">+4</span></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-crayon"/></svg><div class="txt"><p class="q">« Cotes de la trappe : 60 × 60 »</p><p class="d">Karim · note · hier 16 h 20</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-cal"/></svg><div class="txt"><p class="q">Rendez-vous · Pose des rails</p><p class="d">29 sept.</p></div></div>
+      </div>
+    </div>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">Sans réseau : la vignette reste, avec « Pas enregistré » et « Réessayer ».</p>
+</div>
+</section>
+
+<!-- ============ 3. DICTER, ÉCRIRE, LE MENU ============ -->
+<section class="rangee">
+<h2 class="titre-rangee">3. Dicter (3 gestes), écrire (3 gestes), et ce qui est rangé dans ⋯</h2>
+
+<div class="cadre">
+  <h2>Dicter</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb"><svg class="ico"><use href="#i-retour"/></svg></a><h1>M. Roux</h1><a class="icb"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous">Cloisons placo · 8 rue des Tilleuls, Rezé</p>
+      </header>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3>Dicter une note</h3>
+      <div class="micro"><span class="pastille-mic"><svg class="ico"><use href="#i-micro"/></svg></span>J'écoute…<span class="point"></span></div>
+      <div class="zone">La fenêtre de la cuisine fait un mètre douze sur un mètre quarante. On garde l'appui en bois et on double autour, sans retour.</div>
+      <p class="d">Gardé sur ce téléphone.</p>
+      <button class="plein-btn">Arrêter</button>
+      <a class="texte-btn">Écrire à la place</a>
+    </div>
+  </div>
+  <p class="note-maquette">Dicter écoute déjà (1). Arrêter (2) laisse relire, puis Enregistrer (3). Avant : 5 gestes.</p>
+</div>
+
+<div class="cadre">
+  <h2>Écrire</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb"><svg class="ico"><use href="#i-retour"/></svg></a><h1>M. Roux</h1><a class="icb"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous">Cloisons placo · 8 rue des Tilleuls, Rezé</p>
+      </header>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille" style="bottom:250px">
+      <h3>Note</h3>
+      <div class="zone" style="min-height:96px">Appeler le plombier avant demain pour la colonne d'eau<span class="caret"></span></div>
+      <button class="contour">Me le rappeler</button>
+      <button class="plein-btn">Enregistrer</button>
+    </div>
+    <div class="clavier">Clavier du téléphone (la barre du bas se masque, comme aujourd'hui)</div>
+  </div>
+  <p class="note-maquette">Un seul champ : le titre est la première ligne. Écrire (1), taper (2), Enregistrer (3). Avant : 4 gestes ou plus.</p>
+</div>
+
+<div class="cadre">
+  <h2>Le menu ⋯ (une feuille, plus un menu volant)</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header>
+        <div class="nom"><a class="icb"><svg class="ico"><use href="#i-retour"/></svg></a><h1>M. Roux</h1><a class="icb"><svg class="ico"><use href="#i-points"/></svg></a></div>
+        <p class="sous">Cloisons placo · 8 rue des Tilleuls, Rezé</p>
+      </header>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3>M. Roux</h3>
+      <div class="lig"><svg class="ico"><use href="#i-tache"/></svg>Infos du client<svg class="ico"><use href="#i-chev"/></svg></div>
+      <div class="seg"><span>Normal</span><span class="on">Important</span><span>Urgent</span></div>
+      <div class="lig"><svg class="ico"><use href="#i-cal"/></svg>Planifier un rendez-vous<svg class="ico"><use href="#i-chev"/></svg></div>
+      <div class="lig"><svg class="ico"><use href="#i-galerie"/></svg>Photos du projet · 32<svg class="ico"><use href="#i-chev"/></svg></div>
+      <div class="lig"><svg class="ico"><use href="#i-euro"/></svg>Facturer un acompte<svg class="ico"><use href="#i-chev"/></svg></div>
+      <div class="lig"><svg class="ico"><use href="#i-ia"/></svg>Résumer mes notes avec l'IA<svg class="ico"><use href="#i-chev"/></svg></div>
+      <div class="destructif">Terminer le projet</div>
+    </div>
+  </div>
+  <p class="note-maquette">Les anciens boutons secondaires vivent ici ; « Terminer » pose d'abord la question.</p>
+</div>
+</section>
+
+<!-- ============ 4. RETROUVER, L'ÉQUIPE ============ -->
+<section class="rangee">
+<h2 class="titre-rangee">4. Retrouver ce qui était convenu, et le même écran sur le téléphone de Karim</h2>
+
+<div class="cadre">
+  <h2>« fenêtre », sept semaines plus tard</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="champ"><svg class="ico"><use href="#i-loupe"/></svg>fenêtre<svg class="ico x"><use href="#i-croix"/></svg></div>
+      <div class="puces"><span class="on">Tout <i>3</i></span><span>Notes <i>3</i></span><span>Photos <i>0</i></span><span>Argent <i>0</i></span></div>
+      <p class="nb-res">3 résultats</p>
+      <div class="bloc">
+        <div class="rang"><svg class="ico"><use href="#i-micro"/></svg><div class="txt"><p class="q">« La <mark>fenêtre</mark> de la cuisine fait 1,12 × 1,40… »</p><p class="d">Note vocale · 12 août</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-crayon"/></svg><div class="txt"><p class="q">« Client OK pour la <mark>fenêtre</mark> sans retour… »</p><p class="d">Sylvie · note · 14 août</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-micro"/></svg><div class="txt"><p class="q">« <mark>Fenêtre</mark> : on garde l'appui en bois »</p><p class="d">Note vocale · 28 sept.</p></div></div>
+      </div>
+    </div>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">La loupe est sur le premier écran : un appui, puis le mot.</p>
+</div>
+
+<div class="cadre">
+  <h2>Karim (apprenti), même fiche, défilée</h2>
+  <div class="tel fixe">
+    <div class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="tit"><h2>Carnet <span class="nb">14</span></h2><a class="icb" aria-label="Chercher dans le carnet"><svg class="ico"><use href="#i-loupe"/></svg></a></div>
+      <div class="bloc">
+        <div class="rang"><svg class="ico"><use href="#i-micro"/></svg><div class="txt"><p class="q">« Rails posés au salon, reste la cuisine… »</p><p class="d">Gérard · note vocale · 8 h 15</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-photo"/></svg><div class="txt"><p class="q">6 photos</p><p class="d">Gérard · hier 17 h 05</p></div><div class="vign"><span></span><span></span><span class="plus">+4</span></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-crayon"/></svg><div class="txt"><p class="q">« Cotes de la trappe : 60 × 60 »</p><p class="d">Note · hier 16 h 20</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-cal"/></svg><div class="txt"><p class="q">Rendez-vous · Pose des rails</p><p class="d">Gérard · 29 sept.</p></div></div>
+        <div class="rang"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="q">Devis D-2026-0042</p><p class="d"><span class="m">4 860 €</span> · signé le 18 août</p></div><span class="fin"><svg class="ico"><use href="#i-chev"/></svg></span></div>
+      </div>
+      <div class="bloc" style="margin-top:8px"><div class="voir">Voir les 9 autres</div></div>
+    </div>
+    <nav class="actions" aria-label="Ajouter au projet">
+      <button><svg class="ico"><use href="#i-photo"/></svg>Photo</button>
+      <button><svg class="ico"><use href="#i-micro"/></svg>Dicter</button>
+      <button><svg class="ico"><use href="#i-crayon"/></svg>Écrire</button>
+    </nav>
+  </div>
+  <p class="note-maquette">Pas de vue terrain (duel A) : mêmes boutons, mêmes montants ; seuls les prénoms des autres s'ajoutent.</p>
+</div>
+</section>
+
+<!-- ============ 5. LE BUREAU DU SOIR ============ -->
+<section class="rangee">
+<h2 class="titre-rangee">5. Le bureau du soir : Sylvie facture, le fil lui raconte la journée de Gérard</h2>
+
+<div class="cadre">
+  <div class="ordi">
+    <aside class="lateral">
+      <span class="logo" style="font:600 20px Manrope"><i>C</i>Compyo</span>
+      <a class="nouveau">+ Nouveau projet</a>
+      <a>Aujourd'hui</a><a class="actif">Projets</a><a>Planning</a><a>Argent</a>
+      <span class="pied">Sylvie · Paramètres</span>
+    </aside>
+    <main class="principal">
+      <div class="col">
+        <div class="nom"><h1>Mme Lefèvre</h1></div>
+        <p class="sous">Doublage et isolation · 3 impasse du Port, Saint-Herblain</p>
+        <div class="contacts">
+          <a><svg class="ico"><use href="#i-tel"/></svg>Appeler</a>
+          <a><svg class="ico"><use href="#i-msg"/></svg>Message</a>
+          <a><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</a>
+        </div>
+        <section class="maint">
+          <p class="sur">Maintenant</p>
+          <p class="phrase">Chantier terminé.</p>
+          <p class="det">Reste à facturer : <span class="m">2 940 €</span> sur <span class="m">4 900 €</span></p>
+          <button class="plein-btn">Facturer le solde</button>
+        </section>
+        <div class="tit-ordi"><h2>Carnet <span class="nb">22</span></h2></div>
+        <div class="barre-ordi">
+          <span><svg class="ico"><use href="#i-photo"/></svg>Photo</span>
+          <span><svg class="ico"><use href="#i-micro"/></svg>Dicter</span>
+          <span><svg class="ico"><use href="#i-crayon"/></svg>Écrire</span>
+          <span class="rech"><svg class="ico"><use href="#i-loupe"/></svg>Chercher : mesure, code…</span>
+        </div>
+        <div class="puces"><span class="on">Tout <i>22</i></span><span>Notes <i>9</i></span><span>Photos <i>20</i></span><span>Argent <i>2</i></span></div>
+        <div class="bloc">
+          <div class="rang"><svg class="ico"><use href="#i-chantier"/></svg><div class="txt"><p class="q doux">Chantier terminé</p><p class="d">Gérard · hier 17 h 30</p></div></div>
+          <div class="rang"><svg class="ico"><use href="#i-photo"/></svg><div class="txt"><p class="q">8 photos</p><p class="d">Gérard · hier 17 h 12</p></div><div class="vign"><span></span><span></span><span></span></div></div>
+          <div class="rang"><svg class="ico"><use href="#i-micro"/></svg><div class="txt"><p class="q">« Reprise d'un angle dans la chambre, cliente satisfaite, solde à régler sous 30 jours »</p><p class="d">Gérard · note vocale · hier 17 h 20</p></div></div>
+          <div class="rang"><svg class="ico"><use href="#i-euro"/></svg><div class="txt"><p class="q">Acompte F-2026-0027</p><p class="d"><span class="m">1 960 €</span> · <svg class="ico ok"><use href="#i-coche"/></svg> payé le 12 sept.</p></div><span class="fin"><svg class="ico"><use href="#i-chev"/></svg></span></div>
+          <div class="rang"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="q">Devis D-2026-0039</p><p class="d"><span class="m">4 900 €</span> · signé le 8 sept.</p></div><span class="fin"><svg class="ico"><use href="#i-chev"/></svg></span></div>
+          <div class="voir">Voir les 17 autres</div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <p class="note-maquette" style="max-width:1100px">Une colonne de 672 px : « Maintenant » donne le solde, le filtre « Argent » ne garde que devis et factures.</p>
+</div>
+</section>
+
+</body>
+</html>

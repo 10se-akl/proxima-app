@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat D — La fiche projet, synthèse</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+/* Candidat D : compléments locaux. Couleurs uniquement par variables. */
+.ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.fixe { height: 740px; min-height: 740px; }
+.mono { font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+
+/* barres */
+.haut { flex: none; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgb(var(--c-surface)); border-bottom: 1px solid rgb(var(--c-ink) / .15); font: 700 17px Manrope, sans-serif; }
+.haut .ico { color: rgb(var(--c-steel)); }
+.reseau { flex: none; min-height: 40px; display: flex; align-items: center; gap: 8px; padding: 0 16px; background: rgb(var(--c-paper-warm)); font: 600 14px Inter, sans-serif; }
+.reseau::before { content: ""; width: 8px; height: 8px; border-radius: 99px; background: rgb(var(--c-alerte-orange)); }
+.barre .onglet { font: 600 12px Inter, sans-serif; align-self: stretch; position: relative; }
+.barre .onglet.actif::before { content: ""; position: absolute; top: 0; left: 8px; right: 8px; height: 3px; background: rgb(var(--c-ink)); }
+.barre .btn-rond { font: 400 34px/1 Inter, sans-serif; }
+
+/* page */
+.page { flex: 1; display: flex; flex-direction: column; gap: 12px; padding: 4px 16px 0; }
+.page.bas { padding-top: 16px; }
+.tete { display: flex; flex-direction: column; }
+.nav { display: flex; align-items: center; justify-content: space-between; min-height: 48px; margin: 0 -10px 0 -8px; }
+.retour { display: inline-flex; align-items: center; gap: 4px; min-height: 48px; padding: 0 8px; font: 600 16px Inter, sans-serif; color: rgb(var(--c-steel)); }
+.nav .droite { display: flex; }
+.nav .cible { color: rgb(var(--c-ink)); border: 0; background: none; }
+.nom { font: 600 30px/36px Manrope, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sous { font: 400 14px/22px Inter, sans-serif; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+.dark .alerte { color: rgb(var(--c-signal-clair)); }
+.tete .tuiles { margin-top: 12px; }
+.etape { display: flex; gap: 4px; margin-top: 12px; }
+.etape i { flex: 1; height: 4px; border-radius: 99px; background: rgb(var(--c-ink) / .15); }
+.etape i.on { background: rgb(var(--c-ink)); }
+
+/* tuiles et boutons */
+.tuiles { display: flex; gap: 8px; }
+.tuile { flex: 1; min-height: 56px; border: 0; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; font: 600 14px Inter, sans-serif; color: rgb(var(--c-ink)); }
+.tuile.haute { min-height: 60px; gap: 2px; }
+.tuile.on { background: rgb(var(--c-ink) / .1); }
+.btn { font: 600 16px Inter, sans-serif; }
+.btn-encre { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.btn-contour { background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1.5px rgb(var(--c-ink) / .6); min-height: 48px; }
+.btn-texte { background: transparent; color: rgb(var(--c-ink)); min-height: 48px; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; width: auto; padding: 0 12px; }
+.btn.auto { width: auto; }
+.pill { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 16px; border: 0; border-radius: 99px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); font: 600 14px Inter, sans-serif; color: rgb(var(--c-ink)); }
+
+/* blocs, lignes, entrées du Carnet */
+.bloc { background: rgb(var(--c-surface)); border-radius: 16px; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.h2 { font: 600 20px/26px Manrope, sans-serif; }
+.det { font: 400 14px/20px Inter, sans-serif; color: rgb(var(--c-steel)); }
+.titre-bloc { display: flex; align-items: baseline; gap: 8px; font: 600 20px/28px Manrope, sans-serif; }
+.titre-bloc small { font: 400 14px Inter, sans-serif; color: rgb(var(--c-steel)); font-variant-numeric: tabular-nums; }
+.lignes { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.lg { display: flex; align-items: stretch; min-height: 64px; border-radius: 16px; overflow: hidden; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+.lg .corps { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+.lg .txt { min-width: 0; flex: 1; }
+.lg .t { font: 600 16px/22px Inter, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg .d { font: 400 14px/20px Inter, sans-serif; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg .fin { flex: none; width: 56px; display: grid; place-items: center; border-left: 1px solid rgb(var(--c-ink) / .15); }
+.lg .ico { width: 24px; height: 24px; }
+.lg .corps > .ico { color: rgb(var(--c-steel)); }
+.rond { width: 28px; height: 28px; border-radius: 99px; border: 2px solid rgb(var(--c-ink) / .4); }
+.ok { color: rgb(var(--c-succes)); }
+.chev { color: rgb(var(--c-steel)); }
+.memo { font: 400 16px/22px Inter, sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.jour { font: 500 12px "IBM Plex Mono", monospace; letter-spacing: .18em; text-transform: uppercase; color: rgb(var(--c-steel)); margin-top: 8px; }
+.en { display: flex; flex-direction: column; gap: 8px; padding: 12px 16px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+.en .l1 { display: flex; align-items: center; gap: 12px; }
+.en .ic { width: 32px; height: 32px; border-radius: 99px; background: rgb(var(--c-ink) / .08); display: grid; place-items: center; flex: none; }
+.en .ic .ico { width: 18px; height: 18px; }
+.en .t { flex: 1; min-width: 0; font: 600 16px/22px Inter, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.en .t.discret { font-weight: 400; }
+.en .h { font: 500 14px "IBM Plex Mono", monospace; color: rgb(var(--c-steel)); flex: none; }
+.en .tx { font: 400 16px/22px Inter, sans-serif; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.vignettes { display: flex; gap: 8px; }
+.vign { width: 56px; height: 56px; border-radius: 16px; background: linear-gradient(135deg, rgb(var(--c-gris-clair)), rgb(var(--c-paper-warm))); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); display: grid; place-items: center; font: 600 14px Inter, sans-serif; color: rgb(var(--c-steel)); }
+.voir { display: flex; align-items: center; justify-content: center; min-height: 48px; font: 600 16px Inter, sans-serif; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; }
+
+/* trace (règles 13 et 16) */
+.trace { display: flex; align-items: center; gap: 12px; min-height: 48px; padding-left: 16px; border-radius: 16px; background: rgb(var(--c-succes) / .1); font: 400 14px Inter, sans-serif; }
+.trace .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trace .btn-texte, .trace .btn-contour { flex: none; min-height: 48px; }
+.trace.ko { background: rgb(var(--c-paper-warm)); padding-right: 8px; }
+.trace.ko::before { content: ""; width: 8px; height: 8px; border-radius: 99px; background: rgb(var(--c-alerte-orange)); flex: none; margin-right: -4px; }
+.trace.ko .btn-contour { width: auto; padding: 0 16px; font-size: 14px; }
+
+/* feuilles */
+.feuille { z-index: 5; }
+.voile { z-index: 4; }
+.titre-feuille { display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+.micro { flex: none; width: 56px; height: 56px; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); display: grid; place-items: center; box-shadow: 0 0 0 6px rgb(var(--c-ink) / .12); }
+.dictee { font: 400 16px/24px Inter, sans-serif; }
+.curseur { display: inline-block; width: 2px; height: 20px; margin-left: 2px; vertical-align: -4px; background: rgb(var(--c-ink)); }
+.sugg { background: rgb(var(--c-paper)); border-radius: 16px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+.sugg .lib { font: 600 14px Inter, sans-serif; color: rgb(var(--c-steel)); }
+.sugg .tx { font: 400 16px/22px Inter, sans-serif; }
+.deux { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.deux .btn { min-height: 48px; }
+
+/* ordinateur */
+.lat { width: 240px; flex: none; border-right: 1px solid rgb(var(--c-ink) / .15); background: rgb(var(--c-surface)); padding: 24px 16px; display: flex; flex-direction: column; gap: 8px; border-radius: 12px 0 0 12px; }
+.lat .logo { font: 700 20px Manrope, sans-serif; margin-bottom: 8px; }
+.lat .item { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-radius: 16px; font: 600 16px Inter, sans-serif; color: rgb(var(--c-steel)); }
+.lat .item.actif { background: rgb(var(--c-ink) / .08); color: rgb(var(--c-ink)); }
+.lat .petit { font: 400 14px Inter, sans-serif; color: rgb(var(--c-steel)); padding: 12px 12px 0; }
+.princ { flex: 1; min-width: 0; padding: 24px 32px 32px; display: flex; flex-direction: column; gap: 20px; }
+.entete-ordi { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.cols { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 24px; align-items: start; }
+.col { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.recherche { min-height: 48px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); display: flex; align-items: center; gap: 8px; padding: 0 16px; color: rgb(var(--c-steel)); font: 400 16px Inter, sans-serif; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip { min-height: 48px; padding: 0 16px; border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; font: 600 14px Inter, sans-serif; color: rgb(var(--c-steel)); }
+.chip.on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.chip.off { opacity: .6; }
+.cadre.large { width: 1100px; }
+.entete-page { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+</style>
+</head>
+<body>
+
+<!-- Pictogrammes -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-maison" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10h-6v-6H9v6H3z"/></symbol>
+    <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4M16 3v4M3 10h18"/></symbol>
+    <symbol id="i-euro" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 8.6a4 4 0 1 0 0 6.8M7.5 11h6M7.5 13.5h6"/></symbol>
+    <symbol id="i-tel" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+    <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9l-5 4V6a1 1 0 0 1 1-1z"/></symbol>
+    <symbol id="i-lieu" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13.5" r="3.5"/></symbol>
+    <symbol id="i-micro" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+    <symbol id="i-crayon" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5a2 2 0 0 1 3 3L8 19z"/></symbol>
+    <symbol id="i-loupe" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+    <symbol id="i-plus3" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.5" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-retour" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+    <symbol id="i-suite" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+    <symbol id="i-coche" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></symbol>
+    <symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/></symbol>
+    <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+    <symbol id="i-etincelle" viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></symbol>
+  </defs>
+</svg>
+
+<div class="entete-page">
+  <div>
+    <p class="t-sur">Duel D · La fiche projet</p>
+    <h1 class="t-grand" style="margin-top:6px">Candidat D (libre) : un ordre fixe, des blocs qui n’existent que s’ils ont du contenu</h1>
+  </div>
+  <button type="button" class="btn btn-contour auto" style="padding:0 16px" onclick="document.documentElement.classList.toggle('dark')">Mode sombre</button>
+</div>
+
+<p class="t-sur" style="width:100%">1 · Trois étapes, à 360 × 740, sans défiler</p>
+
+<!-- ============ 1 · NOUVEAU ============ -->
+<div class="cadre">
+  <h2>1a · Projet nouveau</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header class="tete">
+        <div class="nav">
+          <span class="retour"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <div class="droite"><button type="button" class="cible" aria-label="Plus d’actions"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button></div>
+        </div>
+        <h1 class="nom">Mme Garnier</h1>
+        <p class="sous"><span class="alerte">Urgent</span> · Faux plafond · 12 rue des Lilas, Nantes</p>
+        <div class="tuiles">
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-lieu"/></svg>Itinéraire</button>
+        </div>
+        <div class="etape" aria-label="Étape : demande"><i class="on"></i><i></i><i></i><i></i><i></i></div>
+      </header>
+
+      <section class="bloc" aria-label="Situation">
+        <p class="h2">Pas encore chiffré.</p>
+        <div>
+          <button type="button" class="btn btn-encre"><svg class="ico" width="20" height="20"><use href="#i-etincelle"/></svg>Préparer le devis</button>
+          <p class="det" style="margin-top:8px">Vous relisez avant l’envoi.</p>
+        </div>
+      </section>
+
+      <div class="tuiles" aria-label="Ajouter au projet">
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-photo"/></svg>Photo</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-micro"/></svg>Dicter</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-crayon"/></svg>Note</button>
+      </div>
+
+      <section aria-label="Carnet">
+        <div class="titre-bloc">Carnet <small>2</small></div>
+        <div class="lignes">
+          <p class="jour" style="margin-top:0">Aujourd’hui</p>
+          <div class="en">
+            <div class="l1"><span class="ic"><svg class="ico"><use href="#i-msg"/></svg></span><span class="t">La demande</span><span class="h">11 h 48</span></div>
+            <p class="tx">Bonjour, je refais mon salon et j’aimerais un faux plafond avec des spots, environ 25 m². Quand pourriez-vous passer voir ?</p>
+          </div>
+          <div class="en">
+            <div class="l1"><span class="ic"><svg class="ico"><use href="#i-coche"/></svg></span><span class="t discret">Projet créé depuis WhatsApp</span><span class="h">11 h 49</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-maison"/></svg>Aujourd’hui</span>
+      <span class="onglet actif"><svg class="ico" width="22" height="22"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Ajouter">+</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-euro"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Un bouton plein. La demande du client est lisible sans défiler.</p>
+</div>
+
+<!-- ============ 2 · CHANTIER ============ -->
+<div class="cadre">
+  <h2>1b · Projet en chantier</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header class="tete">
+        <div class="nav">
+          <span class="retour"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <div class="droite">
+            <button type="button" class="cible" aria-label="Chercher dans ce projet"><svg class="ico" width="22" height="22"><use href="#i-loupe"/></svg></button>
+            <button type="button" class="cible" aria-label="Plus d’actions"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button>
+          </div>
+        </div>
+        <h1 class="nom">M. Roux</h1>
+        <p class="sous">Cloisons et isolation · 8 allée des Chênes, Rezé</p>
+        <div class="tuiles">
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-lieu"/></svg>Itinéraire</button>
+        </div>
+        <div class="etape" aria-label="Étape : chantier"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+      </header>
+
+      <section class="bloc" aria-label="Situation">
+        <div>
+          <p class="h2">Chantier, jour 12.</p>
+          <p class="det">Prochain passage : lundi 8 h</p>
+        </div>
+        <button type="button" class="btn btn-contour">Terminer le chantier</button>
+      </section>
+
+      <div class="tuiles" aria-label="Ajouter au projet">
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-photo"/></svg>Photo</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-micro"/></svg>Dicter</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-crayon"/></svg>Note</button>
+      </div>
+
+      <section aria-label="À faire">
+        <div class="titre-bloc">À faire <small>2</small></div>
+        <div class="lignes">
+          <div class="lg"><div class="corps"><div class="txt"><p class="t">Passer chercher les rails</p><p class="d"><span class="alerte">Retard</span> · hier</p></div></div><div class="fin"><span class="rond"></span></div></div>
+          <div class="lg"><div class="corps"><div class="txt"><p class="t">Commander 12 plaques hydro</p><p class="d">Demain · 8 h</p></div></div><div class="fin"><span class="rond"></span></div></div>
+        </div>
+      </section>
+      <!-- sous la ligne de flottaison : À retenir, Argent, Carnet (voir l’écran 4) -->
+    </div>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-maison"/></svg>Aujourd’hui</span>
+      <span class="onglet actif"><svg class="ico" width="22" height="22"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Ajouter">+</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-euro"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Aucun bouton plein : rien d’urgent à faire avancer. Le reste est à un défilement.</p>
+</div>
+
+<!-- ============ 3 · À FACTURER ============ -->
+<div class="cadre">
+  <h2>1c · Projet à facturer</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header class="tete">
+        <div class="nav">
+          <span class="retour"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <div class="droite">
+            <button type="button" class="cible" aria-label="Chercher dans ce projet"><svg class="ico" width="22" height="22"><use href="#i-loupe"/></svg></button>
+            <button type="button" class="cible" aria-label="Plus d’actions"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button>
+          </div>
+        </div>
+        <h1 class="nom">Mme Bernard</h1>
+        <p class="sous">Doublage · 21 rue Racine, Saint-Herblain</p>
+        <div class="tuiles">
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-lieu"/></svg>Itinéraire</button>
+        </div>
+        <div class="etape" aria-label="Étape : terminé"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+      </header>
+
+      <section class="bloc" aria-label="Situation">
+        <p class="h2">Reste 5&nbsp;075&nbsp;€ à facturer.</p>
+        <div>
+          <button type="button" class="btn btn-encre">Préparer la facture</button>
+          <p class="det" style="margin-top:8px">Le devis, moins l’acompte payé.</p>
+        </div>
+      </section>
+
+      <div class="tuiles" aria-label="Ajouter au projet">
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-photo"/></svg>Photo</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-micro"/></svg>Dicter</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-crayon"/></svg>Note</button>
+      </div>
+
+      <section aria-label="Argent">
+        <div class="titre-bloc">Argent <small>2</small></div>
+        <div class="lignes">
+          <div class="lg"><div class="corps"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="t">Devis D-2026-0028</p><p class="d mono">7&nbsp;250&nbsp;€ · signé le 3 sept.</p></div></div><div class="fin"><svg class="ico chev"><use href="#i-suite"/></svg></div></div>
+          <div class="lg"><div class="corps"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="t">Acompte 30 %</p><p class="d mono">2&nbsp;175&nbsp;€ · payé le 12 sept.</p></div></div><div class="fin"><svg class="ico ok"><use href="#i-coche"/></svg></div></div>
+        </div>
+      </section>
+    </div>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-maison"/></svg>Aujourd’hui</span>
+      <span class="onglet actif"><svg class="ico" width="22" height="22"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Ajouter">+</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-euro"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">L’argent du projet tient en deux lignes, devis et facture au même endroit.</p>
+</div>
+
+<p class="t-sur" style="width:100%">2 · Ajouter 3 photos</p>
+
+<!-- ============ 4 · APRÈS 3 PHOTOS ============ -->
+<div class="cadre">
+  <h2>2a · Après trois photos</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header class="tete">
+        <div class="nav">
+          <span class="retour"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <div class="droite">
+            <button type="button" class="cible" aria-label="Chercher dans ce projet"><svg class="ico" width="22" height="22"><use href="#i-loupe"/></svg></button>
+            <button type="button" class="cible" aria-label="Plus d’actions"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button>
+          </div>
+        </div>
+        <h1 class="nom">M. Roux</h1>
+        <p class="sous">Cloisons et isolation · 8 allée des Chênes, Rezé</p>
+        <div class="tuiles">
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-lieu"/></svg>Itinéraire</button>
+        </div>
+        <div class="etape" aria-label="Étape : chantier"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+      </header>
+
+      <section class="bloc" aria-label="Situation">
+        <div>
+          <p class="h2">Chantier, jour 12.</p>
+          <p class="det">Prochain passage : lundi 8 h</p>
+        </div>
+        <button type="button" class="btn btn-contour">Terminer le chantier</button>
+      </section>
+
+      <div class="tuiles" aria-label="Ajouter au projet">
+        <button type="button" class="tuile haute on"><svg class="ico" width="24" height="24"><use href="#i-photo"/></svg>Photo</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-micro"/></svg>Dicter</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-crayon"/></svg>Note</button>
+      </div>
+
+      <div class="trace" aria-live="polite">
+        <svg class="ico ok" width="22" height="22"><use href="#i-coche"/></svg>
+        <span class="txt">3 photos ajoutées</span>
+        <button type="button" class="btn btn-texte">Voir</button>
+      </div>
+
+      <section aria-label="À faire">
+        <div class="titre-bloc">À faire <small>2</small></div>
+        <div class="lignes">
+          <div class="lg"><div class="corps"><div class="txt"><p class="t">Passer chercher les rails</p><p class="d"><span class="alerte">Retard</span> · hier</p></div></div><div class="fin"><span class="rond"></span></div></div>
+        </div>
+      </section>
+    </div>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-maison"/></svg>Aujourd’hui</span>
+      <span class="onglet actif"><svg class="ico" width="22" height="22"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Ajouter">+</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-euro"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Photo, déclencheur, ✓ : trois gestes par photo, et la fiche le confirme là où le doigt était.</p>
+</div>
+
+<!-- ============ 5 · UNE PHOTO PAS ENREGISTRÉE ============ -->
+<div class="cadre">
+  <h2>2b · Réseau coupé, une photo ne part pas</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="reseau" role="status">Pas de réseau.</div>
+    <div class="page">
+      <header class="tete">
+        <div class="nav">
+          <span class="retour"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <div class="droite">
+            <button type="button" class="cible" aria-label="Chercher dans ce projet"><svg class="ico" width="22" height="22"><use href="#i-loupe"/></svg></button>
+            <button type="button" class="cible" aria-label="Plus d’actions"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button>
+          </div>
+        </div>
+        <h1 class="nom">M. Roux</h1>
+        <p class="sous">Cloisons et isolation · 8 allée des Chênes, Rezé</p>
+        <div class="tuiles">
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-lieu"/></svg>Itinéraire</button>
+        </div>
+        <div class="etape" aria-label="Étape : chantier"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div>
+      </header>
+
+      <section class="bloc" aria-label="Situation">
+        <div>
+          <p class="h2">Chantier, jour 12.</p>
+          <p class="det">Prochain passage : lundi 8 h</p>
+        </div>
+        <button type="button" class="btn btn-contour">Terminer le chantier</button>
+      </section>
+
+      <div class="tuiles" aria-label="Ajouter au projet">
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-photo"/></svg>Photo</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-micro"/></svg>Dicter</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-crayon"/></svg>Note</button>
+      </div>
+
+      <div class="trace ko" aria-live="polite">
+        <span class="txt"><span class="alerte">1 photo pas enregistrée.</span></span>
+        <button type="button" class="btn btn-contour">Réessayer</button>
+      </div>
+    </div>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-maison"/></svg>Aujourd’hui</span>
+      <span class="onglet actif"><svg class="ico" width="22" height="22"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Ajouter">+</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-euro"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Aucune promesse de file d’attente : la ligne dit ce qui est vrai, la photo reste dans la galerie.</p>
+</div>
+
+<p class="t-sur" style="width:100%">3 · Le coéquipier de terrain (duel A : même fiche, mêmes montants, aucun rôle)</p>
+
+<!-- ============ 6 · VUE DE KARIM, DEUXIÈME ÉCRAN ============ -->
+<div class="cadre">
+  <h2>3 · Karim, l’apprenti, sur M. Roux (en bas de la fiche)</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="page bas">
+      <section aria-label="À retenir">
+        <div class="titre-bloc">À retenir</div>
+        <div class="lignes">
+          <div class="lg"><div class="corps"><div class="txt"><p class="memo">Code portail 4821A. Plaques hydro dans la salle d’eau. Client absent le mardi.</p></div></div><div class="fin"><svg class="ico chev"><use href="#i-crayon"/></svg></div></div>
+        </div>
+      </section>
+
+      <section aria-label="Argent">
+        <div class="titre-bloc">Argent <small>2</small></div>
+        <div class="lignes">
+          <div class="lg"><div class="corps"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="t">Devis D-2026-0031</p><p class="d mono">6&nbsp;480&nbsp;€ · signé</p></div></div><div class="fin"><svg class="ico chev"><use href="#i-suite"/></svg></div></div>
+          <div class="lg"><div class="corps"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="t">Acompte 30 %</p><p class="d mono">1&nbsp;944&nbsp;€ · payé</p></div></div><div class="fin"><svg class="ico ok"><use href="#i-coche"/></svg></div></div>
+        </div>
+      </section>
+
+      <section aria-label="Carnet">
+        <div class="titre-bloc">Carnet <small>14</small></div>
+        <div class="lignes">
+          <p class="jour" style="margin-top:0">Aujourd’hui</p>
+          <div class="en">
+            <div class="l1"><span class="ic"><svg class="ico"><use href="#i-photo"/></svg></span><span class="t">3 photos</span><span class="h">10 h 12</span></div>
+            <div class="vignettes"><span class="vign"></span><span class="vign"></span><span class="vign"></span></div>
+          </div>
+          <div class="en">
+            <div class="l1"><span class="ic"><svg class="ico"><use href="#i-micro"/></svg></span><span class="t"><b>Gérard</b> · note dictée</span><span class="h">8 h 05</span></div>
+            <p class="tx">Rails à poser côté fenêtre d’abord, reprendre la bande du couloir avant le plafond.</p>
+          </div>
+          <p class="jour">Hier</p>
+          <div class="en">
+            <div class="l1"><span class="ic"><svg class="ico"><use href="#i-crayon"/></svg></span><span class="t">Note</span><span class="h">17 h 30</span></div>
+            <p class="tx">Isolant livré, 14 rouleaux dans le garage.</p>
+          </div>
+        </div>
+      </section>
+    </div>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-maison"/></svg>Aujourd’hui</span>
+      <span class="onglet actif"><svg class="ico" width="22" height="22"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Ajouter">+</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" width="22" height="22"><use href="#i-euro"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Le Carnet ne nomme que l’autre : « Gérard » ici, rien pour les entrées de Karim.</p>
+</div>
+
+<p class="t-sur" style="width:100%">4 · Les feuilles qui comptent</p>
+
+<!-- ============ 7 · DICTÉE ============ -->
+<div class="cadre">
+  <h2>4a · Dicter : l’écoute démarre à l’ouverture</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header class="tete">
+        <div class="nav">
+          <span class="retour"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <div class="droite"><button type="button" class="cible" aria-label="Plus d’actions"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button></div>
+        </div>
+        <h1 class="nom">M. Roux</h1>
+        <p class="sous">Cloisons et isolation · 8 allée des Chênes, Rezé</p>
+        <div class="tuiles">
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-lieu"/></svg>Itinéraire</button>
+        </div>
+      </header>
+      <div class="tuiles">
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-photo"/></svg>Photo</button>
+        <button type="button" class="tuile haute on"><svg class="ico" width="24" height="24"><use href="#i-micro"/></svg>Dicter</button>
+        <button type="button" class="tuile haute"><svg class="ico" width="24" height="24"><use href="#i-crayon"/></svg>Note</button>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille" role="dialog" aria-label="Dicter une note">
+      <div class="titre-feuille"><span class="h2">Dicter une note</span><button type="button" class="btn btn-texte">Fermer</button></div>
+      <div style="display:flex;gap:16px;align-items:flex-start">
+        <span class="micro"><svg class="ico" width="24" height="24"><use href="#i-micro"/></svg></span>
+        <p class="dictee">Rails posés côté fenêtre, il reste le plafond du couloir et la trappe à prévoir<span class="curseur"></span></p>
+      </div>
+      <p class="det">Gardé sur ce téléphone.</p>
+      <button type="button" class="btn btn-encre">Terminé</button>
+      <button type="button" class="btn btn-texte" style="align-self:center">Écrire à la place</button>
+    </div>
+  </div>
+  <p class="note-maquette">Dicter, Terminé, relire, Ajouter : trois gestes au lieu de cinq.</p>
+</div>
+
+<!-- ============ 8 · MESSAGE ============ -->
+<div class="cadre">
+  <h2>4b · Une seule feuille « Message »</h2>
+  <div class="tel fixe">
+    <div class="haut"><span>Compyo</span><svg class="ico" width="22" height="22"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <header class="tete">
+        <div class="nav">
+          <span class="retour"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <div class="droite"><button type="button" class="cible" aria-label="Plus d’actions"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button></div>
+        </div>
+        <h1 class="nom">Mme Garnier</h1>
+        <p class="sous"><span class="alerte">Urgent</span> · Faux plafond · 12 rue des Lilas, Nantes</p>
+        <div class="tuiles">
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="tuile on"><svg class="ico" width="22" height="22"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="tuile"><svg class="ico" width="22" height="22"><use href="#i-lieu"/></svg>Itinéraire</button>
+        </div>
+      </header>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille" role="dialog" aria-label="Message à Mme Garnier">
+      <div class="titre-feuille"><span class="h2">Message à Mme Garnier</span><button type="button" class="btn btn-texte">Fermer</button></div>
+      <div class="sugg">
+        <p class="lib">Bien reçu</p>
+        <p class="tx">Bonjour, bien reçu votre message. Je vous rappelle ce soir.</p>
+        <div class="deux"><button type="button" class="btn btn-encre">SMS</button><button type="button" class="btn btn-contour">WhatsApp</button></div>
+      </div>
+      <div class="sugg">
+        <p class="lib">Proposer un passage</p>
+        <p class="tx">Bonjour, je peux passer voir le plafond lundi à 8 h. Cela vous convient ?</p>
+        <div class="deux"><button type="button" class="btn btn-contour">SMS</button><button type="button" class="btn btn-contour">WhatsApp</button></div>
+      </div>
+      <div class="lg"><div class="corps"><svg class="ico"><use href="#i-etincelle"/></svg><div class="txt"><p class="t">Écrire avec l’IA</p></div></div><div class="fin"><svg class="ico chev"><use href="#i-suite"/></svg></div></div>
+    </div>
+  </div>
+  <p class="note-maquette">Le texte de l’IA arrive ici avec SMS et WhatsApp : plus de copier-coller.</p>
+</div>
+
+<p class="t-sur" style="width:100%">5 · Le soir, sur l’ordinateur (la conjointe, Sylvie, prépare la facture)</p>
+
+<!-- ============ 9 · ORDINATEUR ============ -->
+<div class="cadre large">
+  <h2>5 · Projet à facturer, deux colonnes</h2>
+  <div class="ordi">
+    <aside class="lat">
+      <p class="logo">Compyo</p>
+      <button type="button" class="btn btn-primaire" style="min-height:48px">+ Nouveau projet</button>
+      <span class="item"><svg class="ico" width="22" height="22"><use href="#i-maison"/></svg>Aujourd’hui</span>
+      <span class="item actif"><svg class="ico" width="22" height="22"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="item"><svg class="ico" width="22" height="22"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="item"><svg class="ico" width="22" height="22"><use href="#i-euro"/></svg>Argent</span>
+      <p class="petit">Plus : notes, bilan, réglages</p>
+    </aside>
+    <main class="princ">
+      <div class="entete-ordi">
+        <div style="min-width:0">
+          <span class="retour" style="padding:0"><svg class="ico" width="22" height="22"><use href="#i-retour"/></svg>Projets</span>
+          <h1 class="nom">Mme Bernard</h1>
+          <p class="sous">Doublage · 21 rue Racine, Saint-Herblain</p>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <button type="button" class="pill"><svg class="ico" width="20" height="20"><use href="#i-tel"/></svg>Appeler</button>
+          <button type="button" class="pill"><svg class="ico" width="20" height="20"><use href="#i-msg"/></svg>Message</button>
+          <button type="button" class="pill"><svg class="ico" width="20" height="20"><use href="#i-lieu"/></svg>Itinéraire</button>
+          <button type="button" class="cible" aria-label="Plus d’actions" style="border:0;background:none;color:rgb(var(--c-ink))"><svg class="ico" width="22" height="22"><use href="#i-plus3"/></svg></button>
+        </div>
+      </div>
+      <div class="cols">
+        <div class="col">
+          <section class="bloc" aria-label="Situation" style="flex-direction:row;align-items:center;justify-content:space-between">
+            <div><p class="h2">Reste 5&nbsp;075&nbsp;€ à facturer.</p><p class="det">Le devis, moins l’acompte payé.</p></div>
+            <button type="button" class="btn btn-encre auto" style="padding:0 24px">Préparer la facture</button>
+          </section>
+          <div style="display:flex;gap:8px">
+            <button type="button" class="pill"><svg class="ico" width="20" height="20"><use href="#i-photo"/></svg>Photo</button>
+            <button type="button" class="pill"><svg class="ico" width="20" height="20"><use href="#i-micro"/></svg>Dicter</button>
+            <button type="button" class="pill"><svg class="ico" width="20" height="20"><use href="#i-crayon"/></svg>Note</button>
+          </div>
+          <section aria-label="Carnet">
+            <div class="titre-bloc">Carnet <small>9</small></div>
+            <div class="lignes">
+              <div class="recherche"><svg class="ico" width="20" height="20"><use href="#i-loupe"/></svg>Chercher : mesure, code, fenêtre…</div>
+              <div class="chips"><span class="chip on">Tout <span class="mono">9</span></span><span class="chip">Notes <span class="mono">3</span></span><span class="chip">Photos <span class="mono">8</span></span><span class="chip">Suivi <span class="mono">4</span></span></div>
+              <p class="jour">Aujourd’hui</p>
+              <div class="en">
+                <div class="l1"><span class="ic"><svg class="ico"><use href="#i-coche"/></svg></span><span class="t"><b>Gérard</b> · chantier terminé</span><span class="h">16 h 20</span></div>
+              </div>
+              <div class="en">
+                <div class="l1"><span class="ic"><svg class="ico"><use href="#i-photo"/></svg></span><span class="t"><b>Gérard</b> · 8 photos</span><span class="h">16 h 05</span></div>
+                <div class="vignettes"><span class="vign"></span><span class="vign"></span><span class="vign"></span><span class="vign"></span><span class="vign">+4</span></div>
+              </div>
+              <p class="jour">Hier</p>
+              <div class="en">
+                <div class="l1"><span class="ic"><svg class="ico"><use href="#i-micro"/></svg></span><span class="t"><b>Karim</b> · note dictée</span><span class="h">17 h 12</span></div>
+                <p class="tx">Reste à reprendre la bande du plafond côté fenêtre, le client veut une peinture mate.</p>
+              </div>
+              <span class="voir">Voir les 9</span>
+            </div>
+          </section>
+        </div>
+        <div class="col">
+          <section aria-label="Argent">
+            <div class="titre-bloc">Argent <small>2</small></div>
+            <div class="lignes">
+              <div class="lg"><div class="corps"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="t">Devis D-2026-0028</p><p class="d mono">7&nbsp;250&nbsp;€ · signé</p></div></div><div class="fin"><svg class="ico chev"><use href="#i-suite"/></svg></div></div>
+              <div class="lg"><div class="corps"><svg class="ico"><use href="#i-doc"/></svg><div class="txt"><p class="t">Acompte 30 %</p><p class="d mono">2&nbsp;175&nbsp;€ · payé</p></div></div><div class="fin"><svg class="ico ok"><use href="#i-coche"/></svg></div></div>
+            </div>
+          </section>
+          <section aria-label="À retenir">
+            <div class="titre-bloc">À retenir</div>
+            <div class="lignes">
+              <div class="lg"><div class="corps"><div class="txt"><p class="memo">Peinture mate, teinte choisie par la cliente. Clé chez la voisine.</p></div></div><div class="fin"><svg class="ico chev"><use href="#i-crayon"/></svg></div></div>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+  </div>
+  <p class="note-maquette" style="max-width:none">Même fiche que sur téléphone : le bouton plein ne prend plus toute la largeur, les colonnes restent sous les yeux.</p>
+</div>
+
+</body>
+</html>

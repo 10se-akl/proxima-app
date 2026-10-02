@@ -788,4 +788,10 @@
   html:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="button"], [type="submit"]), textarea, [contenteditable="true"]):focus) [data-barre-bas] {
     display: none;
   }
+  /* Refonte (01/10) — la barre cachée, sa hauteur ne compte plus : sans
+     cette remise à zéro, « Valider ce devis » et « Créer le projet »
+     (bottom: var(--barre-bas)) flottaient 72 px au-dessus du clavier. */
+  html:has(:is(input:not([type="checkbox"], [type="radio"], [type="range"], [type="file"], [type="button"], [type="submit"]), textarea, [contenteditable="true"]):focus) {
+    --barre-bas: 0px;
+  }
 }

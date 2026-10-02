@@ -5,6 +5,7 @@ import { BlocAccueil, LigneAccueil, LIGNES_MAX } from "./Blocs";
 import { ListeAujourdhui, type ElementJour } from "./ListeAujourdhui";
 import { BoutonCapture } from "./BoutonCapture";
 import { FermerJournee, type Fermeture } from "./FermerJournee";
+import { RafraichirAuRetour } from "./RafraichirAuRetour";
 
 // ============================================================
 // L'affichage de l'accueil (26/09, lot B) — les cinq blocs, sans aucune
@@ -22,7 +23,7 @@ type EvenementAConfirmer = {
   demandes?: { nom_client?: string } | null;
 };
 
-export type LigneAProduire = { id: string; demandeId: string | null; nom: string; verbe: string };
+export type LigneAProduire = { id: string; href: string; nom: string; verbe: string };
 export type LigneEnAttente = { id: string; jours: number; nom: string; quoi: string; href: string; relance: string | null };
 
 export function VueAccueil({
@@ -54,6 +55,7 @@ export function VueAccueil({
   const nbAConfirmer = aConfirmer.length + chantiersAConfirmer.length;
   return (
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
+      <RafraichirAuRetour />
       <header>
         <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-steel">{dateDuJour}</p>
         <h1 className="mt-1 font-display text-[1.6rem] font-semibold leading-tight text-ink sm:text-3xl">
@@ -72,10 +74,19 @@ export function VueAccueil({
             À confirmer
             <span className="font-sans text-[13px] font-normal tabular-nums text-steel">{nbAConfirmer}</span>
           </h2>
+          {/* Refonte (02/10) — 5 lignes au plus, comme les autres blocs : après
+              une semaine sans répondre, ce bloc poussait tout le reste hors
+              de l'écran. Les suivantes arrivent à mesure qu'on répond. */}
           <div className="mt-2.5 flex flex-col gap-2">
-            <AConfirmer evenements={aConfirmer} integre />
-            <ConfirmerClotureProjet projets={chantiersAConfirmer} integre />
+            <AConfirmer evenements={aConfirmer.slice(0, LIGNES_MAX)} integre />
+            <ConfirmerClotureProjet
+              projets={chantiersAConfirmer.slice(0, Math.max(0, LIGNES_MAX - aConfirmer.length))}
+              integre
+            />
           </div>
+          {nbAConfirmer > LIGNES_MAX && (
+            <p className="mt-2 text-sm text-steel">Et {nbAConfirmer - LIGNES_MAX} de plus.</p>
+          )}
         </section>
       )}
 
@@ -88,7 +99,7 @@ export function VueAccueil({
           {aProduire.slice(0, LIGNES_MAX).map((l) => (
             <LigneAccueil
               key={l.id}
-              href={l.demandeId ? `/dashboard/demandes/${l.demandeId}` : "/dashboard/devis"}
+              href={l.href}
               principal={l.nom}
               secondaire={l.verbe}
             />

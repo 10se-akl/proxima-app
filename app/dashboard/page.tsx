@@ -61,13 +61,13 @@ export default async function DashboardHome() {
 
   const organisationId = await getOrganisationId(supabase, user?.id ?? "");
 
-  const debutAujourdhui = new Date();
-  debutAujourdhui.setHours(0, 0, 0, 0);
-  const finAujourdhui = new Date(debutAujourdhui);
-  finAujourdhui.setHours(23, 59, 59, 999);
   const maintenant = new Date();
 
-  // Le jour à Paris (le serveur tourne en UTC) : pour « Fermer la journée ».
+  // Le jour à Paris. Refonte (02/10) — le serveur tourne en UTC : les
+  // bornes « aujourd'hui » des rendez-vous et des notes étaient calculées
+  // à minuit UTC (2 h du matin à Paris l'été), si bien qu'un rendez-vous
+  // tôt le matin ou un rappel juste après minuit tombait du mauvais côté.
+  // Une seule définition du jour pour tout l'accueil, celle de Paris.
   const jourParis = aujourdhuiParis(maintenant);
   const debutJourParis = minuitParis(jourParis.annee, jourParis.mois, jourParis.jour);
   const finJourParis = minuitParis(jourParis.annee, jourParis.mois, jourParis.jour + 1);
@@ -104,8 +104,8 @@ export default async function DashboardHome() {
       .from("evenements_planning")
       .select("id, type, statut, titre, demande_id, date_heure, demandes(nom_client)")
       .eq("organisation_id", organisationId)
-      .gte("date_heure", debutAujourdhui.toISOString())
-      .lte("date_heure", finAujourdhui.toISOString())
+      .gte("date_heure", debutJourParis.toISOString())
+      .lt("date_heure", finJourParis.toISOString())
       .neq("statut", "annule")
       .order("date_heure", { ascending: true }),
     // Événements passés jamais confirmés (ni "fait", ni "annulé") : on ne
@@ -243,9 +243,16 @@ export default async function DashboardHome() {
     .map((p) => ({ id: p.id, nom_client: p.nom_client }));
 
   // Un rendez-vous confirmé "fait" n'a plus rien à faire dans la journée.
+  // Refonte (02/10) — celui qui attend sa confirmation non plus : il était
+  // affiché deux fois, dans « Aujourd'hui » et dans « À confirmer ».
+  const idsAConfirmer = new Set(aConfirmer.map((e) => e.id));
   const rendezVousDuJour =
     evenementsAujourdhuiPlat?.filter(
-      (e) => e.type === "rendez_vous" && e.statut !== "termine" && (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
+      (e) =>
+        e.type === "rendez_vous" &&
+        e.statut !== "termine" &&
+        !idsAConfirmer.has(e.id) &&
+        (!e.demande_id || !idsProjetsTermines.has(e.demande_id))
     ) ?? [];
   const rappelsDuJour =
     evenementsAujourdhuiPlat?.filter(
@@ -257,7 +264,7 @@ export default async function DashboardHome() {
   const notesEnRetard = notesAvecRappel.filter((n) => new Date(n.rappel_a as string).getTime() < maintenant.getTime());
   const notesAujourdhui = notesAvecRappel.filter((n) => {
     const t = new Date(n.rappel_a as string).getTime();
-    return t >= maintenant.getTime() && t <= finAujourdhui.getTime();
+    return t >= maintenant.getTime() && t < finJourParis.getTime();
   });
 
   const projetsNouveaux = listeProjets.filter((p) => p.statut === "nouveau");
@@ -370,10 +377,12 @@ export default async function DashboardHome() {
 
   // ---- 4. À faire de votre côté ------------------------------------------
   const aProduire = [
-    ...projetsNouveaux.map((p) => ({ id: p.id, demandeId: p.id, nom: p.nom_client, verbe: "Nouveau projet à cadrer" })),
-    ...projetsSansDevis.map((p) => ({ id: p.id, demandeId: p.id, nom: p.nom_client, verbe: "Devis à préparer" })),
-    ...devisAValider.map((d) => ({ id: d.id, demandeId: d.demande_id, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à relire" })),
-    ...devisPretsAEnvoyer.map((d) => ({ id: d.id, demandeId: d.demande_id, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à envoyer" })),
+    ...projetsNouveaux.map((p) => ({ id: p.id, href: `/dashboard/demandes/${p.id}`, nom: p.nom_client, verbe: "Nouveau projet à cadrer" })),
+    ...projetsSansDevis.map((p) => ({ id: p.id, href: `/dashboard/demandes/${p.id}`, nom: p.nom_client, verbe: "Devis à préparer" })),
+    // Refonte (02/10) — un devis à relire ou à envoyer s'ouvre sur le devis
+    // lui-même, plus sur la fiche projet (un geste de moins).
+    ...devisAValider.map((d) => ({ id: d.id, href: `/dashboard/devis/${d.id}`, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à relire" })),
+    ...devisPretsAEnvoyer.map((d) => ({ id: d.id, href: `/dashboard/devis/${d.id}`, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à envoyer" })),
   ].filter((l) => pasMisEnAvant(l.id));
 
   // ---- 5. En attente du client --------------------------------------------
@@ -530,11 +539,11 @@ function determinerProchaineAction(listes: {
     };
   }
   const devis = listes.devisAValider[0];
-  if (devis) return { id: devis.id, texte: `Relire le devis ${nomClientDe(devis) ?? devis.numero}`, href: lien(devis.demande_id, "/dashboard/devis") };
+  if (devis) return { id: devis.id, texte: `Relire le devis ${nomClientDe(devis) ?? devis.numero}`, href: `/dashboard/devis/${devis.id}` };
   const nouveau = listes.projetsNouveaux[0];
   if (nouveau) return { id: nouveau.id, texte: `Cadrer le projet ${nouveau.nom_client}`, href: `/dashboard/demandes/${nouveau.id}` };
   const pret = listes.devisPretsAEnvoyer[0];
-  if (pret) return { id: pret.id, texte: `Envoyer le devis ${nomClientDe(pret) ?? pret.numero}`, href: lien(pret.demande_id, "/dashboard/devis") };
+  if (pret) return { id: pret.id, texte: `Envoyer le devis ${nomClientDe(pret) ?? pret.numero}`, href: `/dashboard/devis/${pret.id}` };
   const rappel = listes.rappelsDuJour[0];
   if (rappel) return { id: rappel.id, texte: rappel.titre, href: lien(rappel.demande_id, "/dashboard/planning") };
   const sansDevis = listes.projetsSansDevis[0];

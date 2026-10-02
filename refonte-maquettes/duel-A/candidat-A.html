@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat A — Un seul bureau partagé</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Compléments de maquette : uniquement des variables de la feuille commune. */
+  .entete { flex-basis: 100%; }
+  .entete h1 { font: 800 26px/1.2 Manrope, sans-serif; }
+  .entete p { margin-top: 6px; font: 500 15px/1.45 Inter; color: rgb(var(--c-steel)); max-width: 760px; }
+  .haut { height: 52px; flex: none; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); display: flex; align-items: center; padding: 0 16px; font: 700 18px Manrope, sans-serif; }
+  .fil { font: 600 15px Inter; color: rgb(var(--c-steel)); min-height: 48px; display: flex; align-items: center; }
+  .avatar { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: flex; align-items: center; justify-content: center; font: 700 14px Inter; flex: none; }
+  .grow { flex: 1; min-width: 0; }
+  .nom { font: 600 16px/1.3 Inter; }
+  .champ { display: flex; flex-direction: column; gap: 4px; }
+  .champ .saisie { min-height: 56px; border: 1.5px solid rgb(var(--c-gris-clair)); border-radius: 14px; background: rgb(var(--c-surface)); padding: 0 14px; display: flex; align-items: center; font: 500 16px Inter; }
+  .champ .saisie.vide { color: rgb(var(--c-steel)); }
+  .btn.ligne-btn { width: auto; min-height: 48px; padding: 0 16px; font-size: 15px; border-radius: 14px; flex: none; }
+  .pt { width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 6px; display: block; }
+  .pt.rond { border-radius: 99px; }
+  .attente { font: 600 13px Inter; color: rgb(var(--c-alerte-orange)); }
+  .feuille .t-grand { text-align: center; }
+  .feuille .t-petit { text-align: center; }
+  /* Écran ordinateur */
+  .ordi-nav { width: 240px; flex: none; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); border-radius: 12px 0 0 12px; padding: 20px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .ordi-nav .logo { font: 700 20px Manrope, sans-serif; margin-bottom: 14px; }
+  .ordi-nav .lien { min-height: 44px; display: flex; align-items: center; padding: 0 10px; border-radius: 10px; font: 500 15px Inter; }
+  .ordi-nav .lien.petit { font-size: 14px; opacity: .8; min-height: 40px; }
+  .ordi-nav .nouveau { background: rgb(var(--c-signal)); color: #fff; font-weight: 700; justify-content: center; margin-bottom: 12px; min-height: 48px; }
+  .ordi-nav .moi { margin-top: auto; display: flex; align-items: center; gap: 10px; font: 600 15px Inter; padding: 10px; }
+  .ordi-nav .moi .avatar { width: 32px; height: 32px; font-size: 12px; background: rgb(var(--c-steel)); color: rgb(var(--c-paper)); }
+  .ordi-main { flex: 1; padding: 28px 32px; display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-content: start; }
+  .ordi-main .plein { grid-column: 1 / -1; }
+  .entree { display: grid; grid-template-columns: 150px 1fr; gap: 12px; padding: 14px 0; border-top: 1px solid rgb(var(--c-gris-clair)); align-items: baseline; }
+  .sur-sombre { color: rgb(var(--c-paper)); }
+  .dark .sur-sombre, .dark .haut, .dark .ordi-nav { color: rgb(var(--c-ink)); }
+  .limites { flex-basis: 100%; }
+  .limites ul { margin: 8px 0 0 18px; font: 500 15px/1.5 Inter; }
+</style>
+</head>
+<body>
+
+<div class="entete">
+  <h1>Candidat A — Un seul bureau partagé</h1>
+  <p>On garde l'espace unique : tout le monde voit tout, un utilisateur = une organisation. On ferme les failles en base, on fusionne les deux écrans d'équipe en un seul, et Gérard seul ne voit presque rien de plus qu'aujourd'hui.</p>
+</div>
+
+<!-- 1 · Gérard seul -->
+<div class="cadre">
+  <h2>1 · Gérard seul : rien de nouveau</h2>
+  <div class="tel">
+    <div class="haut">Compyo</div>
+    <div class="contenu">
+      <div class="fil">‹ Paramètres</div>
+      <div class="t-grand">Équipe</div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="avatar">GM</div>
+          <div class="grow"><div class="nom">Gérard Martin (vous)</div><div class="t-petit">Propriétaire</div></div>
+        </div>
+      </div>
+      <div class="t-sur" style="margin-top:6px">Inviter quelqu'un</div>
+      <div class="champ"><span class="t-petit">Prénom et nom</span><div class="saisie vide">Ex : Sophie</div></div>
+      <div class="champ"><span class="t-petit">E-mail</span><div class="saisie vide">sophie@exemple.fr</div></div>
+      <div class="t-petit">Voit tout, comme vous : devis, prix, factures.</div>
+      <button class="btn btn-primaire">Envoyer l'invitation</button>
+    </div>
+    <div class="barre">
+      <div class="onglet"><i class="pt"></i>Aujourd'hui</div>
+      <div class="onglet"><i class="pt"></i>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet"><i class="pt"></i>Planning</div>
+      <div class="onglet actif"><i class="pt rond"></i>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Plus › Paramètres › Équipe, comme aujourd'hui : une ligne, deux champs, un bouton. Les deux paragraphes et les deux cartes actuelles disparaissent.</p>
+</div>
+
+<!-- 2 · Invitation envoyée -->
+<div class="cadre">
+  <h2>2 · Invitation envoyée</h2>
+  <div class="tel">
+    <div class="haut">Compyo</div>
+    <div class="contenu">
+      <div class="fil">‹ Paramètres</div>
+      <div class="t-grand">Équipe</div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="avatar">GM</div>
+          <div class="grow"><div class="nom">Gérard Martin (vous)</div><div class="t-petit">Propriétaire</div></div>
+        </div>
+        <div class="ligne">
+          <div class="avatar">SM</div>
+          <div class="grow"><div class="nom">Sophie Martin</div><div class="attente">Invitation envoyée</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><i class="pt"></i>Aujourd'hui</div>
+      <div class="onglet"><i class="pt"></i>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet"><i class="pt"></i>Planning</div>
+      <div class="onglet actif"><i class="pt rond"></i>Plus</div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Invitation envoyée à Sophie</div>
+      <div class="t-petit">Rien dans 10 minutes ? Regardez ses indésirables.</div>
+      <button class="btn btn-primaire">Prévenir Sophie par WhatsApp</button>
+      <button class="btn btn-discret">Terminé</button>
+    </div>
+  </div>
+  <p class="note-maquette">Le texte prêt (« ouvre le mail Compyo ») ne contient aucun lien-jeton ; Gérard appuie lui-même sur envoyer. Même message quel que soit l'état de l'adresse.</p>
+</div>
+
+<!-- 3 · À trois -->
+<div class="cadre">
+  <h2>3 · L'équipe à trois</h2>
+  <div class="tel">
+    <div class="haut">Compyo</div>
+    <div class="contenu">
+      <div class="fil">‹ Paramètres</div>
+      <div class="t-grand">Équipe</div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="avatar">GM</div>
+          <div class="grow"><div class="nom">Gérard Martin (vous)</div><div class="t-petit">Propriétaire</div></div>
+        </div>
+        <div class="ligne">
+          <div class="avatar">SM</div>
+          <div class="grow"><div class="nom">Sophie Martin</div><div class="t-petit">Membre</div></div>
+          <button class="btn btn-secondaire ligne-btn">Retirer</button>
+        </div>
+        <div class="ligne">
+          <div class="avatar">PL</div>
+          <div class="grow"><div class="nom">Pierre Lambert</div><div class="t-petit">Membre</div></div>
+          <button class="btn btn-secondaire ligne-btn">Retirer</button>
+        </div>
+      </div>
+      <div class="t-sur" style="margin-top:6px">Inviter quelqu'un</div>
+      <div class="champ"><div class="saisie vide">Prénom et nom</div></div>
+      <div class="champ"><div class="saisie vide">E-mail</div></div>
+      <button class="btn btn-secondaire">Envoyer l'invitation</button>
+    </div>
+    <div class="barre">
+      <div class="onglet"><i class="pt"></i>Aujourd'hui</div>
+      <div class="onglet"><i class="pt"></i>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet"><i class="pt"></i>Planning</div>
+      <div class="onglet actif"><i class="pt rond"></i>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Un seul rôle visible côté coéquipier (« Membre »). « Retirer » passe d'un lien de 12 px à un bouton de 48 px, réservé au propriétaire.</p>
+</div>
+
+<!-- 4 · Retirer Pierre -->
+<div class="cadre">
+  <h2>4 · Retirer Pierre</h2>
+  <div class="tel">
+    <div class="haut">Compyo</div>
+    <div class="contenu">
+      <div class="fil">‹ Paramètres</div>
+      <div class="t-grand">Équipe</div>
+      <div class="carte">
+        <div class="ligne">
+          <div class="avatar">GM</div>
+          <div class="grow"><div class="nom">Gérard Martin (vous)</div><div class="t-petit">Propriétaire</div></div>
+        </div>
+        <div class="ligne">
+          <div class="avatar">SM</div>
+          <div class="grow"><div class="nom">Sophie Martin</div><div class="t-petit">Membre</div></div>
+          <button class="btn btn-secondaire ligne-btn">Retirer</button>
+        </div>
+        <div class="ligne">
+          <div class="avatar">PL</div>
+          <div class="grow"><div class="nom">Pierre Lambert</div><div class="t-petit">Membre</div></div>
+          <button class="btn btn-secondaire ligne-btn">Retirer</button>
+        </div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><i class="pt"></i>Aujourd'hui</div>
+      <div class="onglet"><i class="pt"></i>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet"><i class="pt"></i>Planning</div>
+      <div class="onglet actif"><i class="pt rond"></i>Plus</div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Retirer Pierre ?</div>
+      <div class="t-petit">Accès coupé. Ses notes, photos et projets restent.</div>
+      <button class="btn btn-primaire">Retirer Pierre</button>
+      <button class="btn btn-discret">Annuler</button>
+    </div>
+  </div>
+  <p class="note-maquette">Remplace window.confirm. Rien n'est supprimé : tout appartient à l'entreprise ; ses notifications s'arrêtent.</p>
+</div>
+
+<!-- 5 · Pierre sur le chantier -->
+<div class="cadre">
+  <h2>5 · Pierre, sur le chantier : la même appli</h2>
+  <div class="tel">
+    <div class="haut">Compyo</div>
+    <div class="contenu">
+      <div>
+        <div class="t-sur">Jeudi 1 octobre</div>
+        <div class="t-titre" style="margin-top:8px">Bonjour Pierre</div>
+      </div>
+      <div class="carte-sombre">
+        <div class="t-sur sur-sombre">Maintenant</div>
+        <div class="t-grand" style="margin-top:8px">14h00 — M. Roux</div>
+        <div class="t-corps" style="margin-top:4px">Salle de bain, 12 rue des Lilas</div>
+      </div>
+      <div class="t-grand" style="margin-top:6px">Aujourd'hui <span class="pastille">3</span></div>
+      <div class="carte" style="padding:0 16px">
+        <div class="ligne"><span class="t-petit" style="width:48px">14h00</span><div class="grow"><div class="nom">M. Roux</div><div class="t-petit">Pose des plaques</div></div></div>
+        <div class="ligne"><span class="t-petit" style="width:48px">16h30</span><div class="grow"><div class="nom">M. Durand</div><div class="t-petit">Métré salle de bains</div></div></div>
+        <div class="ligne"><span class="t-petit" style="width:48px">18h00</span><div class="grow"><div class="nom">Commander les rails</div></div></div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet actif"><i class="pt"></i>Aujourd'hui</div>
+      <div class="onglet"><i class="pt"></i>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet"><i class="pt"></i>Planning</div>
+      <div class="onglet"><i class="pt rond"></i>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Mêmes écrans, mêmes droits que Gérard : il dicte, photographie, note. Limite assumée : pas de « mes chantiers » et aucun nom d'auteur.</p>
+</div>
+
+<!-- 6 · Sophie le soir, sur ordinateur -->
+<div class="cadre" style="flex-basis:100%">
+  <h2>6 · Sophie, le soir, sur l'ordinateur : elle reprend là où Gérard s'est arrêté</h2>
+  <div class="ordi">
+    <div class="ordi-nav">
+      <div class="logo">Compyo</div>
+      <div class="lien nouveau">+ Nouveau projet</div>
+      <div class="lien">Aujourd'hui</div>
+      <div class="lien">Projets</div>
+      <div class="lien">Planning</div>
+      <div class="lien petit">Devis</div>
+      <div class="lien petit">Factures</div>
+      <div class="lien petit">Notes</div>
+      <div class="lien petit">Bilan</div>
+      <div class="lien petit">Paramètres</div>
+      <div class="moi"><div class="avatar">SM</div>Sophie Martin</div>
+    </div>
+    <div class="ordi-main">
+      <div class="plein">
+        <div class="t-petit">‹ Projets</div>
+        <div class="t-titre" style="margin-top:6px">M. Roux</div>
+        <div class="t-petit" style="margin-top:4px">Salle de bain · 12 rue des Lilas, Nantes</div>
+      </div>
+      <div>
+        <div class="t-grand">Carnet <span class="pastille">4</span></div>
+        <div class="entree" style="margin-top:12px"><span class="t-sur">Aujourd'hui · 16h42</span><span class="t-corps">Note vocale : « Prévoir 2 plaques hydro en plus et la bande à joint. »</span></div>
+        <div class="entree"><span class="t-sur">Aujourd'hui · 16h40</span><span class="t-corps">3 photos du mur nord</span></div>
+        <div class="entree"><span class="t-sur">Cette semaine</span><span class="t-corps">Note : code portail 1234B, chat à ne pas laisser sortir</span></div>
+      </div>
+      <div class="carte">
+        <div class="t-grand">Dossier</div>
+        <div class="ligne" style="margin-top:8px"><div class="grow"><div class="nom">Devis D-2026-050</div><div class="t-petit">Accepté · 4 850,40 € TTC</div></div></div>
+        <div class="ligne"><div class="grow"><div class="nom">Photos</div><div class="t-petit">3</div></div></div>
+        <button class="btn btn-primaire" style="margin-top:12px">Facturer l'acompte</button>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette" style="max-width:none">Sophie voit tout ce que Gérard a capté sans rien recopier : le « bureau » est déjà dans le même espace. Elle ne voit pas qui l'a noté (limite d'A).</p>
+</div>
+
+<div class="carte limites">
+  <div class="t-grand">Ce que A ne fait pas, à dire franchement</div>
+  <ul>
+    <li>Pas de nom d'auteur dans le Carnet : « qui a noté quoi » reste sans réponse.</li>
+    <li>Pas de vue « terrain » : l'apprenti voit prix, marges, factures et bilan comme le patron.</li>
+    <li>Pas de deuxième entreprise par compte, pas d'accès comptable.</li>
+  </ul>
+</div>
+
+</body>
+</html>

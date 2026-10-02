@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat C — Terrain / bureau</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Compléments propres à cette maquette — couleurs : variables de maquette.css uniquement */
+  .ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  .haut { height: 56px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 8px 0 16px; background: rgb(var(--c-surface)); border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+  .haut .logo { font: 800 18px Manrope, sans-serif; }
+  .haut.retour { justify-content: flex-start; gap: 4px; padding-left: 4px; }
+  .haut .titre { font: 700 17px Manrope, sans-serif; }
+  .av { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: inline-flex; align-items: center; justify-content: center; font: 700 15px Manrope, sans-serif; flex: none; }
+  .grow { flex: 1; min-width: 0; }
+  .nom { font: 600 16px/1.25 Inter, sans-serif; }
+  .lien { font: 600 14px Inter, sans-serif; color: rgb(var(--c-steel)); text-decoration: underline; text-underline-offset: 3px; }
+  .champ { min-height: 56px; border: 1.5px solid rgb(var(--c-gris-clair)); border-radius: 14px; background: rgb(var(--c-surface)); padding: 8px 14px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+  .champ small { font: 500 12px Inter, sans-serif; color: rgb(var(--c-steel)); }
+  .champ span { font: 500 17px Inter, sans-serif; }
+  .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .choix { min-height: 96px; border: 1.5px solid rgb(var(--c-gris-clair)); border-radius: 16px; background: rgb(var(--c-surface)); padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .choix b { font: 700 16px Manrope, sans-serif; }
+  .choix small { font: 500 12.5px/1.3 Inter, sans-serif; color: rgb(var(--c-steel)); }
+  .choix.sel { border: 2px solid rgb(var(--c-signal)); }
+  .chip { font: 600 12px Inter, sans-serif; padding: 3px 9px; border-radius: 99px; background: rgb(var(--c-paper-warm)); flex: none; min-width: 52px; text-align: center; }
+  .rangee { display: flex; gap: 10px; }
+  .rangee .btn { flex: 1; min-height: 56px; font-size: 16px; padding: 0 8px; }
+  .case { width: 26px; height: 26px; border-radius: 8px; border: 2px solid rgb(var(--c-steel)); flex: none; }
+  .photo { aspect-ratio: 1; border-radius: 10px; background: rgb(var(--c-paper-warm)); display: flex; align-items: center; justify-content: center; color: rgb(var(--c-steel)); }
+  .envoyer { width: 48px; height: 48px; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); display: flex; align-items: center; justify-content: center; flex: none; }
+  .ok { color: rgb(var(--c-succes)); }
+  .non { color: rgb(var(--c-steel)); }
+  .mono { font-family: "IBM Plex Mono", monospace; font-size: 12px; }
+  .large { width: 700px; }
+  table.mat { border-collapse: collapse; width: 100%; font: 500 14px/1.35 Inter, sans-serif; }
+  table.mat th { font: 600 12px Inter, sans-serif; text-align: left; color: rgb(var(--c-steel)); padding: 8px 10px; border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+  table.mat td { padding: 9px 10px; border-bottom: 1px solid rgb(var(--c-gris-clair)); vertical-align: top; }
+  table.mat tr:last-child td { border-bottom: 0; }
+  /* Vue ordinateur */
+  .lat { width: 220px; flex: none; background: rgb(var(--c-surface)); border-right: 1px solid rgb(var(--c-gris-clair)); padding: 20px 12px; display: flex; flex-direction: column; gap: 4px; border-radius: 12px 0 0 12px; }
+  .lat .logo { font: 800 20px Manrope, sans-serif; padding: 0 12px 16px; }
+  .nav { min-height: 48px; padding: 0 12px; border-radius: 12px; display: flex; align-items: center; gap: 10px; font: 600 15px Inter, sans-serif; color: rgb(var(--c-steel)); }
+  .nav.actif { background: rgb(var(--c-paper-warm)); color: rgb(var(--c-ink)); }
+  .lat .moi { margin-top: auto; padding: 12px; display: flex; align-items: center; gap: 10px; border-top: 1px solid rgb(var(--c-gris-clair)); }
+  .pr { flex: 1; padding: 24px 28px; display: grid; grid-template-columns: minmax(0, 1fr) 310px; gap: 16px 24px; align-content: start; }
+  .pr .tete { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
+  .pr .col { display: flex; flex-direction: column; gap: 14px; }
+  .montant { font: 700 16px Manrope, sans-serif; }
+</style>
+</head>
+<body>
+
+<!-- Icônes -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <symbol id="i-jour" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></symbol>
+  <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-plan" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-plus3" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2h5L16 6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-tel" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-retour" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-non" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-envoi" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-euro" viewBox="0 0 24 24"><path d="M18 6.5A7 7 0 1 0 18 17.5M4 10h10M4 14h10"/></symbol>
+</svg>
+
+<!-- ============ Présentation ============ -->
+<div class="cadre">
+  <h2>Candidat C — Terrain / bureau</h2>
+  <div class="carte" style="width:360px">
+    <div class="t-sur">Un espace · deux vues</div>
+    <div class="t-grand" style="margin:8px 0 6px">La base décide qui voit les prix</div>
+    <div class="ligne">
+      <span class="av">G</span>
+      <div class="grow"><div class="nom">Gérard, seul</div><div class="t-petit">Rien de nouveau</div></div>
+    </div>
+    <div class="ligne">
+      <span class="av">S</span>
+      <div class="grow"><div class="nom">Sophie · Bureau</div><div class="t-petit">Voit tout, comme aujourd'hui</div></div>
+    </div>
+    <div class="ligne">
+      <span class="av">L</span>
+      <div class="grow"><div class="nom">Léo · Terrain</div><div class="t-petit">Chantiers, photos, notes. Pas de prix</div></div>
+    </div>
+  </div>
+  <p class="note-maquette">Basse fidélité. Le dernier panneau montre des réponses cibles, pas des mesures.</p>
+</div>
+
+<!-- ============ 1. Équipe, vue de Gérard ============ -->
+<div class="cadre">
+  <h2>1 · Équipe, vue de Gérard</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo">Compyo</span><span class="cible"><svg class="ico"><use href="#i-cloche"/></svg></span></header>
+    <div class="contenu">
+      <div><div class="t-sur">Paramètres</div><div class="t-titre" style="margin-top:6px">Équipe</div></div>
+      <div class="carte">
+        <div class="ligne">
+          <span class="av">G</span>
+          <div class="grow"><div class="nom">Gérard <span class="t-petit">(vous)</span></div><div class="t-petit">Propriétaire</div></div>
+        </div>
+        <div class="ligne">
+          <span class="av">S</span>
+          <div class="grow"><div class="nom">Sophie</div></div>
+          <span class="pastille">Bureau</span>
+          <span class="cible lien">Retirer</span>
+        </div>
+        <div class="ligne">
+          <span class="av">L</span>
+          <div class="grow"><div class="nom">Léo</div></div>
+          <span class="pastille">Terrain</span>
+          <span class="cible lien">Retirer</span>
+        </div>
+      </div>
+      <button class="btn btn-primaire">Inviter quelqu'un</button>
+    </div>
+    <nav class="barre">
+      <span class="onglet"><svg class="ico"><use href="#i-jour"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="ico"><use href="#i-plan"/></svg>Planning</span>
+      <span class="onglet actif"><svg class="ico"><use href="#i-plus3"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Une seule interface d'équipe (Paramètres › Équipe) remplace les deux actuelles.</p>
+</div>
+
+<!-- ============ 2. Feuille « Inviter » ============ -->
+<div class="cadre">
+  <h2>2 · Inviter : un prénom, un choix</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo">Compyo</span><span class="cible"><svg class="ico"><use href="#i-cloche"/></svg></span></header>
+    <div class="contenu">
+      <div><div class="t-sur">Paramètres</div><div class="t-titre" style="margin-top:6px">Équipe</div></div>
+      <div class="carte">
+        <div class="ligne"><span class="av">G</span><div class="grow"><div class="nom">Gérard <span class="t-petit">(vous)</span></div></div></div>
+        <div class="ligne"><span class="av">S</span><div class="grow"><div class="nom">Sophie</div></div><span class="pastille">Bureau</span></div>
+      </div>
+    </div>
+    <nav class="barre">
+      <span class="onglet"><svg class="ico"><use href="#i-jour"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="ico"><use href="#i-plan"/></svg>Planning</span>
+      <span class="onglet actif"><svg class="ico"><use href="#i-plus3"/></svg>Plus</span>
+    </nav>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Inviter quelqu'un</div>
+      <div class="champ"><small>Prénom</small><span>Léo</span></div>
+      <div class="deux">
+        <div class="choix"><b>Au bureau</b><small>Voit tout, comme vous</small></div>
+        <div class="choix sel"><b>Sur le terrain</b><small>Chantiers et photos, sans les prix</small></div>
+      </div>
+      <button class="btn btn-primaire"><svg class="ico"><use href="#i-msg"/></svg>Envoyer par WhatsApp</button>
+      <button class="btn btn-discret">ou par SMS</button>
+    </div>
+  </div>
+  <p class="note-maquette">Le bouton ne s'active qu'une fois le rôle choisi : aucun choix par défaut.</p>
+</div>
+
+<!-- ============ 3. Message prêt (hors Compyo) ============ -->
+<div class="cadre">
+  <h2>3 · Le message est prêt, Gérard l'envoie</h2>
+  <div class="tel">
+    <header class="haut retour">
+      <span class="cible"><svg class="ico"><use href="#i-retour"/></svg></span>
+      <span class="av" style="width:32px;height:32px;font-size:13px">L</span>
+      <span class="titre" style="margin-left:6px">Léo</span>
+    </header>
+    <div class="contenu" style="justify-content:flex-end;padding-bottom:16px">
+      <div class="t-petit" style="text-align:center">Messagerie de Gérard (WhatsApp ou SMS)</div>
+    </div>
+    <div style="padding:10px 12px 16px;display:flex;gap:8px;align-items:flex-end;background:rgb(var(--c-surface));border-top:1px solid rgb(var(--c-gris-clair))">
+      <div class="champ" style="flex:1;min-height:104px;padding:10px 14px">
+        <span style="font:500 15px/1.4 Inter, sans-serif">Salut Léo, voici ton accès à Compyo pour les chantiers : compyo.vercel.app/rejoindre/k7Xq… (valable 7 jours, un seul usage)</span>
+      </div>
+      <span class="envoyer"><svg class="ico"><use href="#i-envoi"/></svg></span>
+    </div>
+  </div>
+  <p class="note-maquette">Compyo prépare le texte ; Gérard appuie sur Envoyer depuis son numéro. Aucune adresse e-mail saisie.</p>
+</div>
+
+<!-- ============ 4. Page « Rejoindre » ============ -->
+<div class="cadre">
+  <h2>4 · Léo ouvre le lien</h2>
+  <div class="tel">
+    <div class="contenu" style="padding-top:56px">
+      <div class="t-sur">Invitation</div>
+      <div class="t-titre">Gérard vous invite</div>
+      <div><div class="t-corps">Plâtrerie Martin · côté terrain</div><div class="t-petit" style="margin-top:4px">Chantiers, photos et notes. Pas les prix.</div></div>
+      <div class="champ"><small>Votre e-mail</small><span>leo.petit@exemple.fr</span></div>
+      <div class="champ"><small>Choisissez un mot de passe</small><span>••••••••</span></div>
+      <button class="btn btn-primaire">Rejoindre l'équipe</button>
+      <button class="btn btn-discret">J'ai déjà un compte Compyo</button>
+    </div>
+  </div>
+  <p class="note-maquette">Lien expiré ou déjà utilisé : « Demandez un nouveau lien à Gérard », sans rien révéler d'autre.</p>
+</div>
+
+<!-- ============ 5. Retrait ============ -->
+<div class="cadre">
+  <h2>5 · Retirer Léo</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo">Compyo</span><span class="cible"><svg class="ico"><use href="#i-cloche"/></svg></span></header>
+    <div class="contenu">
+      <div><div class="t-sur">Paramètres</div><div class="t-titre" style="margin-top:6px">Équipe</div></div>
+      <div class="carte">
+        <div class="ligne"><span class="av">G</span><div class="grow"><div class="nom">Gérard <span class="t-petit">(vous)</span></div></div></div>
+        <div class="ligne"><span class="av">S</span><div class="grow"><div class="nom">Sophie</div></div><span class="pastille">Bureau</span></div>
+        <div class="ligne"><span class="av">L</span><div class="grow"><div class="nom">Léo</div></div><span class="pastille">Terrain</span></div>
+      </div>
+    </div>
+    <nav class="barre">
+      <span class="onglet"><svg class="ico"><use href="#i-jour"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="ico"><use href="#i-plan"/></svg>Planning</span>
+      <span class="onglet actif"><svg class="ico"><use href="#i-plus3"/></svg>Plus</span>
+    </nav>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Retirer Léo ?</div>
+      <div class="ligne"><svg class="ico ok"><use href="#i-ok"/></svg><span class="t-corps">Ses notes, photos et rendez-vous restent chez vous</span></div>
+      <div class="ligne"><svg class="ico non"><use href="#i-non"/></svg><span class="t-corps">Il ne peut plus ouvrir Compyo</span></div>
+      <button class="btn btn-primaire">Oui, retirer Léo</button>
+      <button class="btn btn-discret">Garder Léo</button>
+    </div>
+  </div>
+  <p class="note-maquette">Une feuille, pas window.confirm : elle dit ce qui reste et ce qui s'arrête.</p>
+</div>
+
+<!-- ============ 6. Vue terrain : Aujourd'hui ============ -->
+<div class="cadre">
+  <h2>6 · Léo, sur le chantier : Aujourd'hui</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo">Compyo</span><span class="cible"><svg class="ico"><use href="#i-cloche"/></svg></span></header>
+    <div class="contenu">
+      <div><div class="t-sur">Vendredi 2 octobre</div><div class="t-titre" style="margin-top:6px">Bonjour Léo</div></div>
+      <div class="carte">
+        <div style="padding-bottom:12px">
+          <div class="ligne">
+            <span class="t-sur" style="width:50px">8 h 30</span>
+            <div class="grow"><div class="nom">Dupont — Meaux</div><div class="t-petit">Cloisons salle de bain</div></div>
+            <svg class="ico" style="color:rgb(var(--c-steel))"><use href="#i-chev"/></svg>
+          </div>
+          <div class="rangee">
+            <span class="btn btn-secondaire"><svg class="ico"><use href="#i-tel"/></svg>Appeler</span>
+            <span class="btn btn-secondaire"><svg class="ico"><use href="#i-pin"/></svg>Itinéraire</span>
+          </div>
+        </div>
+        <div class="ligne">
+          <span class="t-sur" style="width:50px">14 h</span>
+          <div class="grow"><div class="nom">Visite Mme Lefèvre</div><div class="t-petit">Chelles</div></div>
+          <svg class="ico" style="color:rgb(var(--c-steel))"><use href="#i-chev"/></svg>
+        </div>
+        <div class="ligne">
+          <span class="case"></span>
+          <div class="grow"><div class="nom">Racheter 2 sacs d'enduit</div><div class="t-petit">Note · Dupont</div></div>
+        </div>
+      </div>
+    </div>
+    <nav class="barre">
+      <span class="onglet actif"><svg class="ico"><use href="#i-jour"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="ico"><use href="#i-plan"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico"><use href="#i-plus3"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">La liste « Aujourd'hui » actuelle, sans « En attente du client » ni relances : 12 cibles d'appui.</p>
+</div>
+
+<!-- ============ 7. Vue terrain : fiche projet ============ -->
+<div class="cadre">
+  <h2>7 · Léo : la fiche du chantier</h2>
+  <div class="tel">
+    <header class="haut retour">
+      <span class="cible"><svg class="ico"><use href="#i-retour"/></svg></span>
+      <span class="titre">Dupont — Meaux</span>
+    </header>
+    <div class="contenu">
+      <div class="carte">
+        <div class="t-sur">Maintenant</div>
+        <div class="t-corps" style="margin-top:6px">Chantier en cours depuis lundi</div>
+      </div>
+      <div class="carte">
+        <div class="t-sur" style="margin-bottom:4px">À faire</div>
+        <div class="ligne"><span class="case"></span><div class="grow"><div class="nom">Joints salle de bain</div><div class="t-petit">Demain, 8 h</div></div></div>
+        <div class="ligne"><span class="case"></span><div class="grow"><div class="nom">Racheter 2 sacs d'enduit</div></div></div>
+      </div>
+      <div class="carte">
+        <div class="t-sur" style="margin-bottom:4px">Dossier</div>
+        <div class="ligne"><div class="grow nom">Travaux prévus</div><span class="t-petit">3 postes</span><svg class="ico" style="color:rgb(var(--c-steel))"><use href="#i-chev"/></svg></div>
+        <div class="ligne"><div class="grow nom">Photos</div><span class="t-petit">12</span><svg class="ico" style="color:rgb(var(--c-steel))"><use href="#i-chev"/></svg></div>
+        <div class="ligne"><div class="grow nom">Client</div><span class="t-petit">Meaux</span><svg class="ico" style="color:rgb(var(--c-steel))"><use href="#i-chev"/></svg></div>
+      </div>
+      <div>
+        <div class="t-sur" style="margin:4px 0 8px">Carnet</div>
+        <div class="carte">
+          <div class="ligne"><span class="chip">Vous</span><div class="grow"><div class="nom">3 photos</div><div class="t-petit">Aujourd'hui, 16 h 42</div></div></div>
+          <div class="ligne"><span class="chip">Gérard</span><div class="grow"><div class="nom">Code du portail 4521</div><div class="t-petit">Aujourd'hui, 12 h 10</div></div></div>
+        </div>
+      </div>
+    </div>
+    <nav class="barre">
+      <span class="onglet"><svg class="ico"><use href="#i-jour"/></svg>Aujourd'hui</span>
+      <span class="onglet actif"><svg class="ico"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="ico"><use href="#i-plan"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico"><use href="#i-plus3"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Ni devis ni facturation. « Travaux prévus » vient de devis_terrain() : descriptions et quantités, pas un prix.</p>
+</div>
+
+<!-- ============ 8. Artisan seul ============ -->
+<div class="cadre">
+  <h2>8 · Gérard seul : rien de nouveau</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo">Compyo</span><span class="cible"><svg class="ico"><use href="#i-cloche"/></svg></span></header>
+    <div class="contenu">
+      <div><div class="t-sur">Paramètres</div><div class="t-titre" style="margin-top:6px">Équipe</div></div>
+      <div class="carte">
+        <div class="ligne">
+          <span class="av">G</span>
+          <div class="grow"><div class="nom">Gérard <span class="t-petit">(vous)</span></div><div class="t-petit">Propriétaire</div></div>
+        </div>
+      </div>
+      <button class="btn btn-primaire">Inviter quelqu'un</button>
+    </div>
+    <nav class="barre">
+      <span class="onglet"><svg class="ico"><use href="#i-jour"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="ico"><use href="#i-plan"/></svg>Planning</span>
+      <span class="onglet actif"><svg class="ico"><use href="#i-plus3"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Un seul membre : ni rôle, ni prénom au Carnet. Seul le formulaire d'invitation devient un bouton.</p>
+</div>
+
+<!-- ============ 9. Le soir, Sophie au bureau ============ -->
+<div class="cadre">
+  <h2>9 · Le soir, Sophie au bureau (ordinateur) : même chantier, avec l'argent</h2>
+  <div class="ordi">
+    <aside class="lat">
+      <div class="logo">Compyo</div>
+      <div class="nav"><svg class="ico"><use href="#i-jour"/></svg>Aujourd'hui</div>
+      <div class="nav actif"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="nav"><svg class="ico"><use href="#i-plan"/></svg>Planning</div>
+      <div class="nav"><svg class="ico"><use href="#i-euro"/></svg>Devis et factures</div>
+      <div class="moi"><span class="av">S</span><div><div class="nom">Sophie</div><div class="t-petit">Bureau</div></div></div>
+    </aside>
+    <main class="pr">
+      <div class="tete">
+        <div class="t-grand">Dupont — Meaux</div>
+        <span class="pastille">Chantier en cours</span>
+      </div>
+      <div class="col">
+        <div class="carte">
+          <div class="t-sur">Carnet</div>
+          <div class="ligne" style="margin-top:6px">
+            <span class="chip">Léo</span>
+            <div class="grow"><div class="nom">3 photos</div><div class="t-petit">Aujourd'hui, 16 h 42</div></div>
+          </div>
+          <div class="ligne" style="align-items:flex-start;padding:12px 0">
+            <span class="chip">Léo</span>
+            <div class="grow"><div class="nom">Note vocale</div><div class="t-corps" style="margin-top:2px">« Rail du haut à reprendre côté fenêtre. Madame demande une prise en plus dans la salle de bain. »</div><div class="t-petit" style="margin-top:4px">Aujourd'hui, 16 h 40</div></div>
+          </div>
+          <div class="ligne">
+            <span class="chip">Gérard</span>
+            <div class="grow"><div class="nom">Code du portail 4521, chien dans le jardin</div><div class="t-petit">Aujourd'hui, 12 h 10</div></div>
+          </div>
+          <div class="ligne">
+            <span class="chip">Vous</span>
+            <div class="grow"><div class="nom">Acompte payé</div><div class="t-petit">Hier, 20 h 31</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="col">
+        <div class="carte">
+          <div class="t-sur" style="margin-bottom:4px">Dossier</div>
+          <div class="ligne"><div class="grow"><div class="nom">Devis 2026-031</div><div class="t-petit">Signé par le client</div></div><span class="montant">4 280,00 €</span></div>
+          <div class="ligne"><div class="grow"><div class="nom">Acompte 30 %</div><div class="t-petit">Payé</div></div><span class="montant">1 284,00 €</span></div>
+          <div class="ligne"><div class="grow nom">Photos</div><span class="t-petit">12</span></div>
+          <div class="ligne"><div class="grow nom">Client</div><span class="t-petit">Meaux</span></div>
+        </div>
+      </div>
+    </main>
+  </div>
+  <p class="note-maquette" style="max-width:none">Sophie lit la prise en plus demandée par Léo sans appeler Gérard, et voit les montants que Léo ne voit pas.</p>
+</div>
+
+<!-- ============ 10. Qui voit quoi ============ -->
+<div class="cadre">
+  <h2>10 · Qui voit quoi</h2>
+  <div class="carte large">
+    <table class="mat">
+      <thead><tr><th></th><th>Gérard · propriétaire</th><th>Sophie · bureau</th><th>Léo · terrain</th></tr></thead>
+      <tbody>
+        <tr><td>Chantiers, clients, planning, notes, photos</td><td><b class="ok">Oui</b></td><td><b class="ok">Oui</b></td><td><b class="ok">Oui</b>, sans supprimer</td></tr>
+        <tr><td>Devis : prix et marges</td><td><b class="ok">Oui</b></td><td><b class="ok">Oui</b></td><td class="non">Non. Travaux sans prix</td></tr>
+        <tr><td>Factures, bilan</td><td><b class="ok">Oui</b></td><td><b class="ok">Oui</b></td><td class="non">Non</td></tr>
+        <tr><td>Tarifs, IBAN</td><td><b class="ok">Oui</b></td><td><b class="ok">Oui</b></td><td class="non">Non</td></tr>
+        <tr><td>Montants du journal du chantier</td><td><b class="ok">Oui</b></td><td><b class="ok">Oui</b></td><td class="non">Non</td></tr>
+        <tr><td>Inviter, retirer</td><td><b class="ok">Oui</b></td><td class="non">Non</td><td class="non">Non</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note-maquette" style="max-width:700px">Limite : le texte libre d'une note reste lisible par le terrain, la base ne peut pas le trier.</p>
+</div>
+
+<!-- ============ 11. Ce que la base répond à Léo ============ -->
+<div class="cadre">
+  <h2>11 · Ce que la base répondrait à Léo s'il contournait l'interface</h2>
+  <div class="carte large">
+    <table class="mat">
+      <thead><tr><th>Requête directe de Léo</th><th>Réponse attendue</th><th>Grâce à</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">GET /rest/v1/demandes</td><td>Les chantiers de l'équipe</td><td>Policy « organisation », inchangée</td></tr>
+        <tr><td class="mono">GET /rest/v1/notes</td><td>Les notes, sauf celles marquées bureau seul</td><td>Colonne <span class="mono">bureau_seul</span></td></tr>
+        <tr><td class="mono">GET /rest/v1/factures</td><td class="mono">[]</td><td>Policy bureau seul</td></tr>
+        <tr><td class="mono">GET /rest/v1/devis</td><td class="mono">[]</td><td>Policy bureau seul</td></tr>
+        <tr><td class="mono">GET /rest/v1/parametres_entreprise</td><td class="mono">[]</td><td>Policy bureau seul</td></tr>
+        <tr><td class="mono">GET /rest/v1/evenements_projet?type=eq.facture_creee</td><td class="mono">[]</td><td>Liste blanche de types</td></tr>
+        <tr><td class="mono">POST /rest/v1/rpc/devis_terrain</td><td>Numéro, objet, adresse, début, durée, travaux. Aucun prix, aucun identifiant</td><td>Fonction <span class="mono">security definer</span></td></tr>
+        <tr><td class="mono">POST /rest/v1/rpc/prochain_numero_facture</td><td>Refusé</td><td>Contrôle de rôle (F5)</td></tr>
+        <tr><td class="mono">DELETE /rest/v1/demandes?id=eq.…</td><td>0 ligne supprimée</td><td>Delete réservé au bureau</td></tr>
+        <tr><td class="mono">POST /api/ai/generer-devis</td><td>403, « réservé au bureau »</td><td>Garde serveur (message propre ; la base reste la garantie)</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note-maquette" style="max-width:700px">Cibles d'une matrice de tests à passer sur une branche Supabase avant d'ouvrir « Terrain ». Rien n'a été exécuté.</p>
+</div>
+
+</body>
+</html>

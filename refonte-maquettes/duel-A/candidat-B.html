@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat B — « Quelqu'un avec vous » (duel A, modèle d'équipe)</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Habillage local de la maquette : uniquement des variables du fichier commun. */
+  .ico { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .titre-page { flex-basis: 100%; }
+  .titre-page h1 { font: 800 22px/1.2 Manrope, sans-serif; }
+  .titre-page p { font: 500 14px/1.45 Inter; color: rgb(var(--c-steel)); max-width: 760px; margin-top: 4px; }
+  .bascule { margin-top: 10px; min-height: 48px; padding: 0 16px; border-radius: 14px; border: 1.5px solid rgb(var(--c-gris-clair)); background: rgb(var(--c-surface)); color: rgb(var(--c-ink)); font: 600 14px Inter; cursor: pointer; }
+  .titre-groupe { flex-basis: 100%; font: 700 15px Manrope, sans-serif; margin-top: 12px; padding-top: 12px; border-top: 1px solid rgb(var(--c-gris-clair)); }
+  .titre-groupe small { display: block; margin-top: 2px; font: 500 13px Inter; color: rgb(var(--c-steel)); }
+  .rangee { display: flex; gap: 32px; flex-wrap: wrap; align-items: flex-start; width: 100%; }
+
+  .entete { border-radius: 0; padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; font: 700 18px Manrope, sans-serif; }
+  .retour { display: flex; align-items: center; gap: 4px; min-height: 48px; color: rgb(var(--c-steel)); font: 500 16px Inter; }
+  .liste { padding: 0; }
+  .rang { display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 16px; }
+  .rang + .rang { border-top: 1px solid rgb(var(--c-gris-clair)); }
+  .rang .grow { flex: 1; min-width: 0; }
+  .rang .chev { color: rgb(var(--c-steel)); }
+  .rang-haut { align-items: flex-start; padding: 14px 16px; min-height: 56px; }
+  .rond { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: flex; align-items: center; justify-content: center; font: 700 15px Manrope, sans-serif; flex: none; }
+  .gras { font-weight: 600; }
+  .mini { width: auto; min-height: 48px; padding: 0 16px; font-size: 15px; border-radius: 14px; }
+  .actions { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+
+  .champ-bloc { display: flex; flex-direction: column; gap: 6px; }
+  .champ { min-height: 56px; border: 1.5px solid rgb(var(--c-ink)); border-radius: 14px; background: rgb(var(--c-surface)); padding: 0 16px; display: flex; align-items: center; font: 500 17px Inter; }
+  .champ.inactif { border-color: rgb(var(--c-gris-clair)); color: rgb(var(--c-steel)); background: rgb(var(--c-paper-warm)); }
+  .curseur { width: 2px; height: 22px; background: rgb(var(--c-ink)); margin-left: 2px; }
+  .bulle { background: rgb(var(--c-paper-warm)); border-left: 3px solid rgb(var(--c-steel)); border-radius: 4px 14px 14px 4px; padding: 12px 14px; font: 500 15px/1.4 Inter; }
+  .centre { justify-content: center; align-items: stretch; gap: 16px; }
+  .marque { font: 800 20px Manrope, sans-serif; letter-spacing: -.01em; }
+  .grosse-icone { width: 56px; height: 56px; stroke-width: 1.5; color: rgb(var(--c-steel)); }
+
+  .auteur { font: 600 13px Inter; color: rgb(var(--c-ink)); }
+  .heure { font: 500 12px "IBM Plex Mono", monospace; color: rgb(var(--c-steel)); min-width: 44px; padding-top: 2px; }
+  .entree { display: flex; gap: 10px; padding: 12px 0; }
+  .entree + .entree { border-top: 1px solid rgb(var(--c-gris-clair)); }
+  .photos { display: flex; gap: 6px; margin-top: 6px; }
+  .photos i { width: 56px; height: 56px; border-radius: 10px; background: rgb(var(--c-gris-clair)); display: block; }
+  .sceau { display: inline-flex; align-items: center; min-height: 24px; padding: 0 10px; border-radius: 99px; background: rgb(var(--c-paper-warm)); font: 600 12px Inter; color: rgb(var(--c-steel)); }
+
+  /* Vue ordinateur */
+  .ordi .nav { width: 200px; border-radius: 12px 0 0 12px; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; flex: none; }
+  .ordi .nav .marque { padding: 4px 12px 16px; }
+  .ordi .nav .item { min-height: 44px; display: flex; align-items: center; padding: 0 12px; border-radius: 10px; font: 500 15px Inter; opacity: .75; }
+  .ordi .nav .item.actif { opacity: 1; font-weight: 700; border-left: 3px solid rgb(var(--c-signal)); border-radius: 4px 10px 10px 4px; }
+  .ordi .centre-ordi { flex: 1; padding: 24px 28px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 24px; align-content: start; }
+  .ordi .entete-ordi { grid-column: 1 / -1; display: flex; justify-content: space-between; align-items: flex-end; }
+  .ordi .t-grand { font-size: 24px; }
+  .ordi .btn { width: auto; align-self: flex-start; }
+  .ordi .btn-primaire { min-height: 52px; }
+  .lignes-devis .rang { min-height: 44px; padding: 0; justify-content: space-between; font: 500 15px Inter; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+    <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-plus-menu" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.4" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-retour" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+    <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M6 17V11a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
+    <symbol id="i-courrier" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  </defs>
+</svg>
+
+<div class="titre-page">
+  <h1>Candidat B — « Quelqu'un avec vous »</h1>
+  <p>Une entreprise = le propriétaire + au plus une autre personne, sans rôle affiché. Elle voit tout ce que voit le propriétaire. Seules limites, en base : inviter / retirer, changer l'IBAN, supprimer un projet ou un devis. Invitation par lien que Gérard envoie lui-même.</p>
+  <button class="bascule" onclick="document.documentElement.classList.toggle('dark')">Clair / sombre</button>
+</div>
+
+<!-- ============ 1. Gérard seul ============ -->
+<h2 class="titre-groupe">1. Gérard seul : une ligne, rien d'autre<small>Le reste de l'application ne change pas : barre du bas, Accueil, projets.</small></h2>
+<div class="rangee">
+
+  <div class="cadre">
+    <h2>Paramètres, artisan seul</h2>
+    <div class="tel">
+      <div class="carte-sombre entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu">
+        <div class="t-titre">Paramètres</div>
+        <div class="carte liste">
+          <div class="rang"><span class="grow t-corps">Mon entreprise</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Mentions légales</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Assurances</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Paiement</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Tarifs</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Quelqu'un avec vous</span><button class="btn btn-secondaire mini">Ajouter</button></div>
+          <div class="rang"><span class="grow t-corps">Mon compte</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        </div>
+      </div>
+      <div class="barre">
+        <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+        <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+        <div class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></div>
+        <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+        <div class="onglet actif"><svg class="ico"><use href="#i-plus-menu"/></svg>Plus</div>
+      </div>
+    </div>
+    <p class="note-maquette">Une seule ligne remplace les deux interfaces d'équipe actuelles. Plus de badge « Propriétaire », aucune organisation visible.</p>
+  </div>
+
+</div>
+
+<!-- ============ 2. Ajouter ============ -->
+<h2 class="titre-groupe">2. Ajouter quelqu'un : Compyo prépare, Gérard envoie<small>Aucune adresse e-mail à taper, aucun numéro stocké chez Compyo.</small></h2>
+<div class="rangee">
+
+  <div class="cadre">
+    <h2>Feuille « Ajouter quelqu'un »</h2>
+    <div class="tel">
+      <div class="carte-sombre entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu">
+        <div class="t-titre">Paramètres</div>
+        <div class="carte liste">
+          <div class="rang"><span class="grow t-corps">Mon entreprise</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Paiement</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Quelqu'un avec vous</span><button class="btn btn-secondaire mini">Ajouter</button></div>
+        </div>
+      </div>
+      <div class="voile"></div>
+      <div class="feuille">
+        <div class="t-grand">Ajouter quelqu'un</div>
+        <div class="champ-bloc">
+          <span class="t-petit">Son prénom</span>
+          <div class="champ">Sandrine<span class="curseur"></span></div>
+        </div>
+        <div class="t-corps gras">Elle verra tout ce que vous voyez.</div>
+        <div class="bulle">Sandrine, je t'ajoute sur Compyo. Ouvre ce lien : compyo.fr/j/k7QxP2</div>
+        <button class="btn btn-primaire">Envoyer par WhatsApp</button>
+        <button class="btn btn-discret">Par SMS</button>
+      </div>
+    </div>
+    <p class="note-maquette">Un seul mot à saisir. La phrase en gras remplace tout menu de rôles : c'est le consentement.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Le lien est parti : en attente</h2>
+    <div class="tel">
+      <div class="carte-sombre entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu">
+        <div class="t-titre">Paramètres</div>
+        <div class="carte liste">
+          <div class="rang"><span class="grow t-corps">Mon entreprise</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Paiement</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang rang-haut">
+            <div class="rond">S</div>
+            <div class="grow">
+              <div class="t-corps gras">Sandrine</div>
+              <div class="t-petit">Lien envoyé hier · valable 2 jours</div>
+              <div class="actions">
+                <button class="btn btn-secondaire mini">Renvoyer</button>
+                <button class="btn btn-discret mini" style="width:auto">Annuler</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="barre">
+        <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+        <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+        <div class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></div>
+        <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+        <div class="onglet actif"><svg class="ico"><use href="#i-plus-menu"/></svg>Plus</div>
+      </div>
+    </div>
+    <p class="note-maquette">Renvoyer ou annuler : rien d'autre à régler. Un lien se périme seul en 3 jours et ne sert qu'une fois.</p>
+  </div>
+
+</div>
+
+<!-- ============ 3. Côté invitée ============ -->
+<h2 class="titre-groupe">3. Sandrine ouvre le lien : la même réponse, quel que soit son compte<small>On ne dit jamais si une adresse a déjà un compte. Le rattachement n'a lieu qu'après la preuve de la boîte mail.</small></h2>
+<div class="rangee">
+
+  <div class="cadre">
+    <h2>Page du lien (Sandrine, pas connectée)</h2>
+    <div class="tel">
+      <div class="contenu centre">
+        <div class="marque">Compyo</div>
+        <div class="t-titre">Gérard vous ajoute sur Compyo.</div>
+        <div class="t-corps" style="color: rgb(var(--c-steel))">Vous verrez les mêmes chantiers, devis et factures que lui.</div>
+        <div class="champ-bloc">
+          <span class="t-petit">Votre e-mail</span>
+          <div class="champ">sandrine.m@gmail.com<span class="curseur"></span></div>
+        </div>
+        <button class="btn btn-primaire">Continuer</button>
+      </div>
+    </div>
+    <p class="note-maquette">Elle tape son propre e-mail, sur son propre téléphone. Gérard n'a jamais eu besoin de le connaître.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Réponse unique</h2>
+    <div class="tel">
+      <div class="contenu centre">
+        <svg class="ico grosse-icone"><use href="#i-courrier"/></svg>
+        <div class="t-titre">Regardez votre boîte mail.</div>
+        <div class="t-corps" style="color: rgb(var(--c-steel))">Ouvrez le message pour créer votre accès.</div>
+        <button class="btn btn-discret">Renvoyer le message</button>
+      </div>
+    </div>
+    <p class="note-maquette">Compte inconnu : invitation habituelle. Compte connu : lien de connexion. Même écran, même texte.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Elle a déjà un compte et est connectée</h2>
+    <div class="tel">
+      <div class="contenu centre">
+        <div class="marque">Compyo</div>
+        <div class="t-titre">Gérard vous ajoute sur Compyo.</div>
+        <div class="t-corps" style="color: rgb(var(--c-steel))">Rejoindre son espace ?</div>
+        <button class="btn btn-primaire">Rejoindre l'espace de Gérard</button>
+        <button class="btn btn-discret">Pas maintenant</button>
+      </div>
+    </div>
+    <p class="note-maquette">Un geste. Si son compte appartient déjà à une autre entreprise : « Ce lien ne peut pas être utilisé », montré à elle seule.</p>
+  </div>
+
+</div>
+
+<!-- ============ 4. Retirer ============ -->
+<h2 class="titre-groupe">4. Retirer : une feuille, pas window.confirm<small>Quand ils sont deux, la ligne « Ajouter » disparaît : le plafond se voit sans message.</small></h2>
+<div class="rangee">
+
+  <div class="cadre">
+    <h2>Feuille de confirmation</h2>
+    <div class="tel">
+      <div class="carte-sombre entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu">
+        <div class="t-titre">Paramètres</div>
+        <div class="carte liste">
+          <div class="rang"><span class="grow t-corps">Mon entreprise</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Paiement</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang">
+            <div class="rond">S</div>
+            <div class="grow"><div class="t-corps gras">Sandrine</div><div class="t-petit">avec vous depuis le 12 octobre</div></div>
+            <button class="btn btn-secondaire mini">Retirer</button>
+          </div>
+        </div>
+      </div>
+      <div class="voile"></div>
+      <div class="feuille">
+        <div class="t-grand">Retirer Sandrine ?</div>
+        <div class="t-corps">Elle n'aura plus accès à rien. Ses notes et ses photos restent chez vous.</div>
+        <button class="btn btn-primaire">Retirer Sandrine</button>
+        <button class="btn btn-secondaire">Garder</button>
+      </div>
+    </div>
+    <p class="note-maquette">Dit ce qui se passe (rien n'est perdu) en une phrase. En base : un marquage « retirée », jamais une suppression.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Ce que voit la personne retirée</h2>
+    <div class="tel">
+      <div class="contenu centre">
+        <div class="marque">Compyo</div>
+        <div class="t-titre">Vous n'avez plus accès à l'espace de Gérard.</div>
+        <button class="btn btn-secondaire">Se déconnecter</button>
+      </div>
+    </div>
+    <p class="note-maquette">Un seul écran, aucune donnée. Affiché seulement sur une réponse explicite de la base, jamais sur une simple coupure réseau.</p>
+  </div>
+
+</div>
+
+<!-- ============ 5. Vue de la deuxième personne ============ -->
+<h2 class="titre-groupe">5. Ce que voit Sandrine : la même application<small>Pas de vue réduite. Deux différences : le prénom de l'auteur, et trois limites dures.</small></h2>
+<div class="rangee">
+
+  <div class="cadre">
+    <h2>Fiche projet de M. Roux, au soir</h2>
+    <div class="tel">
+      <div class="carte-sombre entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu">
+        <div class="retour"><svg class="ico"><use href="#i-retour"/></svg>Projets</div>
+        <div class="t-grand">M. Roux</div>
+        <div class="t-petit" style="margin-top:-8px">Salle de bain · 12 rue des Lilas, Nantes</div>
+        <div class="t-sur" style="margin-top:4px">Carnet</div>
+        <div class="carte" style="padding-top:2px;padding-bottom:2px">
+          <div class="entree">
+            <span class="heure">14:12</span>
+            <div><div class="auteur">Gérard · dictée</div><div class="t-corps" style="font-size:15px">Reprendre le joint côté fenêtre. Prévoir 6 plaques hydro et 2 sacs d'enduit.</div></div>
+          </div>
+          <div class="entree">
+            <span class="heure">14:20</span>
+            <div><div class="auteur">Gérard · photos</div><div class="photos"><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="entree">
+            <span class="heure">19:05</span>
+            <div><div class="auteur">Vous · note</div><div class="t-corps" style="font-size:15px">Rappeler M. Roux pour l'acompte.</div></div>
+          </div>
+        </div>
+        <button class="btn btn-primaire">Ajouter une note ou des photos</button>
+      </div>
+      <div class="barre">
+        <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+        <div class="onglet actif"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+        <div class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></div>
+        <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+        <div class="onglet"><svg class="ico"><use href="#i-plus-menu"/></svg>Plus</div>
+      </div>
+    </div>
+    <p class="note-maquette">Le prénom et l'heure s'affichent seulement quand ils sont deux. Seul l'auteur de la saisie est connu, pas celui d'une modification.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>Paramètres vus par Sandrine</h2>
+    <div class="tel">
+      <div class="carte-sombre entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu">
+        <div class="t-titre">Paramètres</div>
+        <div class="carte">
+          <div class="t-corps gras" style="margin-bottom:10px">Paiement</div>
+          <div class="champ-bloc">
+            <span class="t-petit">IBAN</span>
+            <div class="champ inactif">FR76 3000 •••• •••• 4521</div>
+            <span class="t-petit">Seul Gérard peut changer l'IBAN.</span>
+          </div>
+        </div>
+        <div class="carte liste">
+          <div class="rang"><span class="grow t-corps">Mon entreprise</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang"><span class="grow t-corps">Tarifs</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          <div class="rang">
+            <div class="rond">G</div>
+            <div class="grow"><div class="t-corps gras">Gérard</div><div class="t-petit">Vous êtes avec lui</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="barre">
+        <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+        <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+        <div class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></div>
+        <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+        <div class="onglet actif"><svg class="ico"><use href="#i-plus-menu"/></svg>Plus</div>
+      </div>
+    </div>
+    <p class="note-maquette">Les seules limites visibles : l'IBAN, et pas de boutons Ajouter ni Retirer. Tarifs, devis, factures et bilan sont ouverts.</p>
+  </div>
+
+</div>
+
+<!-- ============ 6. Ordinateur ============ -->
+<h2 class="titre-groupe">6. Le soir, au bureau : la transmission est déjà faite<small>Ce que Gérard a dicté et photographié sur le chantier est là, avec son prénom. Rien n'a été « envoyé ».</small></h2>
+<div class="rangee">
+  <div class="cadre">
+    <h2>Ordinateur, Sandrine, 20 h 10</h2>
+    <div class="ordi">
+      <div class="carte-sombre nav">
+        <div class="marque">Compyo</div>
+        <div class="item">Aujourd'hui</div>
+        <div class="item actif">Projets</div>
+        <div class="item">Planning</div>
+        <div class="item">Devis</div>
+        <div class="item">Factures</div>
+        <div class="item">Notes</div>
+        <div class="item">Bilan</div>
+        <div class="item">Paramètres</div>
+      </div>
+      <div class="centre-ordi">
+        <div class="entete-ordi">
+          <div>
+            <div class="t-grand">M. Roux</div>
+            <div class="t-petit">Salle de bain · 12 rue des Lilas, Nantes</div>
+          </div>
+          <span class="sceau">Chantier en cours</span>
+        </div>
+
+        <div class="carte" style="padding-top:6px;padding-bottom:6px">
+          <div class="t-sur" style="padding:10px 0 2px">Carnet</div>
+          <div class="entree">
+            <span class="heure">14:12</span>
+            <div><div class="auteur">Gérard · dictée</div><div class="t-corps" style="font-size:15px">Reprendre le joint côté fenêtre. Prévoir 6 plaques hydro et 2 sacs d'enduit.</div></div>
+          </div>
+          <div class="entree">
+            <span class="heure">14:20</span>
+            <div><div class="auteur">Gérard · photos</div><div class="photos"><i></i><i></i><i></i></div></div>
+          </div>
+          <div class="entree">
+            <span class="heure">Hier</span>
+            <div><div class="auteur">Gérard · note</div><div class="t-corps" style="font-size:15px">M. Roux veut un siphon de sol, à chiffrer.</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <div class="carte lignes-devis">
+            <div class="t-sur" style="padding:6px 0 2px">Devis · brouillon</div>
+            <div class="rang"><span>Cloisons BA13, 18 m²</span><span class="gras">1 260 €</span></div>
+            <div class="rang"><span>Doublage hydrofuge</span><span class="gras">940 €</span></div>
+            <div class="rang"><span>Bandes et enduit</span><span class="gras">640 €</span></div>
+            <div class="rang"><span class="gras">Total TTC</span><span class="gras">2 840 €</span></div>
+          </div>
+          <button class="btn btn-primaire">Relire le devis</button>
+        </div>
+      </div>
+    </div>
+    <p class="note-maquette">Sandrine voit les prix : c'est son travail du soir. C'est ce choix, et lui seul, que ce candidat assume.</p>
+  </div>
+</div>
+
+</body>
+</html>

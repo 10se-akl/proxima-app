@@ -40,3 +40,8 @@ build.log
 # (scripts/copier-ressources-pdf.mjs)
 /public/pdfjs/
 /public/fonts/pdf/
+
+# refonte : captures PNG des maquettes et de l'app (lourdes, régénérables
+# par refonte-maquettes/outils/captures.mjs)
+refonte-maquettes/captures/
+refonte-maquettes/duel-*/rendus/

@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel H · Candidat D · Le langage visuel</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+/* ===== Candidat D — le langage, en variables uniquement ===== */
+body { flex-direction: column; flex-wrap: nowrap; gap: 20px; }
+h1.part { flex-basis: 100%; font: 700 22px/1.2 Manrope, sans-serif; margin-top: 12px; }
+p.intro { max-width: 760px; font: 500 14px/1.45 Inter; color: rgb(var(--c-steel)); }
+.bande { align-self: stretch; display: flex; flex-wrap: wrap; gap: 32px; padding: 24px 24px 16px; border-radius: 20px; background: rgb(var(--c-paper-warm)); color: rgb(var(--c-ink)); align-items: flex-start; }
+.bande > h2.etiq { flex-basis: 100%; font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: .16em; text-transform: uppercase; color: rgb(var(--c-steel)); }
+.dark.bande { outline: 1px solid rgb(var(--c-gris-clair)); }
+
+/* --- l'écran --- */
+.tel { height: 740px; min-height: 0; color: rgb(var(--c-ink)); }
+.tel.court { height: auto; }
+.tel.court .barre { position: relative; flex: none; margin-top: 12px; }
+.tel.court .pg { padding-bottom: 8px; flex: none; }
+.haut { height: 48px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 0 0 16px; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); font: 700 18px Manrope, sans-serif; }
+.dark .haut { color: rgb(var(--c-ink)); }
+.logo { display: inline-flex; align-items: center; gap: 8px; }
+.pg { flex: 1; padding: 16px 16px 84px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+.pg > * { flex-shrink: 0; }
+svg.i { width: 24px; height: 24px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+svg.i.f { fill: currentColor; stroke: none; }
+svg.i.g { width: 56px; height: 56px; stroke-width: 1.6; }
+
+/* --- 5 tailles : 32 / 20 / 16 / 14 / 12 --- */
+.t32 { font: 700 32px/1.1 Manrope, sans-serif; }
+.t20 { font: 700 20px/1.2 Manrope, sans-serif; }
+.t16 { font: 500 16px/1.3 Inter, sans-serif; }
+.t14 { font: 500 14px/1.3 Inter, sans-serif; color: rgb(var(--c-steel)); }
+.sur { font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: .16em; text-transform: uppercase; color: rgb(var(--c-steel)); }
+.alerte { color: rgb(var(--c-signal-fonce)); }
+.dark .alerte { color: rgb(var(--c-signal-clair)); }
+h1.t32 { margin: 2px 0 8px; }
+.sec { display: flex; align-items: baseline; gap: 8px; margin-top: 16px; font: 700 20px/1.2 Manrope, sans-serif; }
+.cnt { font: 500 14px Inter; color: rgb(var(--c-steel)); }
+
+/* --- 2 recettes : la ligne et le bloc (+ la feuille) --- */
+.lg { display: flex; align-items: center; min-height: 64px; background: rgb(var(--c-surface)); border-radius: 16px; box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); overflow: hidden; }
+.lg .rep { flex: none; width: 80px; padding-left: 16px; font: 500 16px/1 "IBM Plex Mono", monospace; }
+.lg .rep.sur { font-size: 12px; letter-spacing: .06em; }
+.lg .txt { flex: 1; min-width: 0; padding: 10px 8px 10px 0; display: flex; flex-direction: column; gap: 2px; }
+.lg .txt.sans-rep { padding-left: 16px; }
+.lg b { font: 700 16px/1.25 Inter, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg small { font: 500 14px/1.3 Inter, sans-serif; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg .et { flex: none; width: 56px; align-self: stretch; display: flex; align-items: center; justify-content: center; border-left: 1px solid rgb(var(--c-ink) / .1); }
+.lg .et.sans { border-left: 0; color: rgb(var(--c-steel)); }
+.coche { width: 28px; height: 28px; border-radius: 99px; border: 2px solid rgb(var(--c-ink) / .45); display: grid; place-items: center; }
+.coche.ok { background: rgb(var(--c-succes)); border-color: transparent; color: rgb(var(--c-surface)); }
+.coche.ok svg.i { width: 18px; height: 18px; stroke-width: 3; }
+.lg.q { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px 12px 12px 16px; }
+.lg.q .txt { padding: 0; }
+.rp { display: flex; gap: 8px; }
+.lg.hero { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: none; min-height: 88px; }
+.lg.hero .rep { font: 700 32px/1 Manrope, sans-serif; width: auto; padding: 0 12px 0 16px; }
+.lg.hero small, .lg.hero .sur { color: rgb(var(--c-paper) / .7); }
+.lg.hero .et.sans { color: rgb(var(--c-paper)); }
+.lg.muet b { color: rgb(var(--c-steel)); font-weight: 500; }
+.bl { position: relative; overflow: hidden; background: rgb(var(--c-surface)); border-radius: 16px; box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.bl.ton::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: rgb(var(--c-steel)); }
+.bl .ent { display: flex; align-items: center; justify-content: space-between; }
+.ok-pt { display: inline-flex; align-items: center; gap: 6px; font: 500 14px Inter; color: rgb(var(--c-steel)); }
+.ok-pt svg.i { width: 18px; height: 18px; stroke-width: 3; color: rgb(var(--c-succes)); }
+.feuille .t20 { padding: 4px 0 0; }
+.feuille .lg { min-height: 72px; gap: 12px; padding: 0 4px 0 12px; }
+.feuille .lg .et { width: 40px; }
+.tt { display: flex; align-items: center; gap: 8px; overflow: visible; }
+.ic48 { width: 48px; height: 48px; border-radius: 16px; background: rgb(var(--c-paper-warm)); display: grid; place-items: center; flex: none; }
+.lg .txt.f { padding-left: 0; }
+.ia { font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: .1em; color: rgb(var(--c-steel)); border: 1px solid rgb(var(--c-ink) / .45); border-radius: 99px; padding: 3px 7px; }
+
+/* --- 3 boutons : primaire, secondaire, texte (2 hauteurs : 56 / 48) --- */
+.b { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 56px; width: 100%; border-radius: 16px; border: 0; font: 700 16px Inter, sans-serif; cursor: pointer; padding: 0 16px; }
+.b.p { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.b.s { background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 2px rgb(var(--c-ink) / .45); }
+.b.s.d { color: rgb(var(--c-signal-fonce)); }
+.dark .b.s.d { color: rgb(var(--c-signal-clair)); }
+.b.t { background: transparent; color: rgb(var(--c-ink)); text-decoration: underline; text-underline-offset: 4px; min-height: 48px; width: auto; align-self: center; }
+.b.m { min-height: 48px; }
+.spin { width: 18px; height: 18px; border: 2.5px solid currentColor; border-top-color: transparent; border-radius: 99px; }
+@media (prefers-reduced-motion: no-preference) { .spin { animation: tourne .8s linear infinite; } .sk { animation: bat 1.4s ease-in-out infinite; } }
+@keyframes tourne { to { transform: rotate(360deg); } }
+@keyframes bat { 50% { opacity: .45; } }
+
+/* --- barre du bas --- */
+.barre { z-index: 1; height: 72px; padding: 0 4px; justify-content: space-between; }
+.barre .onglet { flex: 1 1 66px; font: 600 14px Inter, sans-serif; letter-spacing: -.01em; gap: 4px; min-width: 0; }
+.barre .onglet.auj { flex: 0 0 82px; }
+.barre .onglet .ic { position: relative; display: flex; }
+.barre .onglet.nv { flex: 0 0 72px; justify-content: flex-start; color: rgb(var(--c-steel)); }
+.bdg { position: absolute; top: -6px; right: -10px; min-width: 20px; height: 20px; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 700 12px/20px Inter; text-align: center; font-style: normal; padding: 0 5px; }
+.barre .btn-rond { width: 56px; height: 56px; margin-top: -24px; font-size: 30px; font-weight: 500; }
+
+/* --- fiche projet --- */
+.navp { display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+.retour { display: inline-flex; align-items: center; gap: 4px; min-height: 48px; font: 500 16px Inter; color: rgb(var(--c-steel)); }
+.rond { width: 48px; height: 48px; border-radius: 99px; box-shadow: inset 0 0 0 2px rgb(var(--c-ink) / .45); display: grid; place-items: center; }
+.idt { display: flex; align-items: center; gap: 12px; }
+.av { width: 56px; height: 56px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: grid; place-items: center; font: 700 20px Manrope; flex: none; }
+.tuiles { display: flex; gap: 8px; margin-top: 4px; }
+.tuile { flex: 1; min-height: 64px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font: 700 14px Inter; }
+.etape { display: flex; flex-direction: column; gap: 6px; margin: 4px 0 4px; }
+.pile { display: flex; flex-direction: column; gap: 8px; }
+.seg { display: flex; gap: 4px; }
+.seg i { flex: 1; height: 6px; border-radius: 6px; background: rgb(var(--c-ink)); }
+.seg i.v { background: rgb(var(--c-ink) / .15); }
+
+/* --- états --- */
+.etat { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 12px; padding: 28px 0 12px; }
+.etat .rd { width: 88px; height: 88px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: grid; place-items: center; color: rgb(var(--c-steel)); }
+.etat .rd.ok { background: rgb(var(--c-succes)); color: rgb(var(--c-surface)); width: 96px; height: 96px; }
+.etat .rd.ok svg.i { width: 48px; height: 48px; stroke-width: 3; }
+.etat .rd.er { color: rgb(var(--c-signal-fonce)); }
+.dark .etat .rd.er { color: rgb(var(--c-signal-clair)); }
+.etat .b { margin-top: 8px; }
+.ban { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px; background: rgb(var(--c-paper-warm)); font: 700 14px Inter; flex: none; white-space: nowrap; }
+.ban .pt { width: 10px; height: 10px; border-radius: 99px; background: rgb(var(--c-alerte-orange)); flex: none; }
+.ban span.d { font-weight: 500; color: rgb(var(--c-steel)); overflow: hidden; text-overflow: ellipsis; }
+.sk { background: rgb(var(--c-ink) / .1); border-radius: 8px; }
+.lg-sk { height: 64px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); display: flex; align-items: center; gap: 16px; padding: 0 16px; }
+.lg-sk .c { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.trace { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 4px 0 14px; border-radius: 16px; background: rgb(var(--c-paper-warm)); font: 700 14px Inter; }
+.trace b { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font: 700 14px Inter; }
+.trace .b { width: auto; min-height: 48px; }
+.trace svg.i { color: rgb(var(--c-succes)); stroke-width: 3; width: 20px; height: 20px; }
+
+/* --- planche des règles --- */
+.regles { display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px; flex-basis: 100%; }
+.rg { background: rgb(var(--c-surface)); border-radius: 16px; box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.rg h3 { font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: .16em; text-transform: uppercase; color: rgb(var(--c-steel)); }
+.rg .l { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: center; min-height: 36px; }
+.rg .l > span.k { font: 500 14px Inter; color: rgb(var(--c-steel)); }
+.rg .l.g { grid-template-columns: 28px 1fr; }
+.sw { width: 24px; height: 24px; border-radius: 99px; box-shadow: 0 0 0 1px rgb(var(--c-ink) / .25); }
+.rg .b { width: 100%; }
+.rg .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rg .ann { display: grid; grid-template-columns: 72px 1fr 56px; font: 500 12px/1.2 "IBM Plex Mono", monospace; letter-spacing: .06em; text-transform: uppercase; color: rgb(var(--c-steel)); text-align: center; }
+.rg .rayons { display: flex; gap: 12px; align-items: flex-end; }
+.rg .rayons > div { flex: 1; height: 52px; background: rgb(var(--c-paper-warm)); box-shadow: 0 0 0 1px rgb(var(--c-ink) / .25); display: grid; place-items: center; font: 500 14px Inter; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-logo" viewBox="0 0 24 24"><path d="M18 6.5a8 8 0 1 0 0 11"/></symbol>
+<symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+<symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+<symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+<symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0 1 12 0c0 6 2 7 2 7H4s2-1 2-7"/><path d="M10 20a2 2 0 0 0 4 0"/></symbol>
+<symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+<symbol id="i-cr" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></symbol>
+<symbol id="i-cl" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></symbol>
+<symbol id="i-cloudoff" viewBox="0 0 24 24"><path d="M3 3l18 18"/><path d="M7 18h10a4 4 0 0 0 1.4-7.7A6 6 0 0 0 9.3 6.4M5.6 9.6A4.5 4.5 0 0 0 7 18"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+<symbol id="i-cam" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+<symbol id="i-doc" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h7"/></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></symbol>
+</defs></svg>
+<h1 class="part">Candidat D · Libre · Le langage visuel et tactile</h1>
+<p class="intro">Une synthèse : le langage « moins mais mieux » déjà présent sur l'accueil et la fiche projet devient la règle, réduit à cinq tailles de texte, deux recettes de surface, un seul primaire, et complété par ce qui manque aujourd'hui : des états uniformes, un retour tactile, un moment de repos.</p>
+<h1 class="part">1 · La planche des règles</h1>
+<div class="bande"><div class="regles">
+<div class="rg"><h3>Texte · 5 tailles, 2 graisses, 2 tons</h3>
+ <div class="l"><span class="k">32 · très grand</span><span class="t32">Bonjour Gérard</span></div>
+ <div class="l"><span class="k">20 · bloc</span><span class="t20">À confirmer</span></div>
+ <div class="l"><span class="k">16 · texte</span><span class="t16" style="font-weight:700">Commander les rails</span></div>
+ <div class="l"><span class="k">14 · détail</span><span class="t14">Visite faite ? · 30 sept.</span></div>
+ <div class="l"><span class="k">12 · repère</span><span class="sur">Jeudi 1 octobre</span></div>
+ <div class="t14">Deux tons seulement : ink et steel. Jamais sous 14, sauf le repère.</div></div>
+
+<div class="rg"><h3>Boutons · un primaire par écran</h3>
+ <button class="b p">Primaire · 56 px</button>
+ <button class="b s">Secondaire · 56 px</button>
+ <button class="b s d">Destructif · jamais plein</button>
+ <div class="duo"><button class="b p m">Oui</button><button class="b s m">Non</button></div>
+ <button class="b t">Texte · 48 px</button>
+ <div class="t14">Le terracotta plein, c'est le « + » et rien d'autre.</div></div>
+
+<div class="rg"><h3>Ligne et bloc · deux recettes, un rayon</h3>
+ <div class="lg"><div class="rep">16h30</div><div class="txt"><b>M. Durand</b><small>Métré salle de bains</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+ <div class="ann"><span>repère</span><span>titre + détail</span><span>état</span></div>
+ <div class="rayons"><div style="border-radius:16px">16 · tout</div><div style="border-radius:24px 24px 0 0">24 · feuille</div><div style="border-radius:99px">rond</div></div>
+ <div class="t14">Pas d'ombre. Pas de carte dans une carte. Filet à 15 %.</div></div>
+
+<div class="rg"><h3>Couleur · à quoi sert chaque jeton</h3>
+ <div class="l g"><span class="sw" style="background:rgb(var(--c-ink))"></span><span class="t14"><b style="color:rgb(var(--c-ink))">ink</b> · tout le texte · 13,9:1</span></div>
+ <div class="l g"><span class="sw" style="background:rgb(var(--c-steel))"></span><span class="t14"><b style="color:rgb(var(--c-ink))">steel</b> · le détail · 4,9:1</span></div>
+ <div class="l g"><span class="sw" style="background:rgb(var(--c-signal))"></span><span class="t14"><b style="color:rgb(var(--c-ink))">signal</b> · le « + » · texte blanc 3,7:1 : non</span></div>
+ <div class="l g"><span class="sw" style="background:rgb(var(--c-signal-fonce))"></span><span class="t14"><b style="color:rgb(var(--c-ink))">signal-fonce</b> · texte d'alerte · 4,9:1</span></div>
+ <div class="l g"><span class="sw" style="background:rgb(var(--c-succes))"></span><span class="t14"><b style="color:rgb(var(--c-ink))">succes</b> · coche, jamais du texte · 3,8:1</span></div>
+ <div class="l g"><span class="sw" style="background:rgb(var(--c-alerte-orange))"></span><span class="t14"><b style="color:rgb(var(--c-ink))">alerte-orange</b> · point, jamais du texte · 2,7:1</span></div></div>
+
+<div class="rg"><h3>Plafonds par écran</h3>
+ <div class="l" style="grid-template-columns:48px 1fr"><span class="t20">5</span><span class="t16">blocs, titre compris</span></div>
+ <div class="l" style="grid-template-columns:48px 1fr"><span class="t20">4</span><span class="t16">éléments par ligne</span></div>
+ <div class="l" style="grid-template-columns:48px 1fr"><span class="t20">1</span><span class="t16">primaire pleine largeur</span></div>
+ <div class="l" style="grid-template-columns:48px 1fr"><span class="t20">3</span><span class="t16">apparitions de terracotta</span></div>
+ <div class="l" style="grid-template-columns:48px 1fr"><span class="t20">0</span><span class="t16">phrase de plus d'une ligne</span></div></div>
+
+<div class="rg"><h3>Retours · vibration oui, son non</h3>
+ <div class="l" style="grid-template-columns:96px 1fr"><span class="k">Appui</span><span class="t16">98 %, 150 ms</span></div>
+ <div class="l" style="grid-template-columns:96px 1fr"><span class="k">Fait, Oui</span><span class="t16">1 vibration, 12 ms</span></div>
+ <div class="l" style="grid-template-columns:96px 1fr"><span class="k">Échec</span><span class="t16">2 vibrations courtes</span></div>
+ <div class="l" style="grid-template-columns:96px 1fr"><span class="k">Son</span><span class="t16">aucun</span></div>
+ <div class="l" style="grid-template-columns:96px 1fr"><span class="k">Mouvement réduit</span><span class="t16">tout est instantané</span></div>
+ <div class="t14">Android seulement. Aucun réglage à ajouter.</div></div>
+</div></div>
+<h1 class="part">2 · Aujourd'hui, fiche projet, feuille</h1>
+<div class="bande "><h2 class="etiq">Clair</h2><div class="cadre"><h2>Aujourd'hui</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1><div class="lg hero"><div class="rep">14h00</div><div class="txt"><span class="sur">Maintenant</span><b>SCI Les Jardins</b><small>Visite technique</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="sec">À confirmer<span class="cnt">1</span></div><div class="lg q"><div class="txt"><b>SCI Les Jardins</b><small>Visite faite ? · 30 sept.</small></div><div class="rp"><button class="b p m">Oui</button><button class="b s m">Non</button></div></div>
+<div class="sec">Aujourd'hui<span class="cnt">3</span></div><div class="lg"><div class="rep sur alerte">Retard</div><div class="txt"><b>Commander les rails</b><small>SCI Les Jardins</small></div><div class="et"><span class="coche "></span></div></div><div class="lg"><div class="rep">16h30</div><div class="txt"><b>M. Durand</b><small>Métré salle de bains</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div><div class="lg"><div class="rep">18h00</div><div class="txt"><b>Appeler le négoce</b><small>Plaques BA13 et rails</small></div><div class="et"><span class="coche "></span></div></div>
+<div class="sec">À faire de votre côté<span class="cnt">1</span></div><div class="lg"><div class="txt sans-rep"><b>Mme Bernard</b><small>Devis à envoyer</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Un seul « + » terracotta, un « Retard » en texte d'alerte : deux accents. Les réponses Oui / Non sont sous le texte, à pleine largeur.</p></div>
+<div class="cadre"><h2>Fiche projet</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="navp"><span class="retour"><svg class="i " aria-hidden="true"><use href="#i-cl"/></svg>Projets</span><span class="rond"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span></div>
+<div class="idt"><span class="av">MR</span><h1 class="t32" style="margin:0">M. Roux</h1></div>
+<div class="t14">Salle de bain · 12 rue des Lilas, Nantes</div>
+<div class="tuiles"><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-phone"/></svg>Appeler</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-chat"/></svg>Message</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-pin"/></svg>Itinéraire</div></div>
+<div class="etape"><div class="seg"><i></i><i></i><i></i><i></i><i class="v"></i></div></div>
+<div class="bl ton">
+  <span class="sur">Maintenant</span>
+  <div><div class="t32">12 jours</div><div class="t14" style="margin-top:4px">Chantier en cours</div></div>
+  <div class="pile"><button class="b p">Ajouter une note ou des photos</button>
+  <button class="b s">Planifier un passage</button>
+  <button class="b s">Terminer le chantier</button></div>
+</div>
+<div class="bl"><div class="ent"><span class="t20">À retenir</span><span class="ok-pt"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg>Enregistré</span></div><div class="t16">Code portail 4821</div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">12 jours en grand plutôt qu'une phrase. Un primaire, deux secondaires, aucune icône terracotta : un seul accent, le « + ».</p></div>
+<div class="cadre"><h2>Feuille « Nouveau projet »</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="navp"><span class="retour"><svg class="i " aria-hidden="true"><use href="#i-cl"/></svg>Projets</span><span class="rond"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span></div>
+<div class="idt"><span class="av">MR</span><h1 class="t32" style="margin:0">M. Roux</h1></div>
+<div class="t14">Salle de bain · 12 rue des Lilas, Nantes</div>
+<div class="tuiles"><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-phone"/></svg>Appeler</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-chat"/></svg>Message</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-pin"/></svg>Itinéraire</div></div>
+<div class="etape"><div class="seg"><i></i><i></i><i></i><i></i><i class="v"></i></div></div>
+<div class="bl ton">
+  <span class="sur">Maintenant</span>
+  <div><div class="t32">12 jours</div><div class="t14" style="margin-top:4px">Chantier en cours</div></div>
+  <div class="pile"><button class="b p">Ajouter une note ou des photos</button>
+  <button class="b s">Planifier un passage</button>
+  <button class="b s">Terminer le chantier</button></div>
+</div>
+<div class="bl"><div class="ent"><span class="t20">À retenir</span><span class="ok-pt"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg>Enregistré</span></div><div class="t16">Code portail 4821</div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav><div class="voile"></div><div class="feuille">
+<div class="t20">Nouveau projet</div>
+<div class="lg"><span class="ic48"><svg class="i " aria-hidden="true"><use href="#i-doc"/></svg></span><div class="txt f"><b class="tt"><span>Coller un message</span><span class="ia">IA</span></b><small>SMS ou WhatsApp du client</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="lg"><span class="ic48"><svg class="i " aria-hidden="true"><use href="#i-cam"/></svg></span><div class="txt f"><b class="tt"><span>Photo ou capture</span><span class="ia">IA</span></b><small>Une capture d'écran</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="lg"><span class="ic48"><svg class="i " aria-hidden="true"><use href="#i-pen"/></svg></span><div class="txt f"><b>Écrire moi-même</b><small>Nom, numéro, besoin</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+</div></div><p class="note-maquette">Trois lignes de 72 px, détails en une ligne, icônes en ink : le même langage dans la feuille.</p></div></div>
+<div class="bande dark"><h2 class="etiq">Sombre</h2><div class="cadre"><h2>Aujourd'hui</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1><div class="lg hero"><div class="rep">14h00</div><div class="txt"><span class="sur">Maintenant</span><b>SCI Les Jardins</b><small>Visite technique</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="sec">À confirmer<span class="cnt">1</span></div><div class="lg q"><div class="txt"><b>SCI Les Jardins</b><small>Visite faite ? · 30 sept.</small></div><div class="rp"><button class="b p m">Oui</button><button class="b s m">Non</button></div></div>
+<div class="sec">Aujourd'hui<span class="cnt">3</span></div><div class="lg"><div class="rep sur alerte">Retard</div><div class="txt"><b>Commander les rails</b><small>SCI Les Jardins</small></div><div class="et"><span class="coche "></span></div></div><div class="lg"><div class="rep">16h30</div><div class="txt"><b>M. Durand</b><small>Métré salle de bains</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div><div class="lg"><div class="rep">18h00</div><div class="txt"><b>Appeler le négoce</b><small>Plaques BA13 et rails</small></div><div class="et"><span class="coche "></span></div></div>
+<div class="sec">À faire de votre côté<span class="cnt">1</span></div><div class="lg"><div class="txt sans-rep"><b>Mme Bernard</b><small>Devis à envoyer</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Un seul « + » terracotta, un « Retard » en texte d'alerte : deux accents. Les réponses Oui / Non sont sous le texte, à pleine largeur.</p></div>
+<div class="cadre"><h2>Fiche projet</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="navp"><span class="retour"><svg class="i " aria-hidden="true"><use href="#i-cl"/></svg>Projets</span><span class="rond"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span></div>
+<div class="idt"><span class="av">MR</span><h1 class="t32" style="margin:0">M. Roux</h1></div>
+<div class="t14">Salle de bain · 12 rue des Lilas, Nantes</div>
+<div class="tuiles"><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-phone"/></svg>Appeler</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-chat"/></svg>Message</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-pin"/></svg>Itinéraire</div></div>
+<div class="etape"><div class="seg"><i></i><i></i><i></i><i></i><i class="v"></i></div></div>
+<div class="bl ton">
+  <span class="sur">Maintenant</span>
+  <div><div class="t32">12 jours</div><div class="t14" style="margin-top:4px">Chantier en cours</div></div>
+  <div class="pile"><button class="b p">Ajouter une note ou des photos</button>
+  <button class="b s">Planifier un passage</button>
+  <button class="b s">Terminer le chantier</button></div>
+</div>
+<div class="bl"><div class="ent"><span class="t20">À retenir</span><span class="ok-pt"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg>Enregistré</span></div><div class="t16">Code portail 4821</div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">12 jours en grand plutôt qu'une phrase. Un primaire, deux secondaires, aucune icône terracotta : un seul accent, le « + ».</p></div>
+<div class="cadre"><h2>Feuille « Nouveau projet »</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="navp"><span class="retour"><svg class="i " aria-hidden="true"><use href="#i-cl"/></svg>Projets</span><span class="rond"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span></div>
+<div class="idt"><span class="av">MR</span><h1 class="t32" style="margin:0">M. Roux</h1></div>
+<div class="t14">Salle de bain · 12 rue des Lilas, Nantes</div>
+<div class="tuiles"><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-phone"/></svg>Appeler</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-chat"/></svg>Message</div><div class="tuile"><svg class="i " aria-hidden="true"><use href="#i-pin"/></svg>Itinéraire</div></div>
+<div class="etape"><div class="seg"><i></i><i></i><i></i><i></i><i class="v"></i></div></div>
+<div class="bl ton">
+  <span class="sur">Maintenant</span>
+  <div><div class="t32">12 jours</div><div class="t14" style="margin-top:4px">Chantier en cours</div></div>
+  <div class="pile"><button class="b p">Ajouter une note ou des photos</button>
+  <button class="b s">Planifier un passage</button>
+  <button class="b s">Terminer le chantier</button></div>
+</div>
+<div class="bl"><div class="ent"><span class="t20">À retenir</span><span class="ok-pt"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg>Enregistré</span></div><div class="t16">Code portail 4821</div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav><div class="voile"></div><div class="feuille">
+<div class="t20">Nouveau projet</div>
+<div class="lg"><span class="ic48"><svg class="i " aria-hidden="true"><use href="#i-doc"/></svg></span><div class="txt f"><b class="tt"><span>Coller un message</span><span class="ia">IA</span></b><small>SMS ou WhatsApp du client</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="lg"><span class="ic48"><svg class="i " aria-hidden="true"><use href="#i-cam"/></svg></span><div class="txt f"><b class="tt"><span>Photo ou capture</span><span class="ia">IA</span></b><small>Une capture d'écran</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="lg"><span class="ic48"><svg class="i " aria-hidden="true"><use href="#i-pen"/></svg></span><div class="txt f"><b>Écrire moi-même</b><small>Nom, numéro, besoin</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+</div></div><p class="note-maquette">Trois lignes de 72 px, détails en une ligne, icônes en ink : le même langage dans la feuille.</p></div></div>
+<h1 class="part">3 · Les états</h1>
+<div class="bande "><h2 class="etiq">Clair</h2><div class="cadre"><h2>Chargement</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sk" style="width:130px;height:12px"></div><div class="sk" style="width:230px;height:32px;margin:2px 0 8px"></div>
+<div class="lg-sk" style="height:88px;background:rgb(var(--c-ink) / .08);box-shadow:none"><div class="sk" style="width:64px;height:32px"></div><div class="c"><div class="sk" style="width:90px;height:12px"></div><div class="sk" style="width:150px;height:16px"></div></div></div>
+<div class="sk" style="width:150px;height:20px;margin-top:16px"></div>
+<div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div><div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div><div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div><div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div>
+<div class="sur" style="margin-top:20px">Bouton en cours</div>
+<button class="b p" aria-busy="true"><span class="spin"></span>Valider ce devis</button>
+</div></div><p class="note-maquette">Le squelette est la ligne vide : même hauteur, même rayon, même filet. Jamais le mot « Chargement… ».</p></div>
+<div class="cadre"><h2>Vide</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg"><div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1>
+<div class="etat"><div class="rd"><svg class="i g" aria-hidden="true"><use href="#i-folder"/></svg></div><div class="t20">Aucun projet pour l'instant.</div><button class="b p">Nouveau projet</button></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Une icône, une phrase, une seule action. Un bloc vide, lui, n'est pas affiché.</p></div>
+<div class="cadre"><h2>Erreur</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sur">Erreur sur une ligne</div><div class="lg"><div class="rep sur alerte">Retard</div><div class="txt"><b>Commander les rails</b><small class="alerte" style="font-weight:700">Pas enregistré. Réessayez.</small></div><div class="et"><span class="coche "></span></div></div>
+<button class="b s m">Réessayer</button>
+<div class="sur" style="margin-top:20px">Erreur de page</div>
+<div class="etat" style="padding-top:8px"><div class="rd er"><svg class="i g" aria-hidden="true"><use href="#i-alert"/></svg></div><div class="t20">Impossible de charger.</div><div class="t14">Vérifiez le réseau.</div><button class="b p">Réessayer</button></div>
+</div></div><p class="note-maquette">En alerte : le texte seul, jamais un aplat. Sur la ligne : 2 vibrations et un bouton de 48 px.</p></div>
+<div class="cadre"><h2>Hors-ligne</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="ban"><span class="pt"></span>Pas de réseau<span class="d">· Vos saisies sont gardées.</span></div><div class="pg">
+<div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1><div class="sec">Aujourd'hui<span class="cnt">3</span></div><div class="lg"><div class="rep sur alerte">Retard</div><div class="txt"><b>Commander les rails</b><small>SCI Les Jardins</small></div><div class="et"><span class="coche "></span></div></div><div class="lg"><div class="rep">16h30</div><div class="txt"><b>M. Durand</b><small>Métré salle de bains</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="lg"><div class="rep" style="width:56px;color:rgb(var(--c-steel))"><svg class="i " aria-hidden="true"><use href="#i-mic"/></svg></div><div class="txt"><b>Note vocale · M. Durand</b><small>Gardée sur ce téléphone</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cloudoff"/></svg></div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Un bandeau sans bouton. La note gardée sur le téléphone porte l'icône, pas une phrase.</p></div>
+<div class="cadre"><h2>Succès · les trois temps</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sur">1 · Je touche · vibration 12 ms</div>
+<div class="lg muet"><div class="rep sur" style="color:rgb(var(--c-steel))">Retard</div><div class="txt"><b>Commander les rails</b><small>SCI Les Jardins</small></div><div class="et"><span class="coche ok"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></span></div></div>
+<div class="sur" style="margin-top:16px">2 · La ligne se range · 5 s</div>
+<div class="trace"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg><b>Fait : Commander les rails</b><button class="b t">Annuler</button></div>
+<div class="sur" style="margin-top:16px">3 · La dernière ligne : le repos</div>
+<div class="etat" style="padding:12px 0 4px"><div class="rd ok" style="width:72px;height:72px"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></div><div class="t20">Tout est réglé.</div></div>
+</div></div><p class="note-maquette">Je touche, la ligne se range avec « Annuler » pendant 5 s, la dernière ferme sur le repos.</p></div>
+<div class="cadre"><h2>Soulagement · la journée</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg"><div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1>
+<div class="etat" style="padding-top:36px"><div class="rd ok"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></div><div class="t32">Tout est réglé.</div></div>
+<div class="sec">Demain</div><div class="lg"><div class="rep">8h00</div><div class="txt"><b>SCI Les Jardins</b><small>Visite technique</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Un grand rond vert, une phrase, la suite en une ligne. Pas de confettis, pas de score.</p></div>
+<div class="cadre"><h2>Soulagement · le chantier</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="navp"><span class="retour"><svg class="i " aria-hidden="true"><use href="#i-cl"/></svg>Projets</span><span class="rond"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span></div>
+<div class="etat" style="padding-top:36px"><div class="rd ok"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></div><div class="t32">Chantier terminé.</div><div class="t14">M. Roux · 12 jours de chantier</div><button class="b t">Annuler</button></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">1</i></span>Aujourd'hui</div>
+  <div class="onglet actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Le chantier qui se termine reçoit le même repos. « Annuler » reste à portée du pouce.</p></div></div>
+<div class="bande dark"><h2 class="etiq">Sombre</h2><div class="cadre"><h2>Chargement</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sk" style="width:130px;height:12px"></div><div class="sk" style="width:230px;height:32px;margin:2px 0 8px"></div>
+<div class="lg-sk" style="height:88px;background:rgb(var(--c-ink) / .08);box-shadow:none"><div class="sk" style="width:64px;height:32px"></div><div class="c"><div class="sk" style="width:90px;height:12px"></div><div class="sk" style="width:150px;height:16px"></div></div></div>
+<div class="sk" style="width:150px;height:20px;margin-top:16px"></div>
+<div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div><div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div><div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div><div class="lg-sk"><div class="sk" style="width:44px;height:16px"></div><div class="c"><div class="sk" style="width:170px;height:16px"></div><div class="sk" style="width:110px;height:14px"></div></div><div class="sk" style="width:28px;height:28px;border-radius:99px"></div></div>
+<div class="sur" style="margin-top:20px">Bouton en cours</div>
+<button class="b p" aria-busy="true"><span class="spin"></span>Valider ce devis</button>
+</div></div><p class="note-maquette">Le squelette est la ligne vide : même hauteur, même rayon, même filet. Jamais le mot « Chargement… ».</p></div>
+<div class="cadre"><h2>Vide</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg"><div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1>
+<div class="etat"><div class="rd"><svg class="i g" aria-hidden="true"><use href="#i-folder"/></svg></div><div class="t20">Aucun projet pour l'instant.</div><button class="b p">Nouveau projet</button></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Une icône, une phrase, une seule action. Un bloc vide, lui, n'est pas affiché.</p></div>
+<div class="cadre"><h2>Erreur</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sur">Erreur sur une ligne</div><div class="lg"><div class="rep sur alerte">Retard</div><div class="txt"><b>Commander les rails</b><small class="alerte" style="font-weight:700">Pas enregistré. Réessayez.</small></div><div class="et"><span class="coche "></span></div></div>
+<button class="b s m">Réessayer</button>
+<div class="sur" style="margin-top:20px">Erreur de page</div>
+<div class="etat" style="padding-top:8px"><div class="rd er"><svg class="i g" aria-hidden="true"><use href="#i-alert"/></svg></div><div class="t20">Impossible de charger.</div><div class="t14">Vérifiez le réseau.</div><button class="b p">Réessayer</button></div>
+</div></div><p class="note-maquette">En alerte : le texte seul, jamais un aplat. Sur la ligne : 2 vibrations et un bouton de 48 px.</p></div>
+<div class="cadre"><h2>Hors-ligne</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="ban"><span class="pt"></span>Pas de réseau<span class="d">· Vos saisies sont gardées.</span></div><div class="pg">
+<div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1><div class="sec">Aujourd'hui<span class="cnt">3</span></div><div class="lg"><div class="rep sur alerte">Retard</div><div class="txt"><b>Commander les rails</b><small>SCI Les Jardins</small></div><div class="et"><span class="coche "></span></div></div><div class="lg"><div class="rep">16h30</div><div class="txt"><b>M. Durand</b><small>Métré salle de bains</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+<div class="lg"><div class="rep" style="width:56px;color:rgb(var(--c-steel))"><svg class="i " aria-hidden="true"><use href="#i-mic"/></svg></div><div class="txt"><b>Note vocale · M. Durand</b><small>Gardée sur ce téléphone</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cloudoff"/></svg></div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">2</i></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Un bandeau sans bouton. La note gardée sur le téléphone porte l'icône, pas une phrase.</p></div>
+<div class="cadre"><h2>Succès · les trois temps</h2><div class="tel court"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="sur">1 · Je touche · vibration 12 ms</div>
+<div class="lg muet"><div class="rep sur" style="color:rgb(var(--c-steel))">Retard</div><div class="txt"><b>Commander les rails</b><small>SCI Les Jardins</small></div><div class="et"><span class="coche ok"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></span></div></div>
+<div class="sur" style="margin-top:16px">2 · La ligne se range · 5 s</div>
+<div class="trace"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg><b>Fait : Commander les rails</b><button class="b t">Annuler</button></div>
+<div class="sur" style="margin-top:16px">3 · La dernière ligne : le repos</div>
+<div class="etat" style="padding:12px 0 4px"><div class="rd ok" style="width:72px;height:72px"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></div><div class="t20">Tout est réglé.</div></div>
+</div></div><p class="note-maquette">Je touche, la ligne se range avec « Annuler » pendant 5 s, la dernière ferme sur le repos.</p></div>
+<div class="cadre"><h2>Soulagement · la journée</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg"><div class="sur">Jeudi 1 octobre</div><h1 class="t32">Bonjour Gérard</h1>
+<div class="etat" style="padding-top:36px"><div class="rd ok"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></div><div class="t32">Tout est réglé.</div></div>
+<div class="sec">Demain</div><div class="lg"><div class="rep">8h00</div><div class="txt"><b>SCI Les Jardins</b><small>Visite technique</small></div><div class="et sans"><svg class="i " aria-hidden="true"><use href="#i-cr"/></svg></div></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg></span>Aujourd'hui</div>
+  <div class="onglet "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Un grand rond vert, une phrase, la suite en une ligne. Pas de confettis, pas de score.</p></div>
+<div class="cadre"><h2>Soulagement · le chantier</h2><div class="tel"><div class="haut"><span class="logo"><svg class="i " aria-hidden="true"><use href="#i-logo"/></svg>Compyo</span><span class="cible"><svg class="i " aria-hidden="true"><use href="#i-bell"/></svg></span></div><div class="pg">
+<div class="navp"><span class="retour"><svg class="i " aria-hidden="true"><use href="#i-cl"/></svg>Projets</span><span class="rond"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span></div>
+<div class="etat" style="padding-top:36px"><div class="rd ok"><svg class="i " aria-hidden="true"><use href="#i-check"/></svg></div><div class="t32">Chantier terminé.</div><div class="t14">M. Roux · 12 jours de chantier</div><button class="b t">Annuler</button></div>
+</div><nav class="barre" aria-label="Navigation">
+  <div class="onglet auj "><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-home"/></svg><i class="bdg">1</i></span>Aujourd'hui</div>
+  <div class="onglet actif"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-folder"/></svg></span>Projets</div>
+  <div class="onglet nv"><div class="btn-rond">+</div>Nouveau</div>
+  <div class="onglet"><span class="ic"><svg class="i " aria-hidden="true"><use href="#i-cal"/></svg></span>Planning</div>
+  <div class="onglet"><span class="ic"><svg class="i f" aria-hidden="true"><use href="#i-dots"/></svg></span>Plus</div>
+</nav></div><p class="note-maquette">Le chantier qui se termine reçoit le même repos. « Annuler » reste à portée du pouce.</p></div></div>
+</body>
+</html>

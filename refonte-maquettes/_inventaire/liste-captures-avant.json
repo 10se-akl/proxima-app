@@ -1,0 +1,122 @@
+[
+ {
+  "nom": "accueil-charge",
+  "url": "http://localhost:3000/apercu-moins?ecran=accueil-charge"
+ },
+ {
+  "nom": "accueil-vide",
+  "url": "http://localhost:3000/apercu-moins?ecran=accueil-vide"
+ },
+ {
+  "nom": "accueil-premier",
+  "url": "http://localhost:3000/apercu-moins?ecran=accueil-premier"
+ },
+ {
+  "nom": "accueil-soir",
+  "url": "http://localhost:3000/apercu-moins?ecran=accueil-soir"
+ },
+ {
+  "nom": "fiche-nouveau",
+  "url": "http://localhost:3000/apercu-moins?ecran=fiche-nouveau"
+ },
+ {
+  "nom": "fiche-long",
+  "url": "http://localhost:3000/apercu-moins?ecran=fiche-long"
+ },
+ {
+  "nom": "fiche-chantier",
+  "url": "http://localhost:3000/apercu-moins?ecran=fiche-chantier"
+ },
+ {
+  "nom": "capture",
+  "url": "http://localhost:3000/apercu-moins?ecran=capture"
+ },
+ {
+  "nom": "message",
+  "url": "http://localhost:3000/apercu-moins?ecran=message"
+ },
+ {
+  "nom": "planning-mobile",
+  "url": "http://localhost:3000/apercu-moins?ecran=planning-mobile"
+ },
+ {
+  "nom": "planning-grille",
+  "url": "http://localhost:3000/apercu-moins?ecran=planning-grille"
+ },
+ {
+  "nom": "devis",
+  "url": "http://localhost:3000/apercu-moins?ecran=devis"
+ },
+ {
+  "nom": "devis-envoye",
+  "url": "http://localhost:3000/apercu-moins?ecran=devis-envoye"
+ },
+ {
+  "nom": "devis-pret",
+  "url": "http://localhost:3000/apercu-moins?ecran=devis-pret"
+ },
+ {
+  "nom": "factures-projet",
+  "url": "http://localhost:3000/apercu-moins?ecran=factures-projet"
+ },
+ {
+  "nom": "projets-50",
+  "url": "http://localhost:3000/apercu-moins?ecran=projets-50"
+ },
+ {
+  "nom": "projets-0",
+  "url": "http://localhost:3000/apercu-moins?ecran=projets-0"
+ },
+ {
+  "nom": "devis-liste",
+  "url": "http://localhost:3000/apercu-moins?ecran=devis-liste"
+ },
+ {
+  "nom": "factures-liste",
+  "url": "http://localhost:3000/apercu-moins?ecran=factures-liste"
+ },
+ {
+  "nom": "parametres",
+  "url": "http://localhost:3000/apercu-moins?ecran=parametres"
+ },
+ {
+  "nom": "bilan",
+  "url": "http://localhost:3000/apercu-moins?ecran=bilan"
+ },
+ {
+  "nom": "rappel",
+  "url": "http://localhost:3000/apercu-moins?ecran=rappel"
+ },
+ {
+  "nom": "onboarding",
+  "url": "http://localhost:3000/apercu-moins?ecran=onboarding"
+ },
+ {
+  "nom": "nouvelle",
+  "url": "http://localhost:3000/apercu-moins?ecran=nouvelle"
+ },
+ {
+  "nom": "importer",
+  "url": "http://localhost:3000/apercu-moins?ecran=importer"
+ },
+ {
+  "nom": "importer-capture",
+  "url": "http://localhost:3000/apercu-moins?ecran=importer-capture"
+ },
+ {
+  "nom": "rdv",
+  "url": "http://localhost:3000/apercu-moins?ecran=rdv"
+ },
+ {
+  "nom": "note",
+  "url": "http://localhost:3000/apercu-moins?ecran=note"
+ },
+ {
+  "nom": "login",
+  "url": "http://localhost:3000/login"
+ },
+ {
+  "nom": "demander-acces",
+  "url": "http://localhost:3000/demander-acces"
+ }
+]

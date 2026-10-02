@@ -131,6 +131,10 @@ export function VueProjet({
   const [messageOuvert, setMessageOuvert] = useState(false);
   const [demandeMessage, setDemandeMessage] = useState<DemandeMessage | null>(null);
   const [vientDEtreCree, setVientDEtreCree] = useState(false);
+  // Refonte (02/10, duel D lot 1) — terminer un chantier est irréversible
+  // (aucune action ne le rouvre) : une question avant, depuis « Maintenant »
+  // comme depuis « … ». Règle 6 de docs/langage-interface.md.
+  const [confirmerFin, setConfirmerFin] = useState(false);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const cle = p.get("message") as CleMessage | null;
@@ -222,6 +226,7 @@ export function VueProjet({
 
   const agir = (id: IdAction) => {
     if (id === "ajouter") return setAjout("choix");
+    if (id === "terminer") return setConfirmerFin(true);
     if (id === "facturation") {
       document.getElementById("facturation")?.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
@@ -239,7 +244,7 @@ export function VueProjet({
     ...(peutAnalyser && !analyseAJour ? [{ type: "action" as const, libelle: "Résumer mes notes avec l'IA", surChoisir: () => surAction("analyser") }] : []),
     ...(!devis ? [{ type: "action" as const, libelle: "Devis express (sans IA)", surChoisir: () => surAction("devis_express") }] : []),
     ...(projet.statut !== "termine"
-      ? [{ type: "separateur" as const }, { type: "action" as const, libelle: "Marquer le projet comme terminé", surChoisir: () => surAction("terminer"), attention: true }]
+      ? [{ type: "separateur" as const }, { type: "action" as const, libelle: "Marquer le projet comme terminé", surChoisir: () => setConfirmerFin(true), attention: true }]
       : []),
   ];
 
@@ -464,6 +469,29 @@ export function VueProjet({
         demandeId={projet.id}
         demande={demandeMessage}
       />
+
+      <Feuille ouverte={confirmerFin} titre="Chantier terminé ?" surFermer={() => setConfirmerFin(false)}>
+        <p className="text-base text-steel">Le projet quitte la liste des chantiers en cours.</p>
+        <div className="mt-5 flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setConfirmerFin(false);
+              surAction("terminer");
+            }}
+            className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+          >
+            Oui, chantier terminé
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmerFin(false)}
+            className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+          >
+            Pas encore
+          </button>
+        </div>
+      </Feuille>
     </div>
   );
 }

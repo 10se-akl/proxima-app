@@ -9,6 +9,8 @@ import { ErreurInline } from "@/components/ui/EtatErreur";
 import { FacturePreview } from "@/components/dashboard/FacturePreview";
 import type { Devis, Facture } from "@/types";
 import { montantAcompte as calculerAcompteSigne } from "@/lib/devis/mentionsLegales";
+import { montantFrancais } from "@/lib/messagesClient";
+import { Feuille } from "@/components/projet/Feuille";
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -60,6 +62,10 @@ export function FacturesProjet({
   const [depassement, setDepassement] = useState<{ total: number; plafond: number; deja: number } | null>(null);
   const [factureOuverteId, setFactureOuverteId] = useState<string | null>(null);
   const [actionEnCoursId, setActionEnCoursId] = useState<string | null>(null);
+  // Refonte (02/10, duel D lot 1) — une facture numérotée ne se crée plus
+  // d'un appui, et un avoir ne passe plus par window.confirm : une feuille
+  // pose la question, avec le montant (règle 6 de docs/langage-interface.md).
+  const [question, setQuestion] = useState<{ genre: "solde" } | { genre: "avoir"; id: string } | null>(null);
 
   async function chargerFactures() {
     setErreurChargement(false);
@@ -166,7 +172,6 @@ export function FacturesProjet({
   }
 
   async function creerAvoir(id: string) {
-    if (!window.confirm("Annuler cette facture ? Un avoir sera créé pour la même somme.")) return;
     setErreur(null);
     setActionEnCoursId(id);
     try {
@@ -264,7 +269,7 @@ export function FacturesProjet({
                     </button>
                     <button
                       type="button"
-                      onClick={() => creerAvoir(f.id)}
+                      onClick={() => setQuestion({ genre: "avoir", id: f.id })}
                       disabled={actionEnCoursId === f.id}
                       className="text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40 disabled:opacity-50"
                     >
@@ -275,7 +280,7 @@ export function FacturesProjet({
                 {f.statut === "payee" && (
                   <button
                     type="button"
-                    onClick={() => creerAvoir(f.id)}
+                    onClick={() => setQuestion({ genre: "avoir", id: f.id })}
                     disabled={actionEnCoursId === f.id}
                     className="text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40 disabled:opacity-50"
                   >
@@ -330,7 +335,7 @@ export function FacturesProjet({
         {soldeRestant > 0 && (
           <Button
             variant="ghost"
-            onClick={() => creerFacture("facture")}
+            onClick={() => setQuestion({ genre: "solde" })}
             loading={creationEnCours === "facture"}
           >
             {creationEnCours === "facture" ? "Création…" : "+ Facture (solde)"}
@@ -381,6 +386,49 @@ export function FacturesProjet({
           </div>
         </div>
       )}
+
+      <Feuille
+        ouverte={question !== null}
+        titre={question?.genre === "avoir" ? "Annuler cette facture ?" : `Facture de solde : ${montantFrancais(soldeRestant)} € ?`}
+        surFermer={() => setQuestion(null)}
+      >
+        <p className="text-base text-steel">
+          {question?.genre === "avoir" ? "Un avoir est créé pour la même somme." : "Elle reçoit son numéro, définitif."}
+        </p>
+        <div className="mt-5 flex flex-col gap-2">
+          {question?.genre === "avoir" ? (
+            <button
+              type="button"
+              onClick={() => {
+                const id = question.id;
+                setQuestion(null);
+                void creerAvoir(id);
+              }}
+              className="min-h-12 w-full rounded-2xl px-4 text-base font-semibold text-signal-fonce ring-1 ring-inset ring-signal-fonce/50 dark:text-signal-clair dark:ring-signal-clair/50"
+            >
+              Créer l&apos;avoir
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setQuestion(null);
+                void creerFacture("facture");
+              }}
+              className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80"
+            >
+              Créer la facture
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setQuestion(null)}
+            className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+          >
+            {question?.genre === "avoir" ? "Garder la facture" : "Pas maintenant"}
+          </button>
+        </div>
+      </Feuille>
     </Card>
   );
 }

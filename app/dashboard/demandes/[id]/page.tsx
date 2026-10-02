@@ -36,6 +36,7 @@ import { VueProjet } from "@/components/projet/VueProjet";
 import { Feuille } from "@/components/projet/Feuille";
 import type { IdAction } from "@/components/projet/prochaineAction";
 import { SquelettePage } from "@/components/ui/Skeleton";
+import { empreinte, lireBrouillon, ecrireBrouillon, effacerBrouillon } from "@/lib/brouillonLocal";
 
 // Revue métier (06/09) — dérivé de LABEL_TYPE_CHANTIER (components/
 // dashboard/DemandeCard.tsx) plutôt que dupliqué ici : une seule liste à
@@ -812,9 +813,25 @@ export default function DetailDemandePage({
   // enregistrée alors qu'elle ne l'était pas.
   const [erreurNotes, setErreurNotes] = useState<string | null>(null);
 
+  // Refonte (02/10, duel D lot 1) — « rien ne se perd » : le mémo ne
+  // s'enregistrait qu'en quittant le champ. Un appel, un changement
+  // d'application ou une page rechargée avant ce moment perdait la saisie.
+  // Il est maintenant gardé sur le téléphone à chaque frappe (même
+  // mécanisme que le devis, lib/brouillonLocal.ts), puis effacé une fois
+  // enregistré. La « base » est le mémo en base : s'il a changé ailleurs
+  // entre-temps, le brouillon périmé est ignoré.
+  const cleMemo = demande ? `compyo:memo:${demande.id}` : null;
   useEffect(() => {
-    if (demande) setNotesLocales(demande.notes ?? "");
+    if (!demande) return;
+    const base = empreinte(demande.notes ?? "");
+    const brouillon = lireBrouillon<string>(`compyo:memo:${demande.id}`, base);
+    setNotesLocales(brouillon ?? demande.notes ?? "");
   }, [demande?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function changerNotes(v: string) {
+    setNotesLocales(v);
+    if (cleMemo && demande) ecrireBrouillon(cleMemo, empreinte(demande.notes ?? ""), v);
+  }
 
   async function enregistrerNotes() {
     if (!demande) return;
@@ -837,6 +854,7 @@ export default function DetailDemandePage({
       return;
     }
     setErreurNotes(null);
+    if (cleMemo) effacerBrouillon(cleMemo);
     setNotesEnregistrees(true);
     setTimeout(() => setNotesEnregistrees(false), 1500);
     if (artisanId && organisationId && notesLocales.trim()) {
@@ -1052,7 +1070,7 @@ export default function DetailDemandePage({
         }}
         memo={{
           valeur: notesLocales,
-          surChanger: setNotesLocales,
+          surChanger: changerNotes,
           surEnregistrer: enregistrerNotes,
           enregistre: notesEnregistrees,
         }}

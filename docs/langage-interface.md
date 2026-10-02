@@ -174,4 +174,4 @@ Ni confettis, ni série de jours, ni badge, ni emoji.
 
 - **Au fil de l'eau.** Un écran passe sous ces règles quand on le touche. Un écran neuf les respecte dès son premier commit. Pas de script dans le build, pas de refonte d'un seul coup.
 - **Sur ordinateur, le bureau du soir.** Les règles sont les mêmes. Le bouton plein n'occupe plus toute la largeur (`sm:w-auto`), le survol s'ajoute à l'appui (`sm:hover:bg-ink/5`), et les listes restent dans `max-w-2xl`.
-- **En attente de leur duel.** La densité de l'éditeur de devis (duel F) et celle de la grille du planning (duel G) restent ouvertes. Ces deux écrans suivent déjà les règles 3, 4, 9, 10, 13, 17 et 18.
+- **En attente de leur duel.** La densité de l'éditeur de devis (duel F) et celle de la grille du planning (duel G) restent ouvertes. Ces deux écrans devront suivre les règles 3, 4, 9, 10, 13, 17 et 18 quand on les reprendra : ils ne les suivent pas encore (par exemple `text-[15px]`, `ink/60` et un focus en `signal/50` dans `components/planning/AgendaMobile.tsx`).

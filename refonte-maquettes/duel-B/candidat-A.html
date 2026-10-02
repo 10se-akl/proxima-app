@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat A — Ne rien changer (nettoyages évidents)</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+.sec{flex-basis:100%;font:800 20px/1.2 Manrope,sans-serif;margin-top:10px}
+.sec small{display:block;font:500 13px/1.45 Inter;color:rgb(var(--c-steel));margin-top:3px;max-width:980px}
+svg.ico{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.grow{flex:1;min-width:0}
+.grow>b{display:block;font:600 16px/1.3 Inter}
+.sub{display:block;font:500 13.5px/1.3 Inter;color:rgb(var(--c-steel))}
+.rel{position:relative;display:inline-flex}
+.haut{display:flex;align-items:center;justify-content:space-between;background:rgb(var(--c-anthracite));color:rgb(var(--c-paper));min-height:48px;padding:0 8px 0 16px;font:600 16px Manrope,sans-serif}
+.haut .logo{display:flex;align-items:center;gap:8px}
+.marque{width:20px;height:20px;border-radius:50%;border:3px solid rgb(var(--c-paper));border-right-color:transparent;display:inline-block}
+.haut .cloche{width:44px;height:44px;display:grid;place-items:center;opacity:.7}
+.bloc{font:600 19px/1.2 Manrope,sans-serif;display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.bloc .n{font:500 14px Inter;color:rgb(var(--c-steel))}
+.liste{display:flex;flex-direction:column;gap:8px}
+.rep{width:46px;flex:none;font:500 13px "IBM Plex Mono",monospace;color:rgb(var(--c-steel))}
+.rep.retard{color:rgb(var(--c-signal-fonce));font-weight:700}
+.rep:empty{display:none}
+.coche{width:32px;height:32px;border-radius:50%;border:1.5px solid rgb(var(--c-gris-clair));flex:none}
+.btn-pet{min-height:48px;min-width:48px;padding:0 16px;border-radius:14px;font:700 15px Inter;border:1.5px solid rgb(var(--c-gris-clair));background:rgb(var(--c-surface));color:rgb(var(--c-ink));cursor:pointer}
+.btn-pet.plein{background:rgb(var(--c-ink));color:rgb(var(--c-paper));border-color:rgb(var(--c-ink))}
+.geste{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgb(var(--c-ink));color:rgb(var(--c-paper));font:700 12px Inter;flex:none}
+.geste.abs{position:absolute;top:-9px;right:-9px;z-index:3}
+.pastille.pt{position:absolute;top:-9px;right:-16px;min-width:18px;height:18px;font-size:11px;padding:0 5px}
+.pastille.pt2{min-width:20px;height:20px;font-size:11px;padding:0 6px}
+.barre{z-index:2}
+.barre .onglet{position:relative;flex:1}
+.barre .onglet.actif{font-weight:700}
+.barre .onglet.actif::before{content:"";position:absolute;top:-8px;left:14px;right:14px;height:3px;border-radius:0 0 3px 3px;background:rgb(var(--c-ink))}
+.barre .onglet.cap{align-self:stretch;justify-content:flex-end;padding-bottom:12px;color:rgb(var(--c-ink)/.7)}
+.barre .onglet.cap .btn-rond{position:absolute;top:-24px;left:50%;margin:0 0 0 -32px}
+.voile{z-index:5}
+.feuille{z-index:6;max-height:92%}
+.feuille .ligne{border-top:1px solid rgb(var(--c-ink)/.06)}
+.feuille .ligne:first-child{border-top:0}
+.ico-carre{width:36px;height:36px;border-radius:12px;background:rgb(var(--c-ink)/.06);display:grid;place-items:center;color:rgb(var(--c-ink)/.7);flex:none}
+.ico-carre .ico{width:19px;height:19px}
+.ico-nu{width:48px;height:48px;display:grid;place-items:center;color:rgb(var(--c-ink)/.6)}
+.chev{width:16px;height:16px;color:rgb(var(--c-ink)/.3);flex:none}
+.feuille .ligne .grow{font:500 16px Inter}
+.liens{margin-top:6px}
+.lien{min-height:48px;display:flex;align-items:center;gap:10px;font:500 14px Inter;color:rgb(var(--c-ink)/.7);text-decoration:underline;text-decoration-color:rgb(var(--c-ink)/.2);text-underline-offset:4px}
+.lien .tag{text-decoration:none}
+.ligne.bas{border-top:1px solid rgb(var(--c-ink)/.1)!important;margin-top:4px}
+.sortie{outline:2px dashed rgb(var(--c-steel));outline-offset:-2px;border-radius:10px;background:rgb(var(--c-paper-warm))}
+.sortie.lien{padding:0 8px}
+.tag{font:600 11px Inter;border:1px dashed rgb(var(--c-steel));border-radius:99px;padding:3px 8px;color:rgb(var(--c-steel));white-space:nowrap;text-decoration:none}
+.champ{min-height:48px;border:1px solid rgb(var(--c-ink)/.15);border-radius:16px;padding:0 16px;display:flex;align-items:center;color:rgb(var(--c-steel));background:rgb(var(--c-surface));font:500 15px Inter}
+.pills{display:flex;gap:8px;flex-wrap:wrap}
+.pill{min-height:44px;padding:0 16px;border-radius:99px;display:inline-flex;align-items:center;font:500 14px Inter;box-shadow:inset 0 0 0 1px rgb(var(--c-ink)/.15);color:rgb(var(--c-ink)/.7)}
+.pill.on{background:rgb(var(--c-ink));color:rgb(var(--c-paper));font-weight:600}
+.carte.fac{display:flex;align-items:center;gap:12px;min-height:72px}
+.carte.fac .l1,.carte.fac .l2{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.carte.fac .l1 b{font:600 15px Inter;display:inline}
+.carte.fac .l1 b:last-child{white-space:nowrap}
+.badge{font:500 12px Inter;border-radius:6px;padding:2px 8px;background:rgb(var(--c-steel)/.15);color:rgb(var(--c-steel));flex:none}
+.avatar{width:40px;height:40px;border-radius:50%;background:rgb(var(--c-paper-warm));display:grid;place-items:center;font:700 13px Inter;color:rgb(var(--c-steel));flex:none}
+.avatar.petit{width:30px;height:30px;font-size:11px;background:rgb(var(--c-paper)/.12);color:rgb(var(--c-paper))}
+.carte.groupe{display:flex;align-items:center;gap:12px;min-height:56px}
+.carte.groupe.ouvert{flex-direction:column;align-items:stretch;gap:10px}
+.carte.groupe .entete{display:flex;align-items:center;gap:12px;min-height:40px}
+.membre{display:flex;align-items:center;gap:12px;min-height:56px;border-top:1px solid rgb(var(--c-gris-clair))}
+.carte.calme{display:flex;flex-direction:column;gap:4px;padding:16px}
+/* ordinateur */
+.ordi.l1440{width:1440px;min-height:720px;overflow:hidden}
+.lat{width:240px;flex:none;background:rgb(var(--c-anthracite));color:rgb(var(--c-paper));display:flex;flex-direction:column;justify-content:space-between}
+.lat-logo{display:flex;align-items:center;gap:10px;padding:24px;border-bottom:1px solid rgb(var(--c-paper)/.1);font:600 16px Manrope,sans-serif}
+.lat-nav{padding:12px 12px 0;display:flex;flex-direction:column;gap:4px}
+.lat-nav.sep{margin:14px 12px 0;padding:12px 0 0;border-top:1px solid rgb(var(--c-paper)/.1);gap:0}
+.lien-lat{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;font:500 15px Inter;color:rgb(var(--c-paper)/.7)}
+.lien-lat.petit{padding:8px 12px;font-size:13px;border-radius:10px;color:rgb(var(--c-paper)/.5)}
+.lien-lat.actif{background:rgb(var(--c-paper)/.1);color:rgb(var(--c-paper));font-weight:600}
+.lien-lat .ico{width:18px;height:18px}
+.lien-lat.petit .ico{width:15px;height:15px}
+.lat-compte{padding:20px 12px;border-top:1px solid rgb(var(--c-paper)/.1);display:flex;flex-direction:column;gap:12px}
+.lat-ic{width:44px;height:44px;display:grid;place-items:center;color:rgb(var(--c-paper)/.6)}
+.princ{flex:1;padding:32px 40px}
+.princ .col{width:620px;display:flex;flex-direction:column;gap:12px}
+</style>
+</head>
+<body>
+
+<h1 class="sec" style="font-size:26px">Candidat A — Ne rien changer, sauf les nettoyages évidents
+<small>Maquette basse fidélité, jetable. Les écrans 1, 4, 5, 6, 7 montrent l'application actuelle ; 2 → 3 est le seul vrai changement (Guide et Carte mentale quittent la navigation, leurs routes restent). Les ronds noirs numérotent les appuis.</small></h1>
+
+<h2 class="sec">La barre du bas et ce qu'il y a derrière « Plus »</h2>
+<div class="cadre"><h2>1 · La barre du bas, telle quelle</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+  <p class="t-sur">Jeudi 1 octobre</p>
+  <h1 class="t-titre" style="margin-top:-4px">Bonjour Gérard</h1>
+  <div class="carte-sombre ligne" style="gap:12px">
+    <span class="grow"><span class="t-sur">Maintenant</span><b style="display:block;font:700 17px/1.3 Inter;margin-top:6px">14h00 — SCI Les Jardins de la Vallée</b><span class="sub" style="color:rgb(var(--c-gris-clair))">Visite technique avant chiffrage</span></span><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </div>
+  <h3 class="bloc">À confirmer <span class="n">1</span></h3>
+  <div class="carte ligne"><span class="grow"><b>SCI Les Jardins de la Vallée</b><span class="sub">Fait ? Visite · 30 sept.</span></span><button class="btn-pet plein" type="button">Oui</button><button class="btn-pet" type="button">Non</button></div>
+  <h3 class="bloc">Aujourd'hui <span class="n">3</span></h3>
+  <div class="liste">
+    <div class="carte ligne"><span class="rep retard">Retard</span><span class="grow"><b>Commander les rails 48</b><span class="sub">SCI Les Jardins de la Vallée</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">16h30</span><span class="grow"><b>M. Durand</b><span class="sub">Métré salle de bains</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">18h00</span><span class="grow"><b>Appeler le plâtrier</b></span><span class="coche"></span></div>
+  </div>
+  <h3 class="bloc">À faire de votre côté <span class="n">1</span></h3>
+  <div class="liste"><div class="carte ligne"><span class="rep "></span><span class="grow"><b>Mme Bernard</b><span class="sub">Nouveau projet à cadrer</span></span></div></div></div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet actif"><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav></div><p class="note-maquette">Aucun changement : 3 destinations, la capture, Plus. Pastille = notes en retard.</p></div>
+<div class="cadre"><h2>2 · « Plus » aujourd'hui</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+  <p class="t-sur">Jeudi 1 octobre</p>
+  <h1 class="t-titre" style="margin-top:-4px">Bonjour Gérard</h1>
+  <div class="carte-sombre ligne" style="gap:12px">
+    <span class="grow"><span class="t-sur">Maintenant</span><b style="display:block;font:700 17px/1.3 Inter;margin-top:6px">14h00 — SCI Les Jardins de la Vallée</b><span class="sub" style="color:rgb(var(--c-gris-clair))">Visite technique avant chiffrage</span></span><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </div>
+  <h3 class="bloc">À confirmer <span class="n">1</span></h3>
+  <div class="carte ligne"><span class="grow"><b>SCI Les Jardins de la Vallée</b><span class="sub">Fait ? Visite · 30 sept.</span></span><button class="btn-pet plein" type="button">Oui</button><button class="btn-pet" type="button">Non</button></div>
+  <h3 class="bloc">Aujourd'hui <span class="n">3</span></h3>
+  <div class="liste">
+    <div class="carte ligne"><span class="rep retard">Retard</span><span class="grow"><b>Commander les rails 48</b><span class="sub">SCI Les Jardins de la Vallée</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">16h30</span><span class="grow"><b>M. Durand</b><span class="sub">Métré salle de bains</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">18h00</span><span class="grow"><b>Appeler le plâtrier</b></span><span class="coche"></span></div>
+  </div>
+  <h3 class="bloc">À faire de votre côté <span class="n">1</span></h3>
+  <div class="liste"><div class="carte ligne"><span class="rep "></span><span class="grow"><b>Mme Bernard</b><span class="sub">Nouveau projet à cadrer</span></span></div></div></div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet actif"><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav>
+<div class="voile"></div>
+<div class="feuille">
+  <div class="t-grand" style="padding:4px 0 2px">Plus</div>
+  <div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/></svg></span><span class="grow">Devis</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7.5a6 6 0 1 0 0 9M5 10.5h9M5 13.5h9"/></svg></span><span class="grow">Factures</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6"/></svg></span><span class="grow">Notes</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></span><span class="grow">Bilan</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span><span class="grow">Paramètres</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne sortie"><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h13v16H7a2 2 0 0 1-2-2z"/><path d="M5 18a2 2 0 0 1 2-2h11"/></svg></span><span class="grow">Guide</span><span class="tag">sort de la feuille</span></div></div>
+  <div class="liens"><span class="t-petit">Idées et retours</span><div><div class="lien "><span>Donner mon avis</span></div><div class="lien sortie"><span>Ce que disent les artisans</span><span class="tag">sort de la nav</span></div></div></div>
+  <div class="ligne bas"><span class="ico-nu"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></span><span class="ico-nu"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><span class="grow"></span><span class="t-petit" style="font-size:14px">Se déconnecter</span></div>
+</div></div><p class="note-maquette">Avant : 6 lignes de même poids, deux liens « Idées et retours » (traits pointillés = ce qui part).</p></div>
+<div class="cadre"><h2>3 · « Plus » après nettoyage</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+  <p class="t-sur">Jeudi 1 octobre</p>
+  <h1 class="t-titre" style="margin-top:-4px">Bonjour Gérard</h1>
+  <div class="carte-sombre ligne" style="gap:12px">
+    <span class="grow"><span class="t-sur">Maintenant</span><b style="display:block;font:700 17px/1.3 Inter;margin-top:6px">14h00 — SCI Les Jardins de la Vallée</b><span class="sub" style="color:rgb(var(--c-gris-clair))">Visite technique avant chiffrage</span></span><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </div>
+  <h3 class="bloc">À confirmer <span class="n">1</span></h3>
+  <div class="carte ligne"><span class="grow"><b>SCI Les Jardins de la Vallée</b><span class="sub">Fait ? Visite · 30 sept.</span></span><button class="btn-pet plein" type="button">Oui</button><button class="btn-pet" type="button">Non</button></div>
+  <h3 class="bloc">Aujourd'hui <span class="n">3</span></h3>
+  <div class="liste">
+    <div class="carte ligne"><span class="rep retard">Retard</span><span class="grow"><b>Commander les rails 48</b><span class="sub">SCI Les Jardins de la Vallée</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">16h30</span><span class="grow"><b>M. Durand</b><span class="sub">Métré salle de bains</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">18h00</span><span class="grow"><b>Appeler le plâtrier</b></span><span class="coche"></span></div>
+  </div>
+  <h3 class="bloc">À faire de votre côté <span class="n">1</span></h3>
+  <div class="liste"><div class="carte ligne"><span class="rep "></span><span class="grow"><b>Mme Bernard</b><span class="sub">Nouveau projet à cadrer</span></span></div></div></div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet actif"><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav>
+<div class="voile"></div>
+<div class="feuille">
+  <div class="t-grand" style="padding:4px 0 2px">Plus</div>
+  <div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/></svg></span><span class="grow">Devis</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7.5a6 6 0 1 0 0 9M5 10.5h9M5 13.5h9"/></svg></span><span class="grow">Factures</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6"/></svg></span><span class="grow">Notes</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg></span><span class="grow">Bilan</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span><span class="grow">Paramètres</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div></div>
+  <div class="liens"><span class="t-petit">Idées et retours</span><div><div class="lien "><span>Donner mon avis</span></div></div></div>
+  <div class="ligne bas"><span class="ico-nu"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></span><span class="ico-nu"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><span class="grow"></span><span class="t-petit" style="font-size:14px">Se déconnecter</span></div>
+</div></div><p class="note-maquette">Après : 5 lignes, un seul lien. Même geste, mêmes places : seuls Guide et Carte mentale partent.</p></div>
+
+<h2 class="sec">Le chemin vers une facture impayée<small>Deux entrées : le bloc « En attente du client » d'Aujourd'hui (1 appui jusqu'au message, 3 jusqu'à l'envoi), ou la liste Factures via Plus (4 appuis jusqu'à la ligne).</small></h2>
+<div class="cadre"><h2>4 · Facture impayée : depuis Aujourd'hui</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+    <h3 class="bloc">À faire de votre côté <span class="n">1</span></h3>
+    <div class="liste"><div class="carte ligne"><span class="rep "></span><span class="grow"><b>Mme Bernard</b><span class="sub">Nouveau projet à cadrer</span></span></div></div>
+    <h3 class="bloc">En attente du client <span class="n">2</span></h3>
+    <div class="liste">
+      <div class="carte ligne"><span class="rep ">12 j</span><span class="grow"><b>SCI Les Jardins de la Vallée</b><span class="sub">Facture impayée</span></span><span class="rel"><button class="btn-pet" type="button">Relancer</button><span class="geste abs">1</span></span></div>
+      <div class="carte ligne"><span class="rep ">6 j</span><span class="grow"><b>Mme Lefèvre</b><span class="sub">Devis sans réponse</span></span><span class="rel"><button class="btn-pet" type="button">Relancer</button></span></div>
+    </div>
+  </div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet actif"><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav></div><p class="note-maquette">Facture en retard : 1 appui sur Relancer ouvre la fiche avec le message prêt (visible dès le lendemain de l'échéance).</p></div>
+<div class="cadre"><h2>5 · … puis le message au client</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+    <h2 class="t-grand">SCI Les Jardins de la Vallée</h2>
+    <span class="sub">Rénovation complète · 12 rue des Lilas</span>
+    <div class="carte-sombre"><span class="t-sur">Maintenant</span><b style="display:block;font:700 17px/1.3 Inter;margin-top:6px">Relancer la facture F-2026-014</b></div>
+  </div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet "><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet actif"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav>
+  <div class="voile"></div>
+  <div class="feuille">
+    <div class="t-grand" style="padding:4px 0 2px">Message au client</div>
+    <div class="carte">
+      <span class="t-sur">Relance de paiement</span>
+      <p class="t-corps" style="margin-top:8px;font-size:15px">Bonjour, sauf erreur de ma part la facture F-2026-014 (3 480 €) n'est pas encore réglée. Pouvez-vous me dire quand je peux compter dessus ? Merci, Gérard Martin</p>
+    </div>
+    <div class="rel" style="display:flex;gap:10px"><button class="btn btn-secondaire" type="button">SMS</button><button class="btn btn-secondaire" type="button">WhatsApp</button><span class="geste abs">2</span></div>
+    <p class="t-petit" style="display:flex;align-items:center;gap:8px"><span class="geste">3</span> Gérard appuie lui-même sur Envoyer dans sa messagerie.</p>
+  </div></div><p class="note-maquette">Au total 3 gestes de la ligne au message parti, dont le dernier dans la messagerie du téléphone.</p></div>
+<div class="cadre"><h2>6 · Facture impayée : depuis nulle part</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+    <h1 class="t-titre">Factures</h1>
+    <div class="champ">Client, numéro de facture…</div>
+    <div class="pills"><span class="pill">Toutes</span><span class="rel"><span class="pill on">Émises</span><span class="geste abs">3</span></span><span class="pill">Payées</span><span class="pill">Annulées</span></div>
+    <div class="liste">
+      <div class="carte fac"><span class="avatar">MD</span><span class="grow"><span class="l1"><b>M. Durand</b><b>1 260,00 €</b></span><span class="l2"><span class="sub">Acompte A-2026-009 · 24 sept.</span><span class="badge">Émise</span></span></span></div>
+      <div class="carte fac rel"><span class="avatar">SJ</span><span class="grow"><span class="l1"><b>SCI Les Jardins de la Vallée</b><b>3 480,00 €</b></span><span class="l2"><span class="sub">Facture F-2026-014 · 19 sept.</span><span class="badge">Émise</span></span></span><span class="geste abs">4</span></div>
+      <div class="carte fac"><span class="avatar">MP</span><span class="grow"><span class="l1"><b>M. Petit</b><b>5 920,00 €</b></span><span class="l2"><span class="sub">Facture F-2026-012 · 8 sept.</span><span class="badge">Relancée</span></span></span></div>
+    </div>
+  </div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet "><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet actif"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav></div><p class="note-maquette">Plus (1) → Factures (2) → Émises (3) → la ligne (4). Aucun jour de retard affiché, « Émises » = impayées.</p></div>
+
+<h2 class="sec">Équipe, Paramètres, et la vue réduite</h2>
+<div class="cadre"><h2>7 · Équipe et Paramètres</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+    <h1 class="t-titre">Paramètres</h1>
+    <div class="liste">
+      <div class="carte groupe"><span class="grow"><b>Entreprise</b></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="carte groupe"><span class="grow"><b>Mentions légales</b></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="carte groupe"><span class="grow"><b>Assurances</b></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="carte groupe"><span class="grow"><b>Paiement</b></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="carte groupe"><span class="grow"><b>Tarifs</b></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="carte groupe"><span class="grow"><b>Conditions</b></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>
+      <div class="carte groupe ouvert">
+        <div class="entete"><span class="grow"><b>Équipe</b></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></div>
+        <div class="membre"><span class="avatar">GM</span><span class="grow"><b>Gérard Martin</b><span class="sub">Propriétaire</span></span></div>
+        <div class="membre"><span class="avatar">SM</span><span class="grow"><b>Sylvie Martin</b><span class="sub">Membre</span></span></div>
+        <button class="btn btn-secondaire" type="button" style="min-height:48px;font-size:15px">Inviter quelqu'un</button>
+      </div>
+      <div class="carte groupe"><span class="grow"><b>Compte</b><span class="sub">Profil · Notifications · Mode d'emploi</span></span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div>
+    </div>
+  </div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet "><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet actif"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav></div><p class="note-maquette">Équipe reste dans Paramètres : Plus → Paramètres → Équipe = 3 appuis. Le Guide devient « Mode d'emploi » dans Compte.</p></div>
+<div class="cadre"><h2>8 · Coéquipier de terrain (si ce rôle existe)</h2><div class="tel"><div class="haut"><span class="logo"><span class="marque"></span>Compyo</span><span class="cloche"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span></div><div class="contenu">
+  <p class="t-sur">Jeudi 1 octobre</p>
+  <h1 class="t-titre" style="margin-top:-4px">Bonjour Gérard</h1>
+  <div class="carte-sombre ligne" style="gap:12px">
+    <span class="grow"><span class="t-sur">Maintenant</span><b style="display:block;font:700 17px/1.3 Inter;margin-top:6px">14h00 — SCI Les Jardins de la Vallée</b><span class="sub" style="color:rgb(var(--c-gris-clair))">Visite technique avant chiffrage</span></span><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+  </div>
+  <h3 class="bloc">À confirmer <span class="n">1</span></h3>
+  <div class="carte ligne"><span class="grow"><b>SCI Les Jardins de la Vallée</b><span class="sub">Fait ? Visite · 30 sept.</span></span><button class="btn-pet plein" type="button">Oui</button><button class="btn-pet" type="button">Non</button></div>
+  <h3 class="bloc">Aujourd'hui <span class="n">3</span></h3>
+  <div class="liste">
+    <div class="carte ligne"><span class="rep retard">Retard</span><span class="grow"><b>Commander les rails 48</b><span class="sub">SCI Les Jardins de la Vallée</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">16h30</span><span class="grow"><b>M. Durand</b><span class="sub">Métré salle de bains</span></span><span class="coche"></span></div>
+    <div class="carte ligne"><span class="rep ">18h00</span><span class="grow"><b>Appeler le plâtrier</b></span><span class="coche"></span></div>
+  </div>
+  <h3 class="bloc">À faire de votre côté <span class="n">1</span></h3>
+  <div class="liste"><div class="carte ligne"><span class="rep "></span><span class="grow"><b>Mme Bernard</b><span class="sub">Nouveau projet à cadrer</span></span></div></div></div>
+<nav class="barre" aria-label="Navigation principale">
+  <span class="onglet actif"><span class="rel"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="pastille signal pt">2</span></span>Aujourd'hui</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Projets</span>
+  <span class="onglet cap"><span class="btn-rond">+</span>Nouveau</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg>Planning</span>
+  <span class="onglet "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4" style="fill:currentColor"/><circle cx="12" cy="12" r="1.4" style="fill:currentColor"/><circle cx="19" cy="12" r="1.4" style="fill:currentColor"/></svg>Plus</span>
+</nav>
+<div class="voile"></div>
+<div class="feuille">
+  <div class="t-grand" style="padding:4px 0 2px">Plus</div>
+  <div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6"/></svg></span><span class="grow">Notes</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div><div class="ligne "><span class="ico-carre"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span><span class="grow">Paramètres</span><svg class="ico chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></div></div>
+  <div class="liens"><span class="t-petit">Idées et retours</span><div><div class="lien "><span>Donner mon avis</span></div></div></div>
+  <div class="ligne bas"><span class="ico-nu"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></span><span class="ico-nu"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><span class="grow"></span><span class="t-petit" style="font-size:14px">Se déconnecter</span></div>
+</div></div><p class="note-maquette">Même barre ; Plus perd Devis, Factures, Bilan. Cosmétique seulement : le vrai verrou est en base, aujourd'hui absent.</p></div>
+
+<h2 class="sec">Le bureau du soir</h2>
+
+<div class="cadre" style="flex-basis:100%">
+  <h2>9 · Ordinateur, 1440 px : la conjointe, jeudi soir (barre latérale actuelle, Guide et « Idées et retours » retirés)</h2>
+  <div class="ordi l1440">
+    <aside class="lat">
+    <div>
+      <div class="lat-logo"><span class="marque"></span>Compyo</div>
+      <div style="padding:16px 12px 4px"><button class="btn btn-primaire" type="button" style="min-height:48px;font-size:15px"><span style="font-size:20px">+</span> Nouveau projet</button></div>
+      <div class="lat-nav">
+        <span class="lien-lat actif"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg><span class="grow">Aujourd'hui</span><span class="pastille signal pt2">2</span></span>
+        <span class="lien-lat "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg><span class="grow">Projets</span></span>
+        <span class="lien-lat "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="5" width="16" height="15" rx="2"/><path d="M4 10h16M8 3v4M16 3v4"/></svg><span class="grow">Planning</span></span>
+      </div>
+      <div class="lat-nav sep">
+        <span class="lien-lat petit "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v4h4M10 12h6M10 16h6"/></svg>Devis</span>
+        <span class="lien-lat petit "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M17 7.5a6 6 0 1 0 0 9M5 10.5h9M5 13.5h9"/></svg>Factures</span>
+        <span class="lien-lat petit "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 4h12v16H6z"/><path d="M9 9h6M9 13h6"/></svg>Notes</span>
+        <span class="lien-lat petit "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20V11M12 20V4M19 20v-6"/></svg>Bilan</span>
+        <span class="lien-lat petit "><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>Paramètres</span>
+      </div>
+    </div>
+    <div class="lat-compte">
+      <div style="display:flex;align-items:center;gap:10px;padding:0 8px"><span class="avatar petit">SM</span><span style="font:500 14px Inter;opacity:.8">Sylvie Martin</span></div>
+      <div style="display:flex;gap:4px;padding:0 8px"><span class="lat-ic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></svg></span><span class="lat-ic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg></span><span class="lat-ic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19h14"/></svg></span><span class="lat-ic"><svg class="ico " viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v8M7 6.5a7 7 0 1 0 10 0"/></svg></span></div>
+      <div style="font:500 12px Inter;opacity:.45;padding:8px 8px 0;border-top:1px solid rgb(var(--c-paper) / .1)">Site vitrine · Contact</div>
+    </div>
+  </aside>
+    <main class="princ"><div class="col">
+      <p class="t-sur">Jeudi 1 octobre</p>
+      <h1 class="t-titre" style="margin-top:4px">Bonjour Sylvie</h1>
+      <div class="carte calme"><b>Tout est réglé pour aujourd'hui.</b><span class="sub">1 devis envoyé · 1 rendez-vous fait</span><span class="sub">Demain : 8h30 · M. Durand · 12 rue des Lilas</span></div>
+      <h3 class="bloc">À faire de votre côté <span class="n">2</span></h3>
+      <div class="liste">
+        <div class="carte ligne"><span class="rep "></span><span class="grow"><b>M. Durand</b><span class="sub">Devis à envoyer</span></span></div>
+        <div class="carte ligne"><span class="rep "></span><span class="grow"><b>Mme Bernard</b><span class="sub">Nouveau projet à cadrer</span></span></div>
+      </div>
+      <h3 class="bloc">En attente du client <span class="n">3</span></h3>
+      <div class="liste">
+        <div class="carte ligne"><span class="rep ">12 j</span><span class="grow"><b>SCI Les Jardins de la Vallée</b><span class="sub">Facture impayée</span></span><span class="rel"><button class="btn-pet" type="button">Relancer</button></span></div>
+        <div class="carte ligne"><span class="rep ">21 j</span><span class="grow"><b>M. Petit</b><span class="sub">Facture impayée</span></span><span class="rel"><button class="btn-pet" type="button">Relancer</button></span></div>
+        <div class="carte ligne"><span class="rep ">6 j</span><span class="grow"><b>Mme Lefèvre</b><span class="sub">Devis sans réponse</span></span><span class="rel"><button class="btn-pet" type="button">Relancer</button></span></div>
+      </div>
+    </div></main>
+  </div>
+  <p class="note-maquette" style="max-width:900px">Aujourd'hui réunit déjà « à envoyer » et « à relancer » ; Devis et Factures sont à 1 clic. Manques : aucun bloc « à facturer », et la colonne reste étroite sur grand écran.</p>
+</div>
+
+</body>
+</html>

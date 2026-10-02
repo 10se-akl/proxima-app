@@ -1,0 +1,419 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat D — Argent à la place de « Plus »</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Locale à cette maquette : aucune couleur en dur, seulement les variables du protocole. */
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+  svg.i.petit { width: 19px; height: 19px; }
+
+  .entete { flex-basis: 100%; max-width: 1100px; }
+  .entete h1 { font: 800 22px/1.2 Manrope, sans-serif; }
+  .entete p { font: 13px/1.5 Inter; color: rgb(var(--c-steel)); margin-top: 6px; max-width: 880px; }
+
+  /* Barre du haut du téléphone : marque à gauche, cloche et compte à droite. */
+  .topbar { display: flex; align-items: center; justify-content: space-between; min-height: 56px; padding: 0 4px 0 16px; border-radius: 0; flex: none; }
+  .topbar .marque { display: flex; align-items: center; gap: 8px; font: 700 17px Manrope, sans-serif; }
+  .topbar .droite { display: flex; align-items: center; }
+  .avatar { width: 36px; height: 36px; border-radius: 99px; border: 1.5px solid currentColor; display: grid; place-items: center; font: 700 12px Inter; flex: none; }
+  .avatar.grand { width: 44px; height: 44px; font-size: 14px; border-color: rgb(var(--c-steel)); }
+
+  /* Sections de contenu */
+  .sec { display: flex; flex-direction: column; gap: 8px; }
+  .sec h3 { font: 600 17px Manrope, sans-serif; display: flex; align-items: baseline; gap: 8px; }
+  .sec h3 .n { font: 400 13px Inter; color: rgb(var(--c-steel)); }
+  .liste { padding: 0; overflow: hidden; }
+  .item { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 4px 4px 4px 14px; }
+  .item + .item { border-top: 1px solid rgb(var(--c-gris-clair)); }
+  .item .rep { font: 500 12px "IBM Plex Mono", monospace; color: rgb(var(--c-steel)); width: 46px; flex: none; }
+  .item .rep.retard { color: rgb(var(--c-alerte-orange)); }
+  .item .txt { flex: 1; min-width: 0; }
+  .item .txt b { display: block; font: 600 15px/1.25 Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .txt span { display: block; font: 400 13px/1.3 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item .fin { color: rgb(var(--c-steel)); display: flex; align-items: center; justify-content: center; min-width: 48px; min-height: 48px; }
+  .btn-in { min-height: 48px; min-width: 48px; padding: 0 14px; border-radius: 12px; background: transparent; border: 1.5px solid rgb(var(--c-gris-clair)); font: 700 14px Inter; color: rgb(var(--c-ink)); display: inline-flex; align-items: center; justify-content: center; flex: none; margin-right: 6px; }
+  .rond { width: 28px; height: 28px; border-radius: 99px; border: 2px solid rgb(var(--c-gris-clair)); }
+  .chiffre-ligne { display: flex; align-items: baseline; gap: 10px; }
+
+  /* Pied de page d'Argent : les archives, à portée mais pas devant. */
+  .archives { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .archives a { min-height: 56px; padding: 6px 8px; border-radius: 14px; background: rgb(var(--c-paper-warm)); font: 600 13px/1.25 Inter; color: rgb(var(--c-ink)); display: flex; align-items: center; justify-content: center; text-align: center; text-decoration: none; }
+
+  /* Barre du bas : trait en haut de l'onglet actif, pastille sur Aujourd'hui. */
+  .barre .onglet { position: relative; }
+  .barre .onglet.actif { font-weight: 700; }
+  .barre .onglet.actif::before { content: ""; position: absolute; top: -8px; width: 28px; height: 3px; border-radius: 0 0 3px 3px; background: rgb(var(--c-ink)); }
+  .barre .pastille.signal { position: absolute; top: 0; left: 50%; margin-left: 6px; min-width: 18px; height: 18px; padding: 0 5px; font-size: 11px; }
+  .barre .btn-rond { flex: none; }
+
+  /* Feuille « Compte » */
+  .rang { display: flex; align-items: center; gap: 14px; min-height: 56px; border-bottom: 1px solid rgb(var(--c-gris-clair)); font: 500 16px Inter; }
+  .rang .pic { width: 36px; height: 36px; border-radius: 12px; background: rgb(var(--c-paper-warm)); display: grid; place-items: center; color: rgb(var(--c-steel)); flex: none; }
+  .rang .nom { flex: 1; }
+  .rang .chev { color: rgb(var(--c-steel)); opacity: .7; }
+  .pied-feuille { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgb(var(--c-gris-clair)); padding-top: 8px; }
+  .pied-feuille .gauche { display: flex; color: rgb(var(--c-steel)); }
+  .pied-feuille .deco { min-height: 48px; display: flex; align-items: center; padding: 0 8px; font: 500 14px Inter; color: rgb(var(--c-steel)); }
+
+  /* Chemin vers une facture impayée */
+  .chemin { width: 760px; max-width: 100%; display: flex; flex-direction: column; gap: 10px; }
+  .chemin .fl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 0; }
+  .chemin .fl + .fl { border-top: 1px solid rgb(var(--c-gris-clair)); }
+  .chemin .lib { width: 150px; font: 600 13px/1.3 Inter; flex: none; }
+  .chemin .lib small { display: block; font-weight: 400; color: rgb(var(--c-steel)); }
+  .chemin .et { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px 0 6px; border-radius: 99px; background: rgb(var(--c-paper-warm)); font: 600 13px Inter; }
+  .chemin .et i { font-style: normal; width: 24px; height: 24px; border-radius: 99px; display: grid; place-items: center; background: rgb(var(--c-surface)); font: 700 12px Inter; }
+  .chemin .et.hors { background: transparent; border: 1.5px dashed rgb(var(--c-gris-clair)); }
+  .chemin .total { margin-left: auto; font: 800 20px Manrope, sans-serif; }
+
+  /* Ordinateur : barre latérale + Argent */
+  .side { width: 240px; flex: none; border-radius: 12px 0 0 12px; padding: 0; display: flex; flex-direction: column; justify-content: space-between; position: relative; }
+  .side .sep { border-color: color-mix(in srgb, currentColor 16%, transparent); }
+  .side .logo { padding: 22px 24px; display: flex; align-items: center; gap: 10px; font: 700 17px Manrope, sans-serif; border-bottom: 1px solid color-mix(in srgb, currentColor 16%, transparent); }
+  .side .nouveau { padding: 16px 12px 8px; }
+  .side .nouveau .btn { min-height: 48px; font-size: 15px; }
+  .side .nav { display: flex; flex-direction: column; gap: 4px; padding: 4px 12px; }
+  .side .nav a { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 12px; border-radius: 12px; font: 500 15px Inter; opacity: .78; color: inherit; text-decoration: none; position: relative; }
+  .side .nav a.actif { background: color-mix(in srgb, currentColor 14%, transparent); font-weight: 700; opacity: 1; }
+  .side .nav a .pastille { margin-left: auto; }
+  .side .bas { padding: 12px 16px 16px; border-top: 1px solid color-mix(in srgb, currentColor 16%, transparent); display: flex; flex-direction: column; gap: 6px; }
+  .side .compte-btn { display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 8px; border-radius: 12px; font: 600 14px Inter; background: color-mix(in srgb, currentColor 10%, transparent); }
+  .side .compte-btn .nom { flex: 1; }
+  .side .icones { display: flex; padding: 0 4px; opacity: .75; }
+  .side .icones .cible { width: 48px; }
+  .side .vitrine { font: 12px Inter; opacity: .5; padding: 4px 8px 0; }
+  .menu-compte { position: absolute; left: 12px; right: 12px; bottom: 176px; color: rgb(var(--c-ink)); padding: 6px 14px; box-shadow: 0 10px 30px -12px rgb(var(--c-ink) / .5); }
+  .menu-compte .rang:last-child { border-bottom: 0; }
+  .menu-compte .rang { min-height: 48px; font-size: 15px; }
+  .menu-compte .petit { font: 400 13px Inter; color: rgb(var(--c-steel)); }
+
+  .princ { flex: 1; min-width: 0; padding: 32px 40px; display: flex; flex-direction: column; gap: 20px; }
+  .princ .grille { display: grid; grid-template-columns: 1.15fr 1fr; gap: 28px; align-items: start; }
+  .princ .col { display: flex; flex-direction: column; gap: 22px; }
+  .princ .archives { max-width: 520px; }
+  .princ .archives a { min-height: 48px; }
+</style>
+</head>
+<body>
+
+<!-- Icônes de la maquette (traits simples, couleur héritée du texte). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="i-logo" viewBox="0 0 24 24"><path d="M18 7a7 7 0 1 0 0 10"/></symbol>
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/></symbol>
+    <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+    <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-argent" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15.5 9a4 4 0 1 0 0 6M8 11h5M8 13.5h5"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 21h4"/></symbol>
+    <symbol id="i-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></symbol>
+    <symbol id="i-equipe" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5.5"/></symbol>
+    <symbol id="i-guide" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5"/></symbol>
+    <symbol id="i-avis" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+    <symbol id="i-lune" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></symbol>
+    <symbol id="i-install" viewBox="0 0 24 24"><path d="M12 4v11M7 11l5 5 5-5M5 20h14"/></symbol>
+    <symbol id="i-power" viewBox="0 0 24 24"><path d="M12 3v8M6.5 6.5a8 8 0 1 0 11 0"/></symbol>
+    <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+    <symbol id="i-chevhaut" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  </defs>
+</svg>
+
+<header class="entete">
+  <h1>Candidat D — « Argent » prend la 5e case de « Plus », le compte passe en haut à droite</h1>
+  <p>Barre du téléphone : Aujourd'hui · Projets · [+] · Planning · Argent. Barre latérale de l'ordinateur : les mêmes quatre destinations. Devis, Factures et Bilan fusionnent en une seule page qui ne montre que ce qui est à faire ; Notes vit dans Aujourd'hui ; Paramètres, Équipe, Guide et avis vivent dans le menu Compte. Aucune route n'est supprimée.</p>
+</header>
+
+<!-- ============ 1. Aujourd'hui, téléphone ============ -->
+<div class="cadre">
+  <h2>1 · Aujourd'hui — la barre à 360 px</h2>
+  <div class="tel">
+    <div class="topbar carte-sombre">
+      <span class="marque"><svg class="i"><use href="#i-logo"/></svg>Compyo</span>
+      <span class="droite">
+        <span class="cible"><svg class="i"><use href="#i-bell"/></svg></span>
+        <span class="cible" aria-label="Compte"><span class="avatar">GM</span></span>
+      </span>
+    </div>
+    <div class="contenu">
+      <div>
+        <p class="t-sur">jeudi 1 octobre</p>
+        <h1 class="t-titre">Bonjour Gérard</h1>
+      </div>
+      <div class="carte-sombre">
+        <p class="t-sur" style="color:inherit;opacity:.7">Maintenant</p>
+        <p class="t-grand" style="margin-top:6px">14h00 — SCI Les Jardins</p>
+        <p style="opacity:.75;font-size:14px;margin-top:2px">Visite technique avant chiffrage</p>
+      </div>
+      <div class="sec">
+        <h3>Aujourd'hui <span class="n">3</span></h3>
+        <div class="carte liste">
+          <div class="item"><span class="rep retard">Retard</span><span class="txt"><b>Commander les rails 48</b><span>SCI Les Jardins de la Vallée</span></span><span class="fin"><span class="rond"></span></span></div>
+          <div class="item"><span class="rep">16h30</span><span class="txt"><b>M. Durand</b><span>Métré salle de bains</span></span></div>
+          <div class="item"><span class="rep">18h00</span><span class="txt"><b>Appeler le plâtrier</b></span></div>
+        </div>
+      </div>
+      <div class="sec">
+        <h3>En attente du client <span class="n">3</span></h3>
+        <div class="carte liste">
+          <div class="item"><span class="rep">12 j</span><span class="txt"><b>SCI Les Jardins de la Vallée</b><span>Facture impayée</span></span><span class="btn-in">Relancer</span></div>
+          <div class="item"><span class="rep">6 j</span><span class="txt"><b>Mme Bernard</b><span>Devis sans réponse</span></span><span class="btn-in">Relancer</span></div>
+          <div class="item"><span class="rep">4 j</span><span class="txt"><b>M. Durand</b><span>Facture impayée</span></span><span class="btn-in">Relancer</span></div>
+        </div>
+      </div>
+    </div>
+    <nav class="barre" aria-label="Navigation principale">
+      <span class="onglet actif" style="color:rgb(var(--c-ink))"><svg class="i"><use href="#i-home"/></svg>Aujourd'hui<span class="pastille signal">2</span></span>
+      <span class="onglet"><svg class="i"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau projet"><svg class="i" style="width:30px;height:30px;stroke-width:2.2"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="i"><use href="#i-cal"/></svg>Planning</span>
+      <span class="onglet"><svg class="i"><use href="#i-argent"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Seule la 5e case change : « Plus » devient « Argent ». Le compte passe en haut à droite (GM).</p>
+</div>
+
+<!-- ============ 2. Argent, téléphone ============ -->
+<div class="cadre">
+  <h2>2 · Argent — ce qui remplace « Plus »</h2>
+  <div class="tel">
+    <div class="topbar carte-sombre">
+      <span class="marque"><svg class="i"><use href="#i-logo"/></svg>Compyo</span>
+      <span class="droite">
+        <span class="cible"><svg class="i"><use href="#i-bell"/></svg></span>
+        <span class="cible"><span class="avatar">GM</span></span>
+      </span>
+    </div>
+    <div class="contenu">
+      <div>
+        <h1 class="t-titre">Argent</h1>
+        <div class="chiffre-ligne" style="margin-top:10px"><span class="t-chiffre">3 240 €</span><span class="t-petit">à encaisser · 2 factures</span></div>
+      </div>
+
+      <div class="sec">
+        <h3>À relancer <span class="n">3</span></h3>
+        <div class="carte liste">
+          <div class="item"><span class="rep">12 j</span><span class="txt"><b>SCI Les Jardins de la Vallée</b><span>Facture · 2 400 €</span></span><span class="btn-in">Relancer</span></div>
+          <div class="item"><span class="rep">6 j</span><span class="txt"><b>Mme Bernard</b><span>Devis · 3 150 €</span></span><span class="btn-in">Relancer</span></div>
+          <div class="item"><span class="rep">4 j</span><span class="txt"><b>M. Durand</b><span>Facture · 840 €</span></span><span class="btn-in">Relancer</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>À facturer <span class="n">1</span></h3>
+        <div class="carte liste">
+          <div class="item"><span class="rep">Fini</span><span class="txt"><b>M. Dupont</b><span>Chantier terminé · solde 4 200 €</span></span><span class="btn-in">Facturer</span></div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>À envoyer <span class="n">1</span></h3>
+        <div class="carte liste">
+          <div class="item"><span class="rep">Prêt</span><span class="txt"><b>M. Petit</b><span>Devis · 1 980 €</span></span><span class="fin"><svg class="i petit"><use href="#i-chev"/></svg></span></div>
+        </div>
+      </div>
+
+      <div class="archives">
+        <a>Tous les devis</a><a>Toutes les factures</a><a>Bilan du mois</a>
+      </div>
+    </div>
+    <nav class="barre" aria-label="Navigation principale">
+      <span class="onglet"><svg class="i"><use href="#i-home"/></svg>Aujourd'hui<span class="pastille signal">2</span></span>
+      <span class="onglet"><svg class="i"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau projet"><svg class="i" style="width:30px;height:30px;stroke-width:2.2"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="i"><use href="#i-cal"/></svg>Planning</span>
+      <span class="onglet actif" style="color:rgb(var(--c-ink))"><svg class="i"><use href="#i-argent"/></svg>Argent</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Argent ne montre que ce que vous devez faire : relancer, facturer, envoyer. Les archives restent en bas.</p>
+</div>
+
+<!-- ============ 3. Menu Compte, téléphone ============ -->
+<div class="cadre">
+  <h2>3 · Compte — la moitié basse de « Plus »</h2>
+  <div class="tel">
+    <div class="topbar carte-sombre">
+      <span class="marque"><svg class="i"><use href="#i-logo"/></svg>Compyo</span>
+      <span class="droite">
+        <span class="cible"><svg class="i"><use href="#i-bell"/></svg></span>
+        <span class="cible"><span class="avatar">GM</span></span>
+      </span>
+    </div>
+    <div class="contenu">
+      <div>
+        <p class="t-sur">jeudi 1 octobre</p>
+        <h1 class="t-titre">Bonjour Gérard</h1>
+      </div>
+      <div class="carte-sombre">
+        <p class="t-sur" style="color:inherit;opacity:.7">Maintenant</p>
+        <p class="t-grand" style="margin-top:6px">14h00 — SCI Les Jardins</p>
+      </div>
+    </div>
+    <nav class="barre">
+      <span class="onglet"><svg class="i"><use href="#i-home"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="i"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond"><svg class="i" style="width:30px;height:30px;stroke-width:2.2"><use href="#i-plus"/></svg></span>
+      <span class="onglet"><svg class="i"><use href="#i-cal"/></svg>Planning</span>
+      <span class="onglet"><svg class="i"><use href="#i-argent"/></svg>Argent</span>
+    </nav>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="rang" style="min-height:64px">
+        <span class="avatar grand">GM</span>
+        <span class="nom"><b style="font:700 17px Manrope,sans-serif">Gérard Martin</b><span class="t-petit" style="display:block">Martin Plâtrerie</span></span>
+      </div>
+      <div>
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-gear"/></svg></span><span class="nom">Paramètres</span><svg class="i petit chev"><use href="#i-chev"/></svg></div>
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-equipe"/></svg></span><span class="nom">Mon équipe</span><svg class="i petit chev"><use href="#i-chev"/></svg></div>
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-guide"/></svg></span><span class="nom">Guide</span><svg class="i petit chev"><use href="#i-chev"/></svg></div>
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-avis"/></svg></span><span class="nom">Donner mon avis</span><svg class="i petit chev"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="pied-feuille">
+        <span class="gauche"><span class="cible"><svg class="i"><use href="#i-lune"/></svg></span><span class="cible"><svg class="i"><use href="#i-install"/></svg></span></span>
+        <span class="deco">Se déconnecter</span>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette">Compte : 4 lignes au lieu de 6 + 2 ; thème, installation et déconnexion ne bougent pas.</p>
+</div>
+
+<!-- ============ 4. Variantes de barre ============ -->
+<div class="cadre">
+  <h2>4 · Barres — équipe partagée et vue réduite</h2>
+  <div class="tel" style="min-height:auto;padding:20px 0 24px;gap:44px">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <p class="t-petit" style="padding:0 16px"><b>Par défaut</b> — quatre destinations et le [+]</p>
+      <nav class="barre" style="position:relative;margin-top:30px">
+        <span class="onglet"><svg class="i"><use href="#i-home"/></svg>Aujourd'hui</span>
+        <span class="onglet"><svg class="i"><use href="#i-dossier"/></svg>Projets</span>
+        <span class="btn-rond"><svg class="i" style="width:30px;height:30px;stroke-width:2.2"><use href="#i-plus"/></svg></span>
+        <span class="onglet"><svg class="i"><use href="#i-cal"/></svg>Planning</span>
+        <span class="onglet"><svg class="i"><use href="#i-argent"/></svg>Argent</span>
+      </nav>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <p class="t-petit" style="padding:0 16px"><b>Vue réduite</b> — Argent disparaît, rien d'autre ne bouge</p>
+      <nav class="barre" style="position:relative;margin-top:30px">
+        <span class="onglet"><svg class="i"><use href="#i-home"/></svg>Aujourd'hui</span>
+        <span class="onglet"><svg class="i"><use href="#i-dossier"/></svg>Projets</span>
+        <span class="btn-rond"><svg class="i" style="width:30px;height:30px;stroke-width:2.2"><use href="#i-plus"/></svg></span>
+        <span class="onglet"><svg class="i"><use href="#i-cal"/></svg>Planning</span>
+      </nav>
+    </div>
+  </div>
+  <p class="note-maquette">Même barre pour la vue réduite et pour le repli « Argent seulement sur ordinateur ».</p>
+</div>
+
+<!-- ============ 5. Le chemin vers une facture impayée ============ -->
+<div class="cadre" style="flex-basis:100%">
+  <h2>5 · Le chemin vers une facture impayée, en gestes</h2>
+  <div class="carte chemin">
+    <div class="fl">
+      <span class="lib">Avant<small>depuis le menu</small></span>
+      <span class="et"><i>1</i>Plus</span>
+      <span class="et"><i>2</i>Factures</span>
+      <span class="et"><i>3</i>La ligne</span>
+      <span class="et"><i>4</i>Message</span>
+      <span class="et"><i>5</i>SMS / WhatsApp</span>
+      <span class="et hors"><i>6</i>Envoyer</span>
+      <span class="total">6</span>
+    </div>
+    <div class="fl">
+      <span class="lib">Après<small>depuis Argent</small></span>
+      <span class="et"><i>1</i>Argent</span>
+      <span class="et"><i>2</i>Relancer</span>
+      <span class="et"><i>3</i>SMS / WhatsApp</span>
+      <span class="et hors"><i>4</i>Envoyer</span>
+      <span class="total">4</span>
+    </div>
+    <div class="fl">
+      <span class="lib">Après<small>depuis Aujourd'hui, inchangé</small></span>
+      <span class="et"><i>1</i>Relancer</span>
+      <span class="et"><i>2</i>SMS / WhatsApp</span>
+      <span class="et hors"><i>3</i>Envoyer</span>
+      <span class="total">3</span>
+    </div>
+  </div>
+  <p class="note-maquette" style="max-width:760px">Le dernier geste (pointillés) se fait dans l'appli SMS ou WhatsApp, par Gérard lui-même ; le message est prêt, pas envoyé.</p>
+</div>
+
+<!-- ============ 6. Ordinateur, la conjointe, le soir ============ -->
+<div class="cadre" style="flex-basis:100%">
+  <h2>6 · Ordinateur, la conjointe, 21 h — la barre latérale et Argent (rendu à 1100 px)</h2>
+  <div class="ordi" style="min-height:720px">
+    <aside class="carte-sombre side">
+      <div>
+        <div class="logo"><svg class="i" style="width:26px;height:26px"><use href="#i-logo"/></svg>Compyo</div>
+        <div class="nouveau"><span class="btn btn-primaire"><svg class="i"><use href="#i-plus"/></svg>Nouveau projet</span></div>
+        <nav class="nav" aria-label="Navigation principale">
+          <a><svg class="i"><use href="#i-home"/></svg>Aujourd'hui<span class="pastille signal">2</span></a>
+          <a><svg class="i"><use href="#i-dossier"/></svg>Projets</a>
+          <a><svg class="i"><use href="#i-cal"/></svg>Planning</a>
+          <a class="actif"><svg class="i"><use href="#i-argent"/></svg>Argent</a>
+        </nav>
+      </div>
+
+      <div class="carte menu-compte" role="menu" aria-label="Compte">
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-gear"/></svg></span><span class="nom">Paramètres</span></div>
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-equipe"/></svg></span><span class="nom">Mon équipe</span></div>
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-guide"/></svg></span><span class="nom">Guide</span></div>
+        <div class="rang"><span class="pic"><svg class="i petit"><use href="#i-avis"/></svg></span><span class="nom">Donner mon avis</span></div>
+        <div class="rang"><span class="nom petit">Ce que disent les artisans</span></div>
+      </div>
+
+      <div class="bas">
+        <div class="compte-btn"><span class="avatar">GM</span><span class="nom">Gérard Martin</span><svg class="i petit"><use href="#i-chevhaut"/></svg></div>
+        <div class="icones">
+          <span class="cible"><svg class="i petit"><use href="#i-bell"/></svg></span>
+          <span class="cible"><svg class="i petit"><use href="#i-lune"/></svg></span>
+          <span class="cible"><svg class="i petit"><use href="#i-install"/></svg></span>
+          <span class="cible"><svg class="i petit"><use href="#i-power"/></svg></span>
+        </div>
+        <p class="vitrine">Site vitrine · Contact</p>
+      </div>
+    </aside>
+
+    <main class="princ">
+      <div>
+        <h1 class="t-titre">Argent</h1>
+        <div class="chiffre-ligne" style="margin-top:10px"><span class="t-chiffre">3 240 €</span><span class="t-petit">à encaisser · 2 factures</span></div>
+      </div>
+
+      <div class="grille">
+        <div class="sec">
+          <h3>À relancer <span class="n">3</span></h3>
+          <div class="carte liste">
+            <div class="item"><span class="rep">12 j</span><span class="txt"><b>SCI Les Jardins de la Vallée du Grand-Saint-Bernard</b><span>Facture F-2026-031 · 2 400 €</span></span><span class="btn-in">Relancer</span></div>
+            <div class="item"><span class="rep">6 j</span><span class="txt"><b>Mme Bernard</b><span>Devis D-2026-044 · 3 150 €</span></span><span class="btn-in">Relancer</span></div>
+            <div class="item"><span class="rep">4 j</span><span class="txt"><b>M. Durand</b><span>Facture F-2026-036 · 840 €</span></span><span class="btn-in">Relancer</span></div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="sec">
+            <h3>À facturer <span class="n">1</span></h3>
+            <div class="carte liste">
+              <div class="item"><span class="rep">Fini</span><span class="txt"><b>M. Dupont</b><span>Chantier terminé · solde 4 200 €</span></span><span class="btn-in">Facturer</span></div>
+            </div>
+          </div>
+          <div class="sec">
+            <h3>À envoyer <span class="n">1</span></h3>
+            <div class="carte liste">
+              <div class="item"><span class="rep">Prêt</span><span class="txt"><b>M. Petit</b><span>Devis D-2026-047 · 1 980 €</span></span><span class="fin"><svg class="i petit"><use href="#i-chev"/></svg></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="archives">
+        <a>Tous les devis</a><a>Toutes les factures</a><a>Bilan du mois</a>
+      </div>
+    </main>
+  </div>
+  <p class="note-maquette" style="max-width:760px">Une page pour toute la soirée. « Relancer » ouvre le message prêt (copier, ou WhatsApp) : rien ne part seul.</p>
+</div>
+
+</body>
+</html>

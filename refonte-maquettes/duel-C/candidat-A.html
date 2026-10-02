@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel C — Candidat A : ne rien changer</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+/* Briques de l'accueil actuel (LigneAccueil, BlocAccueil, FermerJournee…),
+   reproduites en basse fidélité. Aucune couleur en dur : variables seulement. */
+.page { padding: 18px 16px 96px; }
+.date { font: 500 11px/1 "IBM Plex Mono", monospace; letter-spacing: .18em; text-transform: uppercase; color: rgb(var(--c-steel)); }
+.bjr { margin-top: 4px; font: 600 25.6px/1.15 Manrope, sans-serif; }
+.haut { border-radius: 0; height: 48px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between; font: 700 17px Manrope, sans-serif; flex: none; }
+.bl { display: block; }
+
+/* « Maintenant » */
+.mnt { margin-top: 20px; min-height: 72px; display: flex; align-items: center; gap: 12px; padding: 14px 20px; }
+.mnt > .t { min-width: 0; flex: 1; }
+.mnt .lib { font: 500 10.5px "IBM Plex Mono", monospace; letter-spacing: .2em; text-transform: uppercase; opacity: .6; }
+.mnt .txt { margin-top: 2px; font: 600 17px Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mnt .det { font: 400 13.5px Inter; opacity: .7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mnt .fl { font-size: 20px; opacity: .5; }
+
+/* Blocs et lignes */
+.bloc { margin-top: 28px; }
+.bloc > h3 { display: flex; align-items: baseline; gap: 8px; font: 700 17px Manrope, sans-serif; }
+.bloc > h3 span { font: 500 13px Inter; color: rgb(var(--c-steel)); }
+.corps { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.la { display: flex; align-items: stretch; min-height: 56px; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); border-radius: 16px; overflow: hidden; }
+.la .lien { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+.la .rep { width: 56px; flex: none; font: 500 13px "IBM Plex Mono", monospace; color: rgb(var(--c-steel)); }
+.la .rep.acc { font-weight: 700; color: rgb(var(--c-signal-fonce)); }
+.la .txt { flex: 1; min-width: 0; }
+.la .fin { flex: none; display: flex; align-items: center; justify-content: center; min-width: 56px; padding: 0 14px; border-left: 1px solid rgb(var(--c-gris-clair)); font: 600 14px Inter; }
+.p { display: block; font: 500 15px Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s { display: block; font: 500 13px Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.coche { width: 28px; height: 28px; border-radius: 99px; border: 1.5px solid rgb(var(--c-steel)); }
+.reste { margin-top: 8px; font: 500 13px Inter; color: rgb(var(--c-steel)); }
+.voir { display: inline-flex; align-items: center; min-height: 48px; margin-top: 2px; font: 500 14px Inter; color: rgb(var(--c-steel)); }
+
+/* « À confirmer » : une question, deux boutons */
+.conf { display: flex; align-items: center; gap: 8px; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); border-radius: 16px; padding: 12px 12px 12px 16px; }
+.conf .txt { flex: 1; min-width: 0; }
+.bt { min-height: 48px; border-radius: 12px; padding: 0 14px; font: 600 15px Inter; display: inline-flex; align-items: center; flex: none; }
+.bt.plein { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.bt.vide { border: 1.5px solid rgb(var(--c-gris-clair)); font-weight: 500; }
+
+/* « Fermer la journée » */
+.fj { margin-top: 20px; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); border-radius: 16px; padding: 16px; }
+.fj .lib { font: 500 10.5px "IBM Plex Mono", monospace; letter-spacing: .2em; text-transform: uppercase; color: rgb(var(--c-steel)); }
+.fj dl > div { border-top: 1px solid rgb(var(--c-gris-clair)); padding-top: 12px; margin-top: 12px; }
+.fj dl > div:first-child { border-top: 0; padding-top: 0; }
+.fj dt { font: 500 13px Inter; color: rgb(var(--c-steel)); }
+.fj dd { margin-top: 4px; font: 500 15px Inter; }
+.susp { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.susp .txt { flex: 1; min-width: 0; }
+.susp .p { font-weight: 500; }
+.calme { margin-top: 20px; display: flex; gap: 14px; align-items: flex-start; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); border-radius: 16px; padding: 20px; }
+.calme .ok { flex: none; width: 36px; height: 36px; border-radius: 99px; display: grid; place-items: center; background: rgb(var(--c-succes) / .12); color: rgb(var(--c-succes)); }
+.calme .t1 { font: 600 17px Inter; }
+.calme .t2 { margin-top: 2px; font: 400 13.5px Inter; color: rgb(var(--c-steel)); }
+
+/* Jour vide */
+.phrase-vide { margin-top: 44px; font: 500 20px Manrope, sans-serif; color: rgb(var(--c-steel)); }
+
+/* Barre du bas */
+.barre .onglet { position: relative; align-self: stretch; }
+.barre .onglet.actif { font-weight: 700; }
+.barre .onglet.actif::before { content: ""; position: absolute; left: 10px; right: 10px; top: 0; height: 3px; background: rgb(var(--c-ink)); }
+.barre .onglet.centre { justify-content: flex-end; padding-bottom: 6px; }
+.barre .pos { position: absolute; top: 6px; left: calc(50% + 2px); min-width: 20px; height: 20px; font-size: 12px; padding: 0 6px; }
+
+/* Ligne de flottaison à 740 px (barre du bas comprise) */
+.pli { position: absolute; left: 0; right: 0; top: 668px; border-top: 2px dashed rgb(var(--c-steel)); z-index: 3; pointer-events: none; }
+.pli span { position: absolute; right: 8px; top: -10px; background: rgb(var(--c-paper)); padding: 0 6px; font: 600 11px Inter; color: rgb(var(--c-steel)); }
+
+/* Cadres de détail (un fragment d'écran, pas un écran entier) */
+.tel.court { min-height: 0; }
+.tel.court .page { padding-bottom: 20px; }
+.tel.court .bloc:first-child, .tel.court .fj:first-child { margin-top: 0; }
+
+/* Bureau */
+.lat { width: 240px; flex: none; border-radius: 12px 0 0 12px; display: flex; flex-direction: column; gap: 12px; padding: 20px 16px; }
+.lat ul { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.lat li { padding: 10px 12px; font: 500 14px Inter; opacity: .72; }
+.lat li.on { opacity: 1; font-weight: 700; }
+.lat hr { border: 0; border-top: 1px solid rgb(var(--c-steel) / .5); margin: 6px 0; }
+.princ { flex: 1; padding: 32px; }
+.col { max-width: 672px; }
+
+/* En-tête de la page */
+.intro { flex-basis: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 8px; }
+.intro ol { margin-left: 20px; display: flex; flex-direction: column; gap: 4px; font: 500 14px/1.4 Inter; }
+</style>
+</head>
+<body>
+
+<!-- Icônes (jetables) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-maison" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></symbol>
+  <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></symbol>
+  <symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></symbol>
+  <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M10 21h4"/></symbol>
+  <symbol id="i-coche" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</svg>
+
+<header class="intro">
+  <h1 class="t-grand">Candidat A — Ne rien changer : l'écran actuel, cinq bugs corrigés</h1>
+  <p class="t-corps">Cinq blocs au plus, chacun seulement s'il a une ligne ; dès 17 h, « Fermer la journée » remplace « Maintenant ». Les mêmes écrans qu'aujourd'hui, avec ces cinq corrections :</p>
+  <ol>
+    <li>« À confirmer » s'arrête à 5 lignes, puis « Et N de plus. » (détail 1).</li>
+    <li>« Relire / Envoyer le devis » ouvre le devis (<code>/dashboard/devis/[id]</code>), plus la fiche.</li>
+    <li>Les bornes du jour sont celles de Paris (fin du décalage de 2 h du serveur UTC).</li>
+    <li>« Demain » sur un rendez-vous client dit ce qu'il a fait et propose de prévenir le client (détail 2).</li>
+    <li>« Voir les N → » d'« En attente du client » ouvre les Factures quand le reste est surtout des factures (détail 3).</li>
+  </ol>
+</header>
+
+<!-- ============================================================ 8 h 10 -->
+<div class="cadre">
+  <h2>A · 8 h 10 — jour chargé, dans la voiture</h2>
+  <div class="tel">
+    <div class="haut carte-sombre"><span>Compyo</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <p class="date">jeudi 1 octobre</p>
+      <h1 class="bjr">Bonjour Gérard</h1>
+
+      <a class="mnt carte-sombre">
+        <span class="t"><span class="lib bl">Maintenant</span><span class="txt bl">8h15 — M. Durand</span><span class="det bl">Métré salle de bains</span></span>
+        <span class="fl">→</span>
+      </a>
+
+      <section class="bloc"><h3>À confirmer <span>2</span></h3>
+        <div class="corps">
+          <div class="conf"><span class="txt"><span class="p">M. Petit</span><span class="s">Fait ? Métré · 29 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">Mme Bernard</span><span class="s">Fait ? Visite · 30 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>Aujourd'hui <span>3</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep acc">Retard</span><span class="txt"><span class="p">Commander les rails</span><span class="s">SCI Les Jardins de la Vallée</span></span></span><span class="fin"><span class="coche"></span></span></div>
+          <div class="la"><span class="lien"><span class="rep">12h15</span><span class="txt"><span class="p">Appeler le plâtrier</span></span></span><span class="fin"><span class="coche"></span></span></div>
+          <div class="la"><span class="lien"><span class="rep">14h00</span><span class="txt"><span class="p">SCI Les Jardins de la Vallée</span><span class="s">Visite technique</span></span></span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>À faire de votre côté <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="txt"><span class="p">M. Fabre</span><span class="s">Devis à relire</span></span></span></div>
+          <div class="la"><span class="lien"><span class="txt"><span class="p">Mme Roux</span><span class="s">Nouveau projet à cadrer</span></span></span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>En attente du client <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep">12 j</span><span class="txt"><span class="p">Mme Garnier</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">6 j</span><span class="txt"><span class="p">M. Martin</span><span class="s">Devis sans réponse</span></span></span><span class="fin">Relancer</span></div>
+        </div>
+      </section>
+    </div>
+    <div class="pli"><span>bas de l'écran</span></div>
+    <nav class="barre">
+      <span class="onglet actif"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-maison"/></svg>Aujourd'hui<b class="pastille signal pos">1</b></span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="onglet centre"><span class="btn-rond">+</span>Nouveau</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Maintenant, À confirmer et Aujourd'hui tiennent dans le premier écran ; les deux derniers blocs sont sous la ligne pointillée.</p>
+</div>
+
+<!-- ============================================================ 10 h 30 -->
+<div class="cadre">
+  <h2>A · 10 h 30 — sur le chantier</h2>
+  <div class="tel">
+    <div class="haut carte-sombre"><span>Compyo</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <p class="date">jeudi 1 octobre</p>
+      <h1 class="bjr">Bonjour Gérard</h1>
+
+      <a class="mnt carte-sombre">
+        <span class="t"><span class="lib bl">Maintenant</span><span class="txt bl">14h00 — SCI Les Jardins de la Vallée</span><span class="det bl">Visite technique avant chiffrage</span></span>
+        <span class="fl">→</span>
+      </a>
+
+      <section class="bloc"><h3>À confirmer <span>3</span></h3>
+        <div class="corps">
+          <div class="conf"><span class="txt"><span class="p">M. Durand</span><span class="s">Fait ? Métré salle de bains · 1 oct.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">Mme Bernard</span><span class="s">Fait ? Visite · 30 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">M. Petit</span><span class="s">Fait ? Métré · 29 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>Aujourd'hui <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep acc">Retard</span><span class="txt"><span class="p">Commander les rails</span><span class="s">SCI Les Jardins de la Vallée</span></span></span><span class="fin"><span class="coche"></span></span></div>
+          <div class="la"><span class="lien"><span class="rep">12h15</span><span class="txt"><span class="p">Appeler le plâtrier</span></span></span><span class="fin"><span class="coche"></span></span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>À faire de votre côté <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="txt"><span class="p">M. Fabre</span><span class="s">Devis à relire</span></span></span></div>
+          <div class="la"><span class="lien"><span class="txt"><span class="p">Mme Roux</span><span class="s">Nouveau projet à cadrer</span></span></span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>En attente du client <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep">12 j</span><span class="txt"><span class="p">Mme Garnier</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">6 j</span><span class="txt"><span class="p">M. Martin</span><span class="s">Devis sans réponse</span></span></span><span class="fin">Relancer</span></div>
+        </div>
+      </section>
+    </div>
+    <div class="pli"><span>bas de l'écran</span></div>
+    <nav class="barre">
+      <span class="onglet actif"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-maison"/></svg>Aujourd'hui<b class="pastille signal pos">1</b></span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="onglet centre"><span class="btn-rond">+</span>Nouveau</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Le métré de 8 h 15 est passé : il rejoint À confirmer, et « Maintenant » passe à la visite de 14 h.</p>
+</div>
+
+<!-- ============================================================ 18 h 45 -->
+<div class="cadre">
+  <h2>A · 18 h 45 — le soir, deux choses en suspens</h2>
+  <div class="tel">
+    <div class="haut carte-sombre"><span>Compyo</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <p class="date">jeudi 1 octobre</p>
+      <h1 class="bjr">Bonjour Gérard</h1>
+
+      <section class="fj" aria-label="Fermer la journée">
+        <p class="lib">Fermer la journée</p>
+        <dl>
+          <div><dt>Aujourd'hui</dt><dd>1 projet capté · 1 devis envoyé · 1 rendez-vous fait</dd></div>
+          <div><dt>En suspens</dt>
+            <dd>
+              <div class="susp"><span class="txt"><span class="p">SCI Les Jardins de la Vallée</span><span class="s">14h00 · Visite technique</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+              <div class="susp"><span class="txt"><span class="p">Commander les rails</span><span class="s">SCI Les Jardins de la Vallée</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+              <div class="susp"><span class="txt"><span class="p">Appeler le plâtrier</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+            </dd>
+          </div>
+          <div><dt>Demain</dt><dd>8h00 · M. Petit · 7 allée des Tilleuls</dd></div>
+        </dl>
+      </section>
+
+      <section class="bloc"><h3>À confirmer <span>2</span></h3>
+        <div class="corps">
+          <div class="conf"><span class="txt"><span class="p">M. Petit</span><span class="s">Fait ? Métré · 29 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">Mme Bernard</span><span class="s">Fait ? Visite · 30 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>À faire de votre côté <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="txt"><span class="p">M. Fabre</span><span class="s">Devis à relire</span></span></span></div>
+          <div class="la"><span class="lien"><span class="txt"><span class="p">Mme Roux</span><span class="s">Nouveau projet à cadrer</span></span></span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>En attente du client <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep">12 j</span><span class="txt"><span class="p">Mme Garnier</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">6 j</span><span class="txt"><span class="p">M. Martin</span><span class="s">Devis sans réponse</span></span></span><span class="fin">Relancer</span></div>
+        </div>
+      </section>
+    </div>
+    <div class="pli"><span>bas de l'écran</span></div>
+    <nav class="barre">
+      <span class="onglet actif"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-maison"/></svg>Aujourd'hui<b class="pastille signal pos">2</b></span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="onglet centre"><span class="btn-rond">+</span>Nouveau</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Dès 17 h, « Fermer la journée » remplace « Maintenant » ; chaque ligne en suspens se règle d'un seul appui.</p>
+</div>
+
+<!-- ============================================================ 18 h 58 -->
+<div class="cadre">
+  <h2>A · 18 h 58 — tout est réglé (le soulagement)</h2>
+  <div class="tel">
+    <div class="haut carte-sombre"><span>Compyo</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <p class="date">jeudi 1 octobre</p>
+      <h1 class="bjr">Bonjour Gérard</h1>
+
+      <section class="calme" aria-label="Fermer la journée">
+        <span class="ok"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><use href="#i-coche"/></svg></span>
+        <span>
+          <span class="t1 bl">Tout est réglé pour aujourd'hui.</span>
+          <span class="t2 bl">Aujourd'hui · 1 projet capté · 1 devis envoyé · 1 rendez-vous fait</span>
+          <span class="t2 bl">Demain · 8h00 · M. Petit · 7 allée des Tilleuls</span>
+        </span>
+      </section>
+
+      <section class="bloc"><h3>À confirmer <span>2</span></h3>
+        <div class="corps">
+          <div class="conf"><span class="txt"><span class="p">M. Petit</span><span class="s">Fait ? Métré · 29 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">Mme Bernard</span><span class="s">Fait ? Visite · 30 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>À faire de votre côté <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="txt"><span class="p">M. Fabre</span><span class="s">Devis à relire</span></span></span></div>
+          <div class="la"><span class="lien"><span class="txt"><span class="p">Mme Roux</span><span class="s">Nouveau projet à cadrer</span></span></span></div>
+        </div>
+      </section>
+
+      <section class="bloc"><h3>En attente du client <span>2</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep">12 j</span><span class="txt"><span class="p">Mme Garnier</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">6 j</span><span class="txt"><span class="p">M. Martin</span><span class="s">Devis sans réponse</span></span></span><span class="fin">Relancer</span></div>
+        </div>
+      </section>
+    </div>
+    <div class="pli"><span>bas de l'écran</span></div>
+    <nav class="barre">
+      <span class="onglet actif"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="onglet centre"><span class="btn-rond">+</span>Nouveau</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">La carte calme vient d'elle-même, sans bouton ; faiblesse : elle dit « réglé » alors que « À confirmer », plus ancien, reste dessous.</p>
+</div>
+
+<!-- ============================================================ Jour vide -->
+<div class="cadre">
+  <h2>A · Jour vide</h2>
+  <div class="tel">
+    <div class="haut carte-sombre"><span>Compyo</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <p class="date">jeudi 1 octobre</p>
+      <h1 class="bjr">Bonjour Gérard</h1>
+      <p class="phrase-vide">Rien d'urgent.</p>
+      <span class="btn btn-primaire" style="margin-top:20px;width:auto;align-self:flex-start;border-radius:99px;padding:0 24px">+ Nouveau projet</span>
+    </div>
+    <nav class="barre">
+      <span class="onglet actif"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="onglet centre"><span class="btn-rond">+</span>Nouveau</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Une phrase et un bouton ; faiblesse : le « + » rond de la barre et ce bouton disent la même chose.</p>
+</div>
+
+<!-- ============================================================ Coéquipier de terrain -->
+<div class="cadre">
+  <h2>A · Coéquipier de terrain (Kévin, apprenti) — variante conditionnelle</h2>
+  <div class="tel">
+    <div class="haut carte-sombre"><span>Compyo</span><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <p class="date">jeudi 1 octobre</p>
+      <h1 class="bjr">Bonjour Kévin</h1>
+
+      <a class="mnt carte-sombre">
+        <span class="t"><span class="lib bl">Maintenant</span><span class="txt bl">8h15 — M. Durand</span><span class="det bl">Métré salle de bains · 12 rue des Lilas</span></span>
+        <span class="fl">→</span>
+      </a>
+
+      <section class="bloc"><h3>Aujourd'hui <span>3</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep acc">Retard</span><span class="txt"><span class="p">Commander les rails</span><span class="s">SCI Les Jardins de la Vallée</span></span></span><span class="fin"><span class="coche"></span></span></div>
+          <div class="la"><span class="lien"><span class="rep">12h15</span><span class="txt"><span class="p">Appeler le plâtrier</span></span></span><span class="fin"><span class="coche"></span></span></div>
+          <div class="la"><span class="lien"><span class="rep">14h00</span><span class="txt"><span class="p">SCI Les Jardins de la Vallée</span><span class="s">Visite technique</span></span></span></div>
+        </div>
+      </section>
+    </div>
+    <nav class="barre">
+      <span class="onglet actif"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-maison"/></svg>Aujourd'hui<b class="pastille signal pos">1</b></span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="onglet centre"><span class="btn-rond">+</span>Nouveau</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Aujourd'hui Kévin voit l'écran de Gérard, impayés compris ; si le duel A crée un rôle, 3 blocs sont masqués et « Maintenant » ne retient que les rendez-vous et rappels.</p>
+</div>
+
+<!-- ============================================================ Détail 1 -->
+<div class="cadre">
+  <h2>Détail 1 · « À confirmer » plafonné (7 questions en retard)</h2>
+  <div class="tel court">
+    <div class="page">
+      <section class="bloc"><h3>À confirmer <span>7</span></h3>
+        <div class="corps">
+          <div class="conf"><span class="txt"><span class="p">M. Durand</span><span class="s">Fait ? Métré salle de bains · 1 oct.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">Mme Bernard</span><span class="s">Fait ? Visite · 30 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">M. Petit</span><span class="s">Fait ? Métré · 29 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">Mme Roux</span><span class="s">Fait ? Visite · 28 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+          <div class="conf"><span class="txt"><span class="p">M. Fabre</span><span class="s">Fait ? Relevé de cotes · 26 sept.</span></span><span class="bt plein">Oui</span><span class="bt vide">Non</span></div>
+        </div>
+        <p class="reste">Et 2 de plus.</p>
+      </section>
+    </div>
+  </div>
+  <p class="note-maquette">Corrigé : 5 lignes puis « Et 2 de plus. », même mot que « Fermer la journée » ; chaque réponse fait monter la suivante.</p>
+</div>
+
+<!-- ============================================================ Détail 2 -->
+<div class="cadre">
+  <h2>Détail 2 · Le soir, « Demain » sur un rendez-vous client</h2>
+  <div class="tel court">
+    <div class="page">
+      <section class="fj">
+        <p class="lib">Fermer la journée</p>
+        <dl>
+          <div><dt>En suspens</dt>
+            <dd>
+              <div class="susp"><span class="txt"><span class="p">SCI Les Jardins de la Vallée</span><span class="s">Visite déplacée à demain, 14h00</span></span><span class="bt plein">Prévenir</span></div>
+              <div class="susp"><span class="txt"><span class="p">Commander les rails</span><span class="s">SCI Les Jardins de la Vallée</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+              <div class="susp"><span class="txt"><span class="p">Appeler le plâtrier</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+            </dd>
+          </div>
+        </dl>
+      </section>
+    </div>
+  </div>
+  <p class="note-maquette">Corrigé : après « Demain », la ligne le dit et « Prévenir » ouvre la feuille de message du projet ; rien ne part sans appui sur envoyer.</p>
+</div>
+
+<!-- ============================================================ Détail 3 -->
+<div class="cadre">
+  <h2>Détail 3 · « En attente du client », au-delà de 5 lignes</h2>
+  <div class="tel court">
+    <div class="page">
+      <section class="bloc"><h3>En attente du client <span>7</span></h3>
+        <div class="corps">
+          <div class="la"><span class="lien"><span class="rep">41 j</span><span class="txt"><span class="p">Mme Garnier</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">28 j</span><span class="txt"><span class="p">M. Lopes</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">19 j</span><span class="txt"><span class="p">M. Giraud</span><span class="s">Devis sans réponse</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">12 j</span><span class="txt"><span class="p">Mme Henry</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+          <div class="la"><span class="lien"><span class="rep">9 j</span><span class="txt"><span class="p">M. Martin</span><span class="s">Devis sans réponse</span></span></span><span class="fin">Relancer</span></div>
+        </div>
+        <span class="voir">Voir les 7 → Factures</span>
+      </section>
+    </div>
+  </div>
+  <p class="note-maquette">Corrigé : les deux lignes cachées sont des factures, le lien ouvre les Factures (avant : toujours les Devis) ; un reste mixte reste approximatif.</p>
+</div>
+
+<!-- ============================================================ Ordinateur -->
+<div class="cadre" style="flex-basis:100%">
+  <h2>A · Ordinateur, 18 h 45 — le bureau du soir (même colonne qu'au téléphone)</h2>
+  <div class="ordi">
+    <aside class="lat carte-sombre">
+      <b style="font:700 18px Manrope,sans-serif">Compyo</b>
+      <span class="btn btn-primaire" style="min-height:48px;font-size:15px">+ Nouveau projet</span>
+      <ul>
+        <li class="on">Aujourd'hui</li>
+        <li>Projets</li>
+        <li>Planning</li>
+      </ul>
+      <hr>
+      <ul>
+        <li>Devis</li>
+        <li>Factures</li>
+        <li>Notes</li>
+        <li>Bilan</li>
+        <li>Paramètres</li>
+        <li>Guide</li>
+      </ul>
+    </aside>
+    <main class="princ">
+      <div class="col">
+        <p class="date">jeudi 1 octobre</p>
+        <h1 class="bjr" style="font-size:30px">Bonjour Gérard</h1>
+
+        <section class="fj" aria-label="Fermer la journée">
+          <p class="lib">Fermer la journée</p>
+          <dl>
+            <div><dt>Aujourd'hui</dt><dd>1 projet capté · 1 devis envoyé · 1 rendez-vous fait</dd></div>
+            <div><dt>En suspens</dt>
+              <dd>
+                <div class="susp"><span class="txt"><span class="p">SCI Les Jardins de la Vallée</span><span class="s">14h00 · Visite technique</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+                <div class="susp"><span class="txt"><span class="p">Commander les rails</span><span class="s">SCI Les Jardins de la Vallée</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+                <div class="susp"><span class="txt"><span class="p">Appeler le plâtrier</span></span><span class="bt plein">Fait</span><span class="bt vide">Demain</span></div>
+              </dd>
+            </div>
+            <div><dt>Demain</dt><dd>8h00 · M. Petit · 7 allée des Tilleuls</dd></div>
+          </dl>
+        </section>
+
+        <section class="bloc"><h3>En attente du client <span>2</span></h3>
+          <div class="corps">
+            <div class="la"><span class="lien"><span class="rep">12 j</span><span class="txt"><span class="p">Mme Garnier</span><span class="s">Facture impayée</span></span></span><span class="fin">Relancer</span></div>
+            <div class="la"><span class="lien"><span class="rep">6 j</span><span class="txt"><span class="p">M. Martin</span><span class="s">Devis sans réponse</span></span></span><span class="fin">Relancer</span></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <p class="note-maquette" style="max-width:none">Aucune vue propre au bureau : la colonne de 672 px est celle du téléphone, et à 1440 px un tiers de l'écran reste vide (faiblesse assumée : la conjointe n'a rien de plus qu'au téléphone).</p>
+</div>
+
+</body>
+</html>

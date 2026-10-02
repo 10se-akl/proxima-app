@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat D — Le devis sur téléphone</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Maquette basse fidélité, jetable. Aucune couleur en dur : variables seulement. */
+  .tel { height: 740px; min-height: 740px; }
+  .entete { width: 100%; }
+  .entete h1 { font: 800 22px/1.2 Manrope, sans-serif; }
+  .entete p { font: 14px/1.45 Inter; color: rgb(var(--c-steel)); max-width: 760px; margin-top: 4px; }
+
+  .ec { flex: 1; display: flex; flex-direction: column; padding: 0 16px 72px; min-height: 0; }
+  .tete { display: flex; align-items: center; justify-content: space-between; min-height: 56px; }
+  .retour { font: 500 14px Inter; color: rgb(var(--c-steel)); min-height: 48px; display: inline-flex; align-items: center; gap: 4px; }
+  .lien { font: 600 16px Inter; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; min-height: 48px; display: inline-flex; align-items: center; padding: 0 4px; color: rgb(var(--c-ink)); }
+
+  .d30 { font: 600 30px/1.1 Manrope, sans-serif; }
+  .d20 { font: 600 20px/1.2 Manrope, sans-serif; }
+  .m30 { font: 500 30px/1.1 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .m20 { font: 500 20px/1.2 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .m16 { font: 500 16px/1.2 "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .b16 { font: 400 16px/1.3 Inter; }
+  .b14 { font: 400 14px/1.3 Inter; color: rgb(var(--c-steel)); }
+  .alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+  .dark .alerte { color: rgb(var(--c-signal-clair)); }
+
+  .titre-bloc { display: flex; align-items: baseline; gap: 8px; margin-top: 20px; }
+  .titre-bloc .nb { font: 400 14px Inter; color: rgb(var(--c-steel)); }
+
+  /* La ligne : une seule recette (langage-interface, règle 7) */
+  .rang { display: flex; align-items: stretch; min-height: 64px; margin-top: 8px; overflow: hidden; border-radius: 16px; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-ink) / .15); }
+  .rang .zone { flex: 1; min-width: 0; padding: 10px 16px; display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+  .rang .l1 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .rang .t { font: 600 16px/1.25 Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .rang .d { font: 400 14px/1.25 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rang .fin { width: 56px; flex: none; display: grid; place-items: center; border-left: 1px solid rgb(var(--c-ink) / .15); color: rgb(var(--c-ink)); }
+  .rang.touche .zone { background: rgb(var(--c-ink) / .10); }
+  .coche { width: 28px; height: 28px; border-radius: 99px; border: 2px solid rgb(var(--c-ink) / .4); display: grid; place-items: center; }
+  .coche .ico { width: 16px; height: 16px; opacity: 0; }
+  .rassure { display: flex; align-items: center; gap: 10px; margin-top: 20px; min-height: 48px; }
+  .pastille-ok { width: 28px; height: 28px; border-radius: 99px; background: rgb(var(--c-succes) / .12); color: rgb(var(--c-succes)); display: grid; place-items: center; flex: none; }
+  .pastille-ok .ico { width: 18px; height: 18px; }
+
+  /* Zone du bas : un seul bouton plein, sous le pouce */
+  .bas { margin-top: auto; position: relative; }
+  .btn-encre { min-height: 56px; justify-content: space-between; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 600 16px Inter; }
+  .btn-encre.centre { justify-content: center; }
+  .btn-contour { min-height: 48px; border-radius: 16px; background: transparent; color: rgb(var(--c-ink)); border: 0; box-shadow: inset 0 0 0 1.5px rgb(var(--c-ink) / .6); font: 600 16px Inter; padding: 0 16px; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+  .btn-destructif { min-height: 48px; border-radius: 16px; background: transparent; color: rgb(var(--c-signal-fonce)); border: 0; box-shadow: inset 0 0 0 1.5px rgb(var(--c-signal-fonce) / .5); font: 600 16px Inter; padding: 0 16px; width: 100%; display: flex; align-items: center; justify-content: center; }
+  .dark .btn-destructif { color: rgb(var(--c-signal-clair)); box-shadow: inset 0 0 0 1.5px rgb(var(--c-signal-clair) / .5); }
+  .sous-bouton { display: flex; align-items: center; justify-content: space-between; min-height: 48px; }
+
+  .geste { position: absolute; top: -10px; right: -4px; width: 24px; height: 24px; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 700 13px Inter; display: grid; place-items: center; box-shadow: 0 0 0 3px rgb(var(--c-paper)); }
+
+  /* Feuille de ligne */
+  .feuille { gap: 8px; }
+  .feuille .tete-f { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; margin-top: 4px; }
+  .feuille .tete-f .d20 { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .champ > .b14 { margin-bottom: 4px; }
+  .pas { display: flex; gap: 8px; }
+  .pas-b { width: 56px; height: 56px; border-radius: 16px; border: 1px solid rgb(var(--c-ink) / .3); background: rgb(var(--c-surface)); color: rgb(var(--c-ink)); font: 600 26px Inter; display: grid; place-items: center; flex: none; }
+  .pas-v { flex: 1; height: 56px; border-radius: 16px; background: rgb(var(--c-paper)); border: 1px solid rgb(var(--c-ink) / .3); display: flex; align-items: baseline; justify-content: center; gap: 8px; padding-top: 14px; }
+  .pas-v.focus { border: 2px solid rgb(var(--c-ink)); }
+  .champ-texte { height: 56px; border-radius: 16px; background: rgb(var(--c-paper)); border: 1px solid rgb(var(--c-ink) / .3); padding: 0 16px; display: flex; align-items: center; font: 400 16px Inter; }
+  .champ-texte.focus { border: 2px solid rgb(var(--c-ink)); }
+  .champ-texte.vide { color: rgb(var(--c-steel)); }
+  .btn-contour.presse { background: rgb(var(--c-ink) / .10); box-shadow: inset 0 0 0 1.5px rgb(var(--c-ink)); }
+  .btn-contour .ico { width: 18px; height: 18px; }
+  .total-ligne { display: flex; align-items: baseline; justify-content: space-between; min-height: 40px; }
+
+  /* WhatsApp, schématique, hors Compyo */
+  .wa-haut { display: flex; align-items: center; gap: 12px; padding: 12px 16px; min-height: 64px; background: rgb(var(--c-paper-warm)); border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+  .avatar { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--c-gris-clair)); display: grid; place-items: center; font: 600 15px Inter; color: rgb(var(--c-steel)); }
+  .wa-fil { flex: 1; background: rgb(var(--c-paper-warm)); padding: 16px; }
+  .wa-fil .vide { font: 13px Inter; color: rgb(var(--c-steel)); text-align: center; margin-top: 8px; }
+  .wa-compo { background: rgb(var(--c-paper-warm)); padding: 8px 12px 16px; display: flex; align-items: flex-end; gap: 8px; }
+  .wa-champ { flex: 1; background: rgb(var(--c-surface)); border-radius: 20px; padding: 12px 16px; font: 400 14px/1.4 Inter; white-space: pre-line; }
+  .wa-champ .lienu { text-decoration: underline; color: rgb(var(--c-steel)); word-break: break-all; }
+  .wa-envoi { position: relative; width: 48px; height: 48px; border-radius: 99px; background: rgb(var(--c-succes)); color: rgb(var(--c-paper)); display: grid; place-items: center; flex: none; }
+
+  /* Récapitulatif des gestes */
+  .gestes { width: 360px; }
+  .gestes table { width: 100%; border-collapse: collapse; font: 14px/1.35 Inter; }
+  .gestes th { text-align: left; font: 600 12px Inter; color: rgb(var(--c-steel)); padding: 0 0 6px; }
+  .gestes td { padding: 8px 0; border-top: 1px solid rgb(var(--c-gris-clair)); vertical-align: top; }
+  .gestes td.n { width: 52px; text-align: center; font: 500 16px "IBM Plex Mono", monospace; }
+  .gestes td.n.d { font-weight: 500; }
+
+  /* Vue ordinateur : le bureau du soir */
+  .ordi { width: 1100px; }
+  .ordi .gauche { width: 560px; padding: 24px 32px; display: flex; flex-direction: column; border-right: 1px solid rgb(var(--c-gris-clair)); }
+  .ordi .droite { flex: 1; padding: 24px 32px; background: rgb(var(--c-paper-warm)); }
+  .ordi .rang { margin-top: 8px; }
+  .ordi .actions { display: flex; gap: 12px; align-items: center; margin-top: 24px; }
+  .ordi .actions .btn { width: auto; }
+  .ordi .actions .btn-contour { width: auto; }
+  .pdf { background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); padding: 24px; font: 12px/1.45 Inter; min-height: 560px; }
+  .pdf h3 { font: 800 16px Manrope, sans-serif; }
+  .pdf .entree { display: flex; justify-content: space-between; margin-top: 8px; color: rgb(var(--c-steel)); }
+  .pdf table { width: 100%; border-collapse: collapse; margin-top: 16px; }
+  .pdf th { text-align: left; font: 600 11px Inter; color: rgb(var(--c-steel)); padding: 4px 0; border-bottom: 1px solid rgb(var(--c-ink) / .4); }
+  .pdf td { padding: 6px 0; border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+  .pdf td.r, .pdf th.r { text-align: right; font-family: "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .pdf .tot td { border-bottom: 0; padding: 3px 0; }
+  .pdf .gros td { font-weight: 700; font-size: 14px; border-top: 1px solid rgb(var(--c-ink) / .4); padding-top: 8px; }
+  .pdf .legal { margin-top: 20px; color: rgb(var(--c-steel)); font-size: 11px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-chev-d" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 10h16M9 3v4M15 3v4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.8" fill="currentColor"/><circle cx="12" cy="12" r="1.8" fill="currentColor"/><circle cx="19" cy="12" r="1.8" fill="currentColor"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M4 12l16-8-6 16-3-7z" fill="currentColor"/></symbol>
+</svg>
+
+<div class="entete">
+  <h1>Candidat D — Le total, les doutes, un bouton</h1>
+  <p>Écran du devis généré à 360 px, sans défiler. Données : Gérard Martin, plaquiste (Martin Plâtrerie), devis n° D-2026-051 pour Mme Lefèvre. Les lignes sont en « vos prix » ; le client lit les mêmes lignes marge incluse (voir la vue ordinateur). Barre du bas : l'actuelle.</p>
+</div>
+
+<!-- ============================ 1. Écran de validation ============================ -->
+<div class="cadre">
+  <h2>1 · Le devis généré s'ouvre sur le total et les doutes</h2>
+  <div class="tel">
+    <div class="ec">
+      <div class="tete">
+        <span class="retour"><svg class="ico"><use href="#i-back"/></svg>Mme Lefèvre</span>
+        <span class="lien">Voir le PDF</span>
+      </div>
+      <p class="b14">Devis n° D-2026-051</p>
+      <p class="m30" style="margin-top:2px">2&nbsp;306,26&nbsp;€ <span class="b14" style="font-family:Inter">TTC</span></p>
+
+      <div class="titre-bloc"><span class="d20">À vérifier</span><span class="nb">2</span></div>
+
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Plafond BA13</span><span class="m16">612,00&nbsp;€</span></div>
+          <div class="d"><span class="alerte">Prix inhabituel</span> · habitude 22&nbsp;€</div>
+        </div>
+        <div class="fin" aria-label="C'est bon"><span class="coche"><svg class="ico"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Bandes et enduit</span><span class="m16">9,00&nbsp;€</span></div>
+          <div class="d"><span class="alerte">Quantité à confirmer</span> · 1 m²</div>
+        </div>
+        <div class="fin" aria-label="C'est bon"><span class="coche"><svg class="ico"><use href="#i-check"/></svg></span></div>
+      </div>
+
+      <div class="rang" style="margin-top:12px">
+        <div class="zone">
+          <div class="l1"><span class="t">4 autres lignes</span><span class="m16">1&nbsp;245,00&nbsp;€</span></div>
+          <div class="d">Cloison, isolation, visserie…</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-chev-d"/></svg></div>
+      </div>
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Évacuation gravats</span><span class="m16">85,00&nbsp;€</span></div>
+          <div class="d">Peut-être oublié</div>
+        </div>
+        <div class="fin" aria-label="Ajouter"><svg class="ico"><use href="#i-plus"/></svg></div>
+      </div>
+
+      <span class="lien" style="margin-top:4px;align-self:flex-start">Modifier tout le devis</span>
+
+      <div class="bas">
+        <button class="btn btn-encre" type="button"><span>Envoyer par WhatsApp</span><span class="m16">2&nbsp;306,26&nbsp;€</span></button>
+        <span class="geste">1</span>
+        <div class="sous-bouton"><span class="b14">Rien ne part avant votre appui.</span><span class="lien" style="font-size:14px">Par SMS</span></div>
+      </div>
+    </div>
+    <nav class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></div>
+      <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </nav>
+  </div>
+  <p class="note-maquette">Le total, deux lignes douteuses (coche = « c'est bon »), un seul bouton plein : tout tient sans défiler.</p>
+</div>
+
+<!-- ============================ 2. Correction d'une ligne ============================ -->
+<div class="cadre">
+  <h2>2 · Toucher une ligne : la corriger au pouce</h2>
+  <div class="tel">
+    <div class="ec">
+      <div class="tete">
+        <span class="retour"><svg class="ico"><use href="#i-back"/></svg>Mme Lefèvre</span>
+        <span class="lien">Voir le PDF</span>
+      </div>
+      <p class="b14">Devis n° D-2026-051</p>
+      <p class="m30" style="margin-top:2px">2&nbsp;306,26&nbsp;€ <span class="b14" style="font-family:Inter">TTC</span></p>
+      <div class="titre-bloc"><span class="d20">À vérifier</span><span class="nb">2</span></div>
+      <div class="rang touche">
+        <div class="zone">
+          <div class="l1"><span class="t">Plafond BA13</span><span class="m16">612,00&nbsp;€</span></div>
+          <div class="d"><span class="alerte">Prix inhabituel</span> · habitude 22&nbsp;€</div>
+        </div>
+        <div class="fin"><span class="coche"><svg class="ico"><use href="#i-check"/></svg></span></div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="tete-f"><span class="d20">Plafond BA13 suspendu</span><span class="lien">Fermer</span></div>
+      <div class="champ">
+        <p class="b14">Quantité</p>
+        <div class="pas">
+          <span class="pas-b">−</span>
+          <span class="pas-v"><span class="m20">18</span><span class="b14">m²</span></span>
+          <span class="pas-b">+</span>
+        </div>
+      </div>
+
+      <div class="champ">
+        <p class="b14">Prix du m²</p>
+        <div class="pas-v focus" style="justify-content:flex-start;padding-left:16px"><span class="m20">22,00</span><span class="b14">€</span></div>
+      </div>
+      <div style="position:relative">
+        <button class="btn-contour presse" type="button"><svg class="ico"><use href="#i-check"/></svg>Votre habitude : 22,00&nbsp;€</button>
+        <span class="geste">2</span>
+      </div>
+      <p class="b14">Vos 5 derniers devis : 21 à 23&nbsp;€ le m².</p>
+
+      <div class="total-ligne"><span class="b14">Cette ligne</span><span class="m20">396,00&nbsp;€</span></div>
+
+      <div style="position:relative">
+        <button class="btn btn-encre centre" type="button">Enregistrer</button>
+        <span class="geste">3</span>
+      </div>
+      <button class="btn-destructif" type="button">Retirer cette ligne</button>
+    </div>
+  </div>
+  <p class="note-maquette">Un appui sur la puce ramène le prix à 22 € ; le bouton devient « Enregistrer » : 3 gestes pour corriger.</p>
+</div>
+
+<!-- ============================ 3. Mention manquante (rangée) ============================ -->
+<div class="cadre">
+  <h2>3 · Rien d'inhabituel, mais une mention obligatoire manque</h2>
+  <div class="tel">
+    <div class="ec">
+      <div class="tete">
+        <span class="retour"><svg class="ico"><use href="#i-back"/></svg>Mme Lefèvre</span>
+        <span class="lien">Voir le PDF</span>
+      </div>
+      <p class="b14">Devis n° D-2026-051</p>
+      <p class="m30" style="margin-top:2px">2&nbsp;044,90&nbsp;€ <span class="b14" style="font-family:Inter">TTC</span></p>
+
+      <div class="rassure">
+        <span class="pastille-ok"><svg class="ico"><use href="#i-check"/></svg></span>
+        <span class="b16">Rien d'inhabituel dans vos prix.</span>
+      </div>
+
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Les 6 lignes</span><span class="m16">1&nbsp;650,00&nbsp;€</span></div>
+          <div class="d">Cloison, plafond, bandes…</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-chev-d"/></svg></div>
+      </div>
+
+      <div class="rang" style="margin-top:20px">
+        <div class="zone">
+          <div class="t alerte">Décennale manquante</div>
+          <div class="d">Assurance obligatoire sur un devis</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-chev"/></svg></div>
+      </div>
+
+      <span class="lien" style="margin-top:4px;align-self:flex-start">Modifier tout le devis</span>
+
+      <div class="bas">
+        <button class="btn btn-encre" type="button"><span>Envoyer par WhatsApp</span><span class="m16">2&nbsp;044,90&nbsp;€</span></button>
+        <div class="sous-bouton"><span class="b14">Rien ne part avant votre appui.</span><span class="lien" style="font-size:14px">Par SMS</span></div>
+      </div>
+    </div>
+    <nav class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></div>
+      <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </nav>
+  </div>
+  <p class="note-maquette">Seules les mentions obligatoires parlent ; plus de « 53 % », ni de conseils sur ce premier écran.</p>
+</div>
+
+<!-- ============================ 4. Compléter la mention sur place ============================ -->
+<div class="cadre">
+  <h2>4 · On la complète sur place, une fois pour toutes</h2>
+  <div class="tel">
+    <div class="ec">
+      <div class="tete">
+        <span class="retour"><svg class="ico"><use href="#i-back"/></svg>Mme Lefèvre</span>
+        <span class="lien">Voir le PDF</span>
+      </div>
+      <p class="b14">Devis n° D-2026-051</p>
+      <p class="m30" style="margin-top:2px">2&nbsp;044,90&nbsp;€ <span class="b14" style="font-family:Inter">TTC</span></p>
+      <div class="rassure">
+        <span class="pastille-ok"><svg class="ico"><use href="#i-check"/></svg></span>
+        <span class="b16">Rien d'inhabituel dans vos prix.</span>
+      </div>
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Les 6 lignes</span><span class="m16">1&nbsp;650,00&nbsp;€</span></div>
+          <div class="d">Cloison, plafond, bandes…</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-chev-d"/></svg></div>
+      </div>
+      <div class="rang touche" style="margin-top:20px">
+        <div class="zone">
+          <div class="t alerte">Décennale manquante</div>
+          <div class="d">Assurance obligatoire sur un devis</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-chev"/></svg></div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="tete-f"><span class="d20">Assurance décennale</span><span class="lien">Fermer</span></div>
+      <p class="b14">Obligatoire sur un devis.</p>
+
+      <div class="champ">
+        <p class="b14">Assureur</p>
+        <div class="champ-texte">SMABTP</div>
+      </div>
+      <div class="champ">
+        <p class="b14">N° de police</p>
+        <div class="champ-texte focus">2024-0187345</div>
+      </div>
+      <p class="b14">Gardé dans vos paramètres : plus jamais demandé.</p>
+
+      <div style="position:relative">
+        <button class="btn btn-encre centre" type="button">Enregistrer</button>
+        <span class="geste">4</span>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette">Le composant « CompletionMention » actuel, en feuille ; écrit avant l'envoi, car les mentions se figent à l'envoi.</p>
+</div>
+
+<!-- ============================ 5. Dans WhatsApp ============================ -->
+<div class="cadre">
+  <h2>5 · L'appui ouvre WhatsApp, message écrit, numéro du client</h2>
+  <div class="tel" style="background:rgb(var(--c-paper-warm))">
+    <div class="wa-haut">
+      <svg class="ico"><use href="#i-back"/></svg>
+      <span class="avatar">ML</span>
+      <div>
+        <p style="font:600 16px Inter">Mme Lefèvre</p>
+        <p class="b14">06 12 34 56 78</p>
+      </div>
+    </div>
+    <div class="wa-fil"><p class="vide">Application WhatsApp de Gérard, hors Compyo</p></div>
+    <div class="wa-compo">
+      <div class="wa-champ">Bonjour Mme Lefèvre,
+
+Voici votre devis n° D-2026-051 pour cloisons, plafond et bandes, d'un montant de 2&nbsp;044,90&nbsp;€ TTC :
+<span class="lienu">https://compyo.vercel.app/devis/8f3a21c4</span>
+
+Vous pouvez le lire et le signer en ligne, directement depuis votre téléphone.
+
+Martin Plâtrerie</div>
+      <span class="wa-envoi"><svg class="ico"><use href="#i-send"/></svg><span class="geste" style="top:-12px;right:-6px">2</span></span>
+    </div>
+  </div>
+  <p class="note-maquette">Gérard relit, puis appuie lui-même sur la flèche : Compyo n'envoie rien.</p>
+</div>
+
+<!-- ============================ 6. Retour dans Compyo ============================ -->
+<div class="cadre">
+  <h2>6 · De retour dans Compyo : on dit ce qu'on sait</h2>
+  <div class="tel">
+    <div class="ec">
+      <div class="tete">
+        <span class="retour"><svg class="ico"><use href="#i-back"/></svg>Mme Lefèvre</span>
+      </div>
+      <p class="b14">Devis n° D-2026-051</p>
+      <p class="d30" style="margin-top:4px">En attente</p>
+      <p class="b14" style="margin-top:8px">Elle peut le lire et le signer en ligne.</p>
+      <p class="b14" style="margin-top:2px">Message ouvert dans WhatsApp à 14h32.</p>
+
+      <div class="rang" style="margin-top:24px">
+        <div class="zone">
+          <div class="t">Pas parti ? Rouvrir WhatsApp</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-chev"/></svg></div>
+      </div>
+
+      <div class="bas">
+        <button class="btn btn-encre centre" type="button">Retour au projet</button>
+      </div>
+    </div>
+    <nav class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></div>
+      <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </nav>
+  </div>
+  <p class="note-maquette">« Envoyé » est noté au toucher du bouton ; WhatsApp ne confirme rien, donc jamais « parti ».</p>
+</div>
+
+<!-- ============================ Gestes ============================ -->
+<div class="cadre gestes">
+  <h2>Gestes, de « devis généré » à « parti »</h2>
+  <div class="carte" style="padding:16px">
+    <table>
+      <tr><th>Cas</th><th style="text-align:center">Avant</th><th style="text-align:center">D</th></tr>
+      <tr><td>Rien à corriger</td><td class="n">7</td><td class="n d">2</td></tr>
+      <tr><td>Une ligne douteuse, jugée juste</td><td class="n">7</td><td class="n d">3</td></tr>
+      <tr><td>Une ligne corrigée (prix habituel)</td><td class="n">≈ 10</td><td class="n d">5</td></tr>
+      <tr><td>Mention manquante (une fois)</td><td class="n">quitter</td><td class="n d">4</td></tr>
+      <tr><td>Par SMS plutôt que WhatsApp</td><td class="n">—</td><td class="n d">+1</td></tr>
+      <tr><td>Client sans numéro</td><td class="n">7</td><td class="n d">4</td></tr>
+    </table>
+  </div>
+  <p class="note-maquette">Avant : valider, envoyer au client, partager, appli, contact, envoyer (+ 2 pour le PDF).</p>
+</div>
+
+<!-- ============================ Ordinateur : le bureau du soir ============================ -->
+<div class="cadre" style="width:100%">
+  <h2>Ordinateur · le bureau du soir : les mêmes lignes à gauche, le vrai PDF à droite</h2>
+  <div class="ordi">
+    <div class="gauche">
+      <span class="retour" style="min-height:32px"><svg class="ico"><use href="#i-back"/></svg>Projet · Mme Lefèvre</span>
+      <p class="b14" style="margin-top:8px">Devis n° D-2026-051</p>
+      <p class="m30" style="margin-top:2px">2&nbsp;306,26&nbsp;€ <span class="b14" style="font-family:Inter">TTC</span></p>
+
+      <div class="titre-bloc"><span class="d20">À vérifier</span><span class="nb">2</span></div>
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Plafond BA13 suspendu</span><span class="m16">612,00&nbsp;€</span></div>
+          <div class="d"><span class="alerte">Prix inhabituel</span> · 34&nbsp;€ le m², habitude 22&nbsp;€</div>
+        </div>
+        <div class="fin"><span class="coche"><svg class="ico"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Bandes et enduit joints</span><span class="m16">9,00&nbsp;€</span></div>
+          <div class="d"><span class="alerte">Quantité à confirmer</span> · 1 m²</div>
+        </div>
+        <div class="fin"><span class="coche"><svg class="ico"><use href="#i-check"/></svg></span></div>
+      </div>
+      <div class="rang" style="margin-top:12px">
+        <div class="zone">
+          <div class="l1"><span class="t">4 autres lignes</span><span class="m16">1&nbsp;245,00&nbsp;€</span></div>
+          <div class="d">Cloison, isolation, visserie, protection des sols</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-chev-d"/></svg></div>
+      </div>
+      <div class="rang">
+        <div class="zone">
+          <div class="l1"><span class="t">Évacuation gravats</span><span class="m16">85,00&nbsp;€</span></div>
+          <div class="d">Peut-être oublié</div>
+        </div>
+        <div class="fin"><svg class="ico"><use href="#i-plus"/></svg></div>
+      </div>
+      <span class="lien" style="margin-top:4px;align-self:flex-start">Modifier tout le devis</span>
+
+      <div class="actions">
+        <button class="btn btn-encre centre" type="button" style="padding:0 28px">Envoyer par WhatsApp</button>
+        <button class="btn-contour" type="button">Copier le message</button>
+      </div>
+      <p class="b14" style="margin-top:8px">Rien ne part avant votre appui. Sur ordinateur, le message part du WhatsApp ouvert.</p>
+    </div>
+    <div class="droite">
+      <div class="pdf">
+        <h3>Martin Plâtrerie</h3>
+        <div class="entree"><span>Devis n° D-2026-051</span><span>Mme Lefèvre</span></div>
+        <table>
+          <tr><th>Désignation</th><th class="r">Qté</th><th class="r">P.U. HT</th><th class="r">Total HT</th></tr>
+          <tr><td>Cloison BA13 sur ossature 70 mm</td><td class="r">24 m²</td><td class="r">41,80</td><td class="r">1 003,20</td></tr>
+          <tr><td>Plafond BA13 suspendu</td><td class="r">18 m²</td><td class="r">37,40</td><td class="r">673,20</td></tr>
+          <tr><td>Bandes et enduit joints</td><td class="r">1 m²</td><td class="r">9,90</td><td class="r">9,90</td></tr>
+          <tr><td>Isolation laine de verre 100 mm</td><td class="r">24 m²</td><td class="r">10,45</td><td class="r">250,80</td></tr>
+          <tr><td>Visserie et accessoires</td><td class="r">1 forf.</td><td class="r">71,50</td><td class="r">71,50</td></tr>
+          <tr><td>Protection des sols</td><td class="r">1 forf.</td><td class="r">44,00</td><td class="r">44,00</td></tr>
+          <tr><td>Déplacement</td><td class="r">1</td><td class="r">44,00</td><td class="r">44,00</td></tr>
+        </table>
+        <table style="margin-top:8px">
+          <tr class="tot"><td>Total HT</td><td class="r">2 096,60 €</td></tr>
+          <tr class="tot"><td>TVA 10 %</td><td class="r">209,66 €</td></tr>
+          <tr class="tot gros"><td>Total TTC</td><td class="r">2 306,26 €</td></tr>
+        </table>
+        <p class="legal">Validité 30 jours · Acompte 30 % à la signature · SIRET et assurance décennale à compléter.</p>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette" style="max-width:760px">À gauche vos prix ; à droite ce que lit le client (marge répartie dans chaque ligne). Le PDF reste le dernier contrôle, à un appui sur téléphone.</p>
+</div>
+
+</body>
+</html>

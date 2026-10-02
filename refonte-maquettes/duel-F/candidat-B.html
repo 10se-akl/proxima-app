@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat B — Un écran, un bouton</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Maquette jetable. Aucune couleur en dur : seulement les variables de la feuille commune. */
+  .tel { height: 740px; min-height: 740px; }
+  .haut { flex: none; display: flex; align-items: center; min-height: 44px; padding: 0 16px; font: 500 14px Inter; color: rgb(var(--c-steel)); }
+  .corps { flex: 1; min-height: 0; overflow: hidden; padding: 0 16px; display: flex; flex-direction: column; gap: 12px; }
+  .entete { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .chiffre { display: flex; align-items: baseline; gap: 8px; font-variant-numeric: tabular-nums; }
+  .chiffre b { font: 600 30px/1.1 Manrope, sans-serif; }
+  .chiffre span { font: 500 14px Inter; color: rgb(var(--c-steel)); }
+  .texte { min-height: 48px; display: inline-flex; align-items: center; padding: 0 4px; font: 600 14px Inter; color: rgb(var(--c-ink)); text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; }
+  .cond { display: flex; align-items: center; justify-content: space-between; min-height: 48px; margin-top: -10px; font: 500 14px Inter; color: rgb(var(--c-steel)); }
+
+  .bloc-titre { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+  .bloc-titre h3 { font: 600 20px Manrope, sans-serif; }
+  .bloc-titre .nb { font: 400 14px Inter; color: rgb(var(--c-steel)); font-variant-numeric: tabular-nums; }
+  .pastille-ok { display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 99px; background: rgb(var(--c-succes) / .1); color: rgb(var(--c-succes)); }
+
+  .liste { display: flex; flex-direction: column; gap: 6px; }
+  .lg { display: flex; align-items: stretch; min-height: 64px; overflow: hidden; border-radius: 16px; background: rgb(var(--c-surface)); outline: 1px solid rgb(var(--c-ink) / .15); outline-offset: -1px; }
+  .lg.vf { outline: 2px solid rgb(var(--c-ink)); outline-offset: -2px; }
+  .lg .z { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 2px; padding: 10px 16px; }
+  .l1 { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+  .l1 b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 600 16px Inter; }
+  .l1 em { flex: none; font: 600 16px "IBM Plex Mono", monospace; font-style: normal; font-variant-numeric: tabular-nums; }
+  .l2 { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 400 14px Inter; color: rgb(var(--c-steel)); }
+  .l2.mot { color: rgb(var(--c-ink)); font-weight: 600; }
+  .mot::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 99px; background: rgb(var(--c-alerte-orange)); }
+  .mot.ok::before { display: none; }
+  .mot.ok svg { color: rgb(var(--c-succes)); margin-right: 6px; vertical-align: -2px; }
+  .co { flex: none; width: 56px; display: grid; place-items: center; border-left: 1px solid rgb(var(--c-ink) / .15); }
+  .rond { width: 28px; height: 28px; border-radius: 99px; border: 2px solid rgb(var(--c-ink) / .6); }
+
+  .bas { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px 16px 16px; background: rgb(var(--c-paper)); border-top: 1px solid rgb(var(--c-gris-clair)); }
+  .bas .rang { display: flex; gap: 8px; position: relative; }
+  .mention { display: flex; align-items: center; justify-content: space-between; min-height: 48px; margin-bottom: 4px; font: 400 14px Inter; }
+  .mention b { font-weight: 600; color: rgb(var(--c-signal-fonce)); }
+  .btn-encre { position: relative; flex: 1; min-height: 56px; border: 0; border-radius: 16px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 600 16px Inter; }
+  .btn-contour { min-height: 56px; min-width: 76px; border: 0; border-radius: 16px; background: transparent; color: rgb(var(--c-ink)); font: 600 16px Inter; outline: 1.5px solid rgb(var(--c-ink) / .6); outline-offset: -1.5px; }
+  .btn-destr { min-height: 48px; border: 0; border-radius: 16px; background: transparent; font: 600 16px Inter; color: rgb(var(--c-signal-fonce)); outline: 1.5px solid rgb(var(--c-signal-fonce) / .5); outline-offset: -1.5px; }
+  .geste { position: absolute; top: -12px; left: -6px; z-index: 2; display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 99px; background: rgb(var(--c-paper)); color: rgb(var(--c-ink)); outline: 2px solid rgb(var(--c-ink)); font: 700 13px Inter; }
+
+  .feuille h4 { font: 600 20px Manrope, sans-serif; }
+  .feuille .t-petit { font-size: 14px; }
+  .champs { display: flex; gap: 10px; }
+  .champ { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 0; }
+  .champ.large { flex: 1.4; }
+  .champ label { font: 400 14px Inter; color: rgb(var(--c-steel)); }
+  .champ div { min-height: 56px; display: flex; align-items: center; padding: 0 14px; border-radius: 16px; background: rgb(var(--c-surface)); outline: 1px solid rgb(var(--c-ink) / .15); outline-offset: -1px; font: 600 18px "IBM Plex Mono", monospace; }
+  .champ div.actif { outline: 2px solid rgb(var(--c-ink)); outline-offset: -2px; }
+  .champ div.texte-champ { font: 500 16px Inter; }
+  .champ div.vide { color: rgb(var(--c-steel)); font-weight: 400; }
+  .prix-client { display: flex; align-items: baseline; justify-content: space-between; font: 400 14px Inter; color: rgb(var(--c-steel)); }
+  .prix-client b { font: 600 18px "IBM Plex Mono", monospace; color: rgb(var(--c-ink)); }
+
+  /* Faux WhatsApp : l'application du téléphone, pas Compyo */
+  .wa-haut { flex: none; display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 16px; background: rgb(var(--c-paper-warm)); font: 600 16px Inter; border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+  .wa-fil { flex: 1; background: rgb(var(--c-paper-warm)); display: flex; align-items: flex-start; justify-content: center; padding-top: 16px; }
+  .wa-saisie { position: relative; flex: none; display: flex; align-items: flex-end; gap: 8px; padding: 10px 12px 14px; background: rgb(var(--c-paper-warm)); }
+  .wa-champ { flex: 1; padding: 12px 14px; border-radius: 20px; background: rgb(var(--c-surface)); outline: 1px solid rgb(var(--c-ink) / .15); outline-offset: -1px; font: 400 14px/1.4 Inter; white-space: pre-line; }
+  .wa-champ small { color: rgb(var(--c-steel)); font-size: 14px; }
+  .wa-envoi { position: relative; flex: none; width: 48px; height: 48px; border: 0; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); display: grid; place-items: center; }
+
+  .resume { width: 360px; display: flex; flex-direction: column; gap: 10px; }
+  .resume h1 { font: 800 22px/1.2 Manrope, sans-serif; }
+  .resume .carte { display: flex; flex-direction: column; gap: 8px; font: 500 14px/1.4 Inter; }
+  .resume .carte b { font-weight: 700; }
+  .resume .t-petit { font-size: 14px; }
+</style>
+</head>
+<body>
+
+<!-- Fiche de décompte -->
+<div class="resume">
+  <h1>Candidat B<br>Un écran, un bouton</h1>
+  <div class="carte">
+    <div><b>De « devis généré » à « parti chez le client »</b></div>
+    <div>Avant : <b>7 gestes</b> (9 avec l'aperçu), sans correction.</div>
+    <div>Après : <b>3 gestes</b> : Envoyer par WhatsApp, Envoyer dans WhatsApp, Oui parti.</div>
+    <div class="t-petit">Une ligne corrigée : +3. Une ligne confirmée : +1. Les numéros cerclés des écrans suivent ce décompte.</div>
+  </div>
+</div>
+
+<!-- 1. Écran de validation -->
+<div class="cadre">
+  <h2>1. L'écran de validation, sans défiler</h2>
+  <div class="tel">
+    <div class="haut">← Projet · Mme Lefèvre · D-2026-051</div>
+    <div class="corps">
+      <div>
+        <div class="entete">
+          <div class="chiffre"><b>2 867,70 €</b><span>TTC</span></div>
+          <span class="texte">Aperçu</span>
+        </div>
+        <div class="cond"><span>TVA 10 % · valable 30 jours · acompte 30 %</span><span aria-hidden="true">›</span></div>
+      </div>
+
+      <div class="bloc-titre"><h3>À vérifier</h3><span class="nb">2</span></div>
+      <div class="liste">
+        <div class="lg vf">
+          <div class="z">
+            <div class="l1"><b>Plaques hydrofuges</b><em>529,00 €</em></div>
+            <div class="l2 mot">Plus cher que d'habitude</div>
+          </div>
+          <div class="co" aria-label="C'est bon"><span class="rond"></span></div>
+        </div>
+        <div class="lg vf">
+          <div class="z">
+            <div class="l1"><b>Pare-vapeur</b><em>161,00 €</em></div>
+            <div class="l2 mot">Poste jamais chiffré</div>
+          </div>
+          <div class="co" aria-label="C'est bon"><span class="rond"></span></div>
+        </div>
+      </div>
+
+      <div class="bloc-titre" style="margin-top:6px"><h3>Le reste</h3><span class="nb">4</span></div>
+      <div class="liste">
+        <div class="lg"><div class="z"><div class="l1"><b>Dépose cloison</b><em>320,00 €</em></div><div class="l2">1 forfait</div></div></div>
+        <div class="lg"><div class="z"><div class="l1"><b>Pose cloison BA13</b><em>1 230,00 €</em></div><div class="l2">3 jours × 410,00 €</div></div></div>
+        <div class="lg"><div class="z"><div class="l1"><b>Bandes et enduits</b><em>322,00 €</em></div><div class="l2">46 m² × 7,00 €</div></div></div>
+        <div class="lg"><div class="z"><div class="l1"><b>Déplacement</b><em>45,00 €</em></div><div class="l2">Forfait</div></div></div>
+        <span class="texte">Tout modifier</span>
+      </div>
+    </div>
+    <div class="bas">
+      <div class="rang">
+        <button class="btn-encre"><span class="geste">1</span>Envoyer par WhatsApp</button>
+        <button class="btn-contour">SMS</button>
+      </div>
+    </div>
+  </div>
+  <div class="note-maquette">Le total, deux lignes cerclées avec leur motif, un seul bouton plein ; coche = « c'est bon » en 1 geste.</div>
+</div>
+
+<!-- 2. Corriger une ligne -->
+<div class="cadre">
+  <h2>2. Corriger une ligne : toucher, taper, OK</h2>
+  <div class="tel">
+    <div class="haut">← Projet · Mme Lefèvre · D-2026-051</div>
+    <div class="corps">
+      <div>
+        <div class="entete">
+          <div class="chiffre"><b>2 751,32 €</b><span>TTC</span></div>
+          <span class="texte">Aperçu</span>
+        </div>
+        <div class="cond"><span>TVA 10 % · valable 30 jours · acompte 30 %</span><span aria-hidden="true">›</span></div>
+      </div>
+      <div class="bloc-titre"><h3>À vérifier</h3><span class="nb">2</span></div>
+      <div class="liste">
+        <div class="lg vf">
+          <div class="z">
+            <div class="l1"><b>Plaques hydrofuges</b><em>423,20 €</em></div>
+            <div class="l2 mot">Plus cher que d'habitude</div>
+          </div>
+          <div class="co"><span class="rond"></span></div>
+        </div>
+        <div class="lg vf">
+          <div class="z">
+            <div class="l1"><b>Pare-vapeur</b><em>161,00 €</em></div>
+            <div class="l2 mot">Poste jamais chiffré</div>
+          </div>
+          <div class="co"><span class="rond"></span></div>
+        </div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h4>Plaques hydrofuges</h4>
+      <p class="l2 mot ok" style="font:600 14px Inter;color:rgb(var(--c-ink))"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Comme d'habitude</p>
+      <p class="t-petit">Vos derniers devis : 8,00 € le m²</p>
+      <div class="champs">
+        <div class="champ"><label>Quantité</label><div>46</div></div>
+        <div class="champ"><label>Unité</label><div class="texte-champ">m²</div></div>
+        <div class="champ large"><label>Votre prix</label><div class="actif">8,00 €</div></div>
+      </div>
+      <div class="prix-client"><span>Pour le client <span style="text-decoration:line-through">529,00 €</span></span><b>423,20 €</b></div>
+      <div style="position:relative">
+        <button class="btn-encre" style="width:100%"><span class="geste">3</span>OK</button>
+      </div>
+      <button class="btn-destr">Supprimer la ligne</button>
+    </div>
+  </div>
+  <div class="note-maquette">Gérard tape 8,00 : le motif disparaît, le total monte à jour. Toucher (1), taper (2), OK (3).</div>
+</div>
+
+<!-- 3. Mention obligatoire manquante -->
+<div class="cadre">
+  <h2>3. Une mention obligatoire manque</h2>
+  <div class="tel">
+    <div class="haut">← Projet · Mme Lefèvre · D-2026-051</div>
+    <div class="corps">
+      <div>
+        <div class="entete">
+          <div class="chiffre"><b>2 867,70 €</b><span>TTC</span></div>
+          <span class="texte">Aperçu</span>
+        </div>
+        <div class="cond"><span>TVA 10 % · valable 30 jours · acompte 30 %</span><span aria-hidden="true">›</span></div>
+      </div>
+      <div class="bloc-titre"><h3>Rien à vérifier</h3><span class="pastille-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+      <div class="bloc-titre" style="margin-top:6px"><h3>Le reste</h3><span class="nb">6</span></div>
+      <div class="liste">
+        <div class="lg"><div class="z"><div class="l1"><b>Dépose cloison</b><em>320,00 €</em></div><div class="l2">1 forfait</div></div></div>
+        <div class="lg"><div class="z"><div class="l1"><b>Pose cloison BA13</b><em>1 230,00 €</em></div><div class="l2">3 jours × 410,00 €</div></div></div>
+        <div class="lg"><div class="z"><div class="l1"><b>Plaques hydrofuges</b><em>529,00 €</em></div><div class="l2">46 m² × 11,50 €</div></div></div>
+        <div class="lg"><div class="z"><div class="l1"><b>Pare-vapeur</b><em>161,00 €</em></div><div class="l2">46 m² × 3,50 €</div></div></div>
+        <div class="lg"><div class="z"><div class="l1"><b>Bandes et enduits</b><em>322,00 €</em></div><div class="l2">46 m² × 7,00 €</div></div></div>
+      </div>
+    </div>
+    <div class="bas">
+      <div class="mention"><span><b>Il manque</b> votre assurance décennale.</span><span class="texte">Compléter</span></div>
+      <div class="rang">
+        <button class="btn-encre">Envoyer par WhatsApp</button>
+        <button class="btn-contour">SMS</button>
+      </div>
+    </div>
+  </div>
+  <div class="note-maquette">Plus de score : une ligne, un seul mot en terracotta, et le bouton reste actif (le devis n'est jamais bloqué).</div>
+</div>
+
+<!-- 4. Compléter la mention -->
+<div class="cadre">
+  <h2>4. La compléter sans quitter le devis</h2>
+  <div class="tel">
+    <div class="haut">← Projet · Mme Lefèvre · D-2026-051</div>
+    <div class="corps">
+      <div>
+        <div class="entete">
+          <div class="chiffre"><b>2 867,70 €</b><span>TTC</span></div>
+          <span class="texte">Aperçu</span>
+        </div>
+        <div class="cond"><span>TVA 10 % · valable 30 jours · acompte 30 %</span><span aria-hidden="true">›</span></div>
+      </div>
+      <div class="bloc-titre"><h3>Rien à vérifier</h3><span class="pastille-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h4>Assurance décennale</h4>
+      <p class="t-petit">Obligatoire sur un devis de travaux.</p>
+      <div class="champ"><label>Assureur</label><div class="texte-champ">AXA France</div></div>
+      <div class="champ"><label>N° de police</label><div class="texte-champ actif">123 456 789</div></div>
+      <button class="btn-encre" style="width:100%;flex:none">Enregistrer</button>
+    </div>
+  </div>
+  <div class="note-maquette">Les deux champs de la mention, une raison, Enregistrer. Une fois remplie, elle n'est plus jamais demandée.</div>
+</div>
+
+<!-- 5. L'envoi : WhatsApp -->
+<div class="cadre">
+  <h2>5. WhatsApp s'ouvre, message prêt (hors Compyo)</h2>
+  <div class="tel">
+    <div class="wa-haut"><span aria-hidden="true">‹</span>Sophie Lefèvre</div>
+    <div class="wa-fil"><span class="t-petit">Aujourd'hui</span></div>
+    <div class="wa-saisie">
+      <div class="wa-champ">Bonjour Sophie Lefèvre,
+
+Voici votre devis n° D-2026-051 pour doublage et cloisons du salon, d'un montant de 2 867,70 € TTC :
+<small>https://compyo.vercel.app/devis/8f3a…</small>
+
+Vous pouvez le lire et le signer en ligne, directement depuis votre téléphone.
+
+Marchetti Plâtrerie</div>
+      <button class="wa-envoi" aria-label="Envoyer"><span class="geste" style="top:-14px;left:-10px">2</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11.5L21 3l-6.5 18-3-7.5z"/></svg></button>
+    </div>
+  </div>
+  <div class="note-maquette">Numéro du client déjà saisi, texte et lien de signature prêts : rien ne part tant que Gérard n'appuie pas lui-même.</div>
+</div>
+
+<!-- 6. Retour dans Compyo -->
+<div class="cadre">
+  <h2>6. De retour dans Compyo : la question honnête</h2>
+  <div class="tel">
+    <div class="haut">← Projet · Mme Lefèvre · D-2026-051</div>
+    <div class="corps">
+      <div>
+        <div class="entete">
+          <div class="chiffre"><b>2 867,70 €</b><span>TTC</span></div>
+          <span class="texte">Aperçu</span>
+        </div>
+        <div class="cond"><span>TVA 10 % · valable 30 jours · acompte 30 %</span><span aria-hidden="true">›</span></div>
+      </div>
+      <div class="bloc-titre"><h3>Rien à vérifier</h3><span class="pastille-ok"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h4>Parti chez Mme Lefèvre ?</h4>
+      <p class="t-petit">Sinon il reste « Prêt à envoyer ».</p>
+      <div style="position:relative">
+        <button class="btn-encre" style="width:100%"><span class="geste">3</span>Oui, parti</button>
+      </div>
+      <button class="btn-contour" style="width:100%">Pas encore</button>
+    </div>
+  </div>
+  <div class="note-maquette">« Oui » note le devis envoyé et ramène à la fiche projet ; Compyo ne le dit jamais avant Gérard.</div>
+</div>
+
+</body>
+</html>

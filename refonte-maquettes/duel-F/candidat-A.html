@@ -1,0 +1,382 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel F · Candidat A — l'écran actuel, libellés honnêtes</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+/* Maquette fidèle à l'écran actuel (components/devis/*, ValiderDevis.tsx). Seuls les cadres en pointillés changent. */
+.tel { height: 740px; min-height: 0; }
+.entete { flex: none; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 700 17px Manrope, sans-serif; }
+.entete i { width: 10px; height: 10px; border-radius: 99px; background: rgb(var(--c-paper)); opacity: .5; }
+.page { flex: 1; min-height: 0; overflow: hidden; padding: 6px 16px 0; position: relative; }
+.retour { display: block; min-height: 44px; line-height: 44px; font: 500 12px Inter; color: rgb(var(--c-ink) / .5); }
+.titre { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.titre b { font: 700 24px/1.2 Manrope, sans-serif; }
+.pill { font: 600 11px Inter; padding: 2px 8px; border-radius: 6px; }
+.p-brouillon { background: rgb(var(--c-ink) / .1); color: rgb(var(--c-ink) / .6); }
+.p-valider { background: rgb(var(--c-alerte-orange) / .15); color: rgb(var(--c-alerte-orange)); }
+.p-envoye { background: rgb(var(--c-steel) / .15); color: rgb(var(--c-steel)); }
+.sous { margin-top: 4px; font: 500 14px Inter; color: rgb(var(--c-ink) / .55); }
+.sous b { font-weight: 600; color: rgb(var(--c-ink) / .8); }
+.rang { display: flex; gap: 8px; margin-top: 10px; }
+.ghost { min-height: 48px; padding: 0 14px; display: inline-flex; align-items: center; border: 1px solid rgb(var(--c-gris-clair)); border-radius: 12px; font: 500 14px Inter; background: rgb(var(--c-paper)); }
+.onglets { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid rgb(var(--c-ink) / .1); border-radius: 12px; background: rgb(var(--c-surface)); }
+.onglets span { padding: 11px 8px; text-align: center; font: 500 14px Inter; border-radius: 8px; color: rgb(var(--c-ink) / .6); }
+.onglets .on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.gros { margin-top: 14px; border-radius: 16px; padding: 20px; }
+.sur { font: 500 12px Inter; letter-spacing: .06em; text-transform: uppercase; color: rgb(var(--c-ink) / .5); }
+.score { display: flex; align-items: center; gap: 14px; }
+.anneau { position: relative; flex: none; width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--col) calc(var(--p) * 1%), rgb(var(--c-ink) / .1) 0); }
+.anneau::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: rgb(var(--c-surface)); }
+.anneau span { position: relative; z-index: 1; font: 600 13px Inter; color: rgb(var(--c-ink)); }
+.score h3 { font: 600 17px/1.2 Manrope, sans-serif; margin-top: 2px; }
+.score p { font: 400 12px/1.4 Inter; color: rgb(var(--c-ink) / .5); }
+.score .fl { margin-left: auto; color: rgb(var(--c-ink) / .4); font-size: 13px; }
+.pts { margin-top: 14px; border-top: 1px solid rgb(var(--c-ink) / .1); padding-top: 6px; }
+.pt { display: flex; gap: 12px; padding: 8px 0; }
+.pt + .pt { border-top: 1px solid rgb(var(--c-ink) / .05); }
+.pt .i { flex: none; width: 20px; height: 20px; margin-top: 2px; border-radius: 50%; display: grid; place-items: center; font: 700 11px Inter; }
+.i.att { background: rgb(var(--c-signal) / .12); color: rgb(var(--c-signal)); }
+.i.con { background: rgb(var(--c-alerte-orange) / .15); color: rgb(var(--c-alerte-orange)); }
+.i.ok { background: rgb(var(--c-succes) / .12); color: rgb(var(--c-succes)); }
+.pt > div { flex: 1; min-width: 0; }
+.pt b { font: 500 14px Inter; }
+.pt .r { font: 400 13px/1.35 Inter; color: rgb(var(--c-ink) / .65); }
+.lab { margin-top: 8px; font: 500 12.5px Inter; color: rgb(var(--c-ink) / .7); }
+.champ { margin-top: 4px; min-height: 48px; display: flex; align-items: center; padding: 0 12px; border: 1px solid rgb(var(--c-ink) / .15); border-radius: 12px; background: rgb(var(--c-paper)); font: 400 16px Inter; }
+.btn-ink { margin-top: 12px; min-height: 48px; width: 100%; display: flex; align-items: center; justify-content: center; border-radius: 12px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 600 15px Inter; }
+.btn-ink.pale { opacity: .4; }
+.mod { outline: 2px dashed rgb(var(--c-steel)); outline-offset: 3px; border-radius: 8px; }
+.q-ed { margin-top: 12px; }
+.q-ed .sur { margin-bottom: 4px; }
+.q-ed .ex { font: 400 12px/1.4 Inter; color: rgb(var(--c-ink) / .4); margin-bottom: 14px; }
+.zone { padding: 8px 10px; min-height: 64px; border: 1px solid rgb(var(--c-ink) / .15); border-radius: 12px; background: rgb(var(--c-paper)); font: 400 14px/1.35 Inter; }
+.lbl14 { font: 500 14px Inter; margin-bottom: 4px; }
+.note11 { margin-top: 6px; font: 400 11px Inter; color: rgb(var(--c-ink) / .4); }
+.total { margin-top: 14px; display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border: 1px solid rgb(var(--c-ink) / .1); border-radius: 16px; background: rgb(var(--c-paper-warm)); }
+.total span { font: 400 12px Inter; color: rgb(var(--c-ink) / .5); }
+.total b { font: 600 20px "IBM Plex Mono", monospace; }
+.lig { margin-top: 12px; padding: 12px; border: 1px solid rgb(var(--c-ink) / .1); border-radius: 12px; background: rgb(var(--c-surface)); }
+.lig .l1 { display: flex; gap: 8px; align-items: flex-start; }
+.ia { flex: none; margin-top: 6px; padding: 2px 6px; border-radius: 6px; background: rgb(var(--c-signal) / .1); color: rgb(var(--c-signal)); font: 500 10px "IBM Plex Mono", monospace; }
+.desc { flex: 1; min-width: 0; padding: 7px 10px; border: 1px solid rgb(var(--c-ink) / .15); border-radius: 12px; background: rgb(var(--c-paper)); font: 400 14px/1.3 Inter; }
+.bi { flex: none; width: 48px; height: 48px; display: grid; place-items: center; border: 1px solid rgb(var(--c-ink) / .1); border-radius: 12px; color: rgb(var(--c-ink) / .45); font: 400 15px Inter; }
+.g3 { margin-top: 8px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+.g3 label { display: block; margin-bottom: 4px; font: 400 10px Inter; color: rgb(var(--c-ink) / .4); }
+.f { padding: 6px 8px; border: 1px solid rgb(var(--c-ink) / .15); border-radius: 12px; background: rgb(var(--c-paper)); font: 400 14px Inter; }
+.f.focus { border-color: rgb(var(--c-ink)); box-shadow: 0 0 0 3px rgb(var(--c-ink) / .2); }
+.pied { margin-top: 8px; display: flex; align-items: center; gap: 8px; }
+.pied .t { margin-left: auto; font: 500 14px "IBM Plex Mono", monospace; }
+.collant { position: absolute; left: 16px; right: 16px; bottom: 100px; }
+.valider { min-height: 56px; padding: 0 20px; display: flex; align-items: center; justify-content: space-between; border-radius: 16px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: 0 10px 30px -12px rgb(var(--c-ink) / .6); }
+.valider b { font: 600 16px Inter; }
+.valider span { font: 400 15px "IBM Plex Mono", monospace; opacity: .8; }
+.tit-carte { font: 600 18px Manrope, sans-serif; }
+.txt14 { margin-top: 4px; font: 400 14px/1.4 Inter; color: rgb(var(--c-ink) / .6); }
+.btn-signal { min-height: 48px; padding: 0 18px; display: inline-flex; align-items: center; border-radius: 12px; background: rgb(var(--c-signal)); color: #fff; font: 600 15px Inter; }
+.lns { margin-top: 16px; display: flex; flex-wrap: wrap; gap: 12px; }
+.lien-d { margin-top: 8px; font: 400 14px Inter; color: rgb(var(--c-ink) / .55); }
+.lien-d u { display: inline-flex; min-height: 44px; align-items: center; font-weight: 500; color: rgb(var(--c-ink)); text-underline-offset: 3px; }
+.msg { margin-top: 12px; padding: 12px 14px; border: 1px solid rgb(var(--c-ink) / .1); border-radius: 12px; background: rgb(var(--c-paper)); font: 400 12px/1.5 Inter; color: rgb(var(--c-ink) / .7); }
+.apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; font: 500 12px Inter; }
+.apps div { min-height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 12px; }
+.apps i { width: 40px; height: 40px; border-radius: 12px; background: rgb(var(--c-paper-warm)); border: 1px solid rgb(var(--c-gris-clair)); }
+.apps .choix { box-shadow: 0 0 0 2px rgb(var(--c-ink)); }
+.ico-ph { width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 6px; opacity: .7; }
+.legende-carte { width: 360px; }
+.legende-carte .ligne { min-height: 0; padding: 6px 0; font: 400 13px/1.4 Inter; }
+.cpt { width: 360px; }
+.cpt .ligne { min-height: 48px; font: 500 14px Inter; }
+.cpt .n { flex: none; width: 24px; height: 24px; border-radius: 99px; display: grid; place-items: center; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 700 12px Inter; }
+.cpt .n.g { background: rgb(var(--c-paper-warm)); color: rgb(var(--c-ink)); border: 1px solid rgb(var(--c-gris-clair)); }
+.cpt small { margin-left: auto; font: 400 12px Inter; color: rgb(var(--c-steel)); text-align: right; }
+/* Ordinateur */
+.ordi { width: 1100px; min-height: 640px; overflow: hidden; }
+.cote { flex: none; width: 190px; padding: 18px 14px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); display: flex; flex-direction: column; gap: 14px; font: 500 14px Inter; }
+.cote b { font: 700 17px Manrope, sans-serif; margin-bottom: 8px; }
+.cote span { opacity: .7; }
+.ppal { flex: 1; min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; padding: 24px 28px; }
+.ppal .col { min-width: 0; }
+.doc { margin-top: 10px; aspect-ratio: 210 / 297; max-height: 560px; padding: 24px; border: 1px solid rgb(var(--c-gris-clair)); background: rgb(var(--c-surface)); font: 400 11px/1.5 Inter; }
+.doc h4 { font: 700 14px Manrope, sans-serif; }
+.doc .tr { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+.doc .tr.t { font-weight: 700; border-bottom: 0; }
+.doc .grise { height: 8px; margin-top: 10px; border-radius: 4px; background: rgb(var(--c-gris-clair)); }
+</style>
+</head>
+<body>
+
+<!-- 0. Lecture -->
+<div class="cadre">
+  <h2>Candidat A · l'écran actuel, mots honnêtes</h2>
+  <div class="carte legende-carte">
+    <div class="t-grand">Rien ne bouge, sauf six libellés.</div>
+    <div class="ligne"><span class="mod">&nbsp;Cadre en pointillés&nbsp;</span>&nbsp;= libellé corrigé, le seul changement.</div>
+    <div class="ligne">Le reste est l'écran d'aujourd'hui, copié tel quel, y compris ses défauts.</div>
+    <div class="ligne">Gérard, plaquiste · devis pour M. Lambert, 38 m² de doublage.</div>
+  </div>
+  <p class="note-maquette">Huit vues : valider (2), corriger, compléter, prêt à partir, envoyer, ordinateur, décompte.</p>
+</div>
+
+<!-- 1. Validation, le cas réel -->
+<div class="cadre">
+  <h2>1 · Valider : une mention manque</h2>
+  <div class="tel">
+    <div class="entete">Compyo <i></i></div>
+    <div class="page">
+      <span class="retour">← Projet · M. Lambert</span>
+      <div class="titre"><b>Devis n° D-2026-031</b><span class="pill p-brouillon">Brouillon</span></div>
+      <div class="sous">M. Lambert · <b>2 346,00 € TTC</b></div>
+      <div class="rang"><span class="ghost mod">Télécharger le brouillon (PDF)</span></div>
+      <div class="onglets"><span class="on">Modifier</span><span>Aperçu du PDF</span></div>
+      <div class="carte gros">
+        <div class="score">
+          <div class="anneau" style="--p:48;--col:rgb(var(--c-signal))"><span>48</span></div>
+          <div>
+            <div class="sur">Avant d'envoyer</div>
+            <h3>4 points à vérifier</h3>
+            <p>Conformité du document : 48 %. Vous restez libre d'envoyer ce devis tel quel.</p>
+          </div>
+        </div>
+        <div class="pts">
+          <div class="pt"><span class="i att">!</span><div><b>Assurance décennale</b><div class="r">Obligatoire sur un devis — votre assureur et votre numéro de police décennale.</div><div class="lab">Assureur</div><div class="champ"></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barre"><div class="onglet"><span class="ico-ph"></span>Aujourd'hui</div><div class="onglet"><span class="ico-ph"></span>Projets</div><div class="btn-rond">+</div><div class="onglet"><span class="ico-ph"></span>Planning</div><div class="onglet"><span class="ico-ph"></span>Plus</div></div>
+  </div>
+  <p class="note-maquette">Sans défiler : titre, montant, onglets, score. Aucune ligne du devis à l'écran.</p>
+</div>
+
+<!-- 2. Validation, tout en ordre -->
+<div class="cadre">
+  <h2>2 · Valider : tout est en ordre</h2>
+  <div class="tel">
+    <div class="entete">Compyo <i></i></div>
+    <div class="page">
+      <span class="retour">← Projet · M. Lambert</span>
+      <div class="titre"><b>Devis n° D-2026-031</b><span class="pill p-brouillon">Brouillon</span></div>
+      <div class="sous">M. Lambert · <b>2 346,00 € TTC</b></div>
+      <div class="rang"><span class="ghost mod">Télécharger le brouillon (PDF)</span></div>
+      <div class="onglets"><span class="on">Modifier</span><span>Aperçu du PDF</span></div>
+      <div class="carte" style="margin-top:14px;padding:20px">
+        <div class="score">
+          <div class="anneau" style="--p:100;--col:rgb(var(--c-succes))"><span>100</span></div>
+          <div>
+            <div class="sur">Avant d'envoyer</div>
+            <h3>Tout est en ordre</h3>
+            <p>Conformité du document : 100 %. Vous restez libre d'envoyer ce devis tel quel.</p>
+          </div>
+          <span class="fl">▾</span>
+        </div>
+      </div>
+      <div class="carte" style="margin-top:14px;padding:24px">
+        <div class="sur">Modifier le devis</div>
+        <div class="q-ed" style="margin-top:4px">
+          <div class="ex"><span class="mod">Changez tout ce que vous voulez : lignes, prix, conditions. Rien ne part chez le client sans vous.</span></div>
+        </div>
+        <div class="lbl14">Objet des travaux</div>
+        <div class="zone">Doublage et cloisons en plaques de plâtre, séjour et chambre 2.</div>
+        <div class="note11">La première phrase que lit votre client, avant le détail chiffré.</div>
+        <div class="total"><span>Total TTC (mis à jour en direct)</span><b>2 346,00 €</b></div>
+      </div>
+    </div>
+    <div class="collant"><div class="valider"><b>Valider ce devis</b><span>2 346,00 €</span></div></div>
+    <div class="barre"><div class="onglet"><span class="ico-ph"></span>Aujourd'hui</div><div class="onglet"><span class="ico-ph"></span>Projets</div><div class="btn-rond">+</div><div class="onglet"><span class="ico-ph"></span>Planning</div><div class="onglet"><span class="ico-ph"></span>Plus</div></div>
+  </div>
+  <p class="note-maquette">Même score replié : on voit le total, pas encore une seule ligne. Le bouton, lui, suit le pouce.</p>
+</div>
+
+<!-- 3. Corriger une ligne -->
+<div class="cadre">
+  <h2>3 · Corriger le prix d'une ligne</h2>
+  <div class="tel">
+    <div class="entete">Compyo <i></i></div>
+    <div class="page">
+      <div class="lig" style="margin-top:-96px">
+        <div class="l1"><span class="ia">IA</span><div class="desc">Ossature métallique + plaques BA13, séjour</div><span class="bi">✕</span></div>
+        <div class="g3">
+          <div><label>Quantité</label><div class="f">38</div></div>
+          <div><label>Unité</label><div class="f">m²</div></div>
+          <div><label>Prix unitaire (€)</label><div class="f">26</div></div>
+        </div>
+        <div class="pied"><span class="bi">↑</span><span class="bi">↓</span><span class="t">988,00 €</span></div>
+      </div>
+      <div class="lig">
+        <div class="l1"><span class="ia">IA</span><div class="desc">Bandes, enduit et ponçage</div><span class="bi">✕</span></div>
+        <div class="g3">
+          <div><label>Quantité</label><div class="f">38</div></div>
+          <div><label>Unité</label><div class="f">m²</div></div>
+          <div><label>Prix unitaire (€)</label><div class="f focus">11</div></div>
+        </div>
+        <div class="pied"><span class="bi">↑</span><span class="bi">↓</span><span class="t">418,00 €</span></div>
+      </div>
+      <div class="lig">
+        <div class="l1"><span class="ia">IA</span><div class="desc">Cloison 72/48, chambre 2</div><span class="bi">✕</span></div>
+        <div class="g3">
+          <div><label>Quantité</label><div class="f">9</div></div>
+          <div><label>Unité</label><div class="f">m²</div></div>
+          <div><label>Prix unitaire (€)</label><div class="f">30</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="collant"><div class="valider"><b>Valider ce devis</b><span>2 450,88 €</span></div></div>
+    <div class="barre"><div class="onglet"><span class="ico-ph"></span>Aujourd'hui</div><div class="onglet"><span class="ico-ph"></span>Projets</div><div class="btn-rond">+</div><div class="onglet"><span class="ico-ph"></span>Planning</div><div class="onglet"><span class="ico-ph"></span>Plus</div></div>
+  </div>
+  <p class="note-maquette">2 appuis après 2 à 3 glissements. Trois lignes « IA » : laquelle vérifier ?</p>
+</div>
+
+<!-- 4. Mention manquante -->
+<div class="cadre">
+  <h2>4 · Compléter la décennale sur place</h2>
+  <div class="tel">
+    <div class="entete">Compyo <i></i></div>
+    <div class="page">
+      <div class="carte gros" style="margin-top:8px">
+        <div class="score">
+          <div class="anneau" style="--p:48;--col:rgb(var(--c-signal))"><span>48</span></div>
+          <div>
+            <div class="sur">Avant d'envoyer</div>
+            <h3>4 points à vérifier</h3>
+            <p>Conformité du document : 48 %. Vous restez libre d'envoyer ce devis tel quel.</p>
+          </div>
+        </div>
+        <div class="pts">
+          <div class="pt"><span class="i att">!</span><div><b>Assurance décennale</b><div class="r">Obligatoire sur un devis — votre assureur et votre numéro de police décennale.</div>
+            <div class="lab">Assureur</div><div class="champ">MMA Entreprise</div>
+            <div class="lab">N° de police</div><div class="champ">112 345 678</div>
+            <div class="btn-ink">Enregistrer</div></div></div>
+          <div class="pt"><span class="i con">•</span><div><b>Couverture géographique de la décennale</b><div class="r">À indiquer avec la décennale — la zone qu'elle couvre.</div>
+            <div class="lab">Zone couverte</div><div class="champ" style="color:rgb(var(--c-ink) / .4)">Ex : France métropolitaine</div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barre"><div class="onglet"><span class="ico-ph"></span>Aujourd'hui</div><div class="onglet"><span class="ico-ph"></span>Projets</div><div class="btn-rond">+</div><div class="onglet"><span class="ico-ph"></span>Planning</div><div class="onglet"><span class="ico-ph"></span>Plus</div></div>
+  </div>
+  <p class="note-maquette">3 appuis sans quitter le devis ; score 48 → 78. Chaque conseil ouvre aussi son formulaire.</p>
+</div>
+
+<!-- 5. Prêt à partir -->
+<div class="cadre">
+  <h2>5 · Prêt à partir (après « Valider »)</h2>
+  <div class="tel">
+    <div class="entete">Compyo <i></i></div>
+    <div class="page">
+      <span class="retour">← Projet · M. Lambert</span>
+      <div class="titre"><b>Devis n° D-2026-031</b><span class="pill p-valider">Prêt à envoyer</span></div>
+      <div class="sous">M. Lambert · <b>2 450,88 € TTC</b></div>
+      <div class="rang"><span class="ghost">Télécharger le PDF</span><span class="ghost">Partager le PDF</span></div>
+      <div class="carte" style="margin-top:14px;padding:16px 20px">
+        <div class="score">
+          <div class="anneau" style="--p:100;--col:rgb(var(--c-succes))"><span>100</span></div>
+          <div><div class="sur">Avant d'envoyer</div><h3>Tout est en ordre</h3></div>
+          <span class="fl">▾</span>
+        </div>
+      </div>
+      <div class="carte" style="margin-top:14px;padding:22px">
+        <div class="tit-carte">Prêt à partir</div>
+        <div class="txt14 mod" style="display:block">Relisez l'aperçu. Le lien de signature s'ouvre ; vous le partagez ensuite par SMS ou WhatsApp.</div>
+        <div class="lns"><span class="btn-signal mod">Passer à l'envoi</span><span class="ghost">Modifier (nouvelle version)</span></div>
+        <div class="lien-d">Déjà envoyé autrement ? <u>Le noter comme envoyé</u></div>
+      </div>
+    </div>
+    <div class="barre"><div class="onglet"><span class="ico-ph"></span>Aujourd'hui</div><div class="onglet"><span class="ico-ph"></span>Projets</div><div class="btn-rond">+</div><div class="onglet"><span class="ico-ph"></span>Planning</div><div class="onglet"><span class="ico-ph"></span>Plus</div></div>
+  </div>
+  <p class="note-maquette">Score replié : bouton visible. Score ouvert (mention manquante) : il passe sous le pli.</p>
+</div>
+
+<!-- 6. Envoi -->
+<div class="cadre">
+  <h2>6 · Envoyer : Partager, puis WhatsApp</h2>
+  <div class="tel">
+    <div class="entete">Compyo <i></i></div>
+    <div class="page">
+      <span class="retour">← Projet · M. Lambert</span>
+      <div class="titre"><b>Devis n° D-2026-031</b><span class="pill p-envoye">Envoyé — en attente</span></div>
+      <div class="sous">M. Lambert · <b>2 450,88 € TTC</b></div>
+      <div class="carte" style="margin-top:14px;padding:22px">
+        <div class="tit-carte">En attente de la réponse du client</div>
+        <div class="txt14"><span class="mod">Noté envoyé le 2 octobre 2026</span> · valable jusqu'au 1 novembre 2026</div>
+        <div class="sur" style="margin-top:16px">Transmettre le devis</div>
+        <div class="txt14" style="font-size:12px">Le lien permet à votre client de lire le devis et de le signer en ligne.</div>
+        <div class="lns" style="margin-top:12px"><span class="btn-signal">Partager (SMS, WhatsApp, mail…)</span><span class="ghost">Copier le lien</span></div>
+        <div class="msg">Bonjour M. Lambert,<br>Voici votre devis n° D-2026-031 pour doublage et cloisons, d'un montant de 2 450,88 € TTC…</div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Partager le devis</div>
+      <div class="apps">
+        <div class="choix"><i></i>WhatsApp</div>
+        <div><i></i>Messages</div>
+        <div><i></i>Gmail</div>
+        <div><i></i>Copier</div>
+      </div>
+      <p class="t-petit">Ensuite : choisir M. Lambert dans la liste de WhatsApp, puis appuyer sur Envoyer.</p>
+    </div>
+  </div>
+  <p class="note-maquette">Compyo connaît le numéro de M. Lambert, mais c'est à Gérard de le retrouver dans WhatsApp.</p>
+</div>
+
+<!-- 7. Ordinateur -->
+<div class="cadre">
+  <h2>7 · Le soir, sur ordinateur (la conjointe)</h2>
+  <div class="ordi">
+    <div class="cote"><b>Compyo</b><span>Aujourd'hui</span><span>Projets</span><span>Planning</span><span style="opacity:1">Devis</span><span>Plus</span></div>
+    <div class="ppal">
+      <div class="col">
+        <span class="retour" style="min-height:0;line-height:1.6">← Projet · M. Lambert</span>
+        <div class="titre" style="margin-top:6px"><b>Devis n° D-2026-031</b><span class="pill p-brouillon">Brouillon</span></div>
+        <div class="sous">M. Lambert · <b>2 346,00 € TTC</b></div>
+        <div class="carte" style="margin-top:14px;padding:16px">
+          <div class="score">
+            <div class="anneau" style="--p:100;--col:rgb(var(--c-succes))"><span>100</span></div>
+            <div><div class="sur">Avant d'envoyer</div><h3>Tout est en ordre</h3></div>
+            <span class="fl">▾</span>
+          </div>
+        </div>
+        <div class="lig"><div class="l1"><span class="ia">IA</span><div class="desc">Ossature métallique + plaques BA13, séjour</div></div>
+          <div class="g3"><div><label>Quantité</label><div class="f">38</div></div><div><label>Unité</label><div class="f">m²</div></div><div><label>Prix unitaire (€)</label><div class="f">26</div></div></div></div>
+        <div class="lig"><div class="l1"><span class="ia">IA</span><div class="desc">Bandes, enduit et ponçage</div></div>
+          <div class="g3"><div><label>Quantité</label><div class="f">38</div></div><div><label>Unité</label><div class="f">m²</div></div><div><label>Prix unitaire (€)</label><div class="f">9</div></div></div></div>
+        <div class="valider" style="margin-top:16px;width:220px;justify-content:center"><b>Valider ce devis</b></div>
+      </div>
+      <div class="col">
+        <div class="t-petit">Aperçu exact du PDF, mis à jour à chaque modification.</div>
+        <div class="doc">
+          <h4>Devis n° D-2026-031</h4>
+          <div style="margin-bottom:10px">Doublage et cloisons en plaques de plâtre, séjour et chambre 2.</div>
+          <div class="tr"><span>Ossature métallique + plaques BA13, séjour</span><span>1 136,20 €</span></div>
+          <div class="tr"><span>Bandes, enduit et ponçage</span><span>393,30 €</span></div>
+          <div class="tr"><span>Cloison 72/48, chambre 2</span><span>310,50 €</span></div>
+          <div class="tr"><span>Évacuation des chutes</span><span>46,00 €</span></div>
+          <div class="tr"><span>Déplacement</span><span>69,00 €</span></div>
+          <div class="tr"><span>Total HT · TVA 20 % (391,00 €)</span><span>1 955,00 €</span></div>
+          <div class="tr t"><span>Total TTC</span><span>2 346,00 €</span></div>
+          <div class="grise" style="width:80%"></div><div class="grise" style="width:60%"></div><div class="grise" style="width:70%"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette">Le vrai atout de l'écran actuel : le PDF réel suit chaque frappe. A le garde intact.</p>
+</div>
+
+<!-- 8. Décompte -->
+<div class="cadre">
+  <h2>8 · Gestes, du devis généré au devis parti</h2>
+  <div class="carte cpt">
+    <div class="ligne"><span class="n">1</span>Valider ce devis<small>bouton collant</small></div>
+    <div class="ligne"><span class="n g">↕</span>Glisser jusqu'à la carte<small>sous le score</small></div>
+    <div class="ligne"><span class="n">2</span><span class="mod">Passer à l'envoi</span><small>avant : « Envoyer au client »</small></div>
+    <div class="ligne"><span class="n">3</span>Partager</div>
+    <div class="ligne"><span class="n">4</span>WhatsApp</div>
+    <div class="ligne"><span class="n">5</span>Retrouver le contact</div>
+    <div class="ligne"><span class="n">6</span>Envoyer dans WhatsApp</div>
+  </div>
+  <p class="note-maquette">6 appuis + 1 glissement, avant comme après. +2 appuis pour regarder l'aperçu PDF.</p>
+</div>
+
+</body>
+</html>

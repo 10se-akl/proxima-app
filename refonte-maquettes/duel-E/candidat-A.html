@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel E, candidat A : ne rien changer, réparer</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Mise en page locale de la maquette, hors application. Aucune couleur en dur. */
+  .tel { min-height: 660px; }
+  .section { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+  .section > h2 { font: 800 22px Manrope, sans-serif; color: rgb(var(--c-ink)); }
+  .section > .sous { font: 500 14px/1.45 Inter; color: rgb(var(--c-steel)); max-width: 960px; }
+  .rang { display: flex; flex-wrap: wrap; gap: 40px; align-items: flex-start; }
+  .ecran { display: flex; flex-direction: column; gap: 8px; width: 360px; }
+
+  .entete { flex: none; height: 52px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
+    background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); font: 700 18px Manrope, sans-serif; }
+  .retour { font: 500 14px Inter; color: rgb(var(--c-steel)); min-height: 44px; display: flex; align-items: center; }
+  .contenu.serre { gap: 10px; }
+  .ico-c { width: 22px; height: 22px; border: 2px solid currentColor; border-radius: 7px; display: block; }
+
+  .champ { display: flex; flex-direction: column; gap: 4px; }
+  .champ > .lib { font: 600 13px Inter; color: rgb(var(--c-ink)); }
+  .champ > .lib .mot { font-weight: 500; color: rgb(var(--c-steel)); }
+  .champ > .lib .mot.alerte { color: rgb(var(--c-signal-fonce)); }
+  .saisie { min-height: 48px; padding: 12px; border-radius: 12px; display: flex; align-items: center;
+    border: 1px solid rgb(var(--c-gris-clair)); background: rgb(var(--c-paper)); font: 500 15px Inter; }
+  .saisie.haut { align-items: flex-start; min-height: 84px; line-height: 1.35; }
+  .saisie.vide { color: rgb(var(--c-steel)); }
+  .saisie.focus { outline: 2px solid rgb(var(--c-ink)); outline-offset: 1px; }
+  .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .alerte { color: rgb(var(--c-signal-fonce)); font: 600 14px/1.35 Inter; }
+  .dark .alerte, .dark .champ > .lib .mot.alerte { color: rgb(var(--c-signal-clair)); }
+  .btn-encre { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .btn-contour { background: transparent; color: rgb(var(--c-ink)); border: 1.5px solid rgb(var(--c-ink)); }
+  .btn.moyen { min-height: 48px; font-size: 15px; }
+  .marque { position: relative; }
+  .marque > .n { position: absolute; top: -9px; right: -6px; min-width: 24px; height: 24px; padding: 0 6px; border-radius: 99px;
+    background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 700 13px Inter; display: flex; align-items: center; justify-content: center; z-index: 2; }
+  .manque { border: 1.5px dashed rgb(var(--c-steel)); border-radius: 16px; padding: 14px 16px; font: 500 14px/1.35 Inter; color: rgb(var(--c-steel)); }
+  .sticky-bas { margin-top: auto; }
+
+  /* WhatsApp et feuille de partage, simplifiés */
+  .wa-barre { flex: none; height: 56px; padding: 0 16px; display: flex; align-items: center; justify-content: space-between;
+    background: rgb(var(--c-surface)); border-bottom: 1px solid rgb(var(--c-gris-clair)); font: 600 15px Inter; }
+  .wa-actions { display: flex; gap: 6px; font: 600 13px Inter; color: rgb(var(--c-steel)); }
+  .wa-actions span { padding: 6px 8px; border-radius: 99px; }
+  .bulle { max-width: 86%; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); border-radius: 14px; padding: 10px 12px; font: 500 15px/1.4 Inter; }
+  .bulle.sel { outline: 2px solid rgb(var(--c-ink)); outline-offset: 2px; }
+  .bulle .h { display: block; margin-top: 4px; font: 500 11px Inter; color: rgb(var(--c-steel)); text-align: right; }
+  .grille-apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 6px 0; }
+  .app { display: flex; flex-direction: column; align-items: center; gap: 6px; font: 500 12px Inter; color: rgb(var(--c-ink)); }
+  .app .rond { width: 56px; height: 56px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: flex; align-items: center; justify-content: center; font: 700 18px Manrope; }
+  .app.compyo .rond { outline: 2px solid rgb(var(--c-ink)); outline-offset: 2px; }
+  .conv { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 0 16px; border-bottom: 1px solid rgb(var(--c-gris-clair)); background: rgb(var(--c-surface)); }
+  .conv .av { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--c-paper-warm)); flex: none; display: flex; align-items: center; justify-content: center; font: 700 14px Manrope; }
+  .conv .nom { font: 600 15px Inter; } .conv .det { font: 500 13px Inter; color: rgb(var(--c-steel)); }
+
+  /* Lignes de la feuille [+] */
+  .choix { display: flex; align-items: center; gap: 14px; min-height: 76px; padding: 12px 14px; border-radius: 16px; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); }
+  .choix .puce { width: 48px; height: 48px; border-radius: 12px; background: rgb(var(--c-paper-warm)); flex: none; }
+  .choix .lib { font: 600 16px Inter; display: flex; align-items: center; gap: 8px; }
+  .choix .det { font: 500 14px/1.3 Inter; color: rgb(var(--c-steel)); margin-top: 2px; }
+
+  .micro { width: 112px; height: 112px; border-radius: 99px; background: rgb(var(--c-signal)); color: #fff; display: flex; align-items: center; justify-content: center; font: 700 15px Inter; }
+
+  .tableau { border-collapse: collapse; width: 100%; font: 500 14px/1.4 Inter; }
+  .tableau th, .tableau td { text-align: left; padding: 8px 10px; border-bottom: 1px solid rgb(var(--c-gris-clair)); vertical-align: top; }
+  .tableau th { font: 600 12px Inter; color: rgb(var(--c-steel)); text-transform: uppercase; letter-spacing: .04em; }
+  .tableau td.num { font: 700 15px "IBM Plex Mono", monospace; white-space: nowrap; }
+  .bilan { max-width: 960px; width: 100%; }
+  .bilan ul { margin: 8px 0 0 18px; font: 500 14px/1.5 Inter; }
+</style>
+</head>
+<body>
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>Candidat A : ne rien changer, réparer trois défauts</h2>
+  <p class="sous">Les écrans ci-dessous sont ceux d'aujourd'hui. Seuls changent : la carte « bien reçu » quand il n'y a pas de numéro, la fin de « Photo ou capture », et le repli qui garde le texte. Le grand micro reste retiré (91bc744). Les pastilles noires numérotent les gestes.</p>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>1. WhatsApp → partage → arrivée → « bien reçu » → retour au travail : 7 gestes</h2>
+  <div class="rang">
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="wa-barre"><span>1 sélectionné</span>
+          <span class="wa-actions"><span>Répondre</span><span class="marque">Partager<span class="n">2</span></span></span></div>
+        <div class="contenu serre" style="padding-top:24px">
+          <div class="t-petit" style="align-self:center">Aujourd'hui</div>
+          <div class="bulle sel marque"><span class="n">1</span>Bonjour, c'est Mme Lefèvre, la voisine de M. Roche. On voudrait séparer notre garage en deux pièces, en placo. Vous pourriez passer jeudi ? Merci<span class="h">14:12</span></div>
+          <div class="bulle" style="align-self:flex-end">Bonjour, je regarde ça dès que je descends de l'échelle.<span class="h">14:15</span></div>
+        </div>
+      </div>
+      <p class="note-maquette">Gestes 1 et 2 : appui long, puis Partager (parfois derrière « ⋮ », +1). Le message n'a pas de numéro : c'est le cas courant.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="voile"></div>
+        <div class="feuille">
+          <div class="t-grand">Partager avec</div>
+          <div class="grille-apps">
+            <div class="app"><div class="rond">M</div>Messages</div>
+            <div class="app"><div class="rond">G</div>Gmail</div>
+            <div class="app compyo marque"><span class="n">3</span><div class="rond">C</div>Compyo</div>
+            <div class="app"><div class="rond">D</div>Drive</div>
+          </div>
+        </div>
+      </div>
+      <p class="note-maquette">Geste 3 : Compyo dans la feuille de partage Android. Le texte est déjà en base (partages_entrants) avant toute analyse.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="carte" style="display:flex;flex-direction:column;gap:10px">
+            <div class="t-corps" style="color:rgb(var(--c-steel))">Relisez, puis créez le projet.</div>
+            <div class="champ"><div class="lib">Client</div><div class="saisie">Mme Lefèvre</div></div>
+            <div class="champ"><div class="lib">Téléphone <span class="mot alerte">· à compléter</span></div><div class="saisie vide">06 12 34 56 78</div></div>
+            <div class="champ"><div class="lib">Adresse <span class="mot alerte">· à compléter</span></div><div class="saisie vide">Adresse du chantier</div></div>
+            <div class="deux">
+              <div class="champ"><div class="lib">Type <span class="mot">· à vérifier</span></div><div class="saisie">Plaquisterie</div></div>
+              <div class="champ"><div class="lib">Urgence</div><div class="saisie">Normal</div></div>
+            </div>
+            <div class="champ"><div class="lib">Résumé</div><div class="saisie haut">Séparer le garage en deux pièces, en placo. Passer jeudi.</div></div>
+          </div>
+          <div class="sticky-bas marque"><span class="n">4</span><button class="btn btn-encre">Créer le projet</button></div>
+        </div>
+      </div>
+      <p class="note-maquette">Geste 4, après quelques secondes d'analyse. Le bouton n'est jamais bloqué, même champs vides.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="t-sur">Avant : numéro absent</div>
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="retour">← Projets</div>
+          <div class="t-titre">Lefèvre</div>
+          <div class="t-petit" style="margin-top:-6px">Plaquisterie · à l'instant</div>
+          <button class="btn btn-contour moyen">Message</button>
+          <div class="manque">Ici : rien. La carte « bien reçu » exige un numéro, et le partage n'en a pas.</div>
+          <div class="carte-sombre"><div class="t-sur" style="color:rgb(var(--c-paper))">Maintenant</div><div class="t-grand" style="margin-top:6px">Fixer le passage de jeudi</div></div>
+        </div>
+        <div class="barre"><div class="onglet actif"><i class="ico-c"></i>Aujourd'hui</div><div class="onglet"><i class="ico-c"></i>Projets</div><div class="btn-rond">+</div><div class="onglet"><i class="ico-c"></i>Planning</div><div class="onglet"><i class="ico-c"></i>Plus</div></div>
+      </div>
+      <p class="note-maquette">Aujourd'hui : on s'arrête à 4 gestes sans accusé, ou 10 en passant par « Message » et la saisie du numéro.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="t-sur">Après : carte « bien reçu » sans numéro</div>
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="retour">← Projets</div>
+          <div class="t-titre">Lefèvre</div>
+          <div class="t-petit" style="margin-top:-6px">Plaquisterie · à l'instant</div>
+          <button class="btn btn-contour moyen">Message</button>
+          <div class="carte">
+            <div class="t-corps" style="font-weight:600">Répondre « bien reçu »</div>
+            <div class="deux" style="margin-top:10px">
+              <button class="btn btn-encre moyen">SMS</button>
+              <div class="marque"><span class="n">5</span><button class="btn btn-contour moyen">WhatsApp</button></div>
+            </div>
+          </div>
+          <div class="carte-sombre"><div class="t-sur" style="color:rgb(var(--c-paper))">Maintenant</div><div class="t-grand" style="margin-top:6px">Fixer le passage de jeudi</div></div>
+        </div>
+        <div class="barre"><div class="onglet actif"><i class="ico-c"></i>Aujourd'hui</div><div class="onglet"><i class="ico-c"></i>Projets</div><div class="btn-rond">+</div><div class="onglet"><i class="ico-c"></i>Planning</div><div class="onglet"><i class="ico-c"></i>Plus</div></div>
+      </div>
+      <p class="note-maquette">Geste 5. Sans numéro, le bouton ouvre WhatsApp sans destinataire (wa.me/?text=) ; avec un numéro, rien ne change.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="wa-barre"><span>Envoyer à…</span><span class="wa-actions"><span>Rechercher</span></span></div>
+        <div style="flex:1;display:flex;flex-direction:column">
+          <div class="conv marque" style="margin-top:6px"><span class="n">6</span><div class="av">ML</div><div><div class="nom">Mme Lefèvre</div><div class="det">Bonjour, je regarde ça dès que…</div></div></div>
+          <div class="conv"><div class="av">AB</div><div><div class="nom">M. Benali</div><div class="det">Merci, à jeudi.</div></div></div>
+          <div class="conv"><div class="av">LP</div><div><div class="nom">Lucas (apprenti)</div><div class="det">J'arrive à 8 h.</div></div></div>
+          <div class="conv"><div class="av">NG</div><div><div class="nom">Nadine</div><div class="det">Les factures sont prêtes.</div></div></div>
+          <div style="margin-top:auto;padding:12px 16px;background:rgb(var(--c-surface));border-top:1px solid rgb(var(--c-gris-clair))">
+            <div class="t-petit" style="margin-bottom:6px">Message prêt, que vous relisez :</div>
+            <div class="bulle" style="max-width:100%">Bonjour, bien reçu votre message. Je suis sur un chantier, je vous rappelle ce soir.<br>Gérard Martin, Martin Plâtrerie</div>
+            <div class="marque" style="margin-top:12px"><span class="n">7</span><button class="btn btn-encre moyen">Envoyer</button></div>
+          </div>
+        </div>
+      </div>
+      <p class="note-maquette">Gestes 6 et 7 : la conversation d'où il vient est en tête, puis Envoyer. Compyo n'envoie rien : c'est Gérard qui appuie.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="retour">← Projets</div>
+          <div class="t-titre">Lefèvre</div>
+          <div class="t-petit" style="margin-top:-6px">Plaquisterie · à l'instant</div>
+          <button class="btn btn-contour moyen">Message</button>
+          <div class="carte-sombre"><div class="t-sur" style="color:rgb(var(--c-paper))">Maintenant</div><div class="t-grand" style="margin-top:6px">Fixer le passage de jeudi</div></div>
+          <div class="t-grand" style="margin-top:6px">Carnet</div>
+          <div class="carte" style="padding:0 16px">
+            <div class="ligne"><div style="flex:1"><div class="t-corps" style="font-weight:600">Message préparé : bien reçu</div><div class="t-petit">WhatsApp · à l'instant</div></div></div>
+            <div class="ligne"><div style="flex:1"><div class="t-corps" style="font-weight:600">Premier contact</div><div class="t-petit">Message WhatsApp de Mme Lefèvre</div></div></div>
+          </div>
+        </div>
+        <div class="barre"><div class="onglet actif"><i class="ico-c"></i>Aujourd'hui</div><div class="onglet"><i class="ico-c"></i>Projets</div><div class="btn-rond">+</div><div class="onglet"><i class="ico-c"></i>Planning</div><div class="onglet"><i class="ico-c"></i>Plus</div></div>
+      </div>
+      <p class="note-maquette">Retour au travail : Android ramène sur la fiche. La carte a disparu, le carnet note « préparé », jamais « envoyé ».</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>2. Dictée d'un nouveau projet : 5 gestes, plus le nom tapé</h2>
+  <div class="rang">
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="voile" style="top:52px"></div>
+        <div class="feuille" style="padding-bottom:20px">
+          <div class="t-grand">Nouveau projet</div>
+          <div class="choix"><div class="puce"></div><div><div class="lib">Coller un message <span class="pastille">IA</span></div><div class="det">Le SMS ou le WhatsApp du client : l'IA prépare le projet.</div></div></div>
+          <div class="choix"><div class="puce"></div><div><div class="lib">Photo ou capture <span class="pastille">IA</span></div><div class="det">Une capture d'écran de la conversation.</div></div></div>
+          <div class="choix marque"><span class="n">2</span><div class="puce"></div><div><div class="lib">Écrire moi-même</div><div class="det">Le nom du client, son numéro, ce qu'il veut.</div></div></div>
+        </div>
+      </div>
+      <p class="note-maquette">Gestes 1 et 2 : [+] puis « Écrire moi-même ». Trois lignes égales : le grand micro n'est plus là. Geste 3 : « Dicter » sur le formulaire.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu" style="align-items:center;text-align:center;padding-top:40px">
+          <div class="micro">Micro</div>
+          <div class="t-grand" style="margin-top:14px">Je vous écoute</div>
+          <div class="t-petit">Le client, le chantier, son numéro.</div>
+          <div class="carte" style="width:100%;text-align:left;font:500 16px/1.4 Inter">Monsieur Benali, 06 98 76 54 32, veut refaire le plafond de sa cuisine, plâtre et bandes, une vingtaine de mètres carrés.</div>
+          <div class="marque" style="width:100%;margin-top:auto"><span class="n">4</span><button class="btn btn-encre">Terminé</button></div>
+        </div>
+      </div>
+      <p class="note-maquette">Geste 4. Le texte s'affiche tel que le navigateur l'entend : à relire, ce n'est pas un devis dicté.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="t-titre">Nouveau projet</div>
+          <div class="champ"><div class="lib">Nom du client *</div><div class="saisie focus"><span style="color:rgb(var(--c-steel))">à taper…</span></div></div>
+          <div class="champ"><div class="lib">Téléphone (facultatif)</div><div class="saisie">06 98 76 54 32</div></div>
+          <div class="champ">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div class="lib" style="font:600 13px Inter">Ce que veut le client</div><div class="marque"><span class="n">3</span><div class="btn btn-contour moyen" style="width:auto;min-height:44px;border-radius:99px;font-size:14px">Dicter</div></div></div>
+            <div class="saisie haut" style="min-height:110px">Monsieur Benali, 06 98 76 54 32, veut refaire le plafond de sa cuisine, plâtre et bandes, une vingtaine de mètres carrés.</div>
+          </div>
+          <div class="sticky-bas marque"><span class="n">5</span><button class="btn btn-encre">Créer le projet</button></div>
+        </div>
+      </div>
+      <p class="note-maquette">Geste 5. Le numéro dicté a rempli le téléphone et le curseur est dans le nom : c'est la seule chose à taper.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="t-titre">Nouveau projet</div>
+          <div class="champ"><div class="lib">Nom du client *</div><div class="saisie">Benali</div></div>
+          <div class="champ"><div class="lib">Téléphone (facultatif)</div><div class="saisie vide">&nbsp;</div></div>
+          <div class="champ">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div class="lib" style="font:600 13px Inter">Ce que veut le client</div><div class="btn btn-contour moyen" style="width:auto;min-height:44px;border-radius:99px;font-size:14px">Dicter</div></div>
+            <div class="saisie haut" style="min-height:110px">Refaire le plafond de la cuisine</div>
+          </div>
+          <p class="alerte">Rien n'a été entendu. Réessayez, ou écrivez directement.</p>
+          <div class="sticky-bas"><button class="btn btn-encre">Créer le projet</button></div>
+        </div>
+      </div>
+      <p class="note-maquette">Repli de la dictée : le champ reste, le texte déjà écrit reste, la dictée s'ajoute, la description est gardée sur le téléphone. Nom et numéro ne le sont pas.</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+  <h2>3. Le repli quand l'IA échoue après un partage : le texte est repris</h2>
+  <div class="rang">
+
+    <div class="ecran">
+      <div class="t-sur">Avant</div>
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre" style="padding-top:20px">
+          <div class="carte" style="display:flex;flex-direction:column;gap:14px;align-items:center;text-align:center;padding:36px 16px">
+            <p class="alerte">Impossible de contacter l'IA pour le moment.</p>
+            <button class="btn btn-encre moyen">Créer le projet manuellement</button>
+          </div>
+        </div>
+      </div>
+      <p class="note-maquette">Aujourd'hui, ce bouton mène à un formulaire vide : il faut retourner dans WhatsApp copier le message (+4 gestes).</p>
+    </div>
+
+    <div class="ecran">
+      <div class="t-sur">Après</div>
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="t-titre">Nouveau projet</div>
+          <div class="champ"><div class="lib">Nom du client *</div><div class="saisie focus"><span style="color:rgb(var(--c-steel))">Lefèvre</span></div></div>
+          <div class="champ"><div class="lib">Téléphone (facultatif)</div><div class="saisie vide">&nbsp;</div></div>
+          <div class="champ">
+            <div style="display:flex;justify-content:space-between;align-items:center"><div class="lib" style="font:600 13px Inter">Ce que veut le client</div><div class="btn btn-contour moyen" style="width:auto;min-height:44px;border-radius:99px;font-size:14px">Dicter</div></div>
+            <div class="t-petit" style="color:rgb(var(--c-steel))">Message partagé repris. Relisez-le.</div>
+            <div class="saisie haut" style="min-height:130px">Bonjour, c'est Mme Lefèvre, la voisine de M. Roche. On voudrait séparer notre garage en deux pièces, en placo. Vous pourriez passer jeudi ? Merci</div>
+          </div>
+          <div class="sticky-bas"><button class="btn btn-encre">Créer le projet</button></div>
+        </div>
+      </div>
+      <p class="note-maquette">Le texte partagé est écrit sous la clé locale que ce formulaire relit déjà. Les photos partagées, elles, ne sont pas reprises.</p>
+    </div>
+
+    <div class="ecran">
+      <div class="tel">
+        <div class="entete"><span>Compyo</span></div>
+        <div class="contenu serre">
+          <div class="retour">← Retour aux projets</div>
+          <div class="t-grand">Photos ou captures</div>
+          <div class="t-petit" style="margin-top:-6px">Une capture par conversation. Rien n'est enregistré avant que vous confirmiez.</div>
+          <div class="carte" style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;gap:12px">
+              <div style="width:64px;height:96px;border-radius:10px;background:rgb(var(--c-paper-warm));flex:none"></div>
+              <div><div class="t-corps" style="font-weight:600">M. Benali</div><div class="t-petit">Refaire le plafond de la cuisine, 20 m². Rappeler jeudi.</div></div>
+            </div>
+            <div class="champ"><div class="lib">Où importer ce message ?</div><div class="saisie">Nouveau projet : Benali</div></div>
+          </div>
+          <div class="sticky-bas marque"><span class="n">5</span><button class="btn btn-encre">Confirmer l'import</button></div>
+        </div>
+      </div>
+      <p class="note-maquette">Une seule capture : aujourd'hui « 1 capture importée » et « Voir les projets ». Avec le lot 2, on ouvre la fiche et sa carte « bien reçu » (8 gestes en tout).</p>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<div class="section">
+  <div class="carte bilan">
+    <div class="t-grand">Les gestes, avant et après (une saisie de numéro compte pour 2)</div>
+    <table class="tableau" style="margin-top:10px">
+      <tr><th>Tâche</th><th>Avant</th><th>Après</th></tr>
+      <tr><td>WhatsApp → partage → projet → « bien reçu » envoyé, sans numéro</td><td class="num">4, ou 10 avec</td><td class="num">7</td></tr>
+      <tr><td>Le même, numéro présent</td><td class="num">6</td><td class="num">6</td></tr>
+      <tr><td>Capture d'écran → projet → « bien reçu »</td><td class="num">5, ou 13 avec</td><td class="num">8</td></tr>
+      <tr><td>Dictée d'un nouveau projet</td><td class="num">5 + nom</td><td class="num">5 + nom</td></tr>
+      <tr><td>IA en échec après partage : reprendre à la main</td><td class="num">+4</td><td class="num">0</td></tr>
+    </table>
+  </div>
+  <div class="carte bilan">
+    <div class="t-grand">Ce que A ne fait pas, et dit franchement</div>
+    <ul>
+      <li>Le geste le plus fréquent reste à 6 ou 7 gestes, contre environ 4 avec un écran « Reçu » unique.</li>
+      <li>Trois atterrissages restent après une capture : la fiche, le planning, la liste des projets.</li>
+      <li>Un partage abandonné pendant l'analyse reste en base mais n'est listé nulle part : le soir, il n'y a rien à trier, et rien à retrouver non plus.</li>
+      <li>La revue garde six champs et les écrans de capture restent hors du langage de l'interface.</li>
+      <li>Sans numéro, le lien sans destinataire (wa.me/?text=, sms:?body=) est à essayer sur un vrai Android avant de livrer.</li>
+    </ul>
+  </div>
+</div>
+
+</body>
+</html>

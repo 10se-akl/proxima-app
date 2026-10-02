@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat C — Reçu d'abord, rangé ensuite</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Locaux à ce candidat : variables de la feuille commune uniquement. */
+  svg.ico { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .rang { flex-basis: 100%; display: flex; flex-wrap: wrap; gap: 32px; align-items: flex-start; }
+  .rang-titre { flex-basis: 100%; font: 700 20px/1.25 Manrope, sans-serif; }
+  .rang-titre small { font: 500 14px Inter; color: rgb(var(--c-steel)); margin-left: 8px; }
+  .entete { flex-basis: 100%; }
+  .entete h1 { font: 800 28px/1.15 Manrope, sans-serif; }
+
+  .hdr { height: 48px; flex: none; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font: 700 17px Manrope, sans-serif; }
+  .contenu.bas { padding-bottom: 96px; }
+
+  /* Pastille de geste */
+  .pas { display: inline-grid; place-items: center; width: 24px; height: 24px; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 700 13px Inter; flex: none; }
+
+  /* Titres de bloc et lignes (la recette de l'accueil) */
+  .bloc-titre { display: flex; align-items: baseline; gap: 8px; margin-top: 10px; }
+  .bloc-titre h3 { font: 700 20px Manrope, sans-serif; }
+  .bloc-titre .nb { font: 500 14px Inter; color: rgb(var(--c-steel)); font-variant-numeric: tabular-nums; }
+  .liste { display: flex; flex-direction: column; gap: 8px; margin-top: -2px; }
+  .lg { display: flex; align-items: stretch; min-height: 64px; overflow: hidden; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .lg .rep { width: 56px; flex: none; display: grid; place-items: center; font: 500 14px "IBM Plex Mono", monospace; color: rgb(var(--c-steel)); }
+  .lg .qui { flex: 1; min-width: 0; padding: 10px 0; display: flex; flex-direction: column; justify-content: center; }
+  .lg .qui b { font: 600 16px/1.3 Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lg .qui span { font: 400 14px/1.3 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lg .act { width: 56px; flex: none; display: grid; place-items: center; border-left: 1px solid rgb(var(--c-ink) / .15); font: 600 16px Inter; }
+  .lg .act.large { width: 96px; }
+  .lg .act.rond { color: rgb(var(--c-steel)); }
+
+  /* Boutons : un seul plein par écran, en encre */
+  .btn-encre { min-height: 56px; width: 100%; border: 0; border-radius: 16px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 600 16px Inter; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-texte { min-height: 48px; padding: 0 12px; border: 0; background: none; color: rgb(var(--c-ink)); font: 600 16px Inter; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; display: inline-flex; align-items: center; }
+  .rangee { display: flex; justify-content: space-between; align-items: center; }
+
+  .past { width: 48px; height: 48px; border-radius: 99px; background: rgb(var(--c-succes) / .1); color: rgb(var(--c-succes)); display: grid; place-items: center; }
+  .grand { font: 600 30px/1.1 Manrope, sans-serif; }
+  .moyen { font: 600 20px/1.25 Manrope, sans-serif; }
+  .detail { font: 400 14px/1.35 Inter; color: rgb(var(--c-steel)); }
+  .alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+  .bloc { border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); padding: 14px 16px; font: 400 16px/1.4 Inter; }
+  .une-ligne { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bas-pouce { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+
+  /* Conversation du client (application tierce, dessinée sans marque) */
+  .hdr-ext { height: 56px; flex: none; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgb(var(--c-paper-warm)); border-bottom: 1px solid rgb(var(--c-ink) / .15); font: 600 16px Inter; }
+  .hdr-ext .g { display: flex; align-items: center; gap: 14px; }
+  .fil { flex: 1; padding: 20px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .bulle { max-width: 280px; padding: 12px 14px; border-radius: 16px 16px 16px 4px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); font: 400 16px/1.4 Inter; position: relative; }
+  .bulle.choisie { box-shadow: 0 0 0 2px rgb(var(--c-ink)); }
+  .bulle time { display: block; text-align: right; font: 500 12px Inter; color: rgb(var(--c-steel)); margin-top: 4px; }
+  .bulle .pas { position: absolute; right: -10px; top: -10px; }
+  .tuiles { display: flex; justify-content: space-between; gap: 8px; }
+  .tuile { width: 72px; display: flex; flex-direction: column; align-items: center; gap: 6px; font: 500 14px Inter; position: relative; }
+  .tuile i { width: 52px; height: 52px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: grid; place-items: center; font: 700 18px Manrope, sans-serif; font-style: normal; }
+  .tuile.on i { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: 0 0 0 3px rgb(var(--c-ink) / .25); }
+  .tuile .pas { position: absolute; top: -8px; right: 4px; }
+  .feuille .titre { display: flex; justify-content: space-between; align-items: center; }
+
+  /* Messagerie du téléphone (choix de la conversation) */
+  .contacts { padding: 8px 16px; display: flex; flex-direction: column; }
+  .contact { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 0 8px; border-radius: 16px; }
+  .contact.choisi { box-shadow: 0 0 0 2px rgb(var(--c-ink)); }
+  .contact .av { width: 40px; height: 40px; border-radius: 99px; background: rgb(var(--c-paper-warm)); display: grid; place-items: center; font: 700 14px Inter; flex: none; }
+  .contact b { font: 600 16px Inter; display: block; }
+  .contact span { font: 400 14px Inter; color: rgb(var(--c-steel)); }
+  .contact .pas { margin-left: auto; }
+  .texte-pret { margin-top: auto; padding: 14px 16px 20px; background: rgb(var(--c-paper-warm)); border-top: 1px solid rgb(var(--c-ink) / .15); display: flex; flex-direction: column; gap: 10px; }
+  .texte-pret .msg { font: 400 14px/1.4 Inter; }
+
+  /* Champ de saisie et clavier */
+  .champ { border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 2px rgb(var(--c-ink)); padding: 14px 16px; min-height: 150px; font: 400 16px/1.5 Inter; }
+  .champ.vide { min-height: 56px; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .4); color: rgb(var(--c-steel)); }
+  .champ.focus-fin { box-shadow: inset 0 0 0 2px rgb(var(--c-ink)); }
+  .etiquette { font: 600 14px Inter; margin-bottom: 4px; display: block; }
+  .caret { display: inline-block; width: 2px; height: 20px; background: rgb(var(--c-ink)); vertical-align: -4px; }
+  .clavier { position: absolute; left: 0; right: 0; bottom: 0; height: 268px; background: rgb(var(--c-gris-clair)); padding: 6px; display: flex; flex-direction: column; gap: 8px; }
+  .clavier .sugg { height: 40px; display: flex; align-items: center; justify-content: space-between; padding: 0 10px; font: 500 14px Inter; color: rgb(var(--c-steel)); }
+  .clavier .rg { display: flex; gap: 5px; justify-content: center; }
+  .clavier .k { flex: 1; max-width: 34px; height: 46px; border-radius: 8px; background: rgb(var(--c-surface)); display: grid; place-items: center; font: 500 16px Inter; }
+  .clavier .k.l { max-width: none; flex: 2; }
+  .clavier .k.sp { max-width: none; flex: 5; }
+  .clavier .k.mic { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .reseau { height: 40px; flex: none; display: flex; align-items: center; gap: 8px; padding: 0 16px; background: rgb(var(--c-paper-warm)); font: 600 14px Inter; }
+  .reseau::before { content: ""; width: 8px; height: 8px; border-radius: 99px; background: rgb(var(--c-alerte-orange)); }
+
+  /* Ordinateur */
+  .side { width: 240px; flex: none; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); padding: 24px 16px; display: flex; flex-direction: column; gap: 4px; border-radius: 12px 0 0 12px; }
+  .side .logo { font: 700 20px Manrope, sans-serif; padding: 0 12px 20px; }
+  .side .nav { min-height: 48px; display: flex; align-items: center; padding: 0 12px; border-radius: 12px; font: 600 16px Inter; }
+  .side .nav.actif { background: rgb(var(--c-paper) / .12); }
+  .side .nav.petit { font: 500 14px Inter; min-height: 40px; color: rgb(var(--c-paper) / .7); }
+  .principal { flex: 1; padding: 32px 40px; }
+  .colonne { max-width: 672px; display: flex; flex-direction: column; gap: 12px; }
+  .trace { display: flex; align-items: center; gap: 12px; min-height: 56px; border-radius: 16px; background: rgb(var(--c-succes) / .1); padding-left: 16px; font: 400 16px Inter; }
+  .trace .past { width: 28px; height: 28px; background: rgb(var(--c-succes) / .1); }
+  .trace .btn-texte { margin-left: auto; }
+  .origine { margin: -4px 0 0 56px; padding: 14px 16px; border-radius: 16px; background: rgb(var(--c-paper-warm)); font: 400 16px/1.5 Inter; }
+  .origine .detail { display: block; margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-agenda" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-plus3" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-crayon" viewBox="0 0 24 24"><path d="M4 20l1-4L16 5l3 3L8 19z"/></symbol>
+  <symbol id="i-partage" viewBox="0 0 24 24"><circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 11l8-4M8 13l8 4"/></symbol>
+  <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21h4"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-fermer" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+</svg>
+
+<div class="entete">
+  <h1>Candidat C — Reçu d'abord, rangé ensuite</h1>
+  <p class="note-maquette" style="max-width:none">Android, appli installée, numéro absent du texte partagé (le cas courant). Les pastilles numérotées sont les gestes.</p>
+</div>
+
+<!-- ============ RANG 1 : le partage WhatsApp, 6 gestes avec accusé ============ -->
+<section class="rang">
+  <h2 class="rang-titre">WhatsApp, partage, Reçu, accusé <small>3 gestes pour garder · 6 avec l'accusé</small></h2>
+
+  <div class="cadre">
+    <h2>1 · Dans la conversation du client</h2>
+    <div class="tel">
+      <div class="hdr-ext">
+        <div class="g"><span class="pas">1</span><span>1 sélectionné</span></div>
+        <div class="g">
+          <span class="cible" style="position:relative"><svg class="ico"><use href="#i-partage"/></svg><span class="pas" style="position:absolute;top:2px;right:-6px">2</span></span>
+          <svg class="ico"><use href="#i-plus3"/></svg>
+        </div>
+      </div>
+      <div class="fil">
+        <div class="t-petit" style="text-align:center">+33 6 12 34 56 78</div>
+        <div class="bulle choisie">Bonjour, je me présente M. Dupont. J'aimerais refaire ma salle de bain. Vous seriez dispo mardi vers 14h pour passer voir ?<time>11h02</time><span class="pas">1</span></div>
+      </div>
+      <div class="feuille">
+        <div class="titre"><span class="moyen">Partager avec</span></div>
+        <div class="tuiles">
+          <div class="tuile on"><i>C</i><span class="pas">3</span>Compyo</div>
+          <div class="tuile"><i>M</i>Messages</div>
+          <div class="tuile"><i>@</i>Mail</div>
+          <div class="tuile"><i>…</i>Plus</div>
+        </div>
+      </div>
+    </div>
+    <p class="note-maquette">1 appui long · 2 Partager · 3 Compyo. Le numéro est dans l'en-tête de la conversation, pas dans le texte partagé.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>2 · Compyo : « Reçu. »</h2>
+    <div class="tel">
+      <div class="hdr"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu bas" style="gap:10px">
+        <div style="height:12px"></div>
+        <div class="past"><svg class="ico" style="width:26px;height:26px"><use href="#i-check"/></svg></div>
+        <div class="grand">Reçu.</div>
+        <div class="bloc une-ligne">« Bonjour, je me présente M. Dupont. J'aimerais refaire… »</div>
+        <div class="detail">Gardé. À ranger dans Aujourd'hui.</div>
+        <div class="bas-pouce">
+          <button class="btn-encre"><span class="pas" style="background:rgb(var(--c-paper));color:rgb(var(--c-ink))">4</span>Bien reçu, par WhatsApp</button>
+          <div class="detail" style="text-align:center">Vous relisez avant l'envoi.</div>
+          <div class="rangee"><button class="btn-texte">Par SMS</button><button class="btn-texte">Ranger maintenant</button></div>
+        </div>
+      </div>
+      <nav class="barre">
+        <div class="onglet actif"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+        <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+        <div class="onglet"><span class="btn-rond">+</span>Nouveau</div>
+        <div class="onglet"><svg class="ico"><use href="#i-agenda"/></svg>Planning</div>
+        <div class="onglet"><svg class="ico"><use href="#i-plus3"/></svg>Plus</div>
+      </nav>
+    </div>
+    <p class="note-maquette">Aucune attente, aucune question : le message est déjà en base. Le terracotta ne sert qu'au « + ».</p>
+  </div>
+
+  <div class="cadre">
+    <h2>3 · La messagerie du téléphone (pas Compyo)</h2>
+    <div class="tel">
+      <div class="hdr-ext"><span>Envoyer à…</span><svg class="ico"><use href="#i-fermer"/></svg></div>
+      <div class="contacts">
+        <div class="t-petit" style="padding:8px">Récents</div>
+        <div class="contact choisi"><span class="av">+33</span><div><b>+33 6 12 34 56 78</b><span>il y a 2 min</span></div><span class="pas">5</span></div>
+        <div class="contact"><span class="av">M</span><div><b>Martin</b><span>hier</span></div></div>
+        <div class="contact"><span class="av">L</span><div><b>Lefèvre</b><span>lundi</span></div></div>
+        <div class="contact"><span class="av">B</span><div><b>Bernard</b><span>samedi</span></div></div>
+      </div>
+      <div class="texte-pret">
+        <div class="msg">Bonjour, bien reçu votre message. Je suis sur un chantier, je vous rappelle ce soir.<br>Gérard Martin, Plâtrerie Martin</div>
+        <button class="btn-encre"><span class="pas" style="background:rgb(var(--c-paper));color:rgb(var(--c-ink))">6</span>Envoyer</button>
+      </div>
+    </div>
+    <p class="note-maquette">5 choisir la conversation (la dernière est en haut) · 6 Envoyer. Compyo n'envoie rien. Numéro connu : on arrive ici directement, 5 gestes. Retour au travail : le geste « retour » d'Android.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>4 · Le soir ou le bureau : Aujourd'hui</h2>
+    <div class="tel">
+      <div class="hdr"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu bas" style="gap:0">
+        <div class="t-sur" style="margin-top:4px">vendredi 2 octobre</div>
+        <div class="grand" style="margin:6px 0 14px">Bonjour Gérard</div>
+        <div class="carte-sombre" style="min-height:72px">
+          <div class="t-sur" style="color:rgb(var(--c-paper) / .7)">Maintenant</div>
+          <div class="t-corps" style="margin-top:6px">8h30 · Martin · 12 rue des Lilas</div>
+        </div>
+        <div class="bloc-titre" style="margin-top:20px"><h3>À faire de votre côté</h3><span class="nb">4</span></div>
+        <div class="liste" style="margin-top:8px">
+          <div class="lg"><div class="rep">11h02</div><div class="qui"><b>Dupont</b><span>Nouveau · salle de bain ?</span></div><div class="act">Oui</div></div>
+          <div class="lg"><div class="rep">09h15</div><div class="qui"><b>Martin</b><span>Ajouter à Cuisine ?</span></div><div class="act">Oui</div></div>
+          <div class="lg"><div class="rep">10h47</div><div class="qui"><b>« Salut, c'est Paul pour la fuite… »</b><span>À ranger vous-même</span></div><div class="act rond"><svg class="ico" style="width:20px;height:20px"><use href="#i-chevron"/></svg></div></div>
+          <div class="lg"><div class="rep">Devis</div><div class="qui"><b>Lefèvre</b><span>À relire</span></div><div class="act rond"><svg class="ico" style="width:20px;height:20px"><use href="#i-chevron"/></svg></div></div>
+        </div>
+      </div>
+      <nav class="barre">
+        <div class="onglet actif"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+        <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+        <div class="onglet"><span class="btn-rond">+</span>Nouveau</div>
+        <div class="onglet"><svg class="ico"><use href="#i-agenda"/></svg>Planning</div>
+        <div class="onglet"><svg class="ico"><use href="#i-plus3"/></svg>Plus</div>
+      </nav>
+    </div>
+    <p class="note-maquette">Pas de sixième bloc : les rangements sont des lignes de « À faire de votre côté ». « Oui » vaut un geste ; seulement si le nom est explicite, sinon « Compléter ».</p>
+  </div>
+</section>
+
+<!-- ============ RANG 2 : la dictée et ses replis ============ -->
+<section class="rang">
+  <h2 class="rang-titre">Dicter un nouveau projet, et quand ça échoue <small>4 gestes, rien à taper</small></h2>
+
+  <div class="cadre">
+    <h2>5 · Le [+] : deux lignes, pas trois</h2>
+    <div class="tel">
+      <div class="hdr"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu" style="gap:10px">
+        <div class="t-sur" style="margin-top:4px">vendredi 2 octobre</div>
+        <div class="grand">Bonjour Gérard</div>
+        <div class="lg" style="min-height:64px"><div class="rep"></div><div class="qui"><b>Dupont</b><span>Nouveau · salle de bain ?</span></div><div class="act">Oui</div></div>
+      </div>
+      <nav class="barre">
+        <div class="onglet actif"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+        <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+        <div class="onglet"><span class="btn-rond">+</span>Nouveau</div>
+        <div class="onglet"><svg class="ico"><use href="#i-agenda"/></svg>Planning</div>
+        <div class="onglet"><svg class="ico"><use href="#i-plus3"/></svg>Plus</div>
+      </nav>
+      <div class="voile"></div>
+      <div class="feuille">
+        <div class="titre"><span class="moyen">Nouveau</span><svg class="ico"><use href="#i-fermer"/></svg></div>
+        <div class="lg"><div class="rep"><svg class="ico"><use href="#i-crayon"/></svg></div><div class="qui"><b>Écrire ou dicter</b><span>Une phrase, à voix haute ou au clavier.</span></div><div class="act rond"><span class="pas">2</span></div></div>
+        <div class="lg"><div class="rep"><svg class="ico"><use href="#i-photo"/></svg></div><div class="qui"><b>Photo ou capture</b><span>La conversation du client, en image.</span></div><div class="act rond"><svg class="ico" style="width:20px;height:20px"><use href="#i-chevron"/></svg></div></div>
+      </div>
+    </div>
+    <p class="note-maquette">1 [+] · 2 Écrire ou dicter. « Coller » est devenu un lien dans le champ ; le grand micro ne revient pas. L'IA se voit là où elle propose (la ligne), pas à l'entrée.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>6 · Le champ : le clavier est déjà ouvert</h2>
+    <div class="tel">
+      <div class="hdr"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu" style="gap:8px;padding-bottom:284px">
+        <div class="rangee"><button class="btn-texte" style="padding-left:0">Annuler</button><button class="btn-texte" style="padding-right:0">Coller</button></div>
+        <div class="moyen">Noter</div>
+        <div class="champ">Dupont, salle de bain, 12 rue des Lilas à Voiron. Refaire les murs et le plafond. Passer mardi vers 14 heures.<span class="caret"></span></div>
+        <div class="detail">Gardé sur ce téléphone.</div>
+        <button class="btn-encre"><span class="pas" style="background:rgb(var(--c-paper));color:rgb(var(--c-ink))">4</span>Garder</button>
+      </div>
+      <div class="clavier">
+        <div class="sugg"><span>mardi</span><span>vers</span><span>14</span></div>
+        <div class="rg"><div class="k">A</div><div class="k">Z</div><div class="k">E</div><div class="k">R</div><div class="k">T</div><div class="k">Y</div><div class="k">U</div><div class="k">I</div><div class="k">O</div><div class="k">P</div></div>
+        <div class="rg"><div class="k">Q</div><div class="k">S</div><div class="k">D</div><div class="k">F</div><div class="k">G</div><div class="k">H</div><div class="k">J</div><div class="k">K</div><div class="k">L</div><div class="k">M</div></div>
+        <div class="rg"><div class="k l">⇧</div><div class="k">W</div><div class="k">X</div><div class="k">C</div><div class="k">V</div><div class="k">B</div><div class="k">N</div><div class="k l">⌫</div></div>
+        <div class="rg"><div class="k l">?123</div><div class="k mic"><svg class="ico" style="width:20px;height:20px"><use href="#i-mic"/></svg></div><div class="k sp"></div><div class="k l">↵</div></div>
+      </div>
+    </div>
+    <p class="note-maquette">1 [+] · 2 Écrire ou dicter · 3 micro du clavier, on parle · 4 Garder. Aucun nom à taper : il vient de la phrase.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>7 · Repli : réseau coupé ou dictée interrompue</h2>
+    <div class="tel">
+      <div class="hdr"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="reseau">Pas de réseau.</div>
+      <div class="contenu" style="gap:8px">
+        <div class="rangee"><button class="btn-texte" style="padding-left:0">Annuler</button></div>
+        <div class="moyen">Noter</div>
+        <div class="champ">Dupont, salle de bain, 12 rue des Lilas à Voiron. Refaire les murs et le plafond. Passer mar<span class="caret"></span></div>
+        <div class="detail"><span class="alerte">Pas enregistré.</span> Gardé sur ce téléphone.</div>
+        <button class="btn-encre" style="margin-top:4px">Réessayer</button>
+      </div>
+    </div>
+    <p class="note-maquette">La dictée est celle du clavier : si elle s'arrête, le texte déjà dicté reste. Gardé à chaque frappe ; « Réessayer » renvoie le même texte. Rien à retaper.</p>
+  </div>
+
+  <div class="cadre">
+    <h2>8 · Repli : l'IA n'a pas pu lire</h2>
+    <div class="tel">
+      <div class="hdr"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+      <div class="contenu" style="gap:10px">
+        <div class="rangee"><button class="btn-texte" style="padding-left:0">← Aujourd'hui</button></div>
+        <div class="moyen">Ranger</div>
+        <div class="detail alerte">Compyo n'a pas pu lire ce message.</div>
+        <div><label class="etiquette">Client</label><div class="champ focus-fin" style="min-height:56px"><span class="caret"></span></div></div>
+        <div><label class="etiquette">Téléphone (facultatif)</label><div class="champ vide">06 …</div></div>
+        <div><label class="etiquette">Ce que veut le client</label><div class="champ" style="min-height:96px;box-shadow:inset 0 0 0 1px rgb(var(--c-ink) / .4)">Salut, c'est Paul pour la fuite sous l'évier, tu peux passer cette semaine ? Merci</div></div>
+        <button class="btn-encre" style="margin-top:6px">Créer le projet</button>
+      </div>
+    </div>
+    <p class="note-maquette">Depuis la ligne « À ranger vous-même » : le formulaire s'ouvre déjà rempli du message. Aujourd'hui, ce repli repart d'un formulaire vide.</p>
+  </div>
+</section>
+
+<!-- ============ RANG 3 : le bureau du soir ============ -->
+<section class="rang">
+  <h2 class="rang-titre">Le bureau du soir <small>le message d'origine se lit en entier avant le « Oui »</small></h2>
+  <div class="cadre">
+    <h2>9 · Ordinateur : Aujourd'hui</h2>
+    <div class="ordi">
+      <div class="side">
+        <div class="logo">Compyo</div>
+        <div class="nav actif">Aujourd'hui</div>
+        <div class="nav">Projets</div>
+        <div class="nav">Planning</div>
+        <div style="height:16px"></div>
+        <div class="nav petit">Devis</div>
+        <div class="nav petit">Factures</div>
+        <div class="nav petit">Notes</div>
+        <div class="nav petit">Bilan</div>
+      </div>
+      <div class="principal">
+        <div class="colonne">
+          <div class="t-sur">vendredi 2 octobre</div>
+          <div class="grand" style="margin-bottom:6px">Bonjour Gérard</div>
+          <div class="bloc-titre" style="margin-top:0"><h3>À faire de votre côté</h3><span class="nb">3</span></div>
+          <div class="liste" style="margin-top:0">
+            <div class="trace"><span class="past"><svg class="ico" style="width:18px;height:18px"><use href="#i-check"/></svg></span>Projet Dupont créé<button class="btn-texte">Ouvrir</button></div>
+            <div class="lg"><div class="rep">09h15</div><div class="qui"><b>Martin</b><span>Ajouter à Cuisine ?</span></div><div class="act large">Oui</div></div>
+            <div class="origine"><span class="detail">Message d'origine, 09h15</span>Bonsoir, pour la hotte, mon mari a trouvé une référence plus petite. Vous pouvez la commander ? Cordialement, Mme Martin</div>
+            <div class="lg"><div class="rep">10h47</div><div class="qui"><b>« Salut, c'est Paul pour la fuite… »</b><span>À ranger vous-même</span></div><div class="act large rond"><svg class="ico" style="width:20px;height:20px"><use href="#i-chevron"/></svg></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <p class="note-maquette" style="max-width:none">Au bureau, souvent celui de la conjointe. Suppose que la boîte soit lisible par toute l'organisation (RLS de `partages_entrants`, duel A) ; sinon elle reste celle de Gérard.</p>
+  </div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,436 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat C — L'écran suit la journée</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+/* Maquette basse fidélité, jetable. Couleurs : variables rgb(var(--c-…)) seulement.
+   Tailles : l'échelle de docs/langage-interface.md (30 / 20 / 16 / 14 / 12). */
+
+.intro { flex-basis: 100%; max-width: 1100px; display: flex; flex-direction: column; gap: 12px; }
+.intro h1 { font: 700 24px/1.2 Manrope, sans-serif; }
+.intro p { font: 400 16px/1.45 Inter; max-width: 760px; }
+table.regle { border-collapse: collapse; width: 100%; background: rgb(var(--c-surface)); border-radius: 12px; overflow: hidden; outline: 1px solid rgb(var(--c-gris-clair)); }
+table.regle th, table.regle td { text-align: left; vertical-align: top; padding: 10px 14px; font: 400 14px/1.35 Inter; border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+table.regle thead th { font-weight: 600; background: rgb(var(--c-paper-warm)); }
+table.regle tbody th { font-weight: 600; width: 30%; }
+table.regle tr:last-child th, table.regle tr:last-child td { border-bottom: 0; }
+table.regle td.non { color: rgb(var(--c-steel)); }
+
+/* Le téléphone */
+.haut { height: 48px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); font: 700 18px Manrope, sans-serif; }
+.haut .logo { display: flex; align-items: center; gap: 8px; }
+.haut .logo i { width: 24px; height: 24px; border-radius: 99px; background: rgb(var(--c-paper)); color: rgb(var(--c-anthracite)); display: grid; place-items: center; font: 800 14px Manrope, sans-serif; font-style: normal; }
+.page { flex: 1; padding: 20px 16px 96px; display: flex; flex-direction: column; }
+
+.sur { font: 500 12px/1 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: rgb(var(--c-steel)); }
+.h1 { font: 600 30px/1.15 Manrope, sans-serif; margin-top: 8px; color: rgb(var(--c-ink)); }
+.h2 { font: 600 20px/1.2 Manrope, sans-serif; display: flex; align-items: baseline; gap: 8px; color: rgb(var(--c-ink)); }
+.h2 .n { font: 400 14px Inter; color: rgb(var(--c-steel)); font-variant-numeric: tabular-nums; }
+.t16 { font: 400 16px/1.3 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t14 { font: 400 14px/1.3 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 6px; }
+.bloc { margin-top: 28px; }
+.liste { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+.dark .alerte { color: rgb(var(--c-signal-clair)); }
+.ok { color: rgb(var(--c-succes)); }
+
+/* La ligne : une seule recette pour tout ce qu'on touche (règle 7) */
+.lg { display: flex; align-items: stretch; min-height: 64px; overflow: hidden; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+.lg .zone { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 16px; color: inherit; text-decoration: none; }
+.lg .rep { width: 48px; flex-shrink: 0; font: 500 14px "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: rgb(var(--c-steel)); }
+.lg .rep.alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+.dark .lg .rep.alerte { color: rgb(var(--c-signal-clair)); }
+.lg .q { flex: 1; min-width: 0; }
+.lg .q b { display: block; font: 600 16px/1.25 Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg .q span { display: block; margin-top: 2px; font: 400 14px/1.3 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg .q span.alerte { display: inline; color: rgb(var(--c-signal-fonce)); }
+.dark .lg .q span.alerte { color: rgb(var(--c-signal-clair)); }
+.lg .q span.ligne-a { display: block; }
+.lg .fin { width: 56px; flex-shrink: 0; display: grid; place-items: center; border-left: 1px solid rgb(var(--c-ink) / .15); font: 600 16px Inter; color: rgb(var(--c-ink)); text-decoration: none; }
+.lg .fin.mot { width: auto; min-width: 72px; padding: 0 14px; }
+.coche { width: 28px; height: 28px; border-radius: 99px; border: 2px solid rgb(var(--c-ink) / .4); }
+.lg.porte { min-height: 56px; margin-top: 28px; background: rgb(var(--c-paper-warm)); }
+.lg.porte .zone { justify-content: space-between; font: 600 14px Inter; color: rgb(var(--c-steel)); }
+
+/* La carte « Maintenant » : un lien, la seule carte sombre (règle 5) */
+.maint { margin-top: 20px; min-height: 96px; display: flex; align-items: stretch; overflow: hidden; border-radius: 16px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.maint .zone { flex: 1; min-width: 0; padding: 16px; display: flex; flex-direction: column; justify-content: center; gap: 4px; color: inherit; text-decoration: none; }
+.maint .zone b { font: 600 20px/1.2 Manrope, sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.maint .zone .d { font: 400 14px/1.3 Inter; color: rgb(var(--c-paper) / .7); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.maint .iti { width: 76px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border-left: 1px solid rgb(var(--c-paper) / .25); font: 600 14px Inter; color: inherit; text-decoration: none; }
+
+/* L'en-tête-lien du chantier (journée) */
+.tete { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: inherit; text-decoration: none; }
+.tete > div { min-width: 0; }
+
+/* L'unique bouton plein : encre sur papier, toute la largeur (règle 5) */
+.plein { margin-top: 20px; min-height: 56px; width: 100%; border: 0; border-radius: 16px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 600 16px Inter; display: flex; align-items: center; justify-content: center; gap: 10px; }
+
+/* La trace et le repos (règle 16) */
+.trace { margin-top: 16px; min-height: 48px; display: flex; align-items: center; gap: 10px; padding-left: 16px; border-radius: 16px; background: rgb(var(--c-succes) / .10); font: 400 14px Inter; color: rgb(var(--c-ink)); }
+.trace .txt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.trace .annuler { min-height: 48px; padding: 0 16px; display: flex; align-items: center; font: 600 16px Inter; color: rgb(var(--c-ink)); text-decoration: underline; text-underline-offset: 4px; text-decoration-color: rgb(var(--c-ink) / .3); }
+.repos { display: flex; align-items: center; gap: 12px; margin-top: 8px; }
+.repos .h1 { margin-top: 0; }
+.past { width: 48px; height: 48px; flex-shrink: 0; border-radius: 99px; background: rgb(var(--c-succes) / .10); color: rgb(var(--c-succes)); display: grid; place-items: center; }
+
+/* L'ordinateur : le bureau du soir */
+.lat { width: 240px; flex-shrink: 0; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); padding: 20px 16px; display: flex; flex-direction: column; gap: 4px; border-radius: 12px 0 0 12px; }
+.lat .logo { display: flex; align-items: center; gap: 8px; font: 700 18px Manrope, sans-serif; margin-bottom: 8px; }
+.lat .logo i { width: 24px; height: 24px; border-radius: 99px; background: rgb(var(--c-paper)); color: rgb(var(--c-anthracite)); display: grid; place-items: center; font: 800 14px Manrope, sans-serif; font-style: normal; }
+.lat .nouveau { background: rgb(var(--c-signal)); color: #fff; border-radius: 16px; min-height: 48px; display: flex; align-items: center; justify-content: center; font: 600 16px Inter; margin: 8px 0 12px; }
+.lat a { display: flex; align-items: center; min-height: 48px; padding: 0 12px; border-radius: 12px; font: 500 14px Inter; color: rgb(var(--c-paper) / .8); text-decoration: none; }
+.lat a.actif { background: rgb(var(--c-paper) / .12); color: rgb(var(--c-paper)); font-weight: 600; }
+.lat hr { border: 0; border-top: 1px solid rgb(var(--c-paper) / .2); margin: 8px 0; }
+.princ { flex: 1; padding: 32px 40px 40px; }
+.princ .col { max-width: 672px; }
+.princ .page-int { display: flex; flex-direction: column; }
+</style>
+</head>
+<body>
+
+<!-- Icônes -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-maison" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></symbol>
+  <symbol id="i-dossier" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-agenda" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></symbol>
+  <symbol id="i-cloche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 7H4s2-1 2-7zM10 20a2 2 0 0 0 4 0"/></symbol>
+  <symbol id="i-fleche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-lieu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-photo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></symbol>
+  <symbol id="i-coche" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</svg>
+
+<div class="intro">
+  <h1>Candidat C — L'écran suit la journée</h1>
+  <p>Mêmes données, mêmes lignes. Ce qui change, c'est ce qu'on montre selon l'heure à Paris : avant 9 h, la route ; de 9 h à 17 h, le chantier où l'on est ; dès 17 h, la fermeture. Le titre de 30 px est la réponse du moment. Un bloc n'apparaît que si l'artisan peut encore agir dessus.</p>
+  <table class="regle">
+    <thead><tr><th></th><th>Avant 9 h · la route</th><th>9 h – 17 h · le chantier</th><th>Dès 17 h · la fermeture</th></tr></thead>
+    <tbody>
+      <tr><th>Rendez-vous restants</th><td>Le prochain en grand, avec « Y aller »</td><td>En « Ensuite »</td><td class="non">Demain, une ligne</td></tr>
+      <tr><th>Chantier en cours + « Ajouter »</th><td class="non">—</td><td>Le héros de l'écran</td><td class="non">—</td></tr>
+      <tr><th>Rappels (notes du jour, retard en tête)</th><td>5 lignes au plus</td><td>5 lignes au plus</td><td class="non">Dans « À régler »</td></tr>
+      <tr><th>À régler (ex À confirmer + En suspens + « Chantier terminé ? »)</th><td class="non">Une ligne « Ce soir »</td><td class="non">Une ligne « Ce soir »</td><td>5 lignes au plus, la suivante monte</td></tr>
+      <tr><th>Au bureau (ex À faire de votre côté + En attente du client)</th><td class="non">Une ligne « Ce soir »</td><td>Seulement s'il n'y a ni rendez-vous ni chantier</td><td>3 à 5 lignes</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ============ RANG 1 : le jour chargé, trois moments ============ -->
+
+<div class="cadre">
+  <h2>1 · 8 h 10 — La route</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></header>
+    <main class="page">
+      <p class="sur">Jeudi 1 octobre</p>
+      <h1 class="h1">2 rendez-vous</h1>
+
+      <div class="maint">
+        <a class="zone" href="#">
+          <span class="d">Dans 20 min</span>
+          <b>8h30 · M. Durand</b>
+          <span class="d">Métré salle de bains · Villeurbanne</span>
+        </a>
+        <a class="iti" href="#" aria-label="Itinéraire vers M. Durand"><svg class="ico" aria-hidden="true"><use href="#i-lieu"/></svg>Y aller</a>
+      </div>
+
+      <section class="bloc" aria-label="Ensuite">
+        <h2 class="h2">Ensuite <span class="n">1</span></h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep">14h00</span><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Visite technique · Caluire</span></span></a></div>
+        </div>
+      </section>
+
+      <section class="bloc" aria-label="Rappels">
+        <h2 class="h2">Rappels <span class="n">2</span></h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep alerte">Retard</span><span class="q"><b>Commander les rails 48</b><span>SCI Les Jardins de la Vallée</span></span></a><span class="fin" aria-label="Fait : Commander les rails 48"><span class="coche"></span></span></div>
+          <div class="lg"><a class="zone" href="#"><span class="rep">17h30</span><span class="q"><b>Appeler le fournisseur</b><span>Léo</span></span></a><span class="fin" aria-label="Fait : Appeler le fournisseur"><span class="coche"></span></span></div>
+        </div>
+      </section>
+
+      <a class="lg porte" href="#"><span class="zone"><span>Ce soir · 3 à régler · 3 au bureau</span><svg class="ico" aria-hidden="true"><use href="#i-fleche"/></svg></span></a>
+    </main>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau">+</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Le prochain rendez-vous en grand, l'itinéraire à un appui ; le bureau tient en une ligne.</p>
+</div>
+
+<div class="cadre">
+  <h2>2 · 10 h 30 — Le chantier</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></header>
+    <main class="page">
+      <a class="tete" href="#">
+        <div>
+          <p class="sur">Jeudi 1 octobre</p>
+          <h1 class="h1">Mme Bernard</h1>
+          <p class="t16" style="margin-top:6px">Chantier en cours · jour 3</p>
+        </div>
+        <svg class="ico" aria-hidden="true"><use href="#i-fleche"/></svg>
+      </a>
+
+      <button class="plein" type="button"><svg class="ico" aria-hidden="true"><use href="#i-photo"/></svg>Ajouter une photo ou une note</button>
+
+      <section class="bloc" aria-label="Ensuite">
+        <h2 class="h2">Ensuite <span class="n">1</span></h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep">14h00</span><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Visite technique · Caluire</span></span></a></div>
+        </div>
+      </section>
+
+      <section class="bloc" aria-label="Rappels">
+        <h2 class="h2">Rappels <span class="n">2</span></h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep alerte">Retard</span><span class="q"><b>Commander les rails 48</b><span>SCI Les Jardins de la Vallée</span></span></a><span class="fin" aria-label="Fait : Commander les rails 48"><span class="coche"></span></span></div>
+          <div class="lg"><a class="zone" href="#"><span class="rep">17h30</span><span class="q"><b>Appeler le fournisseur</b><span>Léo</span></span></a><span class="fin" aria-label="Fait : Appeler le fournisseur"><span class="coche"></span></span></div>
+        </div>
+      </section>
+
+      <a class="lg porte" href="#"><span class="zone"><span>Ce soir · 4 à régler · 3 au bureau</span><svg class="ico" aria-hidden="true"><use href="#i-fleche"/></svg></span></a>
+    </main>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau">+</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Le chantier où l'on est, et un seul bouton : tout est rangé au moment où ça arrive.</p>
+</div>
+
+<div class="cadre">
+  <h2>3 · 18 h 45 — La fermeture</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></header>
+    <main class="page">
+      <p class="sur">Jeudi 1 octobre</p>
+      <h1 class="h1">5 à régler.</h1>
+      <p class="t14">Fait : 1 devis, 2 projets</p>
+
+      <div class="liste" style="margin-top:20px" aria-label="À régler">
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>M. Durand</b><span>Métré salle de bains · 8h30</span></span></a><span class="fin" aria-label="Fait : M. Durand"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : M. Durand">Demain</span></div>
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Visite technique · 14h00</span></span></a><span class="fin" aria-label="Fait : SCI Les Jardins de la Vallée"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : SCI Les Jardins de la Vallée">Demain</span></div>
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>Commander les rails 48</b><span><span class="alerte">Retard</span> · SCI Les Jardins</span></span></a><span class="fin" aria-label="Fait : Commander les rails 48"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : Commander les rails 48">Demain</span></div>
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>Appeler le fournisseur</b><span>17h30 · Léo</span></span></a><span class="fin" aria-label="Fait : Appeler le fournisseur"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : Appeler le fournisseur">Demain</span></div>
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>M. Roux</b><span>Chantier terminé ?</span></span></a><span class="fin mot">Oui</span><span class="fin mot">Non</span></div>
+      </div>
+
+      <section class="bloc" aria-label="Demain">
+        <h2 class="h2">Demain</h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep">8h00</span><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Reprise des cloisons · et 1 autre</span></span></a></div>
+        </div>
+      </section>
+
+      <section class="bloc" aria-label="Au bureau">
+        <h2 class="h2">Au bureau <span class="n">3</span></h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep">12 j</span><span class="q"><b>M. Dupont</b><span>Facture impayée</span></span></a><span class="fin mot">Relancer</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="rep">6 j</span><span class="q"><b>M. Garcia</b><span>Devis sans réponse</span></span></a><span class="fin mot">Relancer</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="q"><b>Mme Bernard</b><span>Devis à relire</span></span></a></div>
+        </div>
+      </section>
+    </main>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau">+</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Une seule liste « À régler » (Fait ou Demain, un appui) ; le bureau vient après, jamais avant.</p>
+</div>
+
+<!-- ============ RANG 2 : états ============ -->
+
+<div class="cadre">
+  <h2>4 · 18 h 46 — Après un appui sur « Fait »</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></header>
+    <main class="page">
+      <p class="sur">Jeudi 1 octobre</p>
+      <h1 class="h1">4 à régler.</h1>
+      <p class="t14">Fait : 1 devis, 2 projets</p>
+
+      <div class="trace" aria-live="polite">
+        <svg class="ico ok" aria-hidden="true"><use href="#i-coche"/></svg>
+        <span class="txt">Fait : M. Durand</span>
+        <a class="annuler" href="#">Annuler</a>
+      </div>
+
+      <div class="liste" style="margin-top:16px" aria-label="À régler">
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Visite technique · 14h00</span></span></a><span class="fin" aria-label="Fait : SCI Les Jardins de la Vallée"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : SCI Les Jardins de la Vallée">Demain</span></div>
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>Commander les rails 48</b><span><span class="alerte">Retard</span> · SCI Les Jardins</span></span></a><span class="fin" aria-label="Fait : Commander les rails 48"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : Commander les rails 48">Demain</span></div>
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>Appeler le fournisseur</b><span>17h30 · Léo</span></span></a><span class="fin" aria-label="Fait : Appeler le fournisseur"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : Appeler le fournisseur">Demain</span></div>
+        <div class="lg"><a class="zone" href="#"><span class="q"><b>M. Roux</b><span>Chantier terminé ?</span></span></a><span class="fin mot">Oui</span><span class="fin mot">Non</span></div>
+      </div>
+
+      <section class="bloc" aria-label="Demain">
+        <h2 class="h2">Demain</h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep">8h00</span><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Reprise des cloisons · et 1 autre</span></span></a></div>
+        </div>
+      </section>
+    </main>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau">+</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">La ligne devient une trace, sans minuteur, avec « Annuler » ; la liste se resserre. Le « au bureau » est hors cadre.</p>
+</div>
+
+<div class="cadre">
+  <h2>5 · 18 h 52 — Repos</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></header>
+    <main class="page">
+      <p class="sur">Jeudi 1 octobre</p>
+      <div class="repos">
+        <span class="past" aria-hidden="true"><svg class="ico" aria-hidden="true"><use href="#i-coche"/></svg></span>
+        <h1 class="h1">Tout est réglé.</h1>
+      </div>
+      <p class="t14">Fait : 1 devis, 2 projets, 5 rendez-vous</p>
+      <p class="t16" style="margin-top:20px">Demain · 8h00 · SCI Les Jardins de la Vallée</p>
+
+      <a class="lg porte" href="#"><span class="zone"><span>Au bureau · 3</span><svg class="ico" aria-hidden="true"><use href="#i-fleche"/></svg></span></a>
+    </main>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau">+</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Dit seulement quand « À régler » est vraiment vide ; ni confettis ni série. Le bureau reste une porte, pas une dette.</p>
+</div>
+
+<div class="cadre">
+  <h2>6 · 10 h 30 — Jour de bureau</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></header>
+    <main class="page">
+      <a class="tete" href="#">
+        <div>
+          <p class="sur">Lundi 5 octobre</p>
+          <h1 class="h1">Mme Bernard</h1>
+          <p class="t16" style="margin-top:6px">Devis à relire</p>
+        </div>
+        <svg class="ico" aria-hidden="true"><use href="#i-fleche"/></svg>
+      </a>
+
+      <button class="plein" type="button">Relire le devis</button>
+
+      <section class="bloc" aria-label="Au bureau">
+        <h2 class="h2">Au bureau <span class="n">3</span></h2>
+        <div class="liste">
+          <div class="lg"><a class="zone" href="#"><span class="rep">12 j</span><span class="q"><b>M. Dupont</b><span>Facture impayée</span></span></a><span class="fin mot">Relancer</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="rep">6 j</span><span class="q"><b>M. Garcia</b><span>Devis sans réponse</span></span></a><span class="fin mot">Relancer</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="q"><b>M. Petit</b><span>Nouveau projet à cadrer</span></span></a></div>
+        </div>
+      </section>
+    </main>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau">+</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Ni rendez-vous ni chantier : le bureau devient la journée, et « Relire » ouvre le devis, pas la fiche.</p>
+</div>
+
+<div class="cadre">
+  <h2>7 · Jour vide</h2>
+  <div class="tel">
+    <header class="haut"><span class="logo"><i>C</i>Compyo</span><svg class="ico" aria-hidden="true"><use href="#i-cloche"/></svg></header>
+    <main class="page">
+      <p class="sur">Jeudi 1 octobre</p>
+      <h1 class="h1">Rien de prévu.</h1>
+      <button class="plein" type="button" style="margin-top:28px">Nouveau projet</button>
+    </main>
+    <nav class="barre" aria-label="Navigation">
+      <span class="onglet actif"><svg class="ico" aria-hidden="true"><use href="#i-maison"/></svg>Aujourd'hui</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-dossier"/></svg>Projets</span>
+      <span class="btn-rond" aria-label="Nouveau">+</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-agenda"/></svg>Planning</span>
+      <span class="onglet"><svg class="ico" aria-hidden="true"><use href="#i-plus"/></svg>Plus</span>
+    </nav>
+  </div>
+  <p class="note-maquette">Une phrase, une action ; la même à toute heure.</p>
+</div>
+
+<!-- ============ RANG 3 : le bureau du soir ============ -->
+
+<div class="cadre">
+  <h2>8 · 18 h 45 — Ordinateur, le bureau du soir</h2>
+  <div class="ordi">
+    <aside class="lat">
+      <span class="logo"><i>C</i>Compyo</span>
+      <span class="nouveau">+ Nouveau projet</span>
+      <a class="actif" href="#">Aujourd'hui</a>
+      <a href="#">Projets</a>
+      <a href="#">Planning</a>
+      <hr>
+      <a href="#">Devis</a>
+      <a href="#">Factures</a>
+      <a href="#">Notes</a>
+      <a href="#">Bilan</a>
+      <a href="#">Paramètres</a>
+    </aside>
+    <main class="princ">
+      <div class="col page-int">
+        <p class="sur">Jeudi 1 octobre</p>
+        <h1 class="h1">5 à régler.</h1>
+        <p class="t14">Fait : 1 devis, 2 projets</p>
+
+        <div class="liste" style="margin-top:20px" aria-label="À régler">
+          <div class="lg"><a class="zone" href="#"><span class="q"><b>M. Durand</b><span>Métré salle de bains · 8h30</span></span></a><span class="fin" aria-label="Fait : M. Durand"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : M. Durand">Demain</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Visite technique · 14h00</span></span></a><span class="fin" aria-label="Fait : SCI Les Jardins de la Vallée"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : SCI Les Jardins de la Vallée">Demain</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="q"><b>Commander les rails 48</b><span><span class="alerte">Retard</span> · SCI Les Jardins de la Vallée</span></span></a><span class="fin" aria-label="Fait : Commander les rails 48"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : Commander les rails 48">Demain</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="q"><b>Appeler le fournisseur</b><span>17h30 · Léo</span></span></a><span class="fin" aria-label="Fait : Appeler le fournisseur"><span class="coche"></span></span><span class="fin mot" aria-label="Demain : Appeler le fournisseur">Demain</span></div>
+          <div class="lg"><a class="zone" href="#"><span class="q"><b>M. Roux</b><span>Chantier terminé ?</span></span></a><span class="fin mot">Oui</span><span class="fin mot">Non</span></div>
+        </div>
+
+        <section class="bloc" aria-label="Demain">
+          <h2 class="h2">Demain</h2>
+          <div class="liste">
+            <div class="lg"><a class="zone" href="#"><span class="rep">8h00</span><span class="q"><b>SCI Les Jardins de la Vallée</b><span>Reprise des cloisons · et 1 autre</span></span></a></div>
+          </div>
+        </section>
+
+        <section class="bloc" aria-label="Au bureau">
+          <h2 class="h2">Au bureau <span class="n">3</span></h2>
+          <div class="liste">
+            <div class="lg"><a class="zone" href="#"><span class="rep">12 j</span><span class="q"><b>M. Dupont</b><span>Facture impayée</span></span></a><span class="fin mot">Relancer</span></div>
+            <div class="lg"><a class="zone" href="#"><span class="rep">6 j</span><span class="q"><b>M. Garcia</b><span>Devis sans réponse</span></span></a><span class="fin mot">Relancer</span></div>
+            <div class="lg"><a class="zone" href="#"><span class="q"><b>Mme Bernard</b><span>Devis à relire</span></span></a></div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+  <p class="note-maquette" style="max-width:none">Le même écran que sur le téléphone, dans la colonne de 672 px : la conjointe lit de haut en bas, sans rôle ni écran à part.</p>
+</div>
+
+</body>
+</html>

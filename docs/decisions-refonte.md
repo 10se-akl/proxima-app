@@ -162,3 +162,94 @@ Arbitrage complet : `refonte-maquettes/duel-H/arbitrage.md`.
 4. « À facturer ».
 
 Arbitrage complet : `refonte-maquettes/duel-B/arbitrage.md`. Synthèse pour validation : [`docs/point-arret-equipe-navigation.md`](point-arret-equipe-navigation.md).
+
+---
+
+## Duel C : l'écran « Aujourd'hui »
+
+**Problème.** L'écran doit répondre à une seule question, « qu'est-ce que je dois faire ? », le matin, sur le chantier et le soir, sans geste de clôture qui ne change rien (leçon de `f8d263b`).
+
+**Candidats.**
+- A : l'écran actuel avec les bugs corrigés, 60,5.
+- B : une seule liste de 7 lignes, 45.
+- C : l'écran change avec l'heure, 53,5.
+- **D : « devant / derrière », 66.**
+
+**Vainqueur : D.**
+- **Les blocs :** l'en-tête, puis Maintenant (ou « Tout est réglé. » dès 17 h), puis Aujourd'hui (ce qui est devant), À régler (ce qui est derrière : passé non confirmé, notes en retard, « Chantier terminé ? »), et À suivre (les dossiers qui attendent un geste).
+- **Le volume :** 4 blocs, 5 lignes chacun.
+- **Les moments :** c'est la même page du matin au soir, seul le contenu glisse.
+- **Greffes :**
+  - « Pas fait » ouvre une feuille « Déplacer » préremplie (de A) ;
+  - « Voir les N » s'ouvre sur place (de B) ;
+  - le rendez-vous en cours reste « Maintenant » (de C).
+- **Corrections :**
+  - un rendez-vous déplacé enchaîne toujours sur le message au client, avec la nouvelle date ;
+  - « Chantier terminé ? » ne se pose qu'après un rendez-vous fait postérieur à un devis envoyé, et « Pas encore » s'écrit en base ;
+  - une ligne relancée se tait 7 jours.
+- **Retiré de D :**
+  - le filtre « créé par vous » (contraire au duel A) ;
+  - l'horizon de 14 jours ;
+  - « Noter pour demain ».
+
+**Dissidence valable.**
+- Deux actions par ligne avec des gants : non testé.
+- L'argent passe sous la ligne de flottaison un jour chargé.
+- Des « Fait ? » que la conjointe ne peut pas trancher.
+- Le rendez-vous de Gérard apparaît en Maintenant chez le coéquipier.
+
+**Ce qui ferait changer d'avis.** Des artisans qui ne trouvent plus leurs relances le soir : on remonterait « À suivre » au-dessus d'« À régler » après 17 h.
+
+**Lots.**
+1. Corrections : bornes du jour en heure de Paris, lien du devis, plafond, doublon, rafraîchissement au retour. **Fait : `ac10567`.**
+2. Plus aucun rendez-vous client déplacé en silence. **Fait : `6a2f1c0`.**
+3. Un « Chantier terminé ? » honnête. **Fait : `a30f12d`.**
+4. La structure D.
+5. L'auteur, avec le duel A.
+
+Arbitrage complet : `refonte-maquettes/duel-C/arbitrage.md`.
+
+---
+
+## Duel D : la fiche projet
+
+**Problème.** À 360 px, on ne voit que l'en-tête et « Maintenant ». Le Carnet commence à 1 274 px. Photo, note et dictée demandent environ 5 gestes. Deux feuilles portent le même titre « Message au client ».
+
+**Candidats.**
+- A : l'existant corrigé, 53.
+- B : le Carnet comme fil unique, 55,5.
+- C : la fiche change selon l'étape, 54,5.
+- **D : ordre fixe, un bloc vide ne s'affiche pas, 69,5.**
+
+**Vainqueur : D.**
+- **L'ordre :** en-tête, puis Maintenant (au plus un bouton plein et un bouton texte, le reste dans « … »), puis la bande Photo · Dicter · Note sous le pouce, puis À faire, À retenir, Argent (le devis et `FacturesProjet` entier, avec l'ancre `#facturation`), et enfin le Carnet.
+- **Greffes :**
+  - « Bien reçu » devient l'action de Maintenant juste après une capture (de B) ;
+  - « À vérifier avant de chiffrer » tient en une ligne (de C) ;
+  - Photo devient le bouton plein en chantier (de C).
+- **Corrections :**
+  - la dictée ne démarre seule que sans brouillon à restaurer ;
+  - le champ `capture` est gardé ;
+  - une question avant de créer une facture ;
+  - « Chantier terminé ? » avant de terminer ;
+  - un brouillon local pour le mémo et le texte IA.
+- **Le Carnet reste replié** (décision du 27/09 non renversée). L'ouvrir sur la dernière période est une décision à confirmer par le fondateur.
+
+**Gestes.**
+- 1 photo : 5 → 3.
+- Dicter : 5 → 3, ou 4 si le test Android échoue.
+- Note : 4 → 3.
+- Relance IA : environ 7 → 3, sans copier-coller.
+- Terminer le chantier : 1 → 2, voulu (c'est un geste irréversible).
+
+**Dissidence valable.**
+- Une fiche riche peut montrer 7 blocs.
+- Le [+] et la bande font deux portes.
+- Trois paris à tester sur un vrai Android : l'ouverture de l'appareil photo, l'écoute à l'ouverture, le geste retour qui coupe le micro.
+
+**Lots.**
+1. Même écran, sans pièges.
+2. Les trois gestes directs (**vrai Android obligatoire avant livraison**).
+3. Argent et Carnet.
+
+Arbitrage complet : `refonte-maquettes/duel-D/arbitrage.md`.

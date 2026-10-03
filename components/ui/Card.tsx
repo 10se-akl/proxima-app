@@ -16,7 +16,10 @@ export function Card({
   // à bordure — jusqu'ici aucune carte de l'app n'avait d'ombre du tout
   // hors survol.
   return (
-    <div className={`bg-surface border border-ink/10 rounded-2xl shadow-sm shadow-ink/[0.03] ${className}`}>
+    // Refonte (03/10) — règle 8 de docs/langage-interface.md : le bloc n'a
+    // pas d'ombre (seule la feuille qui monte du bas en porte une), et un
+    // filet assez marqué pour se voir au soleil.
+    <div className={`bg-surface ring-1 ring-ink/15 rounded-2xl ${className}`}>
       {children}
     </div>
   );

@@ -29,10 +29,10 @@ export function EtatErreur({
 }) {
   return (
     <div className={`flex flex-col items-center gap-3 py-16 text-center ${className}`}>
-      <span className="grid h-12 w-12 place-items-center rounded-full bg-signal/10 text-signal text-xl" aria-hidden="true">
+      <span className="grid h-12 w-12 place-items-center rounded-full bg-ink/10 text-xl font-semibold text-ink" aria-hidden="true">
         !
       </span>
-      <p className="max-w-sm text-sm text-ink/70">{message}</p>
+      <p className="max-w-sm text-base text-steel" aria-live="polite">{message}</p>
       <Button onClick={onReessayer} loading={chargement} variant="ghost">
         Réessayer
       </Button>
@@ -52,13 +52,13 @@ export function ErreurInline({
   className?: string;
 }) {
   return (
-    <div className={`flex flex-wrap items-center gap-2.5 text-sm text-signal ${className}`}>
+    <div className={`flex flex-wrap items-center gap-2.5 text-sm font-semibold text-signal-fonce dark:text-signal-clair ${className}`} aria-live="polite">
       <span>{message}</span>
       {onReessayer && (
         <button
           type="button"
           onClick={onReessayer}
-          className="font-medium underline underline-offset-2 hover:no-underline"
+          className="inline-flex min-h-12 items-center font-semibold text-ink underline decoration-ink/30 underline-offset-4"
         >
           Réessayer
         </button>

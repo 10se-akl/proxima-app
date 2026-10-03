@@ -30,7 +30,7 @@ Le favicon (`app/icon.tsx`) et l'image de partage sur les réseaux (`app/opengra
 
 | Nom | Hex | Usage |
 |---|---|---|
-| Terracotta principal | `#C96B4A` | Couleur de marque — boutons d'action, accents, symbole |
+| Terracotta principal | `#C96B4A` | Couleur de marque — symbole, bouton « + » de la barre du bas, accents rares. Les boutons d'action de l'application sont en anthracite (refonte du 03/10, voir docs/langage-interface.md) |
 | Terracotta clair | `#E8C5B6` | Second plan du symbole, fonds d'accent très légers |
 | Blanc cassé | `#FAF8F5` | Fond principal de l'app et du site |
 | Anthracite | `#1F2937` | Texte, fonds sombres (pied de page, sections contrastées) |

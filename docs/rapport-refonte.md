@@ -187,7 +187,7 @@ Je n'ai écrit **aucun fichier de migration**. Toutes appartiennent au duel A, q
 ## 7. Ce qu'il te reste à faire
 
 1. **Me répondre sur le point d'arrêt** (duels A et B) et sur la couleur du bouton. Sans ça, je ne touche ni à l'équipe, ni à la navigation, ni à l'identité des boutons.
-2. **Ouvrir la prévisualisation Vercel** de `refonte-app` sur ton Samsung. À vérifier en particulier :
+2. **Pousser la branche `refonte-app`** (elle est seulement locale : je n'ai rien poussé), puis ouvrir sa prévisualisation Vercel sur ton Samsung. `master` n'est pas touché. À vérifier en particulier :
    - l'envoi d'un devis par WhatsApp (le message s'ouvre-t-il au bon contact ?) ;
    - « Déplacer » depuis l'accueil et depuis le planning ;
    - le bandeau « Pas de réseau. » en mode avion ;

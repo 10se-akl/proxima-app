@@ -147,7 +147,8 @@ export function VueProjet({
   const [messageOuvert, setMessageOuvert] = useState(false);
   const [demandeMessage, setDemandeMessage] = useState<DemandeMessage | null>(null);
   // Refonte (03/10, duel D lot 3) — « Bien reçu » est l'action de
-  // Maintenant (plus une carte à part) : « cree » après une capture.
+  // Maintenant (plus une carte à part) : « cree » après une capture ou un
+  // rendez-vous confirmé, « recu » après un message ajouté au projet.
   const [accuse, setAccuse] = useState<"cree" | "recu" | null>(null);
   // « À retenir » : le mémo seul. Vide, le bloc ne s'affiche pas ; il se
   // crée par « … › Écrire à retenir », puis reste là le temps de la visite.
@@ -166,12 +167,17 @@ export function VueProjet({
       setMessageOuvert(true);
     }
     if (p.get("cree") === "1") setAccuse("cree");
-    if (cle || p.get("cree")) window.history.replaceState(null, "", window.location.pathname);
+    // Refonte (03/10, duel E lot 3) — un message reçu ajouté à ce projet
+    // (partage ou collage, « Ajouter à ce projet »).
+    if (p.get("recu") === "1") setAccuse("recu");
+    if (cle || p.get("cree") || p.get("recu")) window.history.replaceState(null, "", window.location.pathname);
   }, []);
   const dejaContacte = evenements.some((e) => e.type === "message_prepare");
   // Juste après une capture : seulement si le numéro est connu et que
-  // personne n'a encore écrit au client.
-  const proposerAccuse = accuse === "cree" && Boolean(projet.telephone_client) && !dejaContacte ? accuse : null;
+  // personne n'a encore écrit au client. Après un message reçu sur un
+  // projet existant : une fois, même si le client a déjà été contacté.
+  const proposerAccuse =
+    projet.telephone_client && (accuse === "recu" || (accuse === "cree" && !dejaContacte)) ? accuse : null;
   useEffect(() => {
     if (memo.valeur.trim()) setMemoOuvert(true);
   }, [memo.valeur]);

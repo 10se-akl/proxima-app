@@ -149,7 +149,9 @@ export default function ImporterMessagePage() {
         setErreur(donnees.error || "Impossible d'ajouter le message au projet.");
         return;
       }
-      router.push(`/dashboard/demandes/${donnees.projetId}`);
+      // Refonte (03/10, duel E lot 3) — « Bien reçu » sur la fiche, une
+      // fois ; `replace` : « Retour » ne rouvre pas un message déjà rangé.
+      router.replace(`/dashboard/demandes/${donnees.projetId}?recu=1`);
     } catch {
       setAttachementEnCours(false);
       setErreur("Impossible de contacter le serveur pour le moment.");
@@ -197,7 +199,7 @@ export default function ImporterMessagePage() {
       return;
     }
 
-    router.push(`/dashboard/demandes/${data.projetId}?cree=1`);
+    router.replace(`/dashboard/demandes/${data.projetId}?cree=1`);
   }
 
   if (propositionEnCours) {

@@ -237,7 +237,10 @@ export default function RevuePartagePage() {
         setErreur(donnees.error || "Impossible d'ajouter le message au projet.");
         return;
       }
-      router.replace(`/dashboard/demandes/${donnees.projetId}`);
+      // Refonte (03/10, duel E lot 3) — la fiche s'ouvre avec « Bien reçu »
+      // en action de Maintenant, une fois, même si le client a déjà été
+      // contacté : c'est un nouveau message.
+      router.replace(`/dashboard/demandes/${donnees.projetId}?recu=1`);
     } catch {
       setAttachementEnCours(false);
       setErreur("Impossible de contacter le serveur pour le moment.");
@@ -348,7 +351,7 @@ export default function RevuePartagePage() {
         {etape === "erreur" && !brouillon && (
           <div className="py-10 text-center space-y-4">
             <p className="text-sm text-signal">{erreur}</p>
-            <Button onClick={() => router.push("/dashboard/demandes/nouvelle")}>
+            <Button onClick={() => router.replace("/dashboard/demandes/nouvelle")}>
               Créer le projet manuellement
             </Button>
           </div>

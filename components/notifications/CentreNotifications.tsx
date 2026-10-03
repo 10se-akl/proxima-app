@@ -176,12 +176,15 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
               ))}
             </div>
           )}
+          {/* Refonte (03/10 — duel B, lot 3) : sans « Plus », c'est la porte
+              de toutes les notes. Elle passe de 12 px de texte pâle à une
+              vraie cible de 48 px. */}
           <Link
             href="/dashboard/notes"
             onClick={() => setOuvert(false)}
-            className="block px-4 py-2.5 text-xs text-ink/50 hover:text-ink border-t border-ink/5 transition-colors"
+            className="flex min-h-12 items-center border-t border-ink/15 px-4 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors"
           >
-            Voir toutes les notes →
+            Voir toutes les notes
           </Link>
         </div>
       )}

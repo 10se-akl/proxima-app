@@ -157,7 +157,7 @@ export const SECTIONS: SectionGuide[] = [
         capture: "facture-payee",
         alt: "Une facture d'acompte émise, avec le lien « Marquer payée ».",
         texte:
-          "Le client a payé ? « Marquer payée ». Ce qui reste à encaisser s'affiche sur l'accueil et dans le Bilan.",
+          "Le client a payé ? « Marquer payée ». Ce qui reste à encaisser s'affiche dans Argent, en bas de l'écran.",
       },
     ],
   },
@@ -219,7 +219,7 @@ export const SECTIONS: SectionGuide[] = [
         capture: "demarrer-parametres",
         alt: "La page Paramètres et ce qui reste à compléter.",
         texte:
-          "Complétez vos paramètres une fois (entreprise, assurances, tarifs) : vos devis et vos factures en ont besoin. Ce qui manque est signalé.",
+          "Complétez vos paramètres une fois (entreprise, assurances, tarifs) : vos devis et vos factures en ont besoin. Ce qui manque est signalé. Sur téléphone, ils sont derrière vos initiales, en haut à droite.",
       },
     ],
     lien: { href: "/installer", libelle: "Installer Compyo sur votre téléphone" },

@@ -23,6 +23,15 @@ import {
   IconeNote,
 } from "@/components/ui/Icones";
 
+// Refonte (03/10 — duel B, lot 3) : la 5e case de la barre du bas.
+//   "argent" : « Argent » remplace « Plus ». Devis, Factures et Bilan sont
+//              dans le pied de la page Argent ; les notes, dans la cloche
+//              (« Voir toutes les notes ») et dans le [+] (« Une note ou un
+//              rappel »). Sur ordinateur, Argent rejoint les destinations.
+//   "plus"   : retour à la feuille « Plus » (Argent, Devis, Factures,
+//              Notes, Bilan), sans rien d'autre à changer.
+const CINQUIEME_CASE: "argent" | "plus" = "argent";
+
 // ============================================================
 // La navigation de l'application (26/09 — « moins mais mieux », lot A).
 //
@@ -32,12 +41,11 @@ import {
 // au soleil, avec des gants (recherche-douleurs-artisans.md).
 //
 // Maintenant, sur téléphone, une barre fixe en bas de l'écran :
-//   Aujourd'hui · Projets · [+] · Planning · Plus
-// Le [+] ouvre la capture d'un nouveau projet ; c'est une action, pas une
-// destination. Sur une fiche projet, il ajoute à ce projet (voir
-// VueProjet.tsx, qui intercepte l'évènement « compyo:capture »).
-// « Plus » ouvre une feuille avec le reste : Devis, Factures, Notes,
-// Bilan.
+//   Aujourd'hui · Projets · [+] · Planning · Argent
+// Le [+] ouvre la capture d'un nouveau projet (ou d'une note) ; c'est une
+// action, pas une destination. Sur une fiche projet, il ajoute à ce
+// projet (voir VueProjet.tsx, qui intercepte l'évènement
+// « compyo:capture »). La 5e case : voir CINQUIEME_CASE ci-dessus.
 //
 // Refonte (03/10 — duel B, lot 1) : Paramètres, le guide et l'avis ne
 // servent pas tous les jours. Sur téléphone, ils passent derrière l'avatar
@@ -96,6 +104,12 @@ const SECONDAIRES = [
 function estActif(pathname: string, href: string) {
   return href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(`${href}/`);
 }
+
+// Argent est actif sur ses propres pages et sur celles de son pied : on
+// sait toujours où l'on est.
+const ARGENT = { href: "/dashboard/argent", label: "Argent", Icone: IconeFacture };
+const PAGES_ARGENT = ["/dashboard/argent", "/dashboard/devis", "/dashboard/factures", "/dashboard/bilan"];
+const argentActif = (pathname: string) => PAGES_ARGENT.some((h) => estActif(pathname, h));
 
 // Bloc "compte" en bas de la barre latérale (ordinateur) : identité,
 // actions courantes en une rangée, Paramètres · Guide · Avis à un clic,
@@ -250,24 +264,33 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             />
           </li>
           <li>
-            <button
-              type="button"
-              onClick={() => setPlusOuvert(true)}
-              aria-haspopup="dialog"
-              aria-expanded={plusOuvert}
-              className={`relative flex min-h-[4rem] w-full flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
-                plusActif ? "text-ink font-semibold" : "text-ink/55"
-              }`}
-            >
-              {plusActif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
-              <IconePoints className="h-[22px] w-[22px]" />
-              <span className="text-[11px]">Plus</span>
-            </button>
+            {CINQUIEME_CASE === "argent" ? (
+              <OngletBas
+                href={ARGENT.href}
+                label={ARGENT.label}
+                actif={argentActif(pathname)}
+                icone={<ARGENT.Icone taille={22} />}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setPlusOuvert(true)}
+                aria-haspopup="dialog"
+                aria-expanded={plusOuvert}
+                className={`relative flex min-h-[4rem] w-full flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
+                  plusActif ? "text-ink font-semibold" : "text-ink/55"
+                }`}
+              >
+                {plusActif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
+                <IconePoints className="h-[22px] w-[22px]" />
+                <span className="text-[11px]">Plus</span>
+              </button>
+            )}
           </li>
         </ul>
       </nav>
 
-      <Feuille ouverte={plusOuvert} titre="Plus" surFermer={() => setPlusOuvert(false)}>
+      <Feuille ouverte={CINQUIEME_CASE === "plus" && plusOuvert} titre="Plus" surFermer={() => setPlusOuvert(false)}>
         <ul className="flex flex-col">
           {SECONDAIRES.map((l) => (
             <li key={l.href}>
@@ -310,8 +333,8 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             </button>
           </div>
           <nav aria-label="Navigation principale" className="mt-3 flex flex-col gap-1 px-3">
-            {DESTINATIONS.map((lien) => {
-              const actif = estActif(pathname, lien.href);
+            {(CINQUIEME_CASE === "argent" ? [...DESTINATIONS, ARGENT] : DESTINATIONS).map((lien) => {
+              const actif = lien.href === ARGENT.href ? argentActif(pathname) : estActif(pathname, lien.href);
               return (
                 <Link
                   key={lien.href}
@@ -333,6 +356,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               );
             })}
           </nav>
+          {CINQUIEME_CASE === "plus" && (
           <nav aria-label="Autres pages" className="mt-4 mx-3 border-t border-white/10 pt-3 flex flex-col">
             {SECONDAIRES.map((lien) => {
               const actif = estActif(pathname, lien.href);
@@ -351,6 +375,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               );
             })}
           </nav>
+          )}
         </div>
 
         <BlocCompteSidebar nomArtisan={nomArtisan} onDeconnexion={handleLogout} />

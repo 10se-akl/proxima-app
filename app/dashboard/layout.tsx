@@ -3,6 +3,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { BoutonRetour } from "@/components/dashboard/BoutonRetour";
 import { PremierLancement } from "@/components/onboarding/PremierLancement";
+import { TutoPremierProjet } from "@/components/onboarding/TutoPremierProjet";
+import { IndiceDefilement } from "@/components/ui/IndiceDefilement";
 import { PopupRappel } from "@/components/notes/PopupRappel";
 import { getOrganisationId } from "@/lib/organisation";
 import { BandeauReseau } from "@/components/ui/BandeauReseau";
@@ -69,7 +71,11 @@ export default async function DashboardLayout({
         {children}
       </main>
       <BoutonRetour />
+      {/* 03/10 — le mini-tuto d'abord (une seule fois), puis l'écran
+          d'installation s'il y a lieu (il attend la fin du tuto). */}
+      <TutoPremierProjet />
       <PremierLancement />
+      <IndiceDefilement />
       {/* Pop-up de rappel (29/08) — montée une seule fois ici, tout en
           haut du dashboard, pour être active sur n'importe quelle page
           sans dépendre de laquelle est ouverte. Voir

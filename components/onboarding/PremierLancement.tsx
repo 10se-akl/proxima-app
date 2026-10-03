@@ -12,6 +12,7 @@ import {
   marquerInstallationDejaProposee,
 } from "@/lib/pwa/installPrompt";
 import { detecterPlateforme, type Plateforme } from "@/lib/pwa/plateforme";
+import { tutoDejaVu } from "@/components/onboarding/TutoPremierProjet";
 
 // ============================================================
 // "Premier contact sans friction" (27/08) — premier lancement, PAS un
@@ -72,9 +73,17 @@ export function PremierLancement() {
     }
 
     if (!dejaVu) {
-      setPlateforme(detecterPlateforme());
-      setModeIOS(estIOS());
-      setVisible(true);
+      const afficher = () => {
+        setPlateforme(detecterPlateforme());
+        setModeIOS(estIOS());
+        setVisible(true);
+      };
+      // 03/10 — jamais par-dessus le mini-tuto : on attend sa fin.
+      if (tutoDejaVu()) afficher();
+      else {
+        window.addEventListener("compyo:tuto-termine", afficher, { once: true });
+        return () => window.removeEventListener("compyo:tuto-termine", afficher);
+      }
     }
   }, []);
 

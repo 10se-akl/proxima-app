@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SECTIONS, lireCapture } from "@/lib/guide/contenu";
 import { CaptureAnnotee } from "./CaptureAnnotee";
+import { BoutonRevoirTuto } from "./BoutonRevoirTuto";
 
 // ============================================================
 // Le guide (27/09) — « comment l'utiliser, avec des flèches, des images »
@@ -22,6 +23,7 @@ export function VueGuide() {
         <p className="mt-2 text-[15px] leading-relaxed text-ink/65">
           Touchez un moment de votre journée pour voir comment faire, écran par écran.
         </p>
+        <BoutonRevoirTuto />
       </header>
 
       <nav aria-label="Sommaire du guide" className="mt-5">

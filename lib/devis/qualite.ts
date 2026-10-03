@@ -1,6 +1,6 @@
 import type { SourceDocumentDevis } from "@/lib/devis/modeleDocument";
 import { estEntrepreneurIndividuel } from "@/lib/devis/mentionsLegales";
-import type { MentionsLegales, ParametresEntreprise } from "@/types";
+import type { LigneDevisCalculee, MentionsLegales, ParametresEntreprise } from "@/types";
 import {
   estLigneAjustementMinimum,
   estUniteHeure,
@@ -50,6 +50,17 @@ const vide = (v: string | null | undefined) => !v || !v.trim();
 // ("Carrelage") peut suffire, c'est "Divers", "Travaux", "Prestation" qui
 // posent problème.
 const MOTS_VAGUES = /^(divers|travaux|prestation|prestations|forfait|fourniture|fournitures|main.?d.?oeuvre|autre|autres|supplément|supplements?)\b/i;
+
+// Le temps et son prix (21/09) : une journée au prix d'une heure, ou une
+// heure au prix d'une journée. Partagé par le score du devis (ci-dessous) et
+// par les lignes à revoir (lignesADoute), pour qu'ils ne divergent jamais.
+type TarifsTemps = Pick<ParametresEntreprise, "cout_horaire" | "cout_journalier">;
+
+const jourAuPrixHeure = (l: { unite: string; prix_unitaire: number }, t: TarifsTemps) =>
+  estUniteJour(l.unite) && l.prix_unitaire > 0 && l.prix_unitaire <= t.cout_horaire * 2;
+
+const heureAuPrixJour = (l: { unite: string; prix_unitaire: number }, t: TarifsTemps) =>
+  estUniteHeure(l.unite) && l.prix_unitaire >= t.cout_horaire * 4;
 
 function point(
   id: string,
@@ -252,26 +263,22 @@ export function evaluerDevis(
   if (tarifs && tarifs.cout_horaire > 0) {
     const mainOeuvre = lignes.filter((l) => l.categorie === "main_oeuvre" && !estLigneAjustementMinimum(l));
     const journee = tarifJournee(tarifs);
-    const jourAuPrixHeure = mainOeuvre.find(
-      (l) => estUniteJour(l.unite) && l.prix_unitaire > 0 && l.prix_unitaire <= tarifs.cout_horaire * 2
-    );
-    if (jourAuPrixHeure) {
+    const jourAuPrixHeureTrouve = mainOeuvre.find((l) => jourAuPrixHeure(l, tarifs));
+    if (jourAuPrixHeureTrouve) {
       lisibilite.push({
         id: "unite_prix",
         niveau: "attention",
         libelle: "Prix d'une heure sur une ligne en jours",
-        detail: `« ${jourAuPrixHeure.description.trim()} » est comptée en jours, à ${euros(jourAuPrixHeure.prix_unitaire)} l'unité : c'est le prix d'une heure. Une journée vous coûte ${euros(journee)}. Choisissez « jour » dans l'unité de la ligne : le prix se corrige tout seul.`,
+        detail: `« ${jourAuPrixHeureTrouve.description.trim()} » est comptée en jours, à ${euros(jourAuPrixHeureTrouve.prix_unitaire)} l'unité : c'est le prix d'une heure. Une journée vous coûte ${euros(journee)}. Choisissez « jour » dans l'unité de la ligne : le prix se corrige tout seul.`,
       });
     }
-    const heureAuPrixJour = mainOeuvre.find(
-      (l) => estUniteHeure(l.unite) && l.prix_unitaire >= tarifs.cout_horaire * 4
-    );
-    if (heureAuPrixJour) {
+    const heureAuPrixJourTrouvee = mainOeuvre.find((l) => heureAuPrixJour(l, tarifs));
+    if (heureAuPrixJourTrouvee) {
       lisibilite.push({
         id: "unite_prix_heure",
         niveau: "attention",
         libelle: "Prix d'une journée sur une ligne en heures",
-        detail: `« ${heureAuPrixJour.description.trim()} » est comptée en heures, à ${euros(heureAuPrixJour.prix_unitaire)} l'heure, alors que votre tarif horaire est de ${euros(tarifs.cout_horaire)}. Si c'est un prix à la journée, choisissez « jour » dans l'unité de la ligne.`,
+        detail: `« ${heureAuPrixJourTrouvee.description.trim()} » est comptée en heures, à ${euros(heureAuPrixJourTrouvee.prix_unitaire)} l'heure, alors que votre tarif horaire est de ${euros(tarifs.cout_horaire)}. Si c'est un prix à la journée, choisissez « jour » dans l'unité de la ligne.`,
       });
     }
   }
@@ -311,4 +318,47 @@ export function evaluerDevis(
     lisibilite,
     aVerifier: [...conformite, ...lisibilite].filter((p) => p.niveau !== "ok").length,
   };
+}
+
+// ============================================================
+// Les lignes à remettre sous les yeux de l'artisan (refonte du 03/10, duel F
+// lot 3) — sur téléphone, la revue du devis (components/devis/RevueDevis.tsx)
+// montre les lignes signalées en premier, avec UN mot d'alerte devant leur
+// détail.
+//
+// Un signal informe, il ne demande pas de tampon : aucune ligne n'a de case
+// « vérifié », et une liste sans signal est simplement une liste (jamais un
+// « rien d'inhabituel », qui rassurerait sans rien avoir vérifié).
+//
+// Une ligne porte au plus UN signal, le plus utile d'abord. Ne sont
+// signalés que des constats qu'on peut prouver (une quantité à 0, un prix à
+// 0, une journée au prix d'une heure) — pas des intuitions.
+// ============================================================
+
+export type SignalLigne = {
+  id: "quantite" | "prix" | "prix_a_verifier";
+  /** Le mot d'alerte, tel qu'il s'affiche devant le détail de la ligne. */
+  libelle: string;
+};
+
+type LigneARelire = Pick<LigneDevisCalculee, "description" | "categorie" | "quantite" | "unite" | "prix_unitaire">;
+
+/** Un signal (ou null) par ligne, dans l'ordre des lignes reçues. */
+export function lignesADoute(
+  lignes: LigneARelire[],
+  tarifs?: Pick<ParametresEntreprise, "cout_horaire" | "cout_journalier"> | null
+): (SignalLigne | null)[] {
+  return lignes.map((l) => {
+    // Calculée par Compyo pour atteindre le minimum d'heures : pas une
+    // saisie de l'artisan, rien à lui faire relire.
+    if (estLigneAjustementMinimum(l)) return null;
+    if (!(l.quantite > 0)) return { id: "quantite", libelle: "Quantité à saisir" };
+    if (!(l.prix_unitaire > 0)) return { id: "prix", libelle: "Prix à saisir" };
+    if (tarifs && tarifs.cout_horaire > 0 && l.categorie === "main_oeuvre") {
+      if (jourAuPrixHeure(l, tarifs) || heureAuPrixJour(l, tarifs)) {
+        return { id: "prix_a_verifier", libelle: "Prix à vérifier" };
+      }
+    }
+    return null;
+  });
 }

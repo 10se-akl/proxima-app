@@ -520,7 +520,7 @@ export default function NouveauProjetPage() {
                 <button
                   type="button"
                   onClick={dicter}
-                  className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+                  className="inline-flex min-h-12 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
                 >
                   <IconeMicro className="h-4 w-4 text-signal" /> Dicter
                 </button>

@@ -240,6 +240,13 @@ export default function ImporterCapturePage() {
     }
 
     const data = await res.json();
+    // Refonte (02/10, duel E lot 1) — une seule capture : on ouvre sa fiche
+    // (avec « Bien reçu » si le numéro est connu), plus la liste des projets.
+    const seul = data.resultats.length === 1 ? data.resultats[0] : null;
+    if (seul?.ok && seul.projetId) {
+      router.replace(`/dashboard/demandes/${seul.projetId}?cree=1`);
+      return;
+    }
     const nbReussis = data.resultats.filter((r: { ok: boolean }) => r.ok).length;
     const nbEchecs = data.resultats.length - nbReussis;
     setImportTermine({ nbReussis, nbEchecs });

@@ -13,6 +13,7 @@ import {
   type ProjetOuvertMatch,
 } from "@/components/dashboard/CorrespondanceProjetExistant";
 import type { BrouillonProjet } from "@/types";
+import { extraireTelephone } from "@/lib/clients/extraireTelephone";
 
 // ============================================================
 // "Premier contact sans friction" (26/08) — écran atteint après un partage
@@ -61,9 +62,31 @@ export default function RevuePartagePage() {
     rdv: RdvPropose;
   } | null>(null);
 
+  // Refonte (02/10, duel E lot 1) — si l'IA échoue, on ne renvoie plus
+  // vers un formulaire vide (le message partagé y était perdu) : la même
+  // revue s'affiche, déjà remplie du message d'origine et du numéro trouvé
+  // dedans. « Créer le projet » marche toujours (« Client à identifier »),
+  // « Réessayer » relance l'IA.
+  function brouillonDeSecours(texte: string): BrouillonProjet {
+    const telephone = extraireTelephone(texte);
+    return {
+      nomClient: { valeur: null, confiance: "absent" },
+      telephoneClient: { valeur: telephone, confiance: telephone ? "explicite" : "absent" },
+      adresseClient: { valeur: null, confiance: "absent" },
+      typeChantier: { valeur: "autre", confiance: "absent" },
+      resume: { valeur: texte.slice(0, 280), confiance: "absent" },
+      priorite: { valeur: "normal", confiance: "absent" },
+      rdvDate: { valeur: null, confiance: "absent" },
+      rdvHeure: { valeur: null, confiance: "absent" },
+      texteOrigine: texte,
+    };
+  }
+  const [texteEchec, setTexteEchec] = useState<string | null>(null);
+
   async function lancerAnalyseIA(texte: string) {
     setEtape("analyse");
     setErreur(null);
+    setTexteEchec(null);
     try {
       const reponse = await fetch("/api/ai/preparer-brouillon", {
         method: "POST",
@@ -73,7 +96,9 @@ export default function RevuePartagePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur(donnees.error || "L'analyse a échoué.");
+        setErreur("L'IA n'a pas pu lire le message. Vérifiez et créez le projet.");
+        setBrouillon(brouillonDeSecours(texte));
+        setTexteEchec(texte);
         setEtape("erreur");
         return;
       }
@@ -81,7 +106,9 @@ export default function RevuePartagePage() {
       setBrouillon(donnees.brouillon);
       setEtape("revue");
     } catch {
-      setErreur("Impossible de contacter l'IA pour le moment.");
+      setErreur("L'IA n'a pas répondu. Vérifiez et créez le projet.");
+      setBrouillon(brouillonDeSecours(texte));
+      setTexteEchec(texte);
       setEtape("erreur");
     }
   }
@@ -210,7 +237,7 @@ export default function RevuePartagePage() {
         setErreur(donnees.error || "Impossible d'ajouter le message au projet.");
         return;
       }
-      router.push(`/dashboard/demandes/${donnees.projetId}`);
+      router.replace(`/dashboard/demandes/${donnees.projetId}`);
     } catch {
       setAttachementEnCours(false);
       setErreur("Impossible de contacter le serveur pour le moment.");
@@ -253,7 +280,7 @@ export default function RevuePartagePage() {
         return;
       }
 
-      router.push(`/dashboard/demandes/${donnees.projetId}?cree=1`);
+      router.replace(`/dashboard/demandes/${donnees.projetId}?cree=1`);
     } catch {
       setErreur("Impossible d'enregistrer le projet pour le moment.");
       setEtape("revue");
@@ -327,6 +354,15 @@ export default function RevuePartagePage() {
           </div>
         )}
 
+        {brouillon && texteEchec && etape === "erreur" && (
+          <button
+            type="button"
+            onClick={() => lancerAnalyseIA(texteEchec)}
+            className="mb-4 min-h-12 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60"
+          >
+            Réessayer avec l&apos;IA
+          </button>
+        )}
         {brouillon && (etape === "revue" || etape === "creation" || etape === "erreur") && (
           <BrouillonProjetForm
             brouillon={brouillon}

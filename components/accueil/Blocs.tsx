@@ -63,6 +63,7 @@ export function LigneAccueil({
   repereAccent = false,
   principal,
   secondaire,
+  alerte,
   fin,
 }: {
   href: string;
@@ -70,6 +71,8 @@ export function LigneAccueil({
   repereAccent?: boolean;
   principal: string;
   secondaire?: string;
+  /** « Pas enregistré » : remplace le détail, en texte d'alerte (règle 13). */
+  alerte?: string;
   /** Un bouton à droite (Relancer, coche…), hors du lien. */
   fin?: ReactNode;
 }) {
@@ -90,7 +93,11 @@ export function LigneAccueil({
         )}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-base font-semibold text-ink">{principal}</span>
-          {secondaire && <span className="block truncate text-sm text-steel">{secondaire}</span>}
+          {alerte ? (
+            <span className="block truncate text-sm font-semibold text-signal-fonce dark:text-signal-clair">{alerte}</span>
+          ) : (
+            secondaire && <span className="block truncate text-sm text-steel">{secondaire}</span>
+          )}
         </span>
       </Link>
       {fin}

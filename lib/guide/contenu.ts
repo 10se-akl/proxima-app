@@ -193,9 +193,9 @@ export const SECTIONS: SectionGuide[] = [
     etapes: [
       {
         capture: "journee-maintenant",
-        alt: "L'accueil : la carte « Maintenant » et une question à confirmer.",
+        alt: "L'accueil : la carte « Maintenant », puis « Aujourd'hui » et « À régler ».",
         texte:
-          "Chaque jour, l'accueil vous dit quoi faire maintenant, et vous pose les questions en attente : un oui ou un non suffit.",
+          "Chaque jour, l'accueil vous dit quoi faire maintenant. Dessous : ce qui vous attend aujourd'hui, puis ce qui reste « À régler » d'un geste.",
       },
       {
         capture: "journee-rappel",
@@ -204,9 +204,9 @@ export const SECTIONS: SectionGuide[] = [
       },
       {
         capture: "journee-soir",
-        alt: "Le soir, la carte « Fermer la journée ».",
+        alt: "Le bloc « À régler » : une ligne avec ✓ et « Demain ».",
         texte:
-          "Le soir, « Fermer la journée » : ce qui reste est ① fait, ou ② repoussé à demain, en un geste.",
+          "Ce qui est passé sans réponse attend dans « À régler » : ① fait, ou ② demain (un rendez-vous : « Pas fait », pour le déplacer et prévenir le client). Le soir, quand tout est réglé, l'écran vous le dit.",
       },
     ],
   },

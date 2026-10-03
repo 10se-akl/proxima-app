@@ -1,156 +1,175 @@
 import Link from "next/link";
-import { AConfirmer } from "@/components/dashboard/AConfirmer";
-import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureProjet";
-import { BlocAccueil, FinRelancer, LigneAccueil, LIGNES_MAX } from "./Blocs";
-import type { LigneEnAttente } from "@/lib/argent";
+import { IconeCoche } from "@/components/projet/icones";
+import { FinRelancer, LigneAccueil } from "./Blocs";
+import { BlocDepliable } from "./BlocDepliable";
 import { ListeAujourdhui, type ElementJour } from "./ListeAujourdhui";
+import { ARegler, type ElementARegler } from "./ARegler";
+import { TraceAccueil } from "./TraceAccueil";
 import { BoutonCapture } from "./BoutonCapture";
-import { FermerJournee, type Fermeture } from "./FermerJournee";
 import { RafraichirAuRetour } from "./RafraichirAuRetour";
 
 // ============================================================
-// L'affichage de l'accueil (26/09, lot B) — les cinq blocs, sans aucune
-// requête : app/dashboard/page.tsx calcule, ce composant montre. Voir la
-// page pour l'ordre et les règles de chaque bloc.
+// L'affichage de l'accueil, sans aucune requête : app/dashboard/page.tsx
+// calcule, ce composant montre.
+//
+// Refonte (03/10 — duel C, lot 4) : devant / derrière. Quatre blocs au
+// plus, cinq lignes chacun, puis « Voir les N » :
+//   0. l'en-tête : la date, « Bonjour » (« Bonsoir » dès 17 h) ;
+//   1. Maintenant (la seule carte sombre, un lien) — ou, dès 17 h, quand
+//      rien n'est ni devant ni derrière, « Tout est réglé. » et demain ;
+//   2. Aujourd'hui (devant) ;
+//   3. À régler (derrière) ;
+//   4. À suivre (les dossiers qui attendent un geste : cadrer, chiffrer,
+//      relire, envoyer, relancer).
+// Sur ordinateur, deux colonnes : à gauche 1 à 3, à droite À suivre.
+// Le bilan chiffré du soir a quitté l'accueil.
 // ============================================================
 
-export type ActionAccueil = { id: string; texte: string; detail?: string; href: string };
-
-type EvenementAConfirmer = {
+export type ActionAccueil = {
   id: string;
-  titre: string;
-  demande_id: string | null;
-  date_heure: string;
-  demandes?: { nom_client?: string } | null;
+  texte: string;
+  detail?: string;
+  href: string;
+  /** L'adresse du rendez-vous : « Y aller » ouvre l'itinéraire. */
+  adresse?: string | null;
 };
 
-export type LigneAProduire = { id: string; href: string; nom: string; verbe: string };
+export type LigneASuivre = {
+  cle: string;
+  id: string;
+  /** Le repère à gauche : « 12 j », ou l'heure d'un message reçu. */
+  repere: string;
+  principal: string;
+  secondaire: string;
+  /** Ce que Maintenant dit de faire, s'il la prend (« Relancer M. Petit »). */
+  action: string;
+  href: string;
+  relance?: string | null;
+};
 
 export function VueAccueil({
   dateDuJour,
   titre,
   premierProjet,
-  prochaineAction,
-  fermeture = null,
-  aConfirmer,
-  chantiersAConfirmer,
-  elementsJour,
-  aProduire,
-  enAttente,
-  rienAFaire,
+  maintenant,
+  repos,
+  rienDUrgent,
+  demain,
+  aujourdhui,
+  aRegler,
+  aSuivre,
 }: {
   dateDuJour: string;
   titre: string;
   premierProjet: boolean;
-  prochaineAction: ActionAccueil | null;
-  /** Le soir (lot E) : « Fermer la journée » à la place de « Maintenant ». */
-  fermeture?: Fermeture | null;
-  aConfirmer: EvenementAConfirmer[];
-  chantiersAConfirmer: { id: string; nom_client: string }[];
-  elementsJour: ElementJour[];
-  aProduire: LigneAProduire[];
-  enAttente: LigneEnAttente[];
-  rienAFaire: boolean;
+  maintenant: ActionAccueil | null;
+  /** Dès 17 h, plus rien devant ni derrière : « Tout est réglé. ». */
+  repos: boolean;
+  /** Avant 17 h, rien du tout : « Rien d'urgent. ». */
+  rienDUrgent: boolean;
+  /** Le premier rendez-vous de demain, déjà mis en forme. */
+  demain: string | null;
+  aujourdhui: ElementJour[];
+  aRegler: ElementARegler[];
+  aSuivre: LigneASuivre[];
 }) {
-  const nbAConfirmer = aConfirmer.length + chantiersAConfirmer.length;
+  // Le haut de l'écran : une seule chose à la fois.
+  const haut = maintenant ? (
+    <Maintenant action={maintenant} />
+  ) : repos ? (
+    <Repos demain={demain} />
+  ) : premierProjet ? (
+    <div className="mt-8 flex flex-col items-start gap-5">
+      <p className="text-base text-steel">Votre premier projet commence ici.</p>
+      <BoutonCapture />
+    </div>
+  ) : rienDUrgent ? (
+    <div className="mt-6">
+      <p className="text-base text-steel">Rien d&apos;urgent.</p>
+      <p className="mt-1 truncate text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</p>
+    </div>
+  ) : null;
+
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
+    <div className="max-w-2xl px-4 pb-8 pt-5 sm:p-8 lg:max-w-5xl">
       <RafraichirAuRetour />
       <header>
-        <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-steel">{dateDuJour}</p>
-        <h1 className="mt-1 font-display text-[1.6rem] font-semibold leading-tight text-ink sm:text-3xl">
-          {titre}
-        </h1>
+        <p className="text-xs text-steel first-letter:uppercase">{dateDuJour}</p>
+        <h1 className="mt-1 font-display text-3xl font-semibold text-ink">{titre}</h1>
       </header>
 
-      {/* 1. Maintenant — la seule suggestion de l'accueil. Le soir :
-          Fermer la journée. */}
-      {fermeture ? <FermerJournee fermeture={fermeture} /> : prochaineAction && <Maintenant action={prochaineAction} />}
-
-      {/* 2. À confirmer — des questions oui / non. */}
-      {nbAConfirmer > 0 && (
-        <section className="mt-7" aria-label="À confirmer">
-          <h2 className="flex items-baseline gap-2 font-display text-[17px] font-semibold text-ink">
-            À confirmer
-            <span className="font-sans text-[13px] font-normal tabular-nums text-steel">{nbAConfirmer}</span>
-          </h2>
-          {/* Refonte (02/10) — 5 lignes au plus, comme les autres blocs : après
-              une semaine sans répondre, ce bloc poussait tout le reste hors
-              de l'écran. Les suivantes arrivent à mesure qu'on répond. */}
-          <div className="mt-2.5 flex flex-col gap-2">
-            <AConfirmer evenements={aConfirmer.slice(0, LIGNES_MAX)} integre />
-            <ConfirmerClotureProjet
-              projets={chantiersAConfirmer.slice(0, Math.max(0, LIGNES_MAX - aConfirmer.length))}
-              integre
-            />
-          </div>
-          {nbAConfirmer > LIGNES_MAX && (
-            <p className="mt-2 text-sm text-steel">Et {nbAConfirmer - LIGNES_MAX} de plus.</p>
-          )}
-        </section>
-      )}
-
-      {/* 3. Aujourd'hui */}
-      <ListeAujourdhui elements={elementsJour} />
-
-      {/* 4. À faire de votre côté */}
-      {aProduire.length > 0 && (
-        <BlocAccueil titre="À faire de votre côté" nombre={aProduire.length} lienTous="/dashboard/demandes">
-          {aProduire.slice(0, LIGNES_MAX).map((l) => (
-            <LigneAccueil
-              key={l.id}
-              href={l.href}
-              principal={l.nom}
-              secondaire={l.verbe}
-            />
-          ))}
-        </BlocAccueil>
-      )}
-
-      {/* 5. En attente du client. Refonte (03/10) : « Voir les N » mène à
-          Argent, qui a toutes les lignes (avant : la liste des devis, même
-          pour une facture). */}
-      {enAttente.length > 0 && (
-        <BlocAccueil titre="En attente du client" nombre={enAttente.length} lienTous="/dashboard/argent">
-          {enAttente.slice(0, LIGNES_MAX).map((l) => (
-            <LigneAccueil
-              key={l.id}
-              href={l.href}
-              repere={`${l.jours} j`}
-              principal={l.nom}
-              secondaire={l.quoi}
-              fin={l.relance ? <FinRelancer href={l.relance} /> : undefined}
-            />
-          ))}
-        </BlocAccueil>
-      )}
-
-      {rienAFaire && (
-        <div className="mt-10 flex flex-col items-start gap-5">
-          <p className="font-display text-xl text-ink/70">
-            {premierProjet ? "Votre premier projet commence ici." : "Rien d'urgent."}
-          </p>
-          <BoutonCapture />
+      <div className="lg:grid lg:grid-cols-2 lg:items-start lg:gap-x-10">
+        <div className="min-w-0">
+          {haut}
+          {/* Toujours monté, même vide : la trace du dernier geste et les
+              feuilles ouvertes survivent au recalcul de l'accueil. */}
+          <TraceAccueil>
+            <ListeAujourdhui elements={aujourdhui} />
+            <ARegler elements={aRegler} />
+          </TraceAccueil>
         </div>
+
+        <div className="min-w-0">
+          {aSuivre.length > 0 && (
+            <BlocDepliable
+              titre="À suivre"
+              lignes={aSuivre.map((l) => (
+                <LigneAccueil
+                  key={l.cle}
+                  href={l.href}
+                  repere={l.repere}
+                  principal={l.principal}
+                  secondaire={l.secondaire}
+                  fin={l.relance ? <FinRelancer href={l.relance} /> : undefined}
+                />
+              ))}
+            />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** La seule carte sombre de l'application : un lien, jamais une coche. */
+function Maintenant({ action }: { action: ActionAccueil }) {
+  return (
+    <div className="mt-5 flex min-h-[4.5rem] items-stretch overflow-hidden rounded-2xl bg-ink text-paper">
+      <Link
+        href={action.href}
+        className="flex min-w-0 flex-1 items-center px-5 py-4 active:bg-paper/10 sm:hover:bg-paper/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-paper"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm text-paper/70">Maintenant</span>
+          <span className="mt-0.5 block truncate text-xl font-semibold">{action.texte}</span>
+          {action.detail && <span className="block truncate text-sm text-paper/70">{action.detail}</span>}
+        </span>
+      </Link>
+      {action.adresse && (
+        <a
+          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(action.adresse)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex shrink-0 items-center border-l border-paper/20 px-4 text-base font-semibold text-paper active:bg-paper/10 sm:hover:bg-paper/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-paper"
+        >
+          Y aller
+        </a>
       )}
     </div>
   );
 }
 
-function Maintenant({ action }: { action: ActionAccueil }) {
+/** « Tout est réglé. » : un état vrai, jamais un geste (règle 16). */
+function Repos({ demain }: { demain: string | null }) {
   return (
-    <Link
-      href={action.href}
-      className="mt-5 flex min-h-[4.5rem] items-center gap-3 rounded-2xl bg-ink px-5 py-4 text-paper transition hover:bg-ink/90"
-    >
-      <span className="min-w-0 flex-1">
-        <span className="block font-mono text-[10.5px] uppercase tracking-[0.2em] text-paper/55">Maintenant</span>
-        <span className="mt-0.5 block truncate text-[17px] font-semibold">{action.texte}</span>
-        {action.detail && <span className="block truncate text-[13.5px] text-paper/65">{action.detail}</span>}
+    <section aria-label="Tout est réglé" className="mt-6 flex items-start gap-4">
+      <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
+        <IconeCoche className="h-6 w-6" />
       </span>
-      <span aria-hidden className="text-xl text-paper/50">
-        →
+      <span className="min-w-0">
+        <span className="block font-display text-3xl font-semibold text-ink">Tout est réglé.</span>
+        <span className="mt-1 block truncate text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</span>
       </span>
-    </Link>
+    </section>
   );
 }

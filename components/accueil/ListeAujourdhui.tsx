@@ -1,27 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { marquerNoteTerminee } from "@/lib/notes";
-import { IconeCoche } from "@/components/projet/icones";
-import { BlocAccueil, LigneAccueil, LIGNES_MAX } from "./Blocs";
+import { changerStatutEvenement } from "@/components/planning/actionsEvenement";
+import { LigneAccueil } from "./Blocs";
+import { BlocAvecTrace, FinCoche, FinMot, useTraceAccueil } from "./TraceAccueil";
 
 // ============================================================
-// « Aujourd'hui » (26/09, lot B) — une seule liste, triée par heure, à la
-// place de trois blocs qui répondaient à la même question (notes en
-// retard, notes du jour, rappels) et d'un quatrième (rendez-vous).
-// Ce qui est en retard passe en tête, avec sa pastille. Une note se coche
-// directement sur la ligne.
+// « Aujourd'hui » (26/09, lot B) — une seule liste, triée par heure.
+//
+// Refonte (03/10 — duel C, lot 4) : c'est « devant ». Seulement ce dont
+// l'heure n'est pas passée : un rendez-vous, une tâche, une note avec
+// rappel. Un rendez-vous fini depuis moins d'une heure y reste, en tête ;
+// au-delà, il passe dans « À régler ». Ce qui est passé (notes en retard
+// comprises) vit dans « À régler », jamais aux deux endroits.
+// Les notes ET les tâches se cochent sur la ligne ; « Annuler » les remet
+// à faire (les mêmes écritures que la fiche et le planning).
 // ============================================================
 
 export type ElementJour = {
   cle: string;
   genre: "note" | "rdv" | "tache";
-  /** L'identifiant de la note, pour la cocher. */
-  noteId?: string;
+  /** L'identifiant de la note ou de l'événement. */
+  id: string;
   date: string;
-  enRetard: boolean;
   principal: string;
   secondaire?: string;
   href: string;
@@ -31,57 +33,46 @@ const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour:
 
 export function ListeAujourdhui({ elements }: { elements: ElementJour[] }) {
   const supabase = createClient();
-  const router = useRouter();
-  const [faites, setFaites] = useState<Set<string>>(new Set());
-  const [erreur, setErreur] = useState(false);
+  const { masques, erreurs, enCours, faire } = useTraceAccueil();
+  const visibles = elements.filter((e) => !masques.has(e.cle));
 
-  async function cocher(noteId: string) {
-    setErreur(false);
-    setFaites((s) => new Set(s).add(noteId));
-    const ok = await marquerNoteTerminee(supabase, noteId, true);
-    if (!ok) {
-      // La note revient si l'enregistrement a échoué : rien ne disparaît à tort.
-      setFaites((s) => {
-        const n = new Set(s);
-        n.delete(noteId);
-        return n;
-      });
-      setErreur(true);
-      return;
-    }
-    router.refresh();
+  function cocher(e: ElementJour) {
+    const estNote = e.genre === "note";
+    void faire({
+      bloc: "aujourdhui",
+      cle: e.cle,
+      texte: `Fait : ${e.principal}`,
+      ecrire: () => (estNote ? marquerNoteTerminee(supabase, e.id, true) : changerStatutEvenement(supabase, e.id, "termine")),
+      annuler: () => (estNote ? marquerNoteTerminee(supabase, e.id, false) : changerStatutEvenement(supabase, e.id, "a_faire")),
+    });
   }
 
-  const visibles = elements.filter((e) => !(e.noteId && faites.has(e.noteId)));
-  if (visibles.length === 0) return null;
-
   return (
-    <BlocAccueil titre="Aujourd'hui" nombre={visibles.length} lienTous="/dashboard/planning">
-      {erreur && <p className="text-[13px] text-signal-fonce dark:text-signal-clair">Pas enregistré. Réessayez.</p>}
-      {visibles.slice(0, LIGNES_MAX).map((e) => (
-        <LigneAccueil
-          key={e.cle}
-          href={e.href}
-          repere={e.enRetard ? "Retard" : HEURE.format(new Date(e.date)).replace(":", "h")}
-          repereAccent={e.enRetard}
-          principal={e.principal}
-          secondaire={e.secondaire}
-          fin={
-            e.noteId ? (
-              <button
-                type="button"
-                onClick={() => cocher(e.noteId!)}
-                aria-label={`Fait : ${e.principal}`}
-                className="group grid w-14 shrink-0 place-items-center border-l border-ink/[0.07] focus-visible:outline-none"
-              >
-                <span className="grid h-7 w-7 place-items-center rounded-full border-[1.5px] border-ink/25 text-transparent transition group-hover:border-succes group-hover:text-succes group-focus-visible:ring-2 group-focus-visible:ring-signal/50">
-                  <IconeCoche className="h-4 w-4" />
-                </span>
-              </button>
-            ) : undefined
-          }
-        />
-      ))}
-    </BlocAccueil>
+    <BlocAvecTrace
+      bloc="aujourdhui"
+      titre="Aujourd'hui"
+      lienTous="/dashboard/planning"
+      lignes={visibles.map((e) => {
+        const reessayer = erreurs.get(e.cle);
+        const cochable = e.genre !== "rdv";
+        return (
+          <LigneAccueil
+            key={e.cle}
+            href={e.href}
+            repere={HEURE.format(new Date(e.date)).replace(":", "h")}
+            principal={e.principal}
+            secondaire={e.secondaire}
+            alerte={reessayer ? "Pas enregistré" : undefined}
+            fin={
+              reessayer ? (
+                <FinMot libelle="Réessayer" surClic={reessayer} occupe={enCours !== null} />
+              ) : cochable ? (
+                <FinCoche libelle={e.principal} surFait={() => cocher(e)} occupe={enCours !== null} />
+              ) : undefined
+            }
+          />
+        );
+      })}
+    />
   );
 }

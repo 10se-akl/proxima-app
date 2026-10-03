@@ -13,6 +13,58 @@ import { Avatar } from "@/components/ui/Avatar";
 import { vibrer, vibrerEchec } from "@/lib/retour";
 
 type ProjetAConfirmer = { id: string; nom_client: string };
+type Client = ReturnType<typeof createClient>;
+
+/** « Oui, chantier terminé » : le projet passe à terminé, ses rendez-vous
+ *  prévus jusqu'à ce soir passent faits, et le carnet le note. Vrai si le
+ *  projet a bien été clos. Refonte (03/10) : partagé avec « À régler »
+ *  (components/accueil/ARegler.tsx). */
+export async function cloturerChantier(supabase: Client, projetId: string): Promise<boolean> {
+  const { data, error } = await supabase
+    .from("demandes")
+    .update({ statut: "termine", termine_le: new Date().toISOString() })
+    .eq("id", projetId)
+    .select("id");
+  if (error || !data || data.length === 0) return false;
+  // 27/09 — Le planning suit (voir actionsEvenement.ts).
+  await marquerRendezVousDuChantierFaits(supabase, projetId);
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (user) {
+    const organisationId = await getOrganisationId(supabase, user.id);
+    if (organisationId) {
+      await enregistrerEvenement(supabase, {
+        demandeId: projetId,
+        artisanId: user.id,
+        organisationId,
+        type: "chantier_termine",
+        titre: "Chantier terminé",
+      });
+    }
+  }
+  return true;
+}
+
+/** « Pas encore » : une trace (masquée au carnet) ; la question ne revient
+ *  qu'après un nouveau rendez-vous fait. Vrai si la trace est écrite. */
+export async function noterChantierPasTermine(supabase: Client, projetId: string): Promise<boolean> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const organisationId = user ? await getOrganisationId(supabase, user.id) : null;
+  return (
+    !!user &&
+    !!organisationId &&
+    (await enregistrerEvenement(supabase, {
+      demandeId: projetId,
+      artisanId: user.id,
+      organisationId,
+      type: "chantier_pas_termine",
+      titre: "Chantier pas encore terminé",
+    }))
+  );
+}
 
 // Filet de sécurité pour la question "le chantier est-il aussi terminé ?"
 // posée juste après avoir confirmé un rendez-vous fait (voir AConfirmer).
@@ -41,35 +93,14 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
   async function marquerTermine(p: ProjetAConfirmer) {
     setEnCours(p.id);
     setErreurId(null);
-    const { data, error } = await supabase
-      .from("demandes")
-      .update({ statut: "termine", termine_le: new Date().toISOString() })
-      .eq("id", p.id)
-      .select("id");
-
-    if (error || !data || data.length === 0) {
+    const ok = await cloturerChantier(supabase, p.id);
+    if (!ok) {
+      vibrerEchec();
       setEnCours(null);
       setErreurId(p.id);
       return;
     }
-    // 27/09 — Le planning suit (voir actionsEvenement.ts).
-    await marquerRendezVousDuChantierFaits(supabase, p.id);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
-      const organisationId = await getOrganisationId(supabase, user.id);
-      if (organisationId) {
-        await enregistrerEvenement(supabase, {
-          demandeId: p.id,
-          artisanId: user.id,
-          organisationId,
-          type: "chantier_termine",
-          titre: "Chantier terminé",
-        });
-      }
-    }
+    vibrer();
     setEnCours(null);
     setTraites((s) => new Set(s).add(p.id));
     router.refresh();
@@ -82,20 +113,7 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
   async function pasEncore(p: ProjetAConfirmer) {
     setEnCours(p.id);
     setErreurId(null);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    const organisationId = user ? await getOrganisationId(supabase, user.id) : null;
-    const ok =
-      !!user &&
-      !!organisationId &&
-      (await enregistrerEvenement(supabase, {
-        demandeId: p.id,
-        artisanId: user.id,
-        organisationId,
-        type: "chantier_pas_termine",
-        titre: "Chantier pas encore terminé",
-      }));
+    const ok = await noterChantierPasTermine(supabase, p.id);
     setEnCours(null);
     if (!ok) {
       vibrerEchec();

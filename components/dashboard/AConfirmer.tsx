@@ -12,6 +12,11 @@ import { Button } from "@/components/ui/Button";
 import { Avatar } from "@/components/ui/Avatar";
 import { FeuilleDeplacer, type EvenementADeplacer } from "@/components/planning/FeuilleDeplacer";
 import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/FeuilleMessageClient";
+import { vibrer, vibrerEchec } from "@/lib/retour";
+
+// Refonte (03/10 — duel C lot 4) : l'accueil n'utilise plus ce composant ;
+// « À régler » (components/accueil/ARegler.tsx) le remplace. Il reste
+// disponible tel quel pour un autre écran.
 
 type EvenementAConfirmer = {
   id: string;
@@ -67,9 +72,11 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
     setTraitementId(null);
 
     if (error || !data || data.length === 0) {
+      vibrerEchec();
       setErreurId(e.id);
       return;
     }
+    vibrer();
 
     if (e.demande_id) {
       setProposerCloture((s) => new Set(s).add(e.id));

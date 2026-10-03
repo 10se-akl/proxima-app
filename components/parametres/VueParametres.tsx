@@ -39,9 +39,14 @@ type Groupe = "entreprise" | "mentions" | "assurances" | "paiement" | "tarifs" |
 export function VueParametres({
   initial,
   organisationId,
+  estProprietaire = true,
+  nomProprietaire = null,
 }: {
   initial: FormState | null;
   organisationId: string | null;
+  /** Refonte (03/10, duel A) : seul le propriétaire change un IBAN ou un BIC déjà saisi. */
+  estProprietaire?: boolean;
+  nomProprietaire?: string | null;
 }) {
   const supabase = createClient();
 
@@ -164,20 +169,39 @@ export function VueParametres({
       return;
     }
 
-    const resultat = await enregistrerParametres(supabase, { organisationId, artisanId: user.id, form });
+    // Refonte (03/10, duel A) — un IBAN ou un BIC déjà saisi, en lecture
+    // seule pour les autres que le propriétaire, n'est pas renvoyé du tout :
+    // l'enregistrement ne le touche donc jamais (la base refuserait, Module
+    // 52), même si un brouillon ancien en gardait une autre valeur.
+    const { iban, bic, ...reste } = form;
+    const envoye = {
+      ...reste,
+      ...(ibanVerrouille ? {} : { iban }),
+      ...(bicVerrouille ? {} : { bic }),
+    } as FormState;
+    const sauve: FormState = {
+      ...form,
+      ...(ibanVerrouille ? { iban: enregistre.iban } : {}),
+      ...(bicVerrouille ? { bic: enregistre.bic } : {}),
+    };
+
+    const resultat = await enregistrerParametres(supabase, { organisationId, artisanId: user.id, form: envoye });
     setEnregistrement(false);
     if (resultat.erreur) {
       setErreur(resultat.erreur);
       return;
     }
-    setEnregistre(form);
-    setBaseBrouillon(empreinte(form));
+    setForm(sauve);
+    setEnregistre(sauve);
+    setBaseBrouillon(empreinte(sauve));
     setRetrouve(null);
     effacerBrouillon(cleBrouillon);
     setConfirme(true);
   }
 
   const manques = aCompleter(enregistre);
+  const ibanVerrouille = !estProprietaire && Boolean(enregistre.iban?.trim());
+  const bicVerrouille = !estProprietaire && Boolean(enregistre.bic?.trim());
   const basculer = (g: Groupe) => {
     setErreur(null);
     setConfirme(false);
@@ -471,14 +495,27 @@ export function VueParametres({
                 placeholder="Ex : virement, chèque"
               />
               <div className="hidden sm:block" />
-              <Field
-                label="IBAN (affiché sur les factures)"
-                value={form.iban ?? ""}
-                onChange={update("iban")}
-                placeholder="FR76 0000 0000 0000 0000 0000 000"
-              />
-              <Field label="BIC" value={form.bic ?? ""} onChange={update("bic")} />
+              {ibanVerrouille ? (
+                <ValeurFigee libelle="IBAN (affiché sur les factures)" valeur={enregistre.iban ?? ""} />
+              ) : (
+                <Field
+                  label="IBAN (affiché sur les factures)"
+                  value={form.iban ?? ""}
+                  onChange={update("iban")}
+                  placeholder="FR76 0000 0000 0000 0000 0000 000"
+                />
+              )}
+              {bicVerrouille ? (
+                <ValeurFigee libelle="BIC" valeur={enregistre.bic ?? ""} />
+              ) : (
+                <Field label="BIC" value={form.bic ?? ""} onChange={update("bic")} />
+              )}
             </div>
+            {(ibanVerrouille || bicVerrouille) && (
+              <p className="mt-3 text-sm text-steel">
+                {nomProprietaire ? `Seul ${nomProprietaire} peut les changer.` : "Seule la personne qui a ouvert le compte peut les changer."}
+              </p>
+            )}
             {piedFormulaire}
           </>
         )}
@@ -629,6 +666,18 @@ export function VueParametres({
           </>
         )}
       </div>
+    </div>
+  );
+}
+
+// Une valeur affichée sans pouvoir la modifier (IBAN, BIC pour l'équipe).
+function ValeurFigee({ libelle, valeur }: { libelle: string; valeur: string }) {
+  return (
+    <div>
+      <p className="mb-1.5 block text-xs font-medium text-ink/70">{libelle}</p>
+      <p className="flex min-h-12 items-center break-all rounded-xl bg-ink/[0.04] px-3 font-mono text-sm text-ink">
+        {valeur}
+      </p>
     </div>
   );
 }

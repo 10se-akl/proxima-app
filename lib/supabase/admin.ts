@@ -16,6 +16,14 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 //     profil) ; rejoindre exige une session ouverte par un lien reçu dans
 //     cette boîte mail. Le mot de passe éventuel passe tel quel à
 //     Supabase Auth, jamais stocké ni journalisé.
+//   - app/api/notifications/abonner (refonte 03/10) : le Module 52 retire
+//     toute écriture d'abonnement push au navigateur (F10). La route écrit
+//     au nom de l'utilisateur vérifié, pour son entreprise, avec des
+//     champs bornés ; même upsert sur l'endpoint (ordinateur partagé).
+//   - app/api/devis-public/[id]/repondre (refonte 03/10) : le Module 52
+//     réserve repondre_devis_public au serveur (F11), pour que l'IP et le
+//     navigateur de la signature viennent de la route et non de
+//     l'appelant. La fonction valide elle-même tout l'état du devis.
 //   - lib/notifications/push.ts               (appelée par les crons
 //     seulement, avec leur client admin : retrouver le destinataire actif)
 //   - lib/limiteIA.ts                         (comptage seul, sur un

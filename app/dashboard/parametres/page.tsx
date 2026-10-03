@@ -19,7 +19,12 @@ import { SquelettePage } from "@/components/ui/Skeleton";
 //     alors écrasé les vrais paramètres de l'artisan.
 // Dans les deux cas : un message et « Réessayer ».
 export default function ParametresPage() {
-  const [etat, setEtat] = useState<{ form: FormulaireParametres | null; organisationId: string | null } | null>(null);
+  const [etat, setEtat] = useState<{
+    form: FormulaireParametres | null;
+    organisationId: string | null;
+    estProprietaire: boolean;
+    nomProprietaire: string | null;
+  } | null>(null);
   const [erreur, setErreur] = useState(false);
 
   const charger = useCallback(async () => {
@@ -39,7 +44,7 @@ export default function ParametresPage() {
       // dans supabase/schema.sql.
       const { data: membership, error: erreurMembre } = await supabase
         .from("memberships")
-        .select("organisation_id")
+        .select("organisation_id, role")
         .eq("user_id", user.id)
         .maybeSingle();
       if (erreurMembre) {
@@ -48,8 +53,29 @@ export default function ParametresPage() {
       }
 
       if (!membership) {
-        setEtat({ form: null, organisationId: null });
+        setEtat({ form: null, organisationId: null, estProprietaire: false, nomProprietaire: null });
         return;
+      }
+
+      // Refonte (03/10, duel A) — seul le propriétaire change un IBAN ou un
+      // BIC déjà saisi (la base le refuse aux autres, Module 52). Pour les
+      // autres, l'écran montre ces deux valeurs en lecture seule et dit qui
+      // peut les changer, par son nom : aucun mot de rôle n'est affiché.
+      const estProprietaire = membership.role === "proprietaire";
+      let nomProprietaire: string | null = null;
+      if (!estProprietaire) {
+        const { data: proprietaire } = await supabase
+          .from("memberships")
+          .select("user_id")
+          .eq("organisation_id", membership.organisation_id)
+          .eq("role", "proprietaire")
+          .order("created_at", { ascending: true })
+          .limit(1)
+          .maybeSingle();
+        if (proprietaire) {
+          const { data: profil } = await supabase.from("profils").select("nom").eq("id", proprietaire.user_id).maybeSingle();
+          nomProprietaire = profil?.nom?.trim() || null;
+        }
       }
 
       const { data, error } = await supabase
@@ -69,6 +95,8 @@ export default function ParametresPage() {
       setEtat({
         form: data ? { ...PARAMETRES_PAR_DEFAUT, ...(data as Partial<FormulaireParametres>) } : null,
         organisationId: membership.organisation_id,
+        estProprietaire,
+        nomProprietaire,
       });
     } catch {
       setErreur(true);
@@ -85,5 +113,12 @@ export default function ParametresPage() {
   if (!etat) {
     return <SquelettePage />;
   }
-  return <VueParametres initial={etat.form} organisationId={etat.organisationId} />;
+  return (
+    <VueParametres
+      initial={etat.form}
+      organisationId={etat.organisationId}
+      estProprietaire={etat.estProprietaire}
+      nomProprietaire={etat.nomProprietaire}
+    />
+  );
 }

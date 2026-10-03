@@ -250,7 +250,7 @@ export function ContenuMessageClient({
           <p className="text-[12.5px] font-medium uppercase tracking-wide text-steel">{LIBELLES[s.cle]}</p>
           <p className="mt-1 text-[15px] leading-snug text-ink">
             {/* À l'écran seulement : « 1 250,00 € » ne se coupe pas en fin de ligne. */}
-            {premierePhrase(s.texte).replace(/(\d) (?=\d{3}\b|€)/g, "$1\u00a0")}
+            {premierePhrase(s.texte, s.cle === "decalage" && demande?.nouvelleDate ? 2 : 1).replace(/(\d) (?=\d{3}\b|€)/g, "$1\u00a0")}
           </p>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {(["sms", "whatsapp"] as const).map((canal) => (

@@ -295,9 +295,15 @@ export function suggererMessages(
 }
 
 /** La première phrase d'un message, pour que l'artisan sache ce qu'il
- *  envoie sans tout lire. */
-export function premierePhrase(texte: string): string {
+ *  envoie sans tout lire. Avec `phrases = 2` (refonte 02/10 : un décalage
+ *  dont la nouvelle date est dans la deuxième phrase), les deux premières. */
+export function premierePhrase(texte: string, phrases = 1): string {
   const ligne = texte.split("\n")[0];
-  const fin = ligne.search(/[.?!](\s|$)/);
-  return fin === -1 ? ligne : ligne.slice(0, fin + 1);
+  let fin = -1;
+  for (let i = 0; i < phrases; i++) {
+    const suite = ligne.slice(fin + 1).search(/[.?!](\s|$)/);
+    if (suite === -1) return ligne;
+    fin += suite + 1;
+  }
+  return ligne.slice(0, fin + 1);
 }

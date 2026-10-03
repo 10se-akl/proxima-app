@@ -253,3 +253,88 @@ Arbitrage complet : `refonte-maquettes/duel-C/arbitrage.md`.
 3. Argent et Carnet.
 
 Arbitrage complet : `refonte-maquettes/duel-D/arbitrage.md`.
+
+---
+
+## Duel E : la capture
+
+**Problème.** La capture est l'avantage le plus fort de Compyo, mais le geste le plus fréquent (une demande qui arrive pendant le travail) prend 6 gestes ou plus. L'accusé de réception n'apparaît que si le message contient un numéro.
+
+**Candidats.**
+- **A : réparer le parcours actuel, 62.**
+- B : une seule porte « Reçu », 61.
+- C : l'accusé d'abord, le rangement plus tard, 52,5.
+- D : une synthèse, 54.
+
+**Vainqueur : A.** Sur le cas courant, B fait aussi 7 gestes, avec le même lien `wa.me` non testé. En plus, B réécrit le partage et la page `nouvelle`, qui perdrait l'alerte de doublon et l'atterrissage des erreurs.
+- **Greffes :**
+  - quand l'IA échoue, on reste sur la même revue, déjà remplie du message (de B) ;
+  - un partage abandonné devient une ligne « Reçu » dans « À faire de votre côté », pendant 7 jours, pour le compte qui a capté seulement, sans changer la RLS (de B) ;
+  - « Bien reçu » s'affiche après tout message reçu : un rendez-vous détecté, ou un ajout à un projet existant (de D).
+- **Un seul atterrissage : la fiche**, où le duel D place déjà « Bien reçu » en action de Maintenant.
+- **Le grand micro ne revient pas** (retiré par `91bc744`).
+
+**Dissidence valable.**
+- Le cas « partage sans numéro » n'a jamais été observé : on suppose qu'il est courant.
+- Un client connu, partagé sans numéro, devient un doublon dans toutes les versions. Le rapprochement par nom avait été refusé par écrit, et il n'est pas rouvert.
+
+**Test T1, sur deux Android d'entrée de gamme avec la PWA installée, avant le lot 4.**
+- `wa.me/?text=` sans numéro ouvre-t-il le sélecteur de WhatsApp ?
+- La conversation qu'on vient de quitter est-elle en tête de liste ?
+- Que fait `sms:?body=` sans numéro ?
+- Que contient vraiment un partage WhatsApp ?
+
+**Lots.**
+1. Rien ne se perd.
+2. La ligne « Reçu ».
+3. « Bien reçu » quand le numéro est connu.
+4. « Bien reçu » sans numéro, **bloqué jusqu'au test T1**.
+
+Arbitrage complet : `refonte-maquettes/duel-E/arbitrage.md`.
+
+---
+
+## Duel F : le devis sur téléphone
+
+**Problème.** Éditer, vérifier et valider au pouce, sans que la vérification ligne par ligne annule le gain de temps. C'est le reproche n°1 fait au devis vocal des concurrents. Il y a aussi un bouton qui ment : « Envoyer au client » n'envoie rien.
+
+**Candidats.**
+- A : les libellés corrigés seulement, 48.
+- B : un seul écran, seules les lignes à vérifier mises en avant, 62.
+- C : des cartes une à une, 53,5.
+- **D : l'envoi direct, 74.**
+
+**Pourquoi D, et pas B ni C.** Le lien de signature ne marche que si le devis est « envoyé » (`schema.sql:2405`, `:1638`). B et C laissaient le devis « à valider » jusqu'à une question de retour, et le client aurait reçu un lien mort.
+
+**Vainqueur : D.**
+- Un appui fige le devis, puis ouvre WhatsApp au numéro du client, message et lien prêts. C'est l'artisan qui envoie.
+- **Greffes :**
+  - toutes les lignes visibles au premier écran (5 au plus), les douteuses en tête (de B) ;
+  - un signal « Prix Compyo » sur les prix qui ne viennent pas de l'artisan, sans migration SQL (de C) ;
+  - des libellés honnêtes partout (de A).
+- **Corrections :**
+  - une question avant de figer si une mention obligatoire manque ;
+  - les paramètres relus en base avant le gel ;
+  - « Rien d'inhabituel » supprimé (une fausse assurance) ;
+  - un seul prix par ligne, avec la recomposition jusqu'au TTC.
+
+**Le modèle d'états, sans migration.**
+- `a_valider` s'affiche « À envoyer ».
+- `envoye` s'affiche « En attente » et « Noté envoyé le… », avec « Pas parti ? Rouvrir ».
+- Après relance, la pastille dit « Sans réponse · 5 j ».
+
+**Gestes jusqu'au message prêt dans WhatsApp.** Aujourd'hui 7 ; 3 après le lot 1 ; 1 après le lot 3 (4 avec une correction).
+
+**Dissidence valable.**
+- « Envoyé » est noté au toucher, pas au départ réel du message.
+- Une quantité fausse mais plausible n'est signalée par aucune règle.
+- « Prix Compyo » risque de lasser tant que les prix de l'artisan ne sont pas appliqués dès la génération.
+
+**Lots.**
+1. Envoi direct et mots vrais. **Fait : `147f1ec`.**
+2. Extraire l'état de `ValiderDevis`.
+3. La revue sur téléphone.
+4. « Prix Compyo ».
+5. Les prix de l'artisan dès la génération (si la mesure le justifie).
+
+Arbitrage complet : `refonte-maquettes/duel-F/arbitrage.md`.

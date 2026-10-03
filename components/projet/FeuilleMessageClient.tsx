@@ -15,6 +15,7 @@ import {
   type Suggestion,
 } from "@/lib/messagesClient";
 import { Feuille } from "./Feuille";
+import { IconeChevron, IconeEtincelle } from "./icones";
 
 // ============================================================
 // « Message au client » (26/09 — « moins mais mieux », lot D).
@@ -135,6 +136,7 @@ export function FeuilleMessageClient({
   demandeId,
   demande,
   meteo = null,
+  surEcrireAvecIA,
 }: {
   ouverte: boolean;
   surFermer: () => void;
@@ -142,6 +144,11 @@ export function FeuilleMessageClient({
   /** Le message demandé explicitement (notification, bouton Relancer). */
   demande?: DemandeMessage | null;
   meteo?: ContexteMessage["meteo"];
+  /** Refonte (03/10, duel D lot 1) — une seule entrée « Message » sur la
+   *  fiche : les modèles prêts d'abord, puis « Écrire avec l'IA » pour un
+   *  texte sur mesure. Seule la fiche projet le passe ; le planning et
+   *  l'accueil gardent la feuille telle quelle. */
+  surEcrireAvecIA?: () => void;
 }) {
   const supabase = createClient();
   const [charge, setCharge] = useState<Charge | null>(null);
@@ -163,8 +170,22 @@ export function FeuilleMessageClient({
 
   return (
     <Feuille ouverte={ouverte} titre={charge ? `Message à ${charge.nomClient}` : "Message au client"} surFermer={surFermer}>
-      {erreur && <p className="text-[15px] text-ink/60">Le projet n&apos;a pas pu être chargé. Réessayez.</p>}
-      {!charge && !erreur && <p className="text-[15px] text-ink/50">…</p>}
+      {erreur && <p className="text-base text-steel">Le projet n&apos;a pas pu être chargé. Réessayez.</p>}
+      {/* Refonte (03/10) — règle 11 : la forme vide d'un message, pas « … ». */}
+      {!charge && !erreur && (
+        <div aria-busy="true" aria-label="Chargement" className="flex flex-col gap-3">
+          {[0, 1].map((i) => (
+            <div key={i} className="rounded-2xl bg-surface p-4 ring-1 ring-ink/15">
+              <div className="h-4 w-24 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+              <div className="mt-2 h-4 w-full rounded-full bg-ink/10 motion-safe:animate-pulse" />
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <div className="h-12 rounded-xl bg-ink/10 motion-safe:animate-pulse" />
+                <div className="h-12 rounded-xl bg-ink/10 motion-safe:animate-pulse" />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
       {charge && (
         <ContenuMessageClient
           ctx={charge.ctx}
@@ -174,6 +195,17 @@ export function FeuilleMessageClient({
             tracerMessagePrepare(supabase, { demandeId, cle: s.cle, canal, factureId: s.factureId });
           }}
         />
+      )}
+      {charge && surEcrireAvecIA && (
+        <button
+          type="button"
+          onClick={surEcrireAvecIA}
+          className="mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-surface px-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
+        >
+          <IconeEtincelle className="h-5 w-5 shrink-0 text-ink" />
+          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">Écrire avec l&apos;IA</span>
+          <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
+        </button>
       )}
     </Feuille>
   );

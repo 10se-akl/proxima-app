@@ -234,15 +234,21 @@ export function VueProjet({
     surAction(id);
   };
 
+  // Refonte (03/10, duel D lot 1) — « Maintenant » n'a plus qu'un bouton
+  // plein et un bouton texte : ses autres actions (Démarrer maintenant,
+  // Facturer un acompte, Dupliquer le devis) arrivent ici, en tête. Et
+  // « Préparer un message au client » quitte ce menu : le message passe
+  // par une seule porte, « Message » dans l'en-tête, où l'IA est proposée
+  // après les modèles prêts.
   const menu: EntreeMenu[] = [
     { type: "action", libelle: "Modifier les infos du client", surChoisir: () => setInfosOuvertes(true) },
     { type: "priorite", valeur: projet.priorite ?? "normal", surChoisir: surChangerPriorite },
     { type: "separateur" },
+    ...point.dansMenu.map((a) => ({ type: "action" as const, libelle: a.libelle, surChoisir: () => agir(a.id) })),
     { type: "lien", libelle: "Planifier un rendez-vous", href: lienPlanifier },
     ...(!projet.visite_le ? [{ type: "action" as const, libelle: "Marquer la visite effectuée", surChoisir: surMarquerVisite }] : []),
-    { type: "action", libelle: "Préparer un message au client", surChoisir: surPreparerReponse },
     ...(peutAnalyser && !analyseAJour ? [{ type: "action" as const, libelle: "Résumer mes notes avec l'IA", surChoisir: () => surAction("analyser") }] : []),
-    ...(!devis ? [{ type: "action" as const, libelle: "Devis express (sans IA)", surChoisir: () => surAction("devis_express") }] : []),
+    ...(!devis ? [{ type: "action" as const, libelle: "Faire le devis moi-même", surChoisir: () => surAction("devis_express") }] : []),
     ...(projet.statut !== "termine"
       ? [{ type: "separateur" as const }, { type: "action" as const, libelle: "Marquer le projet comme terminé", surChoisir: () => setConfirmerFin(true), attention: true }]
       : []),
@@ -252,8 +258,8 @@ export function VueProjet({
   const sousTitre = [typeChantier, projet.adresse_client].filter(Boolean).join(" · ");
   const statutDevis = devis ? statutAffiche(devis, projet.statut) : null;
 
-  // Tablette ou téléphone en paysage (27/09) : 44 px de haut au doigt,
-  // rien ne change à la souris.
+  // Tablette ou téléphone en paysage (27/09) : 48 px de haut au doigt
+  // (refonte 03/10, règle 17), icônes en encre (règle 9).
   const barreAjout = (
     <>
       {/* Téléphone (27/09, Axel) : ajouter une note se fait là où on voit
@@ -261,19 +267,19 @@ export function VueProjet({
       <button
         type="button"
         onClick={() => setAjout("choix")}
-        className="inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 sm:hidden"
+        className="inline-flex min-h-12 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hidden"
       >
         <IconePlus className="h-4 w-4" /> Ajouter
       </button>
       <div className="hidden items-center gap-1.5 sm:flex">
-        <button type="button" onClick={() => setAjout("vocal")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
-          <IconeMicro className="h-4 w-4 text-signal" /> Dicter
+        <button type="button" onClick={() => setAjout("vocal")} className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5">
+          <IconeMicro className="h-5 w-5 text-ink" /> Dicter
         </button>
-        <button type="button" onClick={() => setPhotosOuvertes(true)} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
-          <IconePhoto className="h-4 w-4 text-signal" /> Photos
+        <button type="button" onClick={() => setPhotosOuvertes(true)} className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5">
+          <IconePhoto className="h-5 w-5 text-ink" /> Photos
         </button>
-        <button type="button" onClick={() => setAjout("note")} className="inline-flex items-center gap-1.5 rounded-full border border-ink/10 bg-surface px-3.5 py-2 text-[13.5px] font-medium text-ink transition hover:border-ink/25 [@media(pointer:coarse)]:min-h-11">
-          <IconeCrayon className="h-4 w-4 text-signal" /> Note
+        <button type="button" onClick={() => setAjout("note")} className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5">
+          <IconeCrayon className="h-5 w-5 text-ink" /> Note
         </button>
       </div>
     </>
@@ -424,25 +430,25 @@ export function VueProjet({
                 key={t.cle}
                 type="button"
                 onClick={t.faire}
-                className="flex flex-col items-start gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-ink/10 transition hover:ring-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
+                className="flex min-h-16 flex-col items-start gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
               >
-                <span className="grid h-11 w-11 place-items-center rounded-xl bg-signal/10 text-signal">{t.icone}</span>
+                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink/10 text-ink">{t.icone}</span>
                 <span>
-                  <span className="block text-[15px] font-semibold text-ink">{t.libelle}</span>
-                  <span className="block text-[13px] text-ink/55">{t.sous}</span>
+                  <span className="block text-base font-semibold text-ink">{t.libelle}</span>
+                  <span className="block text-sm text-steel">{t.sous}</span>
                 </span>
               </button>
             ))}
             <Link
               href={lienPlanifier}
-              className="flex flex-col items-start gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-ink/10 transition hover:ring-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60"
+              className="flex min-h-16 flex-col items-start gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
             >
-              <span className="grid h-11 w-11 place-items-center rounded-xl bg-signal/10 text-signal">
+              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink/10 text-ink">
                 <IconeCalendrier className="h-6 w-6" />
               </span>
               <span>
-                <span className="block text-[15px] font-semibold text-ink">Rendez-vous</span>
-                <span className="block text-[13px] text-ink/55">Dans le planning</span>
+                <span className="block text-base font-semibold text-ink">Rendez-vous</span>
+                <span className="block text-sm text-steel">Dans le planning</span>
               </span>
             </Link>
           </div>
@@ -468,6 +474,10 @@ export function VueProjet({
         surFermer={() => setMessageOuvert(false)}
         demandeId={projet.id}
         demande={demandeMessage}
+        surEcrireAvecIA={() => {
+          setMessageOuvert(false);
+          surPreparerReponse();
+        }}
       />
 
       <Feuille ouverte={confirmerFin} titre="Chantier terminé ?" surFermer={() => setConfirmerFin(false)}>

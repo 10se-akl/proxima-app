@@ -3,9 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/Button";
-import { COULEUR_POINT_IMPORTANCE } from "@/lib/notes";
-import type { EvenementPlanning, Note } from "@/types";
-import type { IdAction, ProchaineAction } from "./prochaineAction";
+import type { EvenementPlanning, ImportanceNote, Note } from "@/types";
+import type { Action, IdAction, ProchaineAction } from "./prochaineAction";
 import { dateRdv } from "./prochaineAction";
 import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEtincelle, IconePhoto, IconePlus } from "./icones";
 
@@ -15,47 +14,89 @@ import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEtincell
 // Leur taille ne dépend pas de l'âge du chantier : une phrase et un
 // bouton, les seules tâches encore ouvertes, un mémo court, deux ou trois
 // lignes d'argent. Tout ce qui s'accumule avec le temps va dans le Carnet.
+//
+// Refonte (03/10, duel D lot 1) — le fichier passe sous les règles 3, 4, 9
+// et 17 de docs/langage-interface.md : cinq tailles de texte au lieu de
+// neuf, deux tons (encre et acier) au lieu des opacités, icônes en encre
+// (le terracotta est réservé au « + » et au mot d'alerte), et plus aucune
+// cible de 28 px (`min-h-0 py-1`) : tout ce qui se touche fait 48 px.
 // ============================================================
+
+/** Le focus se voit, en encre (règle 18). */
+export const FOCUS =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
+/** Bouton texte (règle 6). */
+export const BOUTON_TEXTE = `inline-flex min-h-12 items-center justify-center gap-2 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-60 ${FOCUS}`;
+/** Bouton en contour (règle 6). */
+export const BOUTON_CONTOUR = `inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 ${FOCUS}`;
+/** Le bloc (règle 8) : même fond, même filet, même rayon que la ligne,
+ *  sans ombre. */
+const BLOC = "rounded-2xl bg-surface p-5 ring-1 ring-ink/15 sm:p-6";
 
 function Titre({ children, compte, action }: { children: ReactNode; compte?: number; action?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <h2 className="font-display text-[15px] font-semibold text-ink">
+      <h2 className="font-display text-xl font-semibold text-ink">
         {children}
-        {compte !== undefined && compte > 0 && <span className="ml-1.5 font-sans text-[13px] font-normal text-steel">{compte}</span>}
+        {compte !== undefined && compte > 0 && <span className="ml-2 font-sans text-sm font-normal tabular-nums text-steel">{compte}</span>}
       </h2>
       {action}
     </div>
   );
 }
 
+function Roue() {
+  return <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />;
+}
+
 // ------------------------------------------------------------ Maintenant
 
-// Ce que fait l'IA, en une ligne, sous le bouton principal quand c'est
-// elle qui travaille : on sait avant d'appuyer, et on sait qu'on relira.
+// Ce que fait l'IA, en une ligne, sous le bouton qui la lance : on sait
+// qu'on relira avant que rien ne parte (règle 2 : une ligne suffit).
 const CE_QUE_FAIT_L_IA: Partial<Record<IdAction, string>> = {
-  generer_devis: "L'IA chiffre avec vos notes, vos photos et vos tarifs. Vous relisez tout avant l'envoi.",
-  mettre_a_jour_devis: "L'IA reprend le devis avec les nouvelles notes. Vous relisez avant l'envoi.",
-  relancer: "L'IA rédige la relance. Vous la relisez avant de l'envoyer.",
-  analyser: "L'IA résume vos notes et liste ce qu'il manque pour chiffrer.",
+  generer_devis: "Vous relisez avant l'envoi.",
+  mettre_a_jour_devis: "Vous relisez avant l'envoi.",
+  relancer: "Vous relisez avant l'envoi.",
+  analyser: "L'IA résume vos notes.",
 };
 
 /** Le libellé d'une action, avec l'étincelle quand c'est l'IA. */
 function LibelleAction({ libelle, ia }: { libelle: string; ia?: boolean }) {
   return (
-    <span className="inline-flex items-center gap-2">
-      {ia && <IconeEtincelle className="h-4 w-4 shrink-0" />}
-      {libelle}
+    <span className="inline-flex min-w-0 items-center gap-2">
+      {ia && <IconeEtincelle className="h-5 w-5 shrink-0" />}
+      <span className="truncate">{libelle}</span>
     </span>
   );
 }
 
-const TONS: Record<ProchaineAction["ton"], string> = {
-  neutre: "before:bg-ink/60",
-  attente: "before:bg-steel",
-  succes: "before:bg-succes",
-  attention: "before:bg-signal",
-};
+/** Une action secondaire : en texte sous un bouton plein, en contour quand
+ *  elle est seule. */
+function BoutonAction({
+  action,
+  genre,
+  chargement,
+  surAction,
+  className = "",
+}: {
+  action: Action;
+  genre: "texte" | "contour";
+  chargement?: boolean;
+  surAction: (id: IdAction) => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={() => surAction(action.id)}
+      disabled={chargement}
+      className={`${genre === "texte" ? BOUTON_TEXTE : BOUTON_CONTOUR} ${className}`}
+    >
+      {chargement && <Roue />}
+      <LibelleAction libelle={action.libelle} ia={action.ia} />
+    </button>
+  );
+}
 
 export function Maintenant({
   point,
@@ -71,73 +112,66 @@ export function Maintenant({
   /** Ce que l'IA propose et qui attend une réponse (urgence, tâches). */
   propositions?: ReactNode;
 }) {
+  const { principale, secondaire, alerte } = point;
   return (
-    <section
-      aria-labelledby="titre-maintenant"
-      className={`relative overflow-hidden rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-ink/[0.08] before:absolute before:inset-y-0 before:left-0 before:w-1 sm:p-6 ${TONS[point.ton]}`}
-    >
-      <p id="titre-maintenant" className="font-mono text-[11px] uppercase tracking-[0.18em] text-steel">
+    <section aria-labelledby="titre-maintenant" className={BLOC}>
+      <h2 id="titre-maintenant" className="sr-only">
         Maintenant
-      </p>
-      <p className="mt-2 text-balance font-display text-[1.3rem] font-semibold leading-snug tracking-[-0.01em] text-ink sm:text-[1.45rem]">
-        {point.phrase}
-      </p>
-      {point.details.length > 0 && (
-        <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[14px] text-ink/60">
-          {point.details.map((d) => (
-            <li key={d}>{d}</li>
-          ))}
-        </ul>
-      )}
+      </h2>
+      <p className="truncate font-display text-xl font-semibold text-ink">{point.phrase}</p>
+      {point.details.length > 0 && <p className="mt-1 truncate text-sm text-steel">{point.details.join(" · ")}</p>}
 
-      {/* Sur téléphone : le bouton principal sur toute la largeur, sous le
-          pouce ; les autres en dessous, plus discrets. */}
-      {(point.principale || point.secondaires.length > 0) && (
-        <div className="mt-4 flex flex-col gap-2.5 sm:flex-row sm:flex-wrap">
-          {point.principale && (
+      {/* Au plus un bouton plein, sur toute la largeur et sous le pouce,
+          et un bouton texte dessous (règle 5). Le reste est dans « … ». */}
+      {(principale || secondaire) && (
+        <div className="mt-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+          {principale && (
             <Button
-              onClick={() => surAction(point.principale!.id)}
-              loading={chargement[point.principale.id]}
-              className="min-h-12 w-full justify-center sm:w-auto"
+              onClick={() => surAction(principale.id)}
+              loading={chargement[principale.id]}
+              className="min-h-14 w-full sm:w-auto"
             >
-              <LibelleAction libelle={point.principale.libelle} ia={point.principale.ia} />
+              <LibelleAction libelle={principale.libelle} ia={principale.ia} />
             </Button>
           )}
-          {/* Ce que va faire l'IA, juste sous le bouton qui la lance. */}
-          {point.principale?.ia && CE_QUE_FAIT_L_IA[point.principale.id] && (
-            <p className="-mt-1 text-[13.5px] leading-snug text-ink/65 sm:order-last sm:mt-0 sm:w-full">
-              {CE_QUE_FAIT_L_IA[point.principale.id]}
+          {principale?.ia && CE_QUE_FAIT_L_IA[principale.id] && (
+            <p className="truncate pt-1 text-center text-sm text-steel sm:order-last sm:w-full sm:pt-0 sm:text-left">
+              {CE_QUE_FAIT_L_IA[principale.id]}
             </p>
           )}
-          {point.secondaires.map((a) => (
-            <Button
-              key={a.id}
-              variant="ghost"
-              onClick={() => surAction(a.id)}
-              loading={chargement[a.id]}
-              className="min-h-12 w-full justify-center sm:w-auto"
-            >
-              <LibelleAction libelle={a.libelle} ia={a.ia} />
-            </Button>
-          ))}
+          {secondaire && (
+            <BoutonAction
+              action={secondaire}
+              genre={principale ? "texte" : "contour"}
+              chargement={chargement[secondaire.id]}
+              surAction={surAction}
+              className={principale ? "self-center sm:self-auto" : "w-full sm:w-auto"}
+            />
+          )}
         </div>
       )}
 
-
-      {point.alerte && (
-        <div className="mt-4 flex flex-col items-start gap-1 rounded-xl bg-alerte-orange/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-          <p className="text-[14px] text-ink/80">{point.alerte.texte}</p>
-          <button
-            type="button"
-            onClick={() => surAction(point.alerte!.action.id)}
-            className="-my-1 min-h-0 py-1 text-left text-[14px] font-medium text-ink underline decoration-ink/30 underline-offset-2 hover:decoration-ink"
-          >
-            <LibelleAction libelle={point.alerte.action.libelle} ia={point.alerte.action.ia} />
-          </button>
+      {/* Un point qui demande une décision : un point orange, une ligne, et
+          son action en bouton texte. */}
+      {alerte && (
+        <div className="mt-4 border-t border-ink/15 pt-3">
+          <p className="flex items-center gap-2 text-sm text-ink">
+            <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
+            <span className="truncate">{alerte.texte}</span>
+          </p>
+          <BoutonAction
+            action={alerte.action}
+            genre="texte"
+            chargement={chargement[alerte.action.id]}
+            surAction={surAction}
+            className="-ml-3"
+          />
         </div>
       )}
 
-      {erreur && <p className="mt-3 text-[14px] text-signal">{erreur}</p>}
+      <div aria-live="polite">
+        {erreur && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+      </div>
       {propositions}
     </section>
   );
@@ -147,44 +181,60 @@ export function Maintenant({
 
 const formatRappel = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
+// Le point d'importance, en tokens (règle 10 : aucun hexadécimal). Une
+// tâche ordinaire n'a pas de point : seul ce qui presse se signale.
+const POINT_IMPORTANCE: Partial<Record<ImportanceNote, string>> = {
+  rouge: "bg-signal-fonce dark:bg-signal-clair",
+  orange: "bg-alerte-orange",
+};
+
 function LigneTache({ note, surCocher }: { note: Note; surCocher: () => void }) {
   const [ouverte, setOuverte] = useState(false);
   const enRetard = note.rappel_a ? new Date(note.rappel_a).getTime() < Date.now() : false;
-  return (
-    <li className="flex items-start gap-3 py-2.5">
-      <button
-        type="button"
-        onClick={surCocher}
-        aria-label={`Marquer comme fait : ${note.titre}`}
-        // Zone de toucher de 44 px autour d'un cercle de 24 : les marges
-        // négatives gardent la ligne à la taille du cercle.
-        className="group -m-2.5 grid h-11 w-11 shrink-0 place-items-center rounded-full focus-visible:outline-none"
-      >
-        <span className="grid h-6 w-6 place-items-center rounded-full border-[1.5px] border-ink/25 text-transparent transition group-hover:border-succes group-hover:text-succes group-focus-visible:ring-2 group-focus-visible:ring-signal/50">
-          <IconeCoche className="h-3.5 w-3.5" />
+  const point = POINT_IMPORTANCE[note.importance];
+  const contenu = (
+    <>
+      <span className="flex min-w-0 items-center gap-2">
+        {point && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${point}`} />}
+        <span className="truncate text-base text-ink">{note.titre}</span>
+      </span>
+      {note.rappel_a && (
+        <span className="block truncate text-sm text-steel">
+          {enRetard ? <span className="font-semibold text-signal-fonce dark:text-signal-clair">Retard</span> : "Rappel"}
+          {" · "}
+          {formatRappel.format(new Date(note.rappel_a)).replace(":", " h ")}
         </span>
-      </button>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-2">
-          <span aria-hidden className={`mt-[0.45rem] h-1.5 w-1.5 shrink-0 rounded-full ${COULEUR_POINT_IMPORTANCE[note.importance]}`} />
-          {note.description ? (
-            <button type="button" onClick={() => setOuverte((v) => !v)} aria-expanded={ouverte} className="min-w-0 text-left text-[14.5px] leading-snug text-ink hover:underline">
-              {note.titre}
-            </button>
-          ) : (
-            <p className="min-w-0 text-[14.5px] leading-snug text-ink">{note.titre}</p>
-          )}
-        </div>
-        {note.rappel_a && (
-          <p className={`ml-3.5 mt-0.5 text-[12.5px] ${enRetard ? "font-medium text-signal" : "text-steel"}`}>
-            {enRetard ? "En retard · " : "Rappel · "}
-            {formatRappel.format(new Date(note.rappel_a)).replace(":", " h ")}
-          </p>
-        )}
-        {ouverte && note.description && (
-          <p className="ml-3.5 mt-1.5 whitespace-pre-line text-[13.5px] leading-relaxed text-ink/65">{note.description}</p>
+      )}
+    </>
+  );
+  return (
+    <li className="py-1">
+      <div className="flex items-center gap-1">
+        {/* Un rond de 24 px dans une cible de 48 (règle 17). */}
+        <button
+          type="button"
+          onClick={surCocher}
+          aria-label={`Fait : ${note.titre}`}
+          className={`group -ml-3 grid h-12 w-12 shrink-0 place-items-center rounded-full ${FOCUS}`}
+        >
+          <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-ink/40 text-transparent motion-safe:transition-colors group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes">
+            <IconeCoche className="h-3.5 w-3.5" />
+          </span>
+        </button>
+        {note.description ? (
+          <button
+            type="button"
+            onClick={() => setOuverte((v) => !v)}
+            aria-expanded={ouverte}
+            className={`flex min-h-12 min-w-0 flex-1 flex-col justify-center rounded-xl text-left ${FOCUS}`}
+          >
+            {contenu}
+          </button>
+        ) : (
+          <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center">{contenu}</div>
         )}
       </div>
+      {ouverte && note.description && <p className="pb-2 pl-11 whitespace-pre-line text-sm text-steel">{note.description}</p>}
     </li>
   );
 }
@@ -211,19 +261,17 @@ export function AFaire({
   const [conseilsOuverts, setConseilsOuverts] = useState(() => (avantDeChiffrer?.infos.length ?? 0) > 0);
   // La dernière tâche cochée, le temps de pouvoir revenir en arrière : un
   // doigt qui glisse sur le téléphone ne doit rien faire disparaître.
+  // Refonte (03/10) — règle 16 : la trace « Fait : … · Annuler » reste
+  // jusqu'à ce qu'on coche autre chose ou qu'on quitte l'écran, sans
+  // minuteur (6 s ne suffisaient pas à lire, avec des gants).
   const [cochee, setCochee] = useState<{ id: string; titre: string } | null>(null);
-  const minuteur = useRef<ReturnType<typeof setTimeout>>();
-  useEffect(() => () => clearTimeout(minuteur.current), []);
   const cocher = (note: Note) => {
     surTerminer(note.id, true);
     setCochee({ id: note.id, titre: note.titre });
-    clearTimeout(minuteur.current);
-    minuteur.current = setTimeout(() => setCochee(null), 6000);
   };
   const annuler = () => {
     if (!cochee) return;
     surTerminer(cochee.id, false);
-    clearTimeout(minuteur.current);
     setCochee(null);
   };
   const total = rdvAVenir.length + taches.length;
@@ -232,19 +280,12 @@ export function AFaire({
   return (
     // 27/09 — Vide, le bloc ne disait que « Rien en attente » : sur
     // téléphone, il laisse la place au reste (ajouter passe par le « + »).
-    <section
-      aria-label="À faire"
-      className={`rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-ink/[0.08] sm:p-6 ${total === 0 && nbConseils === 0 ? "hidden sm:block" : ""}`}
-    >
+    <section aria-label="À faire" className={`${BLOC} ${total === 0 && nbConseils === 0 && !cochee ? "hidden sm:block" : ""}`}>
       <Titre
         compte={total}
         action={
-          <button
-            type="button"
-            onClick={surAjouter}
-            className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[13px] font-medium text-ink/60 transition hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 [@media(pointer:coarse)]:min-h-11"
-          >
-            <IconePlus className="h-3.5 w-3.5" /> Ajouter
+          <button type="button" onClick={surAjouter} className={`-my-2 -mr-3 ${BOUTON_TEXTE} no-underline`}>
+            <IconePlus className="h-5 w-5" /> Ajouter
           </button>
         }
       >
@@ -253,20 +294,25 @@ export function AFaire({
 
       {proposition}
 
-      {total === 0 && !proposition && !cochee && (
-        <p className="mt-2 text-[14px] text-ink/45">Rien en attente sur ce chantier.</p>
-      )}
+      {total === 0 && !proposition && !cochee && <p className="mt-2 text-base text-steel">Rien en attente.</p>}
 
       {total > 0 && (
-        <ul className="mt-1 divide-y divide-ink/[0.06]">
+        <ul className="mt-1 divide-y divide-ink/15">
           {rdvAVenir.map((r) => (
-            <li key={r.id} className="flex items-start gap-3 py-2.5">
-              <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-signal/10 text-signal">
-                <IconeCalendrier className="h-3.5 w-3.5" />
-              </span>
-              <Link href={`/dashboard/planning/nouveau?eventId=${r.id}`} className="min-w-0 flex-1 hover:underline">
-                <p className="text-[14.5px] leading-snug text-ink">{r.titre}</p>
-                <p className="mt-0.5 text-[12.5px] text-steel">{dateRdv(r.date_heure)}</p>
+            <li key={r.id} className="py-1">
+              <Link
+                href={`/dashboard/planning/nouveau?eventId=${r.id}`}
+                className={`flex min-h-12 items-center gap-1 rounded-xl active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+              >
+                <span className="-ml-3 grid h-12 w-12 shrink-0 place-items-center">
+                  <span className="grid h-6 w-6 place-items-center rounded-full bg-ink/10 text-ink">
+                    <IconeCalendrier className="h-3.5 w-3.5" />
+                  </span>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-base text-ink">{r.titre}</span>
+                  <span className="block truncate text-sm text-steel">{dateRdv(r.date_heure)}</span>
+                </span>
               </Link>
             </li>
           ))}
@@ -278,12 +324,10 @@ export function AFaire({
 
       <div aria-live="polite">
         {cochee && (
-          <div className="mt-2 flex items-center gap-3 rounded-xl bg-succes/10 px-3 py-2 text-[13.5px]">
+          <div className="mt-2 flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
             <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
-            <p className="min-w-0 flex-1 truncate text-ink/80">
-              Fait : {cochee.titre}
-            </p>
-            <button type="button" onClick={annuler} className="-my-1 min-h-0 shrink-0 py-1 font-medium text-ink underline decoration-ink/30 underline-offset-2 hover:decoration-ink">
+            <p className="min-w-0 flex-1 truncate">Fait : {cochee.titre}</p>
+            <button type="button" onClick={annuler} className={`shrink-0 ${BOUTON_TEXTE}`}>
               Annuler
             </button>
           </div>
@@ -291,54 +335,41 @@ export function AFaire({
       </div>
 
       {avantDeChiffrer && nbConseils > 0 && (
-        <div className="mt-3 border-t border-ink/[0.07] pt-3">
+        <div className="mt-3 border-t border-ink/15 pt-1">
           <button
             type="button"
             onClick={() => setConseilsOuverts((v) => !v)}
             aria-expanded={conseilsOuverts}
-            className="flex w-full items-center gap-2 text-left text-[13.5px] font-medium text-ink/70 hover:text-ink"
+            className={`flex min-h-12 w-full items-center gap-2 rounded-xl text-left text-base font-semibold text-ink ${FOCUS}`}
           >
-            <IconeChevron className={`h-4 w-4 transition-transform ${conseilsOuverts ? "rotate-90" : ""}`} />
-            Avant de chiffrer
-            <span className="font-normal text-steel">{nbConseils}</span>
+            <IconeChevron className={`h-5 w-5 shrink-0 motion-safe:transition-transform ${conseilsOuverts ? "rotate-90" : ""}`} />
+            <span className="truncate">Avant de chiffrer</span>
+            <span className="font-normal tabular-nums text-steel">{nbConseils}</span>
           </button>
           {conseilsOuverts && (
-            <div className="mt-2 space-y-3 pl-6 text-[14px] text-ink/75">
-              {avantDeChiffrer.infos.length > 0 && (
-                <div>
-                  <p className="text-[12px] text-steel">Ce qui manque peut-être</p>
-                  <ul className="mt-1 space-y-1">
-                    {avantDeChiffrer.infos.map((i) => (
-                      <li key={i}>· {i}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {avantDeChiffrer.questions.length > 0 && (
-                <div>
-                  <p className="text-[12px] text-steel">À demander au client</p>
-                  <ul className="mt-1 space-y-1">
-                    {avantDeChiffrer.questions.map((q) => (
-                      <li key={q}>· {q}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {avantDeChiffrer.checklist.length > 0 && (
-                <div>
-                  <p className="text-[12px] text-steel">À vérifier sur place (votre métier)</p>
-                  <ul className="mt-1 space-y-1">
-                    {avantDeChiffrer.checklist.map((c) => (
-                      <li key={c}>· {c}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
+            <div className="mt-1 space-y-3 pb-2 pl-7 text-sm text-ink">
+              {avantDeChiffrer.infos.length > 0 && <ListeConseils titre="Ce qui manque peut-être" lignes={avantDeChiffrer.infos} />}
+              {avantDeChiffrer.questions.length > 0 && <ListeConseils titre="À demander au client" lignes={avantDeChiffrer.questions} />}
+              {avantDeChiffrer.checklist.length > 0 && <ListeConseils titre="À vérifier sur place" lignes={avantDeChiffrer.checklist} />}
             </div>
           )}
         </div>
       )}
     </section>
+  );
+}
+
+/** Une des trois listes « avant de chiffrer ». */
+export function ListeConseils({ titre, lignes }: { titre: string; lignes: string[] }) {
+  return (
+    <div>
+      <p className="text-sm text-steel">{titre}</p>
+      <ul className="mt-1 space-y-1 text-base text-ink">
+        {lignes.map((l) => (
+          <li key={l}>· {l}</li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
@@ -395,8 +426,19 @@ export function ARetenir({
   }, [memo]);
 
   return (
-    <section aria-label="À retenir" className="rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-ink/[0.08] sm:p-6">
-      <Titre action={enregistre ? <span className="text-[12.5px] text-succes">Enregistré</span> : undefined}>À retenir</Titre>
+    <section aria-label="À retenir" className={BLOC}>
+      {/* Un succès s'écrit en encre, à côté d'une coche verte (règle 10). */}
+      <Titre
+        action={
+          enregistre ? (
+            <span className="inline-flex items-center gap-1.5 text-sm text-ink" aria-live="polite">
+              <IconeCoche className="h-4 w-4 text-succes" /> Enregistré
+            </span>
+          ) : undefined
+        }
+      >
+        À retenir
+      </Titre>
       <label className="mt-2 block">
         <span className="sr-only">À retenir sur ce chantier</span>
         <textarea
@@ -405,29 +447,29 @@ export function ARetenir({
           onChange={(e) => surChangerMemo(e.target.value)}
           onBlur={surEnregistrerMemo}
           rows={2}
-          placeholder="Code du portail, choix du client, mesures clés… Ce que vous voulez retrouver en un coup d'œil."
-          className="w-full resize-none rounded-xl border border-transparent bg-paper-warm/60 px-3 py-2.5 text-[14.5px] leading-relaxed text-ink placeholder:text-ink/35 focus:border-signal focus:bg-paper focus:outline-none focus:ring-2 focus:ring-signal/15"
+          placeholder="Code du portail, mesures, choix du client…"
+          className="w-full resize-none rounded-2xl bg-paper-warm px-3 py-2.5 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:bg-paper focus:outline-none focus:ring-2 focus:ring-ink"
         />
       </label>
       {erreur}
 
-      <div className="mt-4 border-t border-ink/[0.07] pt-3">
-        <p className="text-[12px] text-steel">La demande</p>
-        <p className={`mt-1 whitespace-pre-line text-[14px] leading-relaxed text-ink/75 ${demandeOuverte ? "" : "line-clamp-3"}`}>{description}</p>
+      <div className="mt-4 border-t border-ink/15 pt-3">
+        <p className="text-sm text-steel">La demande</p>
+        <p className={`mt-1 whitespace-pre-line text-base text-ink ${demandeOuverte ? "" : "line-clamp-3"}`}>{description}</p>
         {description.length > 160 && (
-          <button type="button" onClick={() => setDemandeOuverte((v) => !v)} className="mt-0.5 min-h-0 py-1 text-[12.5px] font-medium text-ink/55 underline decoration-ink/20 underline-offset-2 hover:text-ink">
+          <button type="button" onClick={() => setDemandeOuverte((v) => !v)} className={`-ml-3 ${BOUTON_TEXTE}`}>
             {demandeOuverte ? "Réduire" : "Lire tout"}
           </button>
         )}
       </div>
 
       {resumeIA && (
-        <div className="mt-4 border-t border-ink/[0.07] pt-3">
-          <p className="inline-flex items-center gap-1.5 text-[12px] text-steel">
-            <IconeEtincelle className="h-3.5 w-3.5 text-signal" />
+        <div className="mt-4 border-t border-ink/15 pt-3">
+          <p className="inline-flex items-center gap-1.5 text-sm text-steel">
+            <IconeEtincelle className="h-4 w-4 text-ink" />
             Résumé de vos notes{dateResume ? ` · ${new Date(dateResume).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}` : ""}
           </p>
-          <p className="mt-1 text-[14px] leading-relaxed text-ink/75">{resumeIA}</p>
+          <p className="mt-1 text-base text-ink">{resumeIA}</p>
         </div>
       )}
     </section>
@@ -453,69 +495,62 @@ export function Dossier({
   client: { lignes: string[]; autresChantiers: number | null };
   surModifierClient: () => void;
 }) {
-  const ligne =
-    "-mx-2 flex w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-2.5 text-left transition hover:bg-ink/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50";
+  const ligne = `-mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`;
   return (
-    <section aria-label="Dossier" className="rounded-2xl bg-surface p-5 shadow-sm ring-1 ring-ink/[0.08] sm:p-6">
+    <section aria-label="Dossier" className={BLOC}>
       <Titre>Dossier</Titre>
       <div className="mt-2 space-y-0.5">
-        <button type="button" onClick={surOuvrirDevis} disabled={!devis} className={`${ligne} disabled:cursor-default disabled:hover:bg-transparent`}>
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-ink/[0.06] text-ink/70">
-            <IconeDocument className="h-4 w-4" />
-          </span>
+        <button type="button" onClick={surOuvrirDevis} disabled={!devis} className={`${ligne} disabled:active:bg-transparent sm:disabled:hover:bg-transparent`}>
+          <IconeDocument className="h-5 w-5 shrink-0 text-ink" />
           {devis ? (
             <span className="min-w-0 flex-1">
-              <span className="flex flex-wrap items-center gap-2">
-                <span className="text-[14.5px] font-medium text-ink">Devis {devis.numero}</span>
-                <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${devis.statut.classe}`}>{devis.statut.texte}</span>
-              </span>
-              <span className="block text-[13px] text-ink/55">
-                {devis.montant} TTC{devis.date ? ` · ${devis.date}` : ""}
+              <span className="block truncate text-base font-semibold text-ink">Devis {devis.numero}</span>
+              <span className="block truncate text-sm text-steel">
+                <span className="font-mono tabular-nums">{devis.montant}</span> TTC · {devis.statut.texte}
+                {devis.date ? ` · ${devis.date}` : ""}
               </span>
             </span>
           ) : (
-            <span className="flex-1 text-[14px] text-ink/45">Pas encore de devis</span>
+            <span className="flex-1 text-base text-steel">Pas encore de devis</span>
           )}
-          {devis && <IconeChevron className="h-4 w-4 shrink-0 text-ink/30" />}
+          {devis && <IconeChevron className="h-5 w-5 shrink-0 text-steel" />}
         </button>
 
         <button type="button" onClick={surOuvrirPhotos} className={ligne}>
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-ink/[0.06] text-ink/70">
-            <IconePhoto className="h-4 w-4" />
-          </span>
-          <span className="flex-1 text-[14.5px] text-ink">
-            Photos <span className="text-ink/45">{nbPhotos}</span>
+          <IconePhoto className="h-5 w-5 shrink-0 text-ink" />
+          <span className="flex-1 text-base text-ink">
+            Photos <span className="tabular-nums text-steel">{nbPhotos}</span>
           </span>
           {vignettes.length > 0 && (
             <span className="flex -space-x-2" aria-hidden>
               {vignettes.slice(0, 3).map((u) => (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img key={u} src={u} alt="" className="h-7 w-7 rounded-md object-cover ring-2 ring-surface" />
+                <img key={u} src={u} alt="" className="h-8 w-8 rounded-lg object-cover ring-2 ring-surface" />
               ))}
             </span>
           )}
-          <IconeChevron className="h-4 w-4 shrink-0 text-ink/30" />
+          <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
         </button>
 
         <button type="button" onClick={surModifierClient} className={ligne}>
           <span className="min-w-0 flex-1">
-            <span className="block text-[12px] text-steel">Client</span>
+            <span className="block text-sm text-steel">Client</span>
             {client.lignes.length > 0 ? (
               client.lignes.map((l) => (
-                <span key={l} className="block truncate text-[14px] text-ink/80">
+                <span key={l} className="block truncate text-base text-ink">
                   {l}
                 </span>
               ))
             ) : (
-              <span className="block text-[14px] text-ink/45">Ajouter un téléphone, une adresse…</span>
+              <span className="block truncate text-base text-steel">Ajouter un téléphone, une adresse…</span>
             )}
             {client.autresChantiers !== null && client.autresChantiers > 0 && (
-              <span className="mt-0.5 block text-[12.5px] text-steel">
+              <span className="mt-0.5 block truncate text-sm text-steel">
                 Déjà {client.autresChantiers} autre{client.autresChantiers > 1 ? "s" : ""} chantier{client.autresChantiers > 1 ? "s" : ""} ensemble
               </span>
             )}
           </span>
-          <span className="shrink-0 text-[13px] font-medium text-ink/50">Modifier</span>
+          <span className="shrink-0 text-sm font-semibold text-ink underline decoration-ink/30 underline-offset-4">Modifier</span>
         </button>
       </div>
     </section>

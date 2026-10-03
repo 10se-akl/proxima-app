@@ -201,6 +201,7 @@ function calculerLigne(
         prix_unitaire: prixUnitaire,
         total,
         detail_calcul: `${jours} jour${jours > 1 ? "s" : ""} × ${prixUnitaire}€/jour (${temps}h estimées, coût journalier configuré)`,
+        prix_source: "artisan",
       };
     }
 
@@ -214,6 +215,7 @@ function calculerLigne(
       prix_unitaire: prixUnitaire,
       total,
       detail_calcul: `${temps}h × ${prixUnitaire}€/h (coût horaire configuré)`,
+      prix_source: "artisan",
     };
   }
 
@@ -228,6 +230,9 @@ function calculerLigne(
     prix_unitaire: prixUnitaire,
     total,
     detail_calcul: `Tarif de référence interne : ${prixUnitaire}€/${poste.unite} — à ajuster selon vos fournisseurs`,
+    // Refonte (03/10, duel F lot 4) — ce prix n'est PAS celui de l'artisan :
+    // la revue le signale (« Prix Compyo ») jusqu'à ce qu'il le règle lui-même.
+    prix_source: "compyo",
   };
 }
 
@@ -268,6 +273,7 @@ function appliquerHeuresMinimum(
     prix_unitaire: parametres.cout_horaire,
     total: Math.round(heuresManquantes * parametres.cout_horaire * 100) / 100,
     detail_calcul: `Complément pour atteindre le minimum de ${parametres.heures_min_facturables}h configuré`,
+    prix_source: "artisan",
   };
 
   return [...lignes, complement];

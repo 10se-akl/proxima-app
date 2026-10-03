@@ -7,8 +7,8 @@ import {
   estLigneAjustementMinimum,
   estUniteHeure,
   estUniteJour,
-  reajusterMinimum,
 } from "@/lib/moteur-metier/tempsMainOeuvre";
+import { avecMinimum, lignesAvecValeur, lignesSansLigne } from "@/components/devis/lignesEdition";
 
 // Tarifs de l'artisan : sans eux (paramètres pas encore chargés), l'éditeur
 // fonctionne comme avant, sans conversion ni ajustement automatique.
@@ -54,51 +54,10 @@ export function avecLotParDefaut(ligne: LigneEditee, lots: LotDevis[]): LigneEdi
   return lots.length > 0 ? { ...ligne, lot_id: lots[lots.length - 1].id } : ligne;
 }
 
-// Refonte (03/10, duel F lot 3) — les deux gestes que partagent l'éditeur
-// complet et la feuille d'une ligne sur téléphone (components/devis/
-// FeuilleLigne.tsx) : changer une valeur, retirer une ligne. Une seule
-// implémentation, donc les mêmes règles partout : jamais de quantité ou de
-// prix négatif, total recalculé, ligne « heures minimum » tenue à jour.
-const avecMinimum = (lignes: LigneEditee[], tarifs?: TarifsEditeur | null) =>
-  tarifs ? reajusterMinimum(lignes, tarifs.heures_min_facturables) : lignes;
-
-export function lignesAvecValeur(
-  lignes: LigneEditee[],
-  cle: string,
-  cleChamp: keyof LigneDevisCalculee,
-  valeur: string | null,
-  tarifs?: TarifsEditeur | null
-): LigneEditee[] {
-  return avecMinimum(
-    lignes.map((ligne) => {
-      if (ligne.cle !== cle) return ligne;
-      // null = on retire complètement le champ (explication).
-      if (valeur === null) {
-        const copie = { ...ligne };
-        delete copie[cleChamp];
-        return copie;
-      }
-      if (cleChamp === "quantite" || cleChamp === "prix_unitaire") {
-        const nombre = Number(valeur);
-        // Jamais de quantité ou de prix négatif : la ligne "réduirait" le
-        // devis en silence.
-        const valeurSure = !Number.isFinite(nombre) || nombre < 0 ? 0 : nombre;
-        const majee = { ...ligne, [cleChamp]: valeurSure };
-        majee.total = Math.round(majee.quantite * majee.prix_unitaire * 100) / 100;
-        return majee;
-      }
-      return { ...ligne, [cleChamp]: valeur };
-    }),
-    tarifs
-  );
-}
-
-export function lignesSansLigne(lignes: LigneEditee[], cle: string, tarifs?: TarifsEditeur | null): LigneEditee[] {
-  return avecMinimum(
-    lignes.filter((l) => l.cle !== cle),
-    tarifs
-  );
-}
+// Refonte (03/10, duel F lots 3 et 4) — changer une valeur et retirer une
+// ligne vivent dans lignesEdition.ts, partagés avec la feuille d'une ligne
+// sur téléphone ; on les ré-exporte ici pour les écrans qui les importaient.
+export { lignesAvecValeur, lignesSansLigne };
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });

@@ -1307,7 +1307,7 @@ function construireHistoriqueHerite(
   if (devis) {
     items.push({ date: devis.created_at, label: "Devis généré" });
     if (devis.envoye_le) {
-      items.push({ date: devis.envoye_le, label: "Devis envoyé au client" });
+      items.push({ date: devis.envoye_le, label: "Devis noté envoyé" });
     }
   }
   if (demande.accepte_le) {

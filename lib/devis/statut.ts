@@ -25,14 +25,17 @@ export function statutAffiche(
   statutProjet: string | null | undefined
 ): { texte: string; classe: string } {
   if (d.statut === "brouillon") return { texte: "Brouillon", classe: "bg-ink/10 text-ink/60" };
-  if (d.statut === "a_valider") return { texte: "Prêt à envoyer", classe: "bg-alerte-orange/15 text-alerte-orange" };
+  if (d.statut === "a_valider") return { texte: "À envoyer", classe: "bg-alerte-orange/15 text-alerte-orange" };
   if (d.statut === "refuse") return { texte: "Refusé", classe: "bg-signal/10 text-signal" };
   if (devisAccepte(d, statutProjet)) return { texte: "Accepté", classe: "bg-succes/15 text-succes" };
   // Relance (11/09) — le devis est toujours en attente, mais l'artisan a
   // déjà reçu une proposition de relance (voir app/api/cron/relance-devis).
   // "Relancé" signifie ici "relance proposée à l'artisan" — Compyo n'envoie
   // jamais rien de lui-même au client.
-  if (d.notifie_relance_j10_le) return { texte: "Relancé J+10", classe: "bg-steel/15 text-steel" };
-  if (d.notifie_relance_j5_le) return { texte: "Relancé J+5", classe: "bg-steel/15 text-steel" };
-  return { texte: "Envoyé — en attente", classe: "bg-steel/15 text-steel" };
+  // Refonte (02/10, duel F lot 1) — « Relancé J+5 » laissait croire que le
+  // client avait été relancé ; c'est l'artisan qui a été prévenu. La pastille
+  // dit ce qu'on sait : le client n'a pas répondu.
+  if (d.notifie_relance_j10_le) return { texte: "Sans réponse · 10 j", classe: "bg-steel/15 text-steel" };
+  if (d.notifie_relance_j5_le) return { texte: "Sans réponse · 5 j", classe: "bg-steel/15 text-steel" };
+  return { texte: "En attente", classe: "bg-steel/15 text-steel" };
 }

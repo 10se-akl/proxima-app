@@ -190,8 +190,8 @@ export async function GET(request: NextRequest) {
         nomClient,
         titre: "Devis toujours sans réponse",
         corps: nomClient
-          ? `${nomClient} — envoyé il y a ${joursDepuis} jours. Un brouillon de relance vous attend.`
-          : `Un devis envoyé il y a ${joursDepuis} jours reste sans réponse.`,
+          ? `${nomClient} — pas de réponse depuis ${joursDepuis} jours. Une relance est prête.`
+          : `Un devis reste sans réponse depuis ${joursDepuis} jours.`,
         // 26/09 — ouvre la feuille « Message au client », relance prête.
         url: `/dashboard/demandes/${devis.demande_id}?message=relanceDevis&devis=${devis.id}`,
       };

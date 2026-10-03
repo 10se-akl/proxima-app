@@ -120,8 +120,8 @@ export const SECTIONS: SectionGuide[] = [
     etapes: [
       {
         capture: "devis-envoyer",
-        alt: "La carte « Prêt à partir » et le bouton « Envoyer au client ».",
-        texte: "« Envoyer au client » : le devis est figé et un lien de signature est prêt.",
+        alt: "La carte « Prêt à partir » et le bouton « Envoyer par WhatsApp ».",
+        texte: "« Envoyer par WhatsApp » : le devis est figé, et le message avec le lien de signature s'ouvre dans WhatsApp. C'est vous qui appuyez sur envoyer.",
       },
       {
         capture: "devis-partager",

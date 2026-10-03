@@ -52,8 +52,25 @@ export async function marquerDevisEnvoye(
     devis: Pick<Devis, "id" | "mentions_legales" | "mention_tva_reduite">;
     demandeId: string;
     parametres: ParametresEntreprise | null;
-  }
+  },
+  // Refonte (02/10, duel F lot 1) — le titre dit ce qui s'est vraiment passé :
+  // « Devis noté envoyé » (déjà parti autrement), « Devis prêt dans
+  // WhatsApp »… Compyo ne voit jamais le message partir.
+  titreEvenement = "Devis noté envoyé"
 ): Promise<ResultatAction> {
+  // Refonte (02/10, duel F lot 1) — le gel figeait les paramètres que l'écran
+  // avait chargés à son ouverture : une décennale complétée entre-temps (dans
+  // un autre onglet, par la conjointe) n'y était pas. On les relit en base
+  // juste avant de figer ; à défaut, ceux de l'écran.
+  if (!devis.mentions_legales && ctx.organisationId) {
+    const { data: frais } = await ctx.supabase
+      .from("parametres_entreprise")
+      .select("*")
+      .eq("organisation_id", ctx.organisationId)
+      .maybeSingle();
+    if (frais) parametres = frais as ParametresEntreprise;
+  }
+
   const { data: d1, error: err1 } = await ctx.supabase
     .from("devis")
     .update({
@@ -86,7 +103,7 @@ export async function marquerDevisEnvoye(
     };
   }
 
-  await evenement(ctx, demandeId, "devis_envoye", "Devis envoyé au client");
+  await evenement(ctx, demandeId, "devis_envoye", titreEvenement);
   return { ok: true };
 }
 

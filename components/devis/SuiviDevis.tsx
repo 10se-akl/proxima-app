@@ -18,6 +18,8 @@ import {
 import { finDeValidite } from "@/lib/devis/mentionsLegales";
 import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
 import { devisAccepte } from "@/lib/devis/statut";
+import { numeroWhatsApp, ouvrirMessage, type Canal } from "@/lib/messagesClient";
+import { Feuille } from "@/components/projet/Feuille";
 import type { Devis, ParametresEntreprise } from "@/types";
 
 // ============================================================
@@ -61,6 +63,7 @@ export function SuiviDevis({
   artisanId,
   organisationId,
   onChange,
+  pointsManquants = [],
 }: {
   devis: Devis;
   projet: ProjetDuDevis;
@@ -69,12 +72,20 @@ export function SuiviDevis({
   artisanId: string | null;
   organisationId: string | null;
   onChange: () => Promise<void>;
+  /** Les points de conformité non tenus (score du devis) : une question
+   *  les rappelle avant de figer le devis. */
+  pointsManquants?: string[];
 }) {
   const router = useRouter();
   const [enCours, setEnCours] = useState<string | null>(null);
   const [erreur, setErreur] = useState<string | null>(null);
   const [copie, setCopie] = useState<"lien" | "message" | null>(null);
   const [confirmerRefus, setConfirmerRefus] = useState(false);
+  // Refonte (02/10, duel F lot 1) — le canal choisi, en attente de la
+  // réponse à « Il manque … ».
+  const [questionEnvoi, setQuestionEnvoi] = useState<Canal | "deja" | null>(null);
+  const telephone = projet.telephone_client?.trim() || null;
+  const whatsappPossible = !!telephone && numeroWhatsApp(telephone) !== null;
 
   const ctx: ContexteAction = { supabase: createClient(), artisanId, organisationId };
   const accepte = devisAccepte(devis, projet.statut);
@@ -132,7 +143,39 @@ export function SuiviDevis({
     }
   }
 
-  const erreurAffichee = erreur && <p className="mt-3 text-sm text-signal">{erreur}</p>;
+  // Refonte (02/10, duel F lot 1) — « Envoyer au client » ne faisait que figer
+  // le devis : il fallait ensuite « Partager », choisir l'application, puis
+  // retrouver le client (7 gestes). Maintenant, un appui fige le devis (le
+  // lien de signature ne marche qu'une fois le devis noté envoyé) PUIS ouvre
+  // WhatsApp ou les SMS au numéro du client, message et lien prêts. C'est
+  // l'artisan qui appuie sur envoyer. L'ouverture suit l'enregistrement de
+  // près : le navigateur la permet encore (activation de l'utilisateur), et
+  // « Pas parti ? Rouvrir » rattrape le cas contraire.
+  async function envoyer(canal: Canal | "deja") {
+    setQuestionEnvoi(null);
+    setErreur(null);
+    setEnCours(canal);
+    try {
+      const titre =
+        canal === "whatsapp" ? "Devis prêt dans WhatsApp" : canal === "sms" ? "Devis prêt dans les SMS" : "Devis noté envoyé";
+      const resultat = await marquerDevisEnvoye(ctx, { devis, demandeId: projet.id, parametres }, titre);
+      if (!resultat.ok) {
+        setErreur(resultat.erreur);
+        return;
+      }
+      if (canal !== "deja" && telephone) ouvrirMessage(canal, telephone, messageClient(devis, projet, nomEntreprise));
+      await onChange();
+    } finally {
+      setEnCours(null);
+    }
+  }
+
+  function demanderEnvoi(canal: Canal | "deja") {
+    if (pointsManquants.length > 0) setQuestionEnvoi(canal);
+    else void envoyer(canal);
+  }
+
+  const erreurAffichee = erreur && <p className="mt-3 text-sm text-signal-fonce dark:text-signal-clair">{erreur}</p>;
 
   // ---- Prêt à partir ------------------------------------------------------
   if (devis.statut === "a_valider") {
@@ -140,53 +183,78 @@ export function SuiviDevis({
     return (
       <Card className="p-6">
         <p className="font-display text-lg font-semibold">Prêt à partir</p>
-        <p className="mt-1 text-sm text-ink/60">
-          Relisez l&apos;aperçu. En l&apos;envoyant, le devis est figé tel quel et votre client
-          peut le signer en ligne.
-        </p>
+        <p className="mt-1 text-sm text-steel">Une fois parti, le devis ne se modifie plus.</p>
         {sansContact && (
-          <p className="mt-3 rounded-xl border border-alerte-orange/30 bg-alerte-orange/5 px-3 py-2 text-xs text-ink/70">
-            Ce client n&apos;a ni téléphone ni email enregistré. Vous pourrez quand même lui
-            transmettre le devis à la main.
-          </p>
+          <p className="mt-3 text-sm text-steel">Pas de numéro pour ce client : partagez le lien vous-même.</p>
         )}
         <div className="mt-5 flex flex-wrap gap-3">
-          <Button
-            onClick={() =>
-              executer("envoi", () =>
-                marquerDevisEnvoye(ctx, { devis, demandeId: projet.id, parametres })
-              )
-            }
-            loading={enCours === "envoi"}
-            disabled={enCours !== null}
-          >
-            Envoyer au client
-          </Button>
+          {telephone ? (
+            <>
+              <Button
+                onClick={() => demanderEnvoi(whatsappPossible ? "whatsapp" : "sms")}
+                loading={enCours === "whatsapp" || (!whatsappPossible && enCours === "sms")}
+                disabled={enCours !== null}
+              >
+                {whatsappPossible ? "Envoyer par WhatsApp" : "Envoyer par SMS"}
+              </Button>
+              {whatsappPossible && (
+                <Button variant="ghost" onClick={() => demanderEnvoi("sms")} loading={enCours === "sms"} disabled={enCours !== null}>
+                  Par SMS
+                </Button>
+              )}
+            </>
+          ) : (
+            <Button onClick={() => demanderEnvoi("deja")} loading={enCours === "deja"} disabled={enCours !== null}>
+              Valider et partager le lien
+            </Button>
+          )}
           <Button variant="ghost" onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
             Modifier (nouvelle version)
           </Button>
         </div>
         {/* 27/09 (Axel) — Déjà envoyé en PDF ou à la main : le noter sans
-            passer par « Envoyer au client », dont le nom laisse croire
-            qu'il repartirait. */}
-        <p className="mt-2 text-sm text-ink/55">
-          Déjà envoyé autrement ?{" "}
-          <button
-            type="button"
-            onClick={() =>
-              executer("deja_envoye", () => marquerDevisEnvoye(ctx, { devis, demandeId: projet.id, parametres }))
-            }
-            disabled={enCours !== null}
-            className="inline-flex min-h-11 items-center font-medium text-ink underline decoration-ink/30 underline-offset-2 disabled:opacity-50"
-          >
-            {enCours === "deja_envoye" ? "Enregistrement…" : "Le noter comme envoyé"}
-          </button>
-        </p>
-        <p className="mt-1 text-[11px] leading-relaxed text-ink/40">
-          Un devis validé ne se modifie plus : c&apos;est un engagement envers votre client. Pour
-          le changer, créez une nouvelle version — celle-ci reste dans l&apos;historique.
-        </p>
+            rouvrir de messagerie. */}
+        {telephone && (
+          <p className="mt-2 text-sm text-steel">
+            Déjà envoyé autrement ?{" "}
+            <button
+              type="button"
+              onClick={() => demanderEnvoi("deja")}
+              disabled={enCours !== null}
+              className="inline-flex min-h-12 items-center font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-50"
+            >
+              {enCours === "deja" ? "Enregistrement…" : "Le noter comme envoyé"}
+            </button>
+          </p>
+        )}
         {erreurAffichee}
+
+        <Feuille
+          ouverte={questionEnvoi !== null}
+          titre={`Il manque : ${pointsManquants.join(", ").toLowerCase()}`}
+          surFermer={() => setQuestionEnvoi(null)}
+        >
+          <p className="text-base text-steel">Le devis partira sans, et ne se modifiera plus.</p>
+          <div className="mt-5 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setQuestionEnvoi(null);
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }}
+              className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80"
+            >
+              Compléter d&apos;abord
+            </button>
+            <button
+              type="button"
+              onClick={() => questionEnvoi && void envoyer(questionEnvoi)}
+              className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+            >
+              Envoyer quand même
+            </button>
+          </div>
+        </Feuille>
       </Card>
     );
   }
@@ -249,13 +317,38 @@ export function SuiviDevis({
       <Card className="p-6">
         <p className="font-display text-lg font-semibold">En attente de la réponse du client</p>
         <p className="mt-1 text-sm text-ink/60">
-          {devis.envoye_le ? `Envoyé le ${dateLongue(devis.envoye_le)}` : "Envoyé"}
+          {devis.envoye_le ? `Noté envoyé le ${dateLongue(devis.envoye_le)}` : "Noté envoyé"}
           {fin && (
             <span className={expire ? "text-alerte-orange" : ""}>
               {expire ? ` · offre expirée depuis le ${dateLongue(fin.toISOString())}` : ` · valable jusqu'au ${dateLongue(fin.toISOString())}`}
             </span>
           )}
         </p>
+
+        {/* Refonte (02/10, duel F lot 1) — Compyo ne voit jamais le message
+            partir : s'il n'est pas parti (réseau, mauvais contact), on le
+            rouvre tel quel, en un appui. */}
+        {telephone && (
+          <p className="mt-3 flex flex-wrap items-center gap-x-3 text-sm text-steel">
+            Pas parti ?
+            {whatsappPossible && (
+              <button
+                type="button"
+                onClick={() => ouvrirMessage("whatsapp", telephone, messageClient(devis, projet, nomEntreprise))}
+                className="inline-flex min-h-12 items-center font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+              >
+                Rouvrir WhatsApp
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => ouvrirMessage("sms", telephone, messageClient(devis, projet, nomEntreprise))}
+              className="inline-flex min-h-12 items-center font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+            >
+              {whatsappPossible ? "SMS" : "Rouvrir les SMS"}
+            </button>
+          </p>
+        )}
 
         <p className="mt-5 text-xs font-medium uppercase tracking-wider text-ink/50">Transmettre le devis</p>
         <p className="mt-1 text-xs text-ink/45">

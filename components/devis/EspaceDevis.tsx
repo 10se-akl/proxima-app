@@ -407,6 +407,7 @@ export function VueEspaceDevis({
               artisanId={artisanId}
               organisationId={organisationId}
               onChange={onRecharger}
+              pointsManquants={evaluation.conformite.filter((p) => p.niveau === "attention").map((p) => p.libelle)}
             />
           )}
         </section>

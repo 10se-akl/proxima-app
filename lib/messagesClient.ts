@@ -23,7 +23,11 @@ export type Canal = "sms" | "whatsapp";
 
 export type Signature = { nom?: string | null; entreprise?: string | null };
 
-export type CleMessage = "accuse" | "retard" | "decalage" | "rappelRdv" | "meteo" | "relanceDevis" | "relancePaiement";
+// Refonte (03/10, duel D lot 1) — « reponse » : un texte écrit avec l'IA
+// sur la fiche, puis ouvert dans les SMS ou WhatsApp de l'artisan. Ce n'est
+// pas un modèle (suggererMessages ne le propose jamais) : la clé ne sert
+// qu'à la trace « Message préparé : réponse » dans le Carnet.
+export type CleMessage = "accuse" | "retard" | "decalage" | "rappelRdv" | "meteo" | "relanceDevis" | "relancePaiement" | "reponse";
 
 // ---------------------------------------------------------------- mise en forme
 
@@ -139,6 +143,7 @@ export const LIBELLES: Record<CleMessage, string> = {
   meteo: "Alerte météo",
   relanceDevis: "Relance du devis",
   relancePaiement: "Relance de paiement",
+  reponse: "Réponse",
 };
 
 // ---------------------------------------------------------------- l'ouverture

@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Avatar } from "@/components/ui/Avatar";
 import type { Priorite, StatutProjet } from "@/types";
 import { IconeLieu, IconeMessage, IconePoints, IconeRetour, IconeTelephone } from "./icones";
 
@@ -13,7 +12,16 @@ import { IconeLieu, IconeMessage, IconePoints, IconeRetour, IconeTelephone } fro
 // chantier : appeler le client, lancer l'itinéraire. Tout le reste des
 // actions « rares » (priorité, visite, infos, clôture…) vit dans le menu
 // « … », au lieu d'une rangée de boutons et de liens de même poids.
+//
+// Refonte (03/10, duel D lot 1) — règles 3, 4, 9 et 17 de
+// docs/langage-interface.md : le nom en 30 px, sans pastille de couleur
+// (l'avatar et ses teintes hors palette partent) ; « Urgent » s'écrit en
+// mot, en couleur d'alerte ; les icônes sont en encre (il y en avait
+// trois en terracotta) ; chaque entrée du menu fait 48 px.
 // ============================================================
+
+const FOCUS =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
 
 const ETAPES: { libelle: string; statuts: StatutProjet[] }[] = [
   { libelle: "Demande", statuts: ["nouveau", "analyse"] },
@@ -59,6 +67,8 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
     f();
   };
 
+  const item = "flex min-h-12 w-full items-center px-4 text-left text-base active:bg-ink/10 sm:hover:bg-ink/5 focus-visible:bg-ink/10 focus-visible:outline-none";
+
   return (
     <div ref={zone} className="relative">
       <button
@@ -68,14 +78,14 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
         aria-expanded={ouvert}
         aria-label="Plus d'actions"
         onClick={() => setOuvert((v) => !v)}
-        className="grid h-12 w-12 place-items-center rounded-full border border-ink/10 bg-surface text-ink/70 transition hover:border-ink/25 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+        className={`grid h-12 w-12 place-items-center rounded-full text-ink active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
       >
-        <IconePoints className="h-5 w-5" />
+        <IconePoints className="h-6 w-6" />
       </button>
       {ouvert && (
         <div
           role="menu"
-          className="absolute right-0 top-12 z-40 w-[17rem] overflow-hidden rounded-2xl bg-surface py-1.5 shadow-xl ring-1 ring-ink/10"
+          className="absolute right-0 top-12 z-40 w-[18rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl bg-surface py-1.5 shadow-xl ring-1 ring-ink/15"
           onKeyDown={(e) => {
             if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
             e.preventDefault();
@@ -85,12 +95,12 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
           }}
         >
           {entrees.map((e, i) => {
-            if (e.type === "separateur") return <div key={i} role="separator" className="my-1.5 border-t border-ink/[0.07]" />;
+            if (e.type === "separateur") return <div key={i} role="separator" className="my-1.5 border-t border-ink/15" />;
             if (e.type === "priorite") {
               return (
                 <div key={i} className="px-3 py-2">
-                  <p className="mb-1.5 text-[12px] text-ink/50">Priorité</p>
-                  <div className="grid grid-cols-3 gap-1 rounded-xl bg-ink/[0.05] p-1">
+                  <p className="mb-1.5 text-sm text-steel">Priorité</p>
+                  <div className="grid grid-cols-3 gap-1 rounded-2xl bg-ink/10 p-1">
                     {(["urgent", "important", "normal"] as const).map((p) => (
                       <button
                         key={p}
@@ -98,8 +108,8 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
                         role="menuitemradio"
                         aria-checked={e.valeur === p}
                         onClick={() => choisir(() => e.surChoisir(p))}
-                        className={`rounded-lg px-1 py-1.5 text-[12.5px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
-                          e.valeur === p ? "bg-surface text-ink shadow-sm" : "text-ink/55 hover:text-ink"
+                        className={`min-h-12 rounded-xl px-1 text-sm font-semibold ${FOCUS} ${
+                          e.valeur === p ? "bg-surface text-ink ring-1 ring-ink/15" : "text-steel"
                         }`}
                       >
                         {p === "urgent" ? "Urgent" : p === "important" ? "Important" : "Normal"}
@@ -111,12 +121,7 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
             }
             if (e.type === "lien") {
               return (
-                <Link
-                  key={i}
-                  href={e.href}
-                  role="menuitem"
-                  className="block px-4 py-2.5 text-[14px] text-ink transition hover:bg-ink/[0.04] focus-visible:bg-ink/[0.06] focus-visible:outline-none"
-                >
+                <Link key={i} href={e.href} role="menuitem" className={`${item} text-ink`}>
                   {e.libelle}
                 </Link>
               );
@@ -128,8 +133,8 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
                 role="menuitem"
                 disabled={e.desactive}
                 onClick={() => choisir(e.surChoisir)}
-                className={`block w-full px-4 py-2.5 text-left text-[14px] transition hover:bg-ink/[0.04] focus-visible:bg-ink/[0.06] focus-visible:outline-none disabled:opacity-40 ${
-                  e.attention ? "text-signal" : "text-ink"
+                className={`${item} disabled:opacity-60 ${
+                  e.attention ? "font-semibold text-signal-fonce dark:text-signal-clair" : "text-ink"
                 }`}
               >
                 {e.libelle}
@@ -164,39 +169,31 @@ export function EnTeteProjet({
   entreesMenu: EntreeMenu[];
 }) {
   const etape = Math.max(0, ETAPES.findIndex((e) => e.statuts.includes(statut)));
+  const tuile = `flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-surface px-2 py-2 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:hover:bg-ink/5 ${FOCUS}`;
 
   return (
     <header>
       <div className="flex items-center justify-between gap-3">
         <Link
           href="/dashboard/demandes"
-          className="-ml-1 inline-flex min-h-12 items-center gap-1 rounded-lg pl-1 pr-3 text-[13.5px] text-ink/55 transition hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+          className={`-ml-2 inline-flex min-h-12 items-center gap-1 rounded-xl pl-1 pr-3 text-base text-steel ${FOCUS}`}
         >
-          <IconeRetour className="h-4 w-4" /> Projets
+          <IconeRetour className="h-5 w-5" /> Projets
         </Link>
-        <Menu entrees={entreesMenu} />
-      </div>
-
-      <div className="mt-3 flex items-start gap-3.5">
-        <Avatar nom={nomClient || "?"} taille={48} />
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-            <h1 className="min-w-0 truncate font-display text-[1.6rem] font-semibold leading-tight tracking-[-0.02em] text-ink sm:text-3xl">
-              {nomClient}
-            </h1>
-            {priorite !== "normal" && (
-              <span
-                className={`rounded-full px-2.5 py-0.5 text-[12px] font-medium ${
-                  priorite === "urgent" ? "bg-signal/15 text-signal" : "bg-alerte-orange/15 text-alerte-orange"
-                }`}
-              >
-                {priorite === "urgent" ? "Urgent" : "Important"}
-              </span>
-            )}
-          </div>
-          {sousTitre && <p className="mt-0.5 truncate text-[14px] text-ink/55">{sousTitre}</p>}
+        <div className="-mr-2 flex items-center">
+          <Menu entrees={entreesMenu} />
         </div>
       </div>
+
+      <h1 className="mt-1 truncate font-display text-3xl font-semibold text-ink">{nomClient}</h1>
+      {(sousTitre || priorite !== "normal") && (
+        <p className="mt-0.5 truncate text-sm text-steel">
+          {priorite === "urgent" && <span className="font-semibold text-signal-fonce dark:text-signal-clair">Urgent</span>}
+          {priorite === "important" && <span className="font-semibold text-ink">Important</span>}
+          {priorite !== "normal" && sousTitre ? " · " : ""}
+          {sousTitre}
+        </p>
+      )}
 
       {/* 27/09 — Sur téléphone, les trois gestes du chantier tiennent sur
           une ligne, en trois boutons égaux (« Itinéraire » partait seul à
@@ -204,20 +201,13 @@ export function EnTeteProjet({
       {(telephone || adresse || surMessage) && (
         <div className="mt-4 grid auto-cols-fr grid-flow-col gap-2 sm:flex sm:flex-wrap">
           {telephone && (
-            <a
-              href={`tel:${telephone.replace(/\s/g, "")}`}
-              className="flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-ink/10 bg-surface px-2 py-2 text-[14px] font-medium text-ink sm:inline-flex sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2.5 transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-            >
-              <IconeTelephone className="h-5 w-5 text-signal sm:h-4 sm:w-4" /> Appeler
+            <a href={`tel:${telephone.replace(/\s/g, "")}`} className={tuile}>
+              <IconeTelephone className="h-6 w-6 sm:h-5 sm:w-5" /> Appeler
             </a>
           )}
           {surMessage && (
-            <button
-              type="button"
-              onClick={surMessage}
-              className="flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-ink/10 bg-surface px-2 py-2 text-[14px] font-medium text-ink sm:inline-flex sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2.5 transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-            >
-              <IconeMessage className="h-5 w-5 text-signal sm:h-4 sm:w-4" /> Message
+            <button type="button" onClick={surMessage} className={tuile}>
+              <IconeMessage className="h-6 w-6 sm:h-5 sm:w-5" /> Message
             </button>
           )}
           {adresse && (
@@ -225,9 +215,9 @@ export function EnTeteProjet({
               href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(adresse)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl border border-ink/10 bg-surface px-2 py-2 text-[14px] font-medium text-ink sm:inline-flex sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:py-2.5 max-w-full transition hover:border-ink/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+              className={`${tuile} max-w-full`}
             >
-              <IconeLieu className="h-5 w-5 shrink-0 text-signal sm:h-4 sm:w-4" />
+              <IconeLieu className="h-6 w-6 shrink-0 sm:h-5 sm:w-5" />
               <span className="truncate">Itinéraire</span>
             </a>
           )}
@@ -235,20 +225,20 @@ export function EnTeteProjet({
       )}
 
       {/* La progression : cinq étapes, la courante nommée. */}
-      <div className="mt-5" aria-label={`Étape : ${ETAPES[etape].libelle}`}>
+      <div className="mt-4" aria-label={`Étape : ${ETAPES[etape].libelle}`}>
         <div className="flex gap-1" aria-hidden>
           {ETAPES.map((e, i) => (
-            <span key={e.libelle} className={`h-1 flex-1 rounded-full ${i <= etape ? "bg-ink/70" : "bg-ink/10"}`} />
+            <span key={e.libelle} className={`h-1 flex-1 rounded-full ${i <= etape ? "bg-ink" : "bg-ink/15"}`} />
           ))}
         </div>
-        <div className="mt-1.5 hidden justify-between text-[11.5px] sm:flex" aria-hidden>
+        <div className="mt-1.5 hidden justify-between text-sm sm:flex" aria-hidden>
           {ETAPES.map((e, i) => (
-            <span key={e.libelle} className={i === etape ? "font-medium text-ink" : "text-ink/35"}>
+            <span key={e.libelle} className={i === etape ? "font-semibold text-ink" : "text-steel"}>
               {e.libelle}
             </span>
           ))}
         </div>
-        <p className="mt-1.5 text-[12px] font-medium text-ink/70 sm:hidden">{ETAPES[etape].libelle}</p>
+        <p className="mt-1.5 text-sm text-steel sm:hidden">{ETAPES[etape].libelle}</p>
       </div>
     </header>
   );

@@ -35,8 +35,19 @@ import type { Projet, Devis, NoteVocale, EvenementProjet, EvenementPlanning, Par
 import { VueProjet } from "@/components/projet/VueProjet";
 import { Feuille } from "@/components/projet/Feuille";
 import type { IdAction } from "@/components/projet/prochaineAction";
-import { SquelettePage } from "@/components/ui/Skeleton";
+import { Skeleton, SquelettePage } from "@/components/ui/Skeleton";
 import { empreinte, lireBrouillon, ecrireBrouillon, effacerBrouillon } from "@/lib/brouillonLocal";
+import { ouvrirMessage, type Canal } from "@/lib/messagesClient";
+import { tracerMessagePrepare } from "@/components/projet/FeuilleMessageClient";
+import { BOUTON_CONTOUR, BOUTON_TEXTE } from "@/components/projet/Blocs";
+import { IconeCoche } from "@/components/projet/icones";
+
+// Refonte (03/10, duel D lot 1) — le texte écrit avec l'IA, une fois
+// retouché, est gardé sur le téléphone (lib/brouillonLocal.ts) jusqu'à ce
+// qu'il parte dans les SMS ou WhatsApp. Il n'a pas d'équivalent en base :
+// la « base » du brouillon est une constante.
+const BASE_MESSAGE_IA = "1";
+type MessageIA = { texte: string; genre: "reponse" | "relanceDevis"; contexte?: string };
 
 // Revue métier (06/09) — dérivé de LABEL_TYPE_CHANTIER (components/
 // dashboard/DemandeCard.tsx) plutôt que dupliqué ici : une seule liste à
@@ -69,6 +80,16 @@ export default function DetailDemandePage({
   const [chargementReponse, setChargementReponse] = useState(false);
   const [brouillonReponse, setBrouillonReponse] = useState("");
   const [copie, setCopie] = useState(false);
+  // Refonte (03/10, duel D lot 1) — la feuille IA ouvre maintenant les SMS
+  // ou WhatsApp de l'artisan, texte prêt, au lieu de le faire copier puis
+  // coller. `genreReponse` dit ce que la trace écrira dans le Carnet
+  // (réponse ou relance du devis), `contexteReponse` permet de redemander
+  // une autre version du même message.
+  const [genreReponse, setGenreReponse] = useState<MessageIA["genre"]>("reponse");
+  const [contexteReponse, setContexteReponse] = useState<string | undefined>(undefined);
+  const [reponseGardee, setReponseGardee] = useState(false);
+  const [erreurEnvoiReponse, setErreurEnvoiReponse] = useState(false);
+  const cleMessageIA = `compyo:message-ia:${params.id}`;
   // Constaté le 13/09 sur un vrai projet : un seul échec (génération de
   // devis) affichait le même message d'erreur QUATRE fois sur la page —
   // sous "Cadrer le besoin", sous "Générer un devis", sous "Préparer une
@@ -291,6 +312,15 @@ export default function DetailDemandePage({
 
   useEffect(() => {
     chargerDonnees();
+    // Un texte IA retouché puis laissé (un appel, l'application fermée)
+    // revient tel quel : il n'est pas réécrit par l'IA à la réouverture.
+    const garde = lireBrouillon<MessageIA>(`compyo:message-ia:${params.id}`, BASE_MESSAGE_IA);
+    if (garde?.texte) {
+      setBrouillonReponse(garde.texte);
+      setGenreReponse(garde.genre);
+      setContexteReponse(garde.contexte);
+      setReponseGardee(true);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.id]);
 
@@ -630,10 +660,13 @@ export default function DetailDemandePage({
     }
   }
 
-  async function genererReponse(contexteSupplementaire?: string) {
+  async function genererReponse(contexteSupplementaire?: string, genre: MessageIA["genre"] = "reponse") {
     setErreur(null);
     setChargementReponse(true);
     setCopie(false);
+    setErreurEnvoiReponse(false);
+    setContexteReponse(contexteSupplementaire);
+    setGenreReponse(genre);
     const controleur = new AbortController();
     controleursIARef.current.add(controleur);
     let res: Response;
@@ -662,6 +695,32 @@ export default function DetailDemandePage({
     }
     const data = await res.json();
     setBrouillonReponse(data.brouillon);
+    // Une nouvelle version demandée remplace le texte retouché : le
+    // brouillon local ne garde que ce que l'artisan écrit lui-même.
+    effacerBrouillon(cleMessageIA);
+    setReponseGardee(false);
+  }
+
+  function changerReponse(texte: string) {
+    setBrouillonReponse(texte);
+    ecrireBrouillon<MessageIA>(cleMessageIA, BASE_MESSAGE_IA, { texte, genre: genreReponse, contexte: contexteReponse });
+    setReponseGardee(true);
+  }
+
+  // L'IA propose, l'artisan relit puis envoie lui-même : on ouvre ses SMS
+  // ou son WhatsApp, texte prêt, au numéro du client (comme les modèles de
+  // FeuilleMessageClient). La trace dit « préparé », jamais « envoyé ».
+  function envoyerReponse(canal: Canal) {
+    const telephone = demande?.telephone_client;
+    if (!telephone || !brouillonReponse.trim()) return;
+    if (!ouvrirMessage(canal, telephone, brouillonReponse)) {
+      setErreurEnvoiReponse(true);
+      return;
+    }
+    setErreurEnvoiReponse(false);
+    void tracerMessagePrepare(supabase, { demandeId: params.id, cle: genreReponse, canal });
+    effacerBrouillon(cleMessageIA);
+    setReponseGardee(false);
   }
 
   // Sprint "Relance suggérée" (06/09) — le résumé de fin de journée détecte
@@ -673,11 +732,15 @@ export default function DetailDemandePage({
   // reste du produit : l'IA propose, l'artisan décide et envoie lui-même.
   function genererRelance() {
     setFeuilleReponse(true);
+    // Un texte déjà retouché n'est jamais réécrit sans qu'on le demande
+    // (« Autre version ») : rien ne se perd.
+    if (reponseGardee && brouillonReponse) return;
     const jours = joursDepuisEnvoiDevis();
     genererReponse(
       jours
         ? `Le client n'a pas répondu depuis ${jours} jour${jours > 1 ? "s" : ""} après l'envoi du devis. Rédige un message de relance courtois qui donne simplement des nouvelles et demande si le devis convient, sans être insistant.`
-        : "Rédige un message de relance courtois qui donne des nouvelles et demande si le devis envoyé convient, sans être insistant."
+        : "Rédige un message de relance courtois qui donne des nouvelles et demande si le devis envoyé convient, sans être insistant.",
+      "relanceDevis"
     );
   }
 
@@ -688,9 +751,15 @@ export default function DetailDemandePage({
   }
 
   async function copierReponse() {
-    await navigator.clipboard.writeText(brouillonReponse);
-    setCopie(true);
-    setTimeout(() => setCopie(false), 2000);
+    // « Copié » ne s'affiche qu'une fois la copie faite (le presse-papiers
+    // peut être refusé).
+    try {
+      await navigator.clipboard.writeText(brouillonReponse);
+      setCopie(true);
+      setTimeout(() => setCopie(false), 2000);
+    } catch {
+      setCopie(false);
+    }
   }
 
   async function changerPriorite(priorite: Projet["priorite"]) {
@@ -1177,45 +1246,58 @@ export default function DetailDemandePage({
                 />
               </div>
             ) : null,
+          // Refonte (03/10, duel D lot 1) — règles 3, 4, 5 et 17 : un seul
+          // bouton plein par écran (« Oui » passe en contour), des cibles de
+          // 48 px, un succès écrit en encre à côté d'une coche verte.
           propositionTaches:
             tachesProposees && tachesProposees.length > 0 ? (
-              <div className="mt-3 rounded-xl bg-paper-warm/70 p-4 ring-1 ring-ink/[0.06]">
-                <p className="text-[13px] font-medium text-ink">L&apos;IA a repéré ces tâches. Les ajouter ?</p>
-                <ul className="mt-2 space-y-1 text-[14px] text-ink/75">
+              <div className="mt-3 rounded-2xl bg-paper-warm p-4">
+                <p className="text-base font-semibold text-ink">L&apos;IA a repéré ces tâches. Les ajouter ?</p>
+                <ul className="mt-2 space-y-1 text-base text-ink">
                   {tachesProposees.map((t) => (
                     <li key={t}>· {t}</li>
                   ))}
                 </ul>
-                <div className="mt-3 flex flex-wrap gap-2.5">
-                  <Button onClick={accepterTaches} loading={ajoutTachesEnCours}>
-                    Ajouter
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Button variant="ghost" onClick={accepterTaches} loading={ajoutTachesEnCours}>
+                    Oui, les ajouter
                   </Button>
-                  <Button variant="ghost" onClick={() => setTachesProposees(null)} disabled={ajoutTachesEnCours}>
+                  <button type="button" onClick={() => setTachesProposees(null)} disabled={ajoutTachesEnCours} className={BOUTON_TEXTE}>
                     Non merci
-                  </Button>
+                  </button>
                 </div>
               </div>
             ) : null,
           apresMaintenant:
             demande.statut === "termine" && TYPES_CHANTIER_RAPPEL_RECURRENT.includes(demande.type_chantier) ? (
-              <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-ink/[0.07] pt-4">
-                <span className="text-[13.5px] text-ink/60">Rappel de suivi :</span>
-                {PRESETS_RAPPEL_RECURRENT.map(({ mois, libelle }) => (
-                  <button
-                    key={mois}
-                    type="button"
-                    onClick={() => creerRappelRecurrent(mois)}
-                    disabled={rappelRecurrentEnCours !== null}
-                    className="rounded-full border border-ink/15 px-3 py-1.5 text-[13px] text-ink/75 transition-colors hover:border-ink/30 hover:text-ink disabled:opacity-50"
-                  >
-                    {rappelRecurrentEnCours === mois ? "…" : libelle}
-                  </button>
-                ))}
-                {rappelRecurrentCree !== null && (
-                  <span className="text-[13px] text-succes">
-                    Rappel programmé, {PRESETS_RAPPEL_RECURRENT.find((p) => p.mois === rappelRecurrentCree)?.libelle.toLowerCase()}
-                  </span>
-                )}
+              <div className="mt-4 border-t border-ink/15 pt-3">
+                <p className="text-sm text-steel">Rappel de suivi</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {PRESETS_RAPPEL_RECURRENT.map(({ mois, libelle }) => (
+                    <button
+                      key={mois}
+                      type="button"
+                      onClick={() => creerRappelRecurrent(mois)}
+                      disabled={rappelRecurrentEnCours !== null}
+                      className={BOUTON_CONTOUR}
+                    >
+                      {rappelRecurrentEnCours === mois && (
+                        <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />
+                      )}
+                      {libelle}
+                    </button>
+                  ))}
+                </div>
+                <div aria-live="polite">
+                  {rappelRecurrentCree !== null && (
+                    <p className="mt-2 flex items-center gap-2 text-sm text-ink">
+                      <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
+                      <span className="truncate">
+                        Rappel programmé, {PRESETS_RAPPEL_RECURRENT.find((p) => p.mois === rappelRecurrentCree)?.libelle.toLowerCase()}
+                      </span>
+                    </p>
+                  )}
+                </div>
               </div>
             ) : null,
         }}
@@ -1228,46 +1310,101 @@ export default function DetailDemandePage({
         titre="Il manque peut-être quelques informations"
         surFermer={() => setInfosAConfirmer(null)}
       >
-        <ul className="flex flex-col gap-1.5 text-[14.5px] text-ink/75">
+        <ul className="flex flex-col gap-1.5 text-base text-ink">
           {(infosAConfirmer ?? []).map((info) => (
             <li key={info} className="flex gap-2">
-              <span className="shrink-0 text-signal" aria-hidden="true">
-                •
+              <span className="shrink-0" aria-hidden="true">
+                ·
               </span>
               <span>{info}</span>
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-[13px] leading-relaxed text-ink/50">
-          Vous pouvez préparer le devis quand même : il restera modifiable ligne par ligne avant l&apos;envoi.
-        </p>
-        <div className="mt-5 flex flex-wrap gap-3">
-          <Button onClick={lancerGenerationDevis}>Préparer quand même</Button>
-          <Button variant="ghost" onClick={() => setInfosAConfirmer(null)}>
-            Compléter d&apos;abord
+        <p className="mt-3 text-sm text-steel">Le devis reste modifiable avant l&apos;envoi.</p>
+        <div className="mt-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
+          <Button onClick={lancerGenerationDevis} className="min-h-14 w-full sm:w-auto">
+            Préparer quand même
           </Button>
+          <button type="button" onClick={() => setInfosAConfirmer(null)} className={`self-center ${BOUTON_TEXTE}`}>
+            Compléter d&apos;abord
+          </button>
         </div>
       </Feuille>
 
-      {/* Un message au client (réponse ou relance), préparé par l'IA : à
-          relire, puis à copier et envoyer soi-même. */}
-      <Feuille ouverte={feuilleReponse} titre="Message au client" surFermer={() => setFeuilleReponse(false)}>
-        {chargementReponse && !brouillonReponse && <p className="text-[14.5px] text-ink/60">Rédaction en cours…</p>}
-        {erreur && sectionErreur === "reponse" && <p className="text-[14.5px] text-signal">{erreur}</p>}
+      {/* Un message au client (réponse ou relance), écrit par l'IA : à
+          relire et retoucher, puis à ouvrir dans ses SMS ou son WhatsApp.
+          Refonte (03/10, duel D lot 1) — on y arrive par « Message ›
+          Écrire avec l'IA » ou par « Relancer avec l'IA » ; plus de
+          copier-coller (« Copier » reste, en bouton texte). */}
+      <Feuille ouverte={feuilleReponse} titre="Écrire avec l'IA" surFermer={() => setFeuilleReponse(false)}>
+        {chargementReponse && !brouillonReponse && (
+          <div aria-busy="true" aria-label="Rédaction en cours">
+            <Skeleton className="h-44 rounded-2xl" />
+            <div className="mt-3 grid grid-cols-2 gap-2">
+              <Skeleton className="h-14 rounded-2xl" />
+              <Skeleton className="h-14 rounded-2xl" />
+            </div>
+          </div>
+        )}
+        {erreur && sectionErreur === "reponse" && (
+          <ErreurInline message={erreur} onReessayer={() => genererReponse(contexteReponse, genreReponse)} />
+        )}
         {brouillonReponse && (
           <>
-            <p className="text-[13px] text-ink/50">Brouillon : relisez et ajustez avant de l&apos;envoyer vous-même.</p>
+            <label htmlFor="message-ia" className="block truncate text-sm text-steel">
+              Relisez, puis envoyez.
+            </label>
             <textarea
+              id="message-ia"
               value={brouillonReponse}
-              onChange={(e) => setBrouillonReponse(e.target.value)}
+              onChange={(e) => changerReponse(e.target.value)}
               rows={8}
-              className="mt-2 w-full resize-none rounded-xl border border-ink/10 bg-surface p-3 text-[15px] leading-relaxed text-ink/85 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
+              className="mt-2 w-full resize-none rounded-2xl bg-surface p-3 text-base text-ink ring-1 ring-inset ring-ink/15 focus:outline-none focus:ring-2 focus:ring-ink"
             />
-            <div className="mt-3 flex flex-wrap gap-2.5">
-              <Button onClick={copierReponse}>{copie ? "Copié" : "Copier le texte"}</Button>
-              <Button variant="ghost" onClick={() => genererReponse()} loading={chargementReponse}>
-                Proposer une autre version
-              </Button>
+            {reponseGardee && <p className="mt-1 text-sm text-steel">Gardé sur ce téléphone.</p>}
+            {demande.telephone_client ? (
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => envoyerReponse("sms")}
+                  className="min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+                >
+                  SMS
+                </button>
+                <button type="button" onClick={() => envoyerReponse("whatsapp")} className={`${BOUTON_CONTOUR} min-h-14`}>
+                  WhatsApp
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="mt-3 truncate text-sm text-steel">Pas de numéro pour ce client.</p>
+                <Button onClick={copierReponse} className="mt-2 min-h-14 w-full">
+                  {copie ? "Copié" : "Copier le texte"}
+                </Button>
+              </>
+            )}
+            <div aria-live="polite">
+              {erreurEnvoiReponse && (
+                <p className="mt-2 text-sm font-semibold text-signal-fonce dark:text-signal-clair">Numéro inutilisable. Corrigez-le dans les infos.</p>
+              )}
+            </div>
+            <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2">
+              {demande.telephone_client && (
+                <button type="button" onClick={copierReponse} className={`-ml-3 ${BOUTON_TEXTE}`}>
+                  {copie ? "Copié" : "Copier"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => genererReponse(contexteReponse, genreReponse)}
+                disabled={chargementReponse}
+                className={`-mr-3 ml-auto ${BOUTON_TEXTE}`}
+              >
+                {chargementReponse && (
+                  <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />
+                )}
+                Autre version
+              </button>
             </div>
           </>
         )}

@@ -9,8 +9,8 @@ import { cleJour } from "./entreesCarnet";
 // Cadrer, 2. Générer un devis, 3. Préparer une réponse »), même sur un
 // chantier démarré depuis trois mois. L'artisan devait lire toute la page
 // pour savoir quoi faire. Ici, l'état du projet décide : une phrase qui
-// dit la situation, une action principale, deux ou trois secondaires au
-// plus. Le reste des actions vit dans le menu « … ».
+// dit la situation, une action principale, une secondaire au plus (refonte
+// 03/10). Le reste des actions vit dans le menu « … ».
 //
 // Pur et sans rendu : testé tel quel.
 // ============================================================
@@ -34,16 +34,28 @@ export type IdAction =
 // et « avec l'IA »), et le bouton principal dit ce qu'elle va faire.
 export type Action = { id: IdAction; libelle: string; ia?: boolean };
 
+// Refonte (03/10, duel D lot 1) — « Maintenant » montre au plus un bouton
+// plein et un bouton texte (règle 5 de docs/langage-interface.md). Avant,
+// trois ou quatre boutons de même poids s'empilaient (Planifier,
+// Démarrer maintenant, Facturer un acompte…) : il fallait lire pour
+// choisir. Ce qui ne tient pas passe dans « … » (`dansMenu`), rien ne
+// disparaît.
 export type ProchaineAction = {
   ton: "neutre" | "attente" | "succes" | "attention";
-  /** La situation, en une phrase. */
+  /** La situation, en une phrase courte (une ligne à 360 px). */
   phrase: string;
-  /** Une ou deux précisions utiles (prochain passage, tâches…). */
+  /** Une ou deux précisions utiles (prochain passage, tâches…), affichées
+   *  sur une seule ligne. */
   details: string[];
+  /** Le bouton plein. */
   principale: Action | null;
-  secondaires: Action[];
+  /** Au plus une autre action, en bouton texte (en contour quand il n'y a
+   *  pas de bouton plein). */
+  secondaire: Action | null;
+  /** Les autres actions utiles maintenant : elles vont dans « … ». */
+  dansMenu: Action[];
   /** Un point qui demande une décision (le projet a changé depuis le
-   *  devis…). */
+   *  devis…). Son action tient lieu de bouton texte. */
   alerte?: { texte: string; action: Action };
 };
 
@@ -90,6 +102,9 @@ function depuis(jours: number): string {
   return `il y a ${jours} jours`;
 }
 
+// Refonte (03/10, duel D lot 1) — les phrases tiennent sur une ligne à
+// 360 px (règle 2) : la situation en quelques mots, la précision dessous
+// (« Chantier, jour 12. » puis « Prochain passage : lun. 8 h »).
 export function prochaineAction(e: EtatProjet): ProchaineAction {
   const details: string[] = [];
   if (e.prochainRdv) details.push(`Prochain passage : ${dateRdv(e.prochainRdv.date_heure)}`);
@@ -98,15 +113,24 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
   const engage = e.statut === "accepte" || e.statut === "en_cours" || e.statut === "termine";
   const devisChange =
     e.devis && e.derniereModification && new Date(e.derniereModification) > new Date(e.devis.created_at);
+  // Après la signature, on ne touche jamais au devis signé : on le
+  // duplique. L'action vit dans « … » ; quand le projet a changé depuis,
+  // l'alerte la montre aussi.
+  const dupliquer: Action = { id: "dupliquer_devis", libelle: "Dupliquer le devis" };
+  const alerteSigne = devisChange ? { texte: "Changé depuis le devis signé.", action: dupliquer } : undefined;
 
   // --- Le chantier est fini
   if (e.statut === "termine") {
     return {
       ton: "succes",
-      phrase: e.termineLe ? `Chantier terminé le ${formatDate.format(new Date(e.termineLe))}.` : "Chantier terminé.",
-      details: e.nbTaches > 0 ? [`${e.nbTaches} chose${e.nbTaches > 1 ? "s" : ""} encore à faire`] : [],
+      phrase: "Chantier terminé.",
+      details: [
+        ...(e.termineLe ? [`Le ${formatDate.format(new Date(e.termineLe))}`] : []),
+        ...(e.nbTaches > 0 ? [`${e.nbTaches} chose${e.nbTaches > 1 ? "s" : ""} encore à faire`] : []),
+      ],
       principale: e.devis && e.devis.statut === "envoye" ? { id: "facturation", libelle: "Voir la facturation" } : null,
-      secondaires: [],
+      secondaire: null,
+      dansMenu: [],
     };
   }
 
@@ -115,16 +139,15 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
     const jours = e.demarreLe ? joursDepuis(e.demarreLe, e.maintenant) : null;
     return {
       ton: "neutre",
-      phrase: jours !== null && jours > 0 ? `Chantier en cours depuis ${jours} jour${jours > 1 ? "s" : ""}.` : "Chantier en cours.",
+      phrase: jours !== null && jours >= 0 ? `Chantier, jour ${jours + 1}.` : "Chantier en cours.",
       details,
       principale: { id: "ajouter", libelle: "Ajouter une note ou des photos" },
-      secondaires: [
-        ...(e.prochainRdv ? [] : [{ id: "planifier" as const, libelle: "Planifier un passage" }]),
-        { id: "terminer", libelle: "Terminer le chantier" },
-      ],
-      alerte: devisChange
-        ? { texte: "Le projet a changé depuis le devis signé.", action: { id: "dupliquer_devis", libelle: "Dupliquer le devis pour l'ajuster" } }
-        : undefined,
+      // Sans passage prévu, le chantier touche peut-être à sa fin. Avec
+      // l'alerte, son action tient lieu de bouton texte : « Terminer »
+      // reste dans « … ».
+      secondaire: e.prochainRdv || alerteSigne ? null : { id: "terminer", libelle: "Terminer le chantier" },
+      dansMenu: e.devis && !alerteSigne ? [dupliquer] : [],
+      alerte: alerteSigne,
     };
   }
 
@@ -132,52 +155,55 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
   if (e.statut === "accepte") {
     return {
       ton: "succes",
-      phrase: "Le client a signé le devis.",
+      phrase: "Devis signé.",
       details,
       principale: e.prochainRdv
         ? { id: "demarrer", libelle: "Démarrer le chantier" }
         : { id: "planifier", libelle: "Planifier le démarrage" },
-      secondaires: [
+      secondaire: null,
+      dansMenu: [
         ...(e.prochainRdv ? [] : [{ id: "demarrer" as const, libelle: "Démarrer maintenant" }]),
         { id: "facturation", libelle: "Facturer un acompte" },
+        ...(e.devis && !alerteSigne ? [dupliquer] : []),
       ],
-      alerte: devisChange
-        ? { texte: "Le projet a changé depuis le devis signé.", action: { id: "dupliquer_devis", libelle: "Dupliquer le devis pour l'ajuster" } }
-        : undefined,
+      alerte: alerteSigne,
     };
   }
 
   // --- Un devis existe (pas encore signé)
   if (e.devis && !engage) {
     const alerte = devisChange && e.devis.statut !== "brouillon"
-      ? { texte: "Le projet a changé depuis ce devis (note, photo ou note vocale).", action: { id: "mettre_a_jour_devis" as const, libelle: "Mettre à jour le devis avec l'IA", ia: true } }
+      ? { texte: "Changé depuis ce devis.", action: { id: "mettre_a_jour_devis" as const, libelle: "Mettre à jour avec l'IA", ia: true } }
       : undefined;
 
     if (e.devis.statut === "refuse") {
       return {
         ton: "attention",
-        phrase: "Le client a refusé le devis.",
+        phrase: "Devis refusé.",
         details,
         principale: { id: "dupliquer_devis", libelle: "Repartir de ce devis" },
-        secondaires: [{ id: "generer_devis", libelle: "Nouveau devis avec l'IA", ia: true }],
+        secondaire: { id: "generer_devis", libelle: "Nouveau devis avec l'IA", ia: true },
+        dansMenu: [],
       };
     }
     if (e.devis.statut === "brouillon") {
       return {
         ton: "neutre",
-        phrase: "Un devis est en préparation.",
+        phrase: "Devis en préparation.",
         details,
         principale: { id: "ouvrir_devis", libelle: "Terminer le devis" },
-        secondaires: [],
+        secondaire: null,
+        dansMenu: [],
       };
     }
     if (e.devis.statut === "a_valider") {
       return {
         ton: "neutre",
-        phrase: "Le devis est prêt : à relire, puis à envoyer.",
-        details,
+        phrase: "Devis prêt à envoyer.",
+        details: ["À relire avant l'envoi", ...details],
         principale: { id: "ouvrir_devis", libelle: "Ouvrir et envoyer" },
-        secondaires: [],
+        secondaire: null,
+        dansMenu: [],
         alerte,
       };
     }
@@ -186,33 +212,29 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
     const sansReponse = jours !== null && jours >= 3;
     return {
       ton: sansReponse ? "attention" : "attente",
-      phrase:
-        jours === null
-          ? "Devis envoyé, en attente de réponse."
-          : sansReponse
-            ? `Devis envoyé ${depuis(jours)}, toujours sans réponse.`
-            : `Devis envoyé ${depuis(jours)}. En attente de la réponse du client.`,
-      details,
-      principale: sansReponse ? { id: "relancer", libelle: "Préparer une relance avec l'IA", ia: true } : { id: "ouvrir_devis", libelle: "Voir le devis" },
-      secondaires: sansReponse ? [{ id: "ouvrir_devis", libelle: "Voir le devis" }] : [],
+      phrase: sansReponse ? "Devis sans réponse." : "Devis envoyé.",
+      details: [...(jours !== null ? [`Envoyé ${depuis(jours)}`] : ["En attente du client"]), ...details],
+      principale: sansReponse ? { id: "relancer", libelle: "Relancer avec l'IA", ia: true } : { id: "ouvrir_devis", libelle: "Voir le devis" },
+      // « Voir le devis » reste aussi à un appui sur la ligne du devis.
+      secondaire: sansReponse && !alerte ? { id: "ouvrir_devis", libelle: "Voir le devis" } : null,
+      dansMenu: [],
       alerte,
     };
   }
 
   // --- Pas encore de devis
-  // « Devis express » ne disait pas ce que c'était : un devis vide, qu'on
-  // remplit soi-même, sans l'IA.
-  const secondaires: Action[] = [{ id: "devis_express", libelle: "Faire le devis moi-même" }];
-  if (e.peutAnalyser && !e.analyseAJour) secondaires.push({ id: "analyser", libelle: "Résumer mes notes avec l'IA", ia: true });
+  // « Faire le devis moi-même » (un devis vide, sans l'IA) et « Résumer mes
+  // notes avec l'IA » sont dans « … » : le bouton plein suffit ici.
   const precisions = [...details];
   if (e.nbInfosManquantes > 0) {
-    precisions.push(`${e.nbInfosManquantes} point${e.nbInfosManquantes > 1 ? "s" : ""} à vérifier avant de chiffrer`);
+    precisions.push(`${e.nbInfosManquantes} point${e.nbInfosManquantes > 1 ? "s" : ""} à vérifier`);
   }
   return {
     ton: "neutre",
-    phrase: e.prochainRdv ? "Nouvelle demande. Visite prévue avant de chiffrer." : "Nouvelle demande, pas encore chiffrée.",
+    phrase: e.prochainRdv ? "Visite prévue." : "Pas encore chiffré.",
     details: precisions,
     principale: { id: "generer_devis", libelle: "Préparer le devis avec l'IA", ia: true },
-    secondaires,
+    secondaire: null,
+    dansMenu: [],
   };
 }

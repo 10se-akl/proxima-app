@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 import { Feuille } from "@/components/projet/Feuille";
-import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/FeuilleMessageClient";
-import { FeuilleDeplacer } from "./FeuilleDeplacer";
+import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
+import { useChangerRendezVous } from "./ChangerRendezVous";
 import { IconeChevron, IconeLieu, IconeMessage, IconeTelephone } from "@/components/projet/icones";
 import {
   changerStatutEvenement,
@@ -210,14 +210,12 @@ function ActionsEvenement({
   const [messageOuvert, setMessageOuvert] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState(false);
-  // Refonte (02/10, duel G lot 1) — plus aucun rendez-vous client déplacé
+  // Refonte (03/10, duel G lot 1) — plus aucun rendez-vous client déplacé
   // ou annulé sans proposer de prévenir le client : « Déplacer » ouvre la
   // feuille déjà livrée pour l'accueil, « Annuler » pose une question, et
-  // chacun enchaîne sur le message prêt (c'est l'artisan qui envoie).
-  const [deplacer, setDeplacer] = useState(false);
-  const [questionAnnuler, setQuestionAnnuler] = useState(false);
-  const [demandeMessage, setDemandeMessage] = useState<DemandeMessage | null>(null);
-  const rdvClient = evenement.type === "rendez_vous" && !!evenement.demande_id;
+  // chacun enchaîne sur le message prêt (c'est l'artisan qui envoie). La
+  // grille de l'ordinateur passe par la même logique (ChangerRendezVous).
+  const changer = useChangerRendezVous(evenement, surFermer);
 
   const fait = evenement.statut === "termine";
   const telephone = evenement.demandes?.telephone_client;
@@ -244,7 +242,7 @@ function ActionsEvenement({
 
   return (
     <>
-      <Feuille ouverte={!messageOuvert && !deplacer && !questionAnnuler} titre={titre} surFermer={surFermer}>
+      <Feuille ouverte={!messageOuvert && !changer.occupe} titre={titre} surFermer={surFermer}>
         {evenement.demande_id && (
           <div className="grid grid-cols-3 gap-2">
             {telephone ? (
@@ -299,109 +297,46 @@ function ActionsEvenement({
             </Link>
           )}
           {evenement.statut !== "annule" && (
-            <button type="button" disabled={enCours} onClick={() => setDeplacer(true)} className={ligne}>
+            <button type="button" disabled={enCours} onClick={changer.ouvrirDeplacer} className={ligne}>
               Déplacer
               <IconeChevron className="h-4 w-4 text-ink/30" />
             </button>
           )}
-          <Link href={`/dashboard/planning/nouveau?eventId=${evenement.id}`} className={ligne}>
-            Modifier
-            <IconeChevron className="h-4 w-4 text-ink/30" />
-          </Link>
         </div>
 
-        {/* Les gestes rares et définitifs, à l'écart. */}
+        {/* Les gestes rares, à l'écart. « Modifier » (le formulaire : titre,
+            durée, notes) n'est plus une ligne mais un lien, à côté d'« Annuler ». */}
         <div className="mt-4 flex flex-wrap gap-x-6">
+          <Link
+            href={`/dashboard/planning/nouveau?eventId=${evenement.id}`}
+            className="inline-flex min-h-12 items-center text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+          >
+            Modifier
+          </Link>
           {evenement.statut !== "annule" && (
             <button
               type="button"
               disabled={enCours}
-              onClick={() => setQuestionAnnuler(true)}
-              className="inline-flex min-h-12 items-center text-[14px] text-ink/60 underline underline-offset-4"
+              onClick={changer.ouvrirAnnuler}
+              className="inline-flex min-h-12 items-center text-base font-semibold text-signal-fonce underline decoration-signal-fonce/30 underline-offset-4 dark:text-signal-clair dark:decoration-signal-clair/30"
             >
               Annuler le rendez-vous
             </button>
           )}
         </div>
-        {erreur && <p className="mt-2 text-[14px] text-signal-fonce dark:text-signal-clair">Pas enregistré. Réessayez.</p>}
+        {erreur && <p className="mt-2 text-sm font-semibold text-signal-fonce dark:text-signal-clair">Pas enregistré. Réessayez.</p>}
       </Feuille>
 
-      <FeuilleDeplacer
-        evenement={
-          deplacer
-            ? { id: evenement.id, titre: evenement.titre, date_heure: evenement.date_heure, nomClient: evenement.demandes?.nom_client }
-            : null
-        }
-        surFermer={() => setDeplacer(false)}
-        surDeplace={(_, nouvelleDate) => {
-          setDeplacer(false);
-          if (rdvClient) {
-            setDemandeMessage({ cle: "decalage", ancienneDate: evenement.date_heure, nouvelleDate });
-            setMessageOuvert(true);
-            return;
-          }
-          surFermer();
-          router.refresh();
-        }}
-      />
-
-      <Feuille ouverte={questionAnnuler} titre="Annuler le rendez-vous ?" surFermer={() => setQuestionAnnuler(false)}>
-        <div className="flex flex-col gap-2">
-          {rdvClient && (
-            <button
-              type="button"
-              disabled={enCours}
-              onClick={async () => {
-                setEnCours(true);
-                const ok = await changerStatutEvenement(supabase, evenement.id, "annule");
-                setEnCours(false);
-                if (!ok) {
-                  setErreur(true);
-                  setQuestionAnnuler(false);
-                  return;
-                }
-                setQuestionAnnuler(false);
-                setDemandeMessage({ cle: "decalage", ancienneDate: evenement.date_heure });
-                setMessageOuvert(true);
-              }}
-              className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60"
-            >
-              Annuler et prévenir {evenement.demandes?.nom_client ?? "le client"}
-            </button>
-          )}
-          <button
-            type="button"
-            disabled={enCours}
-            onClick={() => {
-              setQuestionAnnuler(false);
-              void agir(() => changerStatutEvenement(supabase, evenement.id, "annule"));
-            }}
-            className="min-h-12 w-full rounded-2xl px-4 text-base font-semibold text-signal-fonce ring-1 ring-inset ring-signal-fonce/50 dark:text-signal-clair dark:ring-signal-clair/50"
-          >
-            {rdvClient ? "Annuler sans prévenir" : "Annuler"}
-          </button>
-          <button
-            type="button"
-            onClick={() => setQuestionAnnuler(false)}
-            className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-          >
-            Garder
-          </button>
-        </div>
-      </Feuille>
+      {changer.feuilles}
 
       {evenement.demande_id && (
         <FeuilleMessageClient
           ouverte={messageOuvert}
           surFermer={() => {
             setMessageOuvert(false);
-            const apresChangement = demandeMessage !== null;
-            setDemandeMessage(null);
             surFermer();
-            if (apresChangement) router.refresh();
           }}
           demandeId={evenement.demande_id}
-          demande={demandeMessage}
           meteo={meteo ? { dateRdv: evenement.date_heure, resume: meteo.resume ?? null } : null}
         />
       )}

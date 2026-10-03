@@ -83,6 +83,9 @@ const DESTINATIONS = [
 ];
 
 const SECONDAIRES = [
+  // Refonte (03/10 — duel B, lot 2) : la page Argent, en tête de Plus, le
+  // temps de la mesurer avant qu'elle prenne la 5e case.
+  { href: "/dashboard/argent", label: "Argent", Icone: IconeFacture },
   { href: "/dashboard/devis", label: "Devis", Icone: IconeDocument },
   { href: "/dashboard/factures", label: "Factures", Icone: IconeFacture },
   { href: "/dashboard/notes", label: "Notes", Icone: IconeNote },

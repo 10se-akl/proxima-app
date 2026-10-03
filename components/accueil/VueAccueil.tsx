@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { AConfirmer } from "@/components/dashboard/AConfirmer";
 import { ConfirmerClotureProjet } from "@/components/dashboard/ConfirmerClotureProjet";
-import { BlocAccueil, LigneAccueil, LIGNES_MAX } from "./Blocs";
+import { BlocAccueil, FinRelancer, LigneAccueil, LIGNES_MAX } from "./Blocs";
+import type { LigneEnAttente } from "@/lib/argent";
 import { ListeAujourdhui, type ElementJour } from "./ListeAujourdhui";
 import { BoutonCapture } from "./BoutonCapture";
 import { FermerJournee, type Fermeture } from "./FermerJournee";
@@ -24,7 +25,6 @@ type EvenementAConfirmer = {
 };
 
 export type LigneAProduire = { id: string; href: string; nom: string; verbe: string };
-export type LigneEnAttente = { id: string; jours: number; nom: string; quoi: string; href: string; relance: string | null };
 
 export function VueAccueil({
   dateDuJour,
@@ -107,9 +107,11 @@ export function VueAccueil({
         </BlocAccueil>
       )}
 
-      {/* 5. En attente du client */}
+      {/* 5. En attente du client. Refonte (03/10) : « Voir les N » mène à
+          Argent, qui a toutes les lignes (avant : la liste des devis, même
+          pour une facture). */}
       {enAttente.length > 0 && (
-        <BlocAccueil titre="En attente du client" nombre={enAttente.length} lienTous="/dashboard/devis">
+        <BlocAccueil titre="En attente du client" nombre={enAttente.length} lienTous="/dashboard/argent">
           {enAttente.slice(0, LIGNES_MAX).map((l) => (
             <LigneAccueil
               key={l.id}
@@ -117,16 +119,7 @@ export function VueAccueil({
               repere={`${l.jours} j`}
               principal={l.nom}
               secondaire={l.quoi}
-              fin={
-                l.relance ? (
-                  <Link
-                    href={l.relance}
-                    className="flex shrink-0 items-center border-l border-ink/[0.07] px-3.5 text-[14px] font-semibold text-ink transition-colors hover:bg-ink/[0.03]"
-                  >
-                    Relancer
-                  </Link>
-                ) : undefined
-              }
+              fin={l.relance ? <FinRelancer href={l.relance} /> : undefined}
             />
           ))}
         </BlocAccueil>

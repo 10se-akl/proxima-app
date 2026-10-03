@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { ListeDevisRecherchable } from "@/components/dashboard/ListeDevisRecherchable";
 import { getOrganisationId } from "@/lib/organisation";
 
-export default async function DevisPage() {
+// Refonte (03/10) : ?statut= ouvre la liste déjà filtrée (page Argent).
+export default async function DevisPage({ searchParams }: { searchParams?: { statut?: string } }) {
   const supabase = createClient();
   const {
     data: { user },
@@ -32,7 +33,7 @@ export default async function DevisPage() {
       <h1 className="font-display text-2xl font-semibold">Devis</h1>
 
       <div className="mt-5">
-        <ListeDevisRecherchable devisList={devisList} />
+        <ListeDevisRecherchable devisList={devisList} filtreInitial={searchParams?.statut} />
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation } from "@/lib/notes";
 import { aujourdhuiParis, minuitParis } from "@/lib/moisParis";
 import type { ElementSuspens, Fermeture } from "@/components/accueil/FermerJournee";
+import { calculerArgent, type LigneEnAttente } from "@/lib/argent";
 
 // ============================================================
 // L'accueil (26/09 — « moins mais mieux », lot B).
@@ -33,15 +34,9 @@ import type { ElementSuspens, Fermeture } from "@/components/accueil/FermerJourn
 
 const HEURE_FERMETURE_JOURNEE = 17;
 
-// Un devis envoyé apparaît dans « En attente du client » à partir de trois
-// jours sans réponse (au-delà, sans relance, il est souvent perdu), et
-// propose « Relancer » au premier palier des relances existantes (voir
-// app/api/cron/relance-devis/route.ts).
-const JOURS_AFFICHAGE_DEVIS = 3;
-const JOURS_RELANCE_DEVIS = 5;
-// Les factures : mêmes seuils que app/api/cron/relance-factures/route.ts.
-const JOURS_APRES_ECHEANCE = 3;
-const JOURS_SANS_ECHEANCE = 15;
+// Refonte (03/10 — duel B, lot 2) : les lignes d'argent (devis sans
+// réponse, factures impayées, devis à relire ou à envoyer) et leurs seuils
+// viennent de lib/argent.ts, la même fonction que la page Argent.
 
 // Sans ça, Next.js peut servir une version mise en cache de cette page en
 // revenant dessus après avoir changé d'onglet ou de page (cache de routeur
@@ -50,8 +45,6 @@ const JOURS_SANS_ECHEANCE = 15;
 // n'avait jamais été enregistrée. Cette page dépend d'un état qui change à
 // chaque clic : elle doit toujours être recalculée, jamais servie en cache.
 export const dynamic = "force-dynamic";
-
-const JOUR_MS = 86400000;
 
 export default async function DashboardHome() {
   const supabase = createClient();
@@ -98,7 +91,7 @@ export default async function DashboardHome() {
     supabase.from("demandes").select("*").eq("organisation_id", organisationId),
     supabase
       .from("devis")
-      .select("id, statut, numero, envoye_le, demande_id, demandes(nom_client)")
+      .select("id, statut, numero, envoye_le, created_at, total_estime, demande_id, demandes(nom_client)")
       .eq("organisation_id", organisationId),
     supabase
       .from("evenements_planning")
@@ -145,7 +138,7 @@ export default async function DashboardHome() {
     // 26/09 — les factures encore dues, pour « En attente du client ».
     supabase
       .from("factures")
-      .select("id, numero, demande_id, date_emission, date_echeance, demandes(nom_client)")
+      .select("id, numero, demande_id, statut, type, total_ttc, date_emission, date_echeance, demandes(nom_client)")
       .eq("organisation_id", organisationId)
       .eq("statut", "emise")
       .neq("type", "avoir"),
@@ -208,7 +201,6 @@ export default async function DashboardHome() {
   const listeProjets = (projets as Projet[] | null) ?? [];
   // Un chantier marqué "terminé" disparaît de TOUTE section de l'accueil.
   const idsProjetsTermines = new Set(listeProjets.filter((p) => p.statut === "termine").map((p) => p.id));
-  const devisListActifs = devisListPlat.filter((d) => !d.demande_id || !idsProjetsTermines.has(d.demande_id));
   const aConfirmerActifs = aConfirmer.filter((e) => !e.demande_id || !idsProjetsTermines.has(e.demande_id));
 
   // Filet de sécurité pour "le chantier est-il aussi terminé ?" (voir
@@ -308,29 +300,11 @@ export default async function DashboardHome() {
 
   const projetsNouveaux = listeProjets.filter((p) => p.statut === "nouveau");
   const projetsSansDevis = listeProjets.filter((p) => p.statut === "analyse");
-  const devisAValider = devisListActifs.filter((d) => d.statut === "brouillon");
-  const devisPretsAEnvoyer = devisListActifs.filter((d) => d.statut === "a_valider");
 
-  const joursDepuis = (iso: string) => Math.floor((maintenant.getTime() - new Date(iso).getTime()) / JOUR_MS);
-
-  const devisEnAttente = devisListActifs
-    .filter((d) => d.statut === "envoye" && d.envoye_le)
-    .map((d) => ({ ...d, jours: joursDepuis(d.envoye_le as string) }))
-    .filter((d) => d.jours >= JOURS_AFFICHAGE_DEVIS);
-
-  // Une facture n'apparaît qu'une fois échue (ou, sans échéance, après
-  // quinze jours) : avant, elle n'est pas « impayée », juste en cours.
-  // Un chantier terminé garde ses factures impayées : c'est précisément là
-  // qu'elles comptent.
-  const facturesImpayees = facturesDues
-    .map((f) => {
-      const reference = f.date_echeance ?? f.date_emission;
-      const jours = joursDepuis(reference);
-      const aRelancer = f.date_echeance ? jours >= JOURS_APRES_ECHEANCE : jours >= JOURS_SANS_ECHEANCE;
-      const affichee = f.date_echeance ? jours > 0 : jours >= JOURS_SANS_ECHEANCE;
-      return { ...f, jours, aRelancer, affichee };
-    })
-    .filter((f) => f.affichee);
+  // L'argent : la même fonction que la page Argent (lib/argent.ts).
+  const argent = calculerArgent({ devis: devisListPlat, factures: facturesDues, projets: listeProjets, maintenant });
+  const devisAValider = argent.devisAEnvoyer.filter((d) => d.quoi === "Devis à relire");
+  const devisPretsAEnvoyer = argent.devisAEnvoyer.filter((d) => d.quoi === "Devis à envoyer");
 
   // ---- Le soir : Fermer la journée ------------------------------------------
   // Actif à partir de 17 h, dès qu'il existe au moins un projet (un compte
@@ -361,8 +335,7 @@ export default async function DashboardHome() {
     devisPretsAEnvoyer,
     rappelsDuJour,
     projetsSansDevis,
-    devisEnAttente,
-    facturesImpayees,
+    enAttente: argent.enAttente,
     maintenant,
   });
   // Le soir, « Fermer la journée » prend la place de « Maintenant ».
@@ -420,34 +393,11 @@ export default async function DashboardHome() {
     ...projetsSansDevis.map((p) => ({ id: p.id, href: `/dashboard/demandes/${p.id}`, nom: p.nom_client, verbe: "Devis à préparer" })),
     // Refonte (02/10) — un devis à relire ou à envoyer s'ouvre sur le devis
     // lui-même, plus sur la fiche projet (un geste de moins).
-    ...devisAValider.map((d) => ({ id: d.id, href: `/dashboard/devis/${d.id}`, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à relire" })),
-    ...devisPretsAEnvoyer.map((d) => ({ id: d.id, href: `/dashboard/devis/${d.id}`, nom: nomClientDe(d) ?? d.numero, verbe: "Devis à envoyer" })),
+    ...argent.devisAEnvoyer.map((d) => ({ id: d.id, href: d.href, nom: d.nom, verbe: d.quoi })),
   ].filter((l) => pasMisEnAvant(l.id));
 
   // ---- 5. En attente du client --------------------------------------------
-  const enAttente = [
-    ...facturesImpayees.map((f) => ({
-      id: f.id,
-      jours: f.jours,
-      nom: nomClientDe(f) ?? `Facture ${f.numero}`,
-      quoi: "Facture impayée",
-      href: `/dashboard/demandes/${f.demande_id}`,
-      relance: f.aRelancer ? `/dashboard/demandes/${f.demande_id}?message=relancePaiement&facture=${f.id}` : null,
-    })),
-    ...devisEnAttente.map((d) => ({
-      id: d.id,
-      jours: d.jours,
-      nom: nomClientDe(d) ?? `Devis ${d.numero}`,
-      quoi: "Devis sans réponse",
-      href: d.demande_id ? `/dashboard/demandes/${d.demande_id}` : "/dashboard/devis",
-      relance:
-        d.demande_id && d.jours >= JOURS_RELANCE_DEVIS
-          ? `/dashboard/demandes/${d.demande_id}?message=relanceDevis&devis=${d.id}`
-          : null,
-    })),
-  ]
-    .filter((l) => pasMisEnAvant(l.id))
-    .sort((a, b) => b.jours - a.jours);
+  const enAttente = argent.enAttente.filter((l) => pasMisEnAvant(l.id));
 
   const premierPrenom = (profil?.nom ?? "").split(" ")[0];
   const dateDuJour = maintenant.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
@@ -556,13 +506,12 @@ function construireFermeture(d: {
 // leur bloc juste en dessous, avec les boutons pour y répondre.
 function determinerProchaineAction(listes: {
   rendezVousDuJour: { id: string; titre: string; demande_id: string | null; date_heure: string }[];
-  devisAValider: { id: string; demande_id: string | null; numero: string }[];
+  devisAValider: { id: string; href: string; nom: string }[];
   projetsNouveaux: Projet[];
-  devisPretsAEnvoyer: { id: string; demande_id: string | null; numero: string }[];
+  devisPretsAEnvoyer: { id: string; href: string; nom: string }[];
   rappelsDuJour: { id: string; titre: string; demande_id: string | null }[];
   projetsSansDevis: Projet[];
-  devisEnAttente: { id: string; demande_id: string | null; numero: string; jours: number }[];
-  facturesImpayees: { id: string; demande_id: string; numero: string; jours: number; aRelancer: boolean }[];
+  enAttente: LigneEnAttente[];
   maintenant: Date;
 }): ActionAccueil | null {
   const lien = (demandeId: string | null, repli: string) => (demandeId ? `/dashboard/demandes/${demandeId}` : repli);
@@ -580,32 +529,24 @@ function determinerProchaineAction(listes: {
     };
   }
   const devis = listes.devisAValider[0];
-  if (devis) return { id: devis.id, texte: `Relire le devis ${nomClientDe(devis) ?? devis.numero}`, href: `/dashboard/devis/${devis.id}` };
+  if (devis) return { id: devis.id, texte: `Relire le devis ${devis.nom}`, href: devis.href };
   const nouveau = listes.projetsNouveaux[0];
   if (nouveau) return { id: nouveau.id, texte: `Cadrer le projet ${nouveau.nom_client}`, href: `/dashboard/demandes/${nouveau.id}` };
   const pret = listes.devisPretsAEnvoyer[0];
-  if (pret) return { id: pret.id, texte: `Envoyer le devis ${nomClientDe(pret) ?? pret.numero}`, href: `/dashboard/devis/${pret.id}` };
+  if (pret) return { id: pret.id, texte: `Envoyer le devis ${pret.nom}`, href: pret.href };
   const rappel = listes.rappelsDuJour[0];
   if (rappel) return { id: rappel.id, texte: rappel.titre, href: lien(rappel.demande_id, "/dashboard/planning") };
   const sansDevis = listes.projetsSansDevis[0];
   if (sansDevis) return { id: sansDevis.id, texte: `Préparer le devis de ${sansDevis.nom_client}`, href: `/dashboard/demandes/${sansDevis.id}` };
-  const facture = listes.facturesImpayees.find((f) => f.aRelancer);
-  if (facture)
-    return {
-      id: facture.id,
-      texte: `Relancer ${nomClientDe(facture) ?? `la facture ${facture.numero}`}`,
-      detail: `Facture ${facture.numero} impayée depuis ${facture.jours} j`,
-      href: `/dashboard/demandes/${facture.demande_id}?message=relancePaiement&facture=${facture.id}`,
-    };
-  const relance = listes.devisEnAttente.find((d) => d.jours >= JOURS_RELANCE_DEVIS);
-  if (relance)
+  // Les factures d'abord, puis les devis ; le plus ancien en premier.
+  const relance =
+    listes.enAttente.find((l) => l.genre === "facture" && l.relance) ?? listes.enAttente.find((l) => l.genre === "devis" && l.relance);
+  if (relance?.relance)
     return {
       id: relance.id,
-      texte: `Relancer ${nomClientDe(relance) ?? `le devis ${relance.numero}`}`,
-      detail: `Devis sans réponse depuis ${relance.jours} j`,
-      href: relance.demande_id
-        ? `/dashboard/demandes/${relance.demande_id}?message=relanceDevis&devis=${relance.id}`
-        : "/dashboard/devis",
+      texte: `Relancer ${relance.nom}`,
+      detail: `${relance.quoi} depuis ${relance.jours} j`,
+      href: relance.relance,
     };
   return null;
 }

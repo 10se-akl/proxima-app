@@ -44,9 +44,25 @@ function statutAffiche(f: FactureAvecClient): { texte: string; classe: string } 
 // facture n'a pas d'écran dédié, elle vit dans la fiche projet qui l'a
 // générée — voir FacturesProjet.tsx).
 // ============================================================
-export function ListeFacturesRecherchable({ factures }: { factures: FactureAvecClient[] }) {
+type CleFiltre = (typeof LABEL_STATUT_FILTRE)[number]["cle"];
+
+/** Refonte (03/10 — duel B, lot 2) : le total de la page Argent ouvre la
+ *  liste déjà filtrée (?statut=emise). Une valeur inconnue retombe sur
+ *  « Toutes ». */
+export function filtreFacturesDepuis(statut: string | null | undefined): CleFiltre {
+  return LABEL_STATUT_FILTRE.find((f) => f.cle === statut)?.cle ?? "tous";
+}
+
+export function ListeFacturesRecherchable({
+  factures,
+  filtreInitial,
+}: {
+  factures: FactureAvecClient[];
+  /** La valeur de ?statut= dans l'adresse. */
+  filtreInitial?: string | null;
+}) {
   const [recherche, setRecherche] = useState("");
-  const [filtre, setFiltre] = useState<(typeof LABEL_STATUT_FILTRE)[number]["cle"]>("tous");
+  const [filtre, setFiltre] = useState<CleFiltre>(() => filtreFacturesDepuis(filtreInitial));
 
   const filtres = factures
     .filter((f) => filtre === "tous" || f.statut === filtre)

@@ -4,7 +4,8 @@ import { getOrganisationId } from "@/lib/organisation";
 
 // Module 28 (06/09) — liste de toutes les factures de l'organisation, même
 // structure que app/dashboard/devis/page.tsx.
-export default async function FacturesPage() {
+// Refonte (03/10) : ?statut= ouvre la liste déjà filtrée (page Argent).
+export default async function FacturesPage({ searchParams }: { searchParams?: { statut?: string } }) {
   const supabase = createClient();
   const {
     data: { user },
@@ -40,7 +41,7 @@ export default async function FacturesPage() {
       </div>
 
       <div className="mt-5">
-        <ListeFacturesRecherchable factures={factures} />
+        <ListeFacturesRecherchable factures={factures} filtreInitial={searchParams?.statut} />
       </div>
     </div>
   );

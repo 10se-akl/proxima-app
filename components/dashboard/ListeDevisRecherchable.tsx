@@ -51,9 +51,25 @@ function correspondFiltre(d: DevisAvecClient, filtre: string): boolean {
   return true;
 }
 
-export function ListeDevisRecherchable({ devisList }: { devisList: DevisAvecClient[] }) {
+type CleFiltre = (typeof LABEL_STATUT_FILTRE)[number]["cle"];
+
+/** Refonte (03/10 — duel B, lot 2) : « Voir les N » de la page Argent
+ *  ouvre la liste déjà filtrée (?statut=a_traiter). Une valeur inconnue
+ *  retombe sur « Tous ». */
+export function filtreDevisDepuis(statut: string | null | undefined): CleFiltre {
+  return LABEL_STATUT_FILTRE.find((f) => f.cle === statut)?.cle ?? "tous";
+}
+
+export function ListeDevisRecherchable({
+  devisList,
+  filtreInitial,
+}: {
+  devisList: DevisAvecClient[];
+  /** La valeur de ?statut= dans l'adresse. */
+  filtreInitial?: string | null;
+}) {
   const [recherche, setRecherche] = useState("");
-  const [filtre, setFiltre] = useState<(typeof LABEL_STATUT_FILTRE)[number]["cle"]>("tous");
+  const [filtre, setFiltre] = useState<CleFiltre>(() => filtreDevisDepuis(filtreInitial));
 
   const filtres = devisList
     .filter((d) => correspondFiltre(d, filtre))

@@ -8,6 +8,7 @@ import {
   aujourdhuiParis,
   type Mois,
 } from "@/lib/moisParis";
+import { arrondi, devisRetenu, resumerAEncaisser } from "@/lib/argent";
 
 // ============================================================
 // L'activité d'un mois (21/09) — ce que lit la page /dashboard/bilan.
@@ -96,20 +97,9 @@ type LigneDemande = {
   termine_le: string | null;
 };
 
-// Le devis qui a été accepté pour un projet : celui qui porte une
-// signature s'il y en a une, sinon le dernier envoyé et non refusé.
-function devisRetenu(devis: LigneDevis[]): LigneDevis | null {
-  const signe = devis.find((d) => d.signe_le);
-  if (signe) return signe;
-  const envoyes = devis
-    .filter((d) => d.statut !== "refuse" && d.envoye_le)
-    .sort((a, b) => (b.envoye_le ?? "").localeCompare(a.envoye_le ?? ""));
-  return envoyes[0] ?? null;
-}
-
-function arrondi(n: number): number {
-  return Math.round(n * 100) / 100;
-}
+// Le devis accepté d'un projet (devisRetenu) et le total à encaisser
+// (resumerAEncaisser) viennent de lib/argent.ts (refonte 03/10) : la page
+// Argent et l'accueil montrent ainsi les mêmes chiffres que le Bilan.
 
 function mediane(valeurs: number[]): number | null {
   if (valeurs.length === 0) return null;
@@ -195,7 +185,7 @@ export async function calculerActivite(
     // dû, maintenant. C'est ce que les artisans regardent d'abord.
     supabase
       .from("factures")
-      .select("total_ttc, date_echeance")
+      .select("total_ttc, date_echeance, statut, type")
       .eq("organisation_id", organisationId)
       .eq("statut", "emise")
       .neq("type", "avoir"),
@@ -279,13 +269,6 @@ export async function calculerActivite(
     })
     .filter((j): j is number => j !== null);
 
-  // L'échéance est une date sans heure ("2026-09-21") : on la compare à la
-  // date du jour à Paris, pas à celle d'UTC qui a un jour de retard avant
-  // 2 h du matin.
-  const jourParis = aujourdhuiParis(maintenant);
-  const aujourdHui = `${jourParis.annee}-${String(jourParis.mois + 1).padStart(2, "0")}-${String(jourParis.jour).padStart(2, "0")}`;
-  const ouvertes = facturesOuvertes ?? [];
-
   return {
     mois,
     enCours,
@@ -298,11 +281,7 @@ export async function calculerActivite(
       const m = mediane(delais);
       return m === null ? null : Math.round(m * 10) / 10;
     })(),
-    aEncaisser: {
-      total: arrondi(ouvertes.reduce((s, f) => s + Number(f.total_ttc), 0)),
-      nombre: ouvertes.length,
-      enRetard: ouvertes.filter((f) => f.date_echeance && f.date_echeance < aujourdHui).length,
-    },
+    aEncaisser: resumerAEncaisser(facturesOuvertes ?? [], maintenant),
   };
 }
 

@@ -9,14 +9,30 @@ import { obtenirPostesFrequents, type PosteFrequent } from "@/lib/postesFrequent
 import { Card } from "@/components/ui/Card";
 import { Field, TextareaField } from "@/components/ui/Input";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
-import type { SourceDocumentDevis } from "@/lib/devis/modeleDocument";
+import type { ModeleDevis, SourceDocumentDevis } from "@/lib/devis/modeleDocument";
 import { EditeurLignes } from "@/components/devis/EditeurLignes";
+import { IconeRetour } from "@/components/projet/icones";
+import { RevueDevis } from "@/components/devis/RevueDevis";
+import type { ContexteCompletion } from "@/components/devis/CompletionMention";
 import { useEditionDevis, valeurPositive } from "@/components/devis/useEditionDevis";
+import type { EvaluationDevis } from "@/lib/devis/qualite";
 import type { Devis, ParametresEntreprise } from "@/types";
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 }
+
+// Refonte (03/10, duel F lot 3) — de quoi afficher la revue sur téléphone
+// (components/devis/RevueDevis.tsx), que l'espace devis connaît et que cet
+// écran ignorait : le client, le score à jour, le PDF. Sans cet objet,
+// l'écran reste exactement l'éditeur d'avant, sur téléphone aussi.
+export type RevueTelephone = {
+  nomClient: string;
+  lienProjet: string;
+  evaluation: EvaluationDevis;
+  completion?: ContexteCompletion;
+  modele: ModeleDevis;
+};
 
 // Étape intermédiaire entre "l'IA + le moteur métier ont préparé un
 // brouillon" et "le PDF part au client". L'artisan relit, ajuste
@@ -35,6 +51,8 @@ export function ValiderDevis({
   adresseClient,
   onValide,
   onApercu,
+  revue,
+  score,
 }: {
   devis: Devis;
   demandeId: string;
@@ -45,9 +63,18 @@ export function ValiderDevis({
   // Espace devis (17/09) : reçoit le brouillon à chaque modification, pour
   // que le vrai PDF affiché à côté suive en direct.
   onApercu?: (source: SourceDocumentDevis) => void;
+  // Refonte (03/10, duel F lot 3) : sur téléphone, la revue remplace
+  // l'éditeur ; « Modifier tout le devis » ramène l'éditeur, avec le score
+  // au-dessus (l'ordinateur voit toujours l'éditeur et le score).
+  revue?: RevueTelephone;
+  score?: React.ReactNode;
 }) {
   const supabase = createClient();
+  // Sur téléphone seulement : l'artisan a demandé l'éditeur complet.
+  const [toutModifier, setToutModifier] = useState(false);
+  const revueAffichee = Boolean(revue) && !toutModifier;
 
+  const edition = useEditionDevis(devis, parametres);
   const {
     lignes,
     setLignes,
@@ -88,7 +115,7 @@ export function ValiderDevis({
     ajouterSuggestion,
     ignorerSuggestion,
     ajouterPosteFrequent,
-  } = useEditionDevis(devis, parametres);
+  } = edition;
   const [enregistrement, setEnregistrement] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
 
@@ -236,325 +263,382 @@ export function ValiderDevis({
     onValide();
   }
 
+  function afficherToutModifier(oui: boolean) {
+    setToutModifier(oui);
+    window.scrollTo({ top: 0 });
+  }
+
   return (
-    <Card className="mt-4 p-6">
-      {/* Renommé le 17/09 (audit des écarts concurrents, §6) : "Validation
-          du devis" disait "relis et confirme", pas "modifie". Axel lui-même,
-          qui a construit l'écran, en avait conclu qu'on ne pouvait rien y
-          écrire — aucun artisan ne l'aurait découvert seul. */}
-      <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
-        Modifier le devis
-      </p>
-      <p className="text-xs text-ink/40 mb-5">
-        Changez tout ce que vous voulez : lignes, prix, conditions. Rien n&apos;est envoyé au
-        client avant que vous validiez.
-      </p>
-
-      {retrouve && (
-        <div className="mb-5 flex flex-wrap items-center gap-x-3 rounded-xl bg-ink/[0.04] px-4 py-2 text-[13.5px] text-ink/75">
-          <span className="py-2">Vos modifications non validées ont été retrouvées.</span>
-          <button
-            type="button"
-            onClick={revenirAuDevisEnregistre}
-            className="inline-flex min-h-11 items-center font-medium text-ink underline underline-offset-4"
-          >
-            Revenir au devis enregistré
-          </button>
+    <>
+      {/* Refonte (03/10, duel F lot 3) — sur téléphone, la revue ; sur
+          ordinateur, jamais (l'éditeur ci-dessous reste l'écran). Quand
+          l'artisan a demandé l'éditeur complet, la revue s'efface. */}
+      {revue && (
+        <div className={toutModifier ? "hidden" : "sm:hidden"}>
+          <RevueDevis
+            edition={edition}
+            numero={devis.numero}
+            nomClient={revue.nomClient}
+            lienProjet={revue.lienProjet}
+            evaluation={revue.evaluation}
+            completion={revue.completion}
+            modele={revue.modele}
+            tarifs={parametres ?? null}
+            parametresNonConfigures={devis.parametres_configures === false}
+            enregistrement={enregistrement}
+            erreur={erreur}
+            onValider={validerDevis}
+            onToutModifier={() => afficherToutModifier(true)}
+          />
         </div>
       )}
 
-      <div className="mb-5">
-        <TextareaField
-          label="Objet des travaux"
-          rows={2}
-          value={objet}
-          onChange={(e) => setObjet(e.target.value)}
-          placeholder="Ex : Rénovation de la salle de bain avec pose d'une douche à l'italienne."
-        />
-        <p className="mt-1.5 text-[11px] text-ink/40">
-          La première phrase que lit votre client, avant le détail chiffré.
-        </p>
-      </div>
-
-      {/* Passe visuelle (10/09), guidée par la recherche terrain sur la
-          charge mentale des artisans BTP : le Total TTC — le chiffre le
-          plus important de tout cet écran, celui qui permet un premier
-          "ça a l'air correct" — était auparavant tout en bas, après
-          chaque ligne éditable. Un artisan fatigué qui relit un devis le
-          soir doit pouvoir le voir en un coup d'œil AVANT de dérouler le
-          détail, sans que ce détail (le vrai garde-fou anti-erreur) soit
-          raccourci ou retiré pour autant — il reste identique plus bas.
-          Recalculé en direct (useMemo totaux) à chaque modification. */}
-      <div className="mb-5 rounded-2xl border border-ink/10 bg-paper-warm px-4 py-3.5 flex items-center justify-between">
-        <span className="text-xs text-ink/50">Total TTC (mis à jour en direct)</span>
-        <span className="font-mono text-xl font-semibold">{formatEuros(totaux.total_ttc)}</span>
-      </div>
-
-      {devis.parametres_configures === false && (
-        <div className="mb-5 rounded-xl border border-signal/25 bg-signal/5 px-4 py-3">
-          <p className="text-sm font-medium text-signal">
-            Paramètres d&apos;entreprise non configurés
-          </p>
-          <p className="mt-1 text-xs text-ink/60">
-            Ce devis a été chiffré avec des valeurs par défaut (tarif horaire, marge, TVA) —
-            vérifiez qu&apos;elles correspondent bien aux vôtres avant de l&apos;envoyer, ou{" "}
-            <a
-              href="/dashboard/parametres"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="underline underline-offset-2 hover:text-signal"
+      <div className={revueAffichee ? "max-sm:hidden" : undefined}>
+        {/* Le score (anneau, points à vérifier) : au-dessus de l'éditeur, comme
+            avant ; sur téléphone, il n'apparaît qu'avec l'éditeur complet. */}
+        {score}
+        <Card className="mt-4 p-6">
+          {revue && (
+            <button
+              type="button"
+              onClick={() => afficherToutModifier(false)}
+              className="-ml-3 mb-2 inline-flex min-h-12 items-center gap-1 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 sm:hidden"
             >
-              configurez votre entreprise
-            </a>{" "}
-            puis régénérez-le.
+              <IconeRetour className="h-4 w-4" />
+              Revenir à la revue
+            </button>
+          )}
+          {/* Renommé le 17/09 (audit des écarts concurrents, §6) : "Validation
+              du devis" disait "relis et confirme", pas "modifie". Axel lui-même,
+              qui a construit l'écran, en avait conclu qu'on ne pouvait rien y
+              écrire — aucun artisan ne l'aurait découvert seul. */}
+          <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
+            Modifier le devis
           </p>
-        </div>
-      )}
-
-      <EditeurLignes
-        lignes={lignes}
-        lots={lots}
-        tarifs={parametres ?? null}
-        onChange={(nouvellesLignes, nouveauxLots) => {
-          setLignes(nouvellesLignes);
-          setLots(nouveauxLots);
-        }}
-      />
-
-      {postesFrequents.length > 0 && (
-        <div className="mt-4">
-          <p className="text-[11px] font-medium text-ink/40 uppercase tracking-wider mb-2">
-            Vos postes fréquents — un clic pour ajouter
+          <p className="text-xs text-ink/40 mb-5">
+            Changez tout ce que vous voulez : lignes, prix, conditions. Rien n&apos;est envoyé au
+            client avant que vous validiez.
           </p>
-          <div className="flex flex-wrap gap-2">
-            {postesFrequents.map((poste, i) => (
+
+          {retrouve && (
+            <div className="mb-5 flex flex-wrap items-center gap-x-3 rounded-xl bg-ink/[0.04] px-4 py-2 text-[13.5px] text-ink/75">
+              <span className="py-2">Vos modifications non validées ont été retrouvées.</span>
               <button
-                key={`${poste.description}-${i}`}
                 type="button"
-                onClick={() => ajouterPosteFrequent(poste)}
-                title={`Déjà utilisé ${poste.nb_utilisations} fois — ${formatEuros(poste.prix_unitaire)}`}
-                className="rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-signal/40 hover:text-signal"
+                onClick={revenirAuDevisEnregistre}
+                className="inline-flex min-h-11 items-center font-medium text-ink underline underline-offset-4"
               >
-                + {poste.description}
+                Revenir au devis enregistré
               </button>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      <div className="mt-6 pt-5 border-t border-ink/10 grid sm:grid-cols-3 gap-4">
-        <Field
-          label="Déplacement (€)"
-          type="number"
-          step="0.01"
-          min={0}
-          value={deplacement}
-          onChange={(e) => setDeplacement(valeurPositive(e.target.value))}
-        />
-        <Field
-          label="Marge (%)"
-          type="number"
-          step="0.01"
-          min={0}
-          value={margePct}
-          onChange={(e) => setMargePct(valeurPositive(e.target.value))}
-        />
-        <Field
-          label="TVA (%)"
-          type="number"
-          step="0.01"
-          min={0}
-          value={tvaPct}
-          onChange={(e) => gestionnaireTvaPct(valeurPositive(e.target.value))}
-        />
-      </div>
-
-      <div className="mt-6 pt-5 border-t border-ink/10">
-        <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
-          Conditions de l&apos;offre
-        </p>
-        <p className="text-xs text-ink/40 mb-4">
-          Reprises de vos paramètres — modifiables pour ce devis seulement.
-        </p>
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field
-            label="Validité (jours)"
-            type="number"
-            step="1"
-            min={1}
-            max={365}
-            value={validiteJours}
-            onChange={(e) => setValiditeJours(e.target.value)}
-          />
-          <Field
-            label="Acompte à la signature (%)"
-            type="number"
-            step="1"
-            min={0}
-            max={100}
-            value={acomptePct}
-            onChange={(e) => setAcomptePct(e.target.value)}
-            placeholder="Aucun"
-          />
-          <Field
-            label="Début des travaux prévu"
-            type="date"
-            value={dateDebut}
-            onChange={(e) => setDateDebut(e.target.value)}
-          />
-          <Field
-            label="Durée estimée"
-            value={dureeEstimee}
-            onChange={(e) => setDureeEstimee(e.target.value)}
-            placeholder="Ex : 3 jours"
-          />
-        </div>
-
-        <label className="mt-4 flex items-center gap-2 text-sm text-ink/70">
-          <input
-            type="checkbox"
-            checked={chantierAilleurs}
-            onChange={(e) => setChantierAilleurs(e.target.checked)}
-            className="w-4 h-4 rounded border-ink/25 accent-signal"
-          />
-          Le chantier est à une autre adresse que celle du client
-        </label>
-        {chantierAilleurs && (
-          <div className="mt-3">
-            <Field
-              label="Adresse du chantier"
-              value={adresseChantier}
-              onChange={(e) => setAdresseChantier(e.target.value)}
-              placeholder={adresseClient ? `Différente de : ${adresseClient}` : "Adresse complète"}
+          <div className="mb-5">
+            <TextareaField
+              label="Objet des travaux"
+              rows={2}
+              value={objet}
+              onChange={(e) => setObjet(e.target.value)}
+              placeholder="Ex : Rénovation de la salle de bain avec pose d'une douche à l'italienne."
             />
+            <p className="mt-1.5 text-[11px] text-ink/40">
+              La première phrase que lit votre client, avant le détail chiffré.
+            </p>
           </div>
-        )}
-      </div>
 
-      {tvaPct !== 20 && (
-        <div className="mt-5">
-          <TextareaField
-            label="Mention TVA réduite (visible sur le devis puis la facture)"
-            rows={3}
-            value={mentionTvaReduite}
-            onChange={(e) => {
-              setMentionTvaReduite(e.target.value);
-              setMentionModifieeManuellement(true);
+          {/* Passe visuelle (10/09), guidée par la recherche terrain sur la
+              charge mentale des artisans BTP : le Total TTC — le chiffre le
+              plus important de tout cet écran, celui qui permet un premier
+              "ça a l'air correct" — était auparavant tout en bas, après
+              chaque ligne éditable. Un artisan fatigué qui relit un devis le
+              soir doit pouvoir le voir en un coup d'œil AVANT de dérouler le
+              détail, sans que ce détail (le vrai garde-fou anti-erreur) soit
+              raccourci ou retiré pour autant — il reste identique plus bas.
+              Recalculé en direct (useMemo totaux) à chaque modification. */}
+          <div className="mb-5 rounded-2xl border border-ink/10 bg-paper-warm px-4 py-3.5 flex items-center justify-between">
+            <span className="text-xs text-ink/50">Total TTC (mis à jour en direct)</span>
+            <span className="font-mono text-xl font-semibold">{formatEuros(totaux.total_ttc)}</span>
+          </div>
+
+          {devis.parametres_configures === false && (
+            <div className="mb-5 rounded-xl border border-signal/25 bg-signal/5 px-4 py-3">
+              <p className="text-sm font-medium text-signal">
+                Paramètres d&apos;entreprise non configurés
+              </p>
+              <p className="mt-1 text-xs text-ink/60">
+                Ce devis a été chiffré avec des valeurs par défaut (tarif horaire, marge, TVA) —
+                vérifiez qu&apos;elles correspondent bien aux vôtres avant de l&apos;envoyer, ou{" "}
+                <a
+                  href="/dashboard/parametres"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-2 hover:text-signal"
+                >
+                  configurez votre entreprise
+                </a>{" "}
+                puis régénérez-le.
+              </p>
+            </div>
+          )}
+
+          <EditeurLignes
+            lignes={lignes}
+            lots={lots}
+            tarifs={parametres ?? null}
+            onChange={(nouvellesLignes, nouveauxLots) => {
+              setLignes(nouvellesLignes);
+              setLots(nouveauxLots);
             }}
           />
-          <p className="mt-1.5 text-[11px] text-ink/40 leading-relaxed">
-            Texte suggéré à titre indicatif — la formulation officielle exacte n&apos;est pas
-            garantie, à vérifier avec votre comptable avant un premier envoi.
-          </p>
-        </div>
-      )}
 
-      <div className="mt-5">
-        <TextareaField
-          label="Commentaires (optionnel, visible sur le devis)"
-          rows={2}
-          value={commentaires}
-          onChange={(e) => setCommentaires(e.target.value)}
-        />
-      </div>
-
-      <div className="mt-6 pt-5 border-t border-ink/10 text-sm space-y-1.5">
-        <div className="flex items-center justify-between text-ink/60">
-          <span>Sous-total HT</span>
-          <span className="font-mono">{formatEuros(totaux.sous_total_ht)}</span>
-        </div>
-        <div className="flex items-center justify-between text-ink/60">
-          <span>Déplacement</span>
-          <span className="font-mono">{formatEuros(totaux.deplacement)}</span>
-        </div>
-        {/* Audit "vérification systématique" (10/09) — cette ligne
-            manquait ici alors que DevisPreview.tsx l'affiche déjà : sans
-            elle, Sous-total HT + Déplacement + TVA ne fait PAS le Total
-            TTC affiché juste en dessous (l'écart, c'est la marge) — un
-            artisan qui vérifie le calcul à la main sur cet écran précis
-            tombait sur un total qu'il ne pouvait pas reconstituer. */}
-        <div className="flex items-center justify-between text-ink/60">
-          <span>Marge ({totaux.marge_pct}%)</span>
-          <span className="font-mono">{formatEuros(totaux.montant_marge)}</span>
-        </div>
-        <div className="flex items-center justify-between text-ink/60">
-          <span>TVA ({totaux.tva_pct}%)</span>
-          <span className="font-mono">{formatEuros(totaux.montant_tva)}</span>
-        </div>
-        <div className="flex items-center justify-between font-semibold pt-2 border-t border-ink/10">
-          <span>Total TTC</span>
-          <span className="font-mono text-lg">{formatEuros(totaux.total_ttc)}</span>
-        </div>
-        {/* 17/09 — les prix saisis ici sont vos prix de revient ; le
-            client, lui, lit des prix marge incluse (voir prixDeVente.ts).
-            Sans cette phrase, l'écart entre les deux écrans surprendrait. */}
-        <p className="pt-2 text-[11px] text-ink/40 leading-relaxed">
-          Vous saisissez vos prix de revient. Sur le devis du client, la marge est
-          répartie dans le prix de chaque ligne et le déplacement apparaît en ligne à
-          part : il ne voit jamais votre marge, et ses lignes tombent juste sur le total.
-        </p>
-      </div>
-
-      {suggestionsRestantes.length > 0 && (
-        <div className="mt-6 pt-5 border-t border-ink/10">
-          <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
-            Postes probablement oubliés
-          </p>
-          <p className="text-xs text-ink/40 mb-3">
-            Déjà chiffrés selon vos paramètres — à vous de juger si c&apos;est pertinent ici.
-          </p>
-          <div className="flex flex-col gap-2">
-            {suggestionsRestantes.map((s, i) => (
-              <div
-                key={`${s.description}-${i}`}
-                className="flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-paper px-3 py-2.5"
-              >
-                <div className="min-w-0">
-                  <p className="text-sm text-ink/80 truncate">{s.description}</p>
-                  <p className="text-xs text-ink/40 font-mono">{formatEuros(s.total)}</p>
-                </div>
-                <div className="flex items-center gap-2 shrink-0">
+          {postesFrequents.length > 0 && (
+            <div className="mt-4">
+              <p className="text-[11px] font-medium text-ink/40 uppercase tracking-wider mb-2">
+                Vos postes fréquents — un clic pour ajouter
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {postesFrequents.map((poste, i) => (
                   <button
+                    key={`${poste.description}-${i}`}
                     type="button"
-                    onClick={() => ajouterSuggestion(i)}
-                    className="text-xs font-medium text-signal hover:text-signal-fonce transition-colors"
+                    onClick={() => ajouterPosteFrequent(poste)}
+                    title={`Déjà utilisé ${poste.nb_utilisations} fois — ${formatEuros(poste.prix_unitaire)}`}
+                    className="rounded-full border border-ink/15 px-3 py-1.5 text-xs text-ink/70 transition-colors hover:border-signal/40 hover:text-signal"
                   >
-                    + Ajouter au devis
+                    + {poste.description}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => ignorerSuggestion(i)}
-                    className="text-xs text-ink/40 hover:text-ink/60 underline transition-colors"
-                  >
-                    Ignorer
-                  </button>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-      )}
+            </div>
+          )}
 
-      {/* 27/09 — Sur téléphone, un devis de vingt lignes faisait défiler
-          longtemps avant de trouver « Valider ». Le bouton reste sous le
-          pouce, au-dessus de la barre du bas, avec le total à jour ; une
-          erreur s'affiche juste au-dessus de lui, là où on regarde. */}
-      <div className="sticky bottom-[calc(var(--barre-bas,0px)+env(safe-area-inset-bottom)+1.75rem)] z-10 mt-5 sm:static">
-        {erreur && (
-          <p className="mb-2 rounded-xl bg-surface px-3 py-2 text-sm text-signal-fonce ring-1 ring-signal/30 dark:text-signal-clair sm:bg-transparent sm:p-0 sm:ring-0">
-            {erreur}
-          </p>
-        )}
-        <button
-          type="button"
-          onClick={validerDevis}
-          disabled={enregistrement}
-          className="flex w-full min-h-14 items-center justify-between gap-3 rounded-2xl bg-ink px-5 text-paper shadow-[0_10px_30px_-12px_rgb(var(--c-ink)/0.6)] transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:justify-center sm:shadow-none"
-        >
-          <span className="text-[16px] font-semibold">{enregistrement ? "Validation…" : "Valider ce devis"}</span>
-          <span className="font-mono text-[15px] tabular-nums text-paper/80 sm:hidden">{formatEuros(totaux.total_ttc)}</span>
-        </button>
+          <div className="mt-6 pt-5 border-t border-ink/10 grid sm:grid-cols-3 gap-4">
+            <Field
+              label="Déplacement (€)"
+              type="number"
+              step="0.01"
+              min={0}
+              value={deplacement}
+              onChange={(e) => setDeplacement(valeurPositive(e.target.value))}
+            />
+            <Field
+              label="Marge (%)"
+              type="number"
+              step="0.01"
+              min={0}
+              value={margePct}
+              onChange={(e) => setMargePct(valeurPositive(e.target.value))}
+            />
+            <Field
+              label="TVA (%)"
+              type="number"
+              step="0.01"
+              min={0}
+              value={tvaPct}
+              onChange={(e) => gestionnaireTvaPct(valeurPositive(e.target.value))}
+            />
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-ink/10">
+            <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
+              Conditions de l&apos;offre
+            </p>
+            <p className="text-xs text-ink/40 mb-4">
+              Reprises de vos paramètres — modifiables pour ce devis seulement.
+            </p>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field
+                label="Validité (jours)"
+                type="number"
+                step="1"
+                min={1}
+                max={365}
+                value={validiteJours}
+                onChange={(e) => setValiditeJours(e.target.value)}
+              />
+              <Field
+                label="Acompte à la signature (%)"
+                type="number"
+                step="1"
+                min={0}
+                max={100}
+                value={acomptePct}
+                onChange={(e) => setAcomptePct(e.target.value)}
+                placeholder="Aucun"
+              />
+              <Field
+                label="Début des travaux prévu"
+                type="date"
+                value={dateDebut}
+                onChange={(e) => setDateDebut(e.target.value)}
+              />
+              <Field
+                label="Durée estimée"
+                value={dureeEstimee}
+                onChange={(e) => setDureeEstimee(e.target.value)}
+                placeholder="Ex : 3 jours"
+              />
+            </div>
+
+            <label className="mt-4 flex items-center gap-2 text-sm text-ink/70">
+              <input
+                type="checkbox"
+                checked={chantierAilleurs}
+                onChange={(e) => setChantierAilleurs(e.target.checked)}
+                className="w-4 h-4 rounded border-ink/25 accent-signal"
+              />
+              Le chantier est à une autre adresse que celle du client
+            </label>
+            {chantierAilleurs && (
+              <div className="mt-3">
+                <Field
+                  label="Adresse du chantier"
+                  value={adresseChantier}
+                  onChange={(e) => setAdresseChantier(e.target.value)}
+                  placeholder={adresseClient ? `Différente de : ${adresseClient}` : "Adresse complète"}
+                />
+              </div>
+            )}
+          </div>
+
+          {tvaPct !== 20 && (
+            <div className="mt-5">
+              <TextareaField
+                label="Mention TVA réduite (visible sur le devis puis la facture)"
+                rows={3}
+                value={mentionTvaReduite}
+                onChange={(e) => {
+                  setMentionTvaReduite(e.target.value);
+                  setMentionModifieeManuellement(true);
+                }}
+              />
+              <p className="mt-1.5 text-[11px] text-ink/40 leading-relaxed">
+                Texte suggéré à titre indicatif — la formulation officielle exacte n&apos;est pas
+                garantie, à vérifier avec votre comptable avant un premier envoi.
+              </p>
+            </div>
+          )}
+
+          <div className="mt-5">
+            <TextareaField
+              label="Commentaires (optionnel, visible sur le devis)"
+              rows={2}
+              value={commentaires}
+              onChange={(e) => setCommentaires(e.target.value)}
+            />
+          </div>
+
+          <div className="mt-6 pt-5 border-t border-ink/10 text-sm space-y-1.5">
+            <div className="flex items-center justify-between text-ink/60">
+              <span>Sous-total HT</span>
+              <span className="font-mono">{formatEuros(totaux.sous_total_ht)}</span>
+            </div>
+            <div className="flex items-center justify-between text-ink/60">
+              <span>Déplacement</span>
+              <span className="font-mono">{formatEuros(totaux.deplacement)}</span>
+            </div>
+            {/* Audit "vérification systématique" (10/09) — cette ligne
+                manquait ici alors que DevisPreview.tsx l'affiche déjà : sans
+                elle, Sous-total HT + Déplacement + TVA ne fait PAS le Total
+                TTC affiché juste en dessous (l'écart, c'est la marge) — un
+                artisan qui vérifie le calcul à la main sur cet écran précis
+                tombait sur un total qu'il ne pouvait pas reconstituer. */}
+            <div className="flex items-center justify-between text-ink/60">
+              <span>Marge ({totaux.marge_pct}%)</span>
+              <span className="font-mono">{formatEuros(totaux.montant_marge)}</span>
+            </div>
+            <div className="flex items-center justify-between text-ink/60">
+              <span>TVA ({totaux.tva_pct}%)</span>
+              <span className="font-mono">{formatEuros(totaux.montant_tva)}</span>
+            </div>
+            <div className="flex items-center justify-between font-semibold pt-2 border-t border-ink/10">
+              <span>Total TTC</span>
+              <span className="font-mono text-lg">{formatEuros(totaux.total_ttc)}</span>
+            </div>
+            {/* 17/09 — les prix saisis ici sont vos prix de revient ; le
+                client, lui, lit des prix marge incluse (voir prixDeVente.ts).
+                Sans cette phrase, l'écart entre les deux écrans surprendrait. */}
+            <p className="pt-2 text-[11px] text-ink/40 leading-relaxed">
+              Vous saisissez vos prix de revient. Sur le devis du client, la marge est
+              répartie dans le prix de chaque ligne et le déplacement apparaît en ligne à
+              part : il ne voit jamais votre marge, et ses lignes tombent juste sur le total.
+            </p>
+          </div>
+
+          {suggestionsRestantes.length > 0 && (
+            <div className="mt-6 pt-5 border-t border-ink/10">
+              <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-1">
+                Postes probablement oubliés
+              </p>
+              <p className="text-xs text-ink/40 mb-3">
+                Déjà chiffrés selon vos paramètres — à vous de juger si c&apos;est pertinent ici.
+              </p>
+              <div className="flex flex-col gap-2">
+                {suggestionsRestantes.map((s, i) => (
+                  <div
+                    key={`${s.description}-${i}`}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-paper px-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm text-ink/80 truncate">{s.description}</p>
+                      <p className="text-xs text-ink/40 font-mono">{formatEuros(s.total)}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => ajouterSuggestion(i)}
+                        className="text-xs font-medium text-signal hover:text-signal-fonce transition-colors"
+                      >
+                        + Ajouter au devis
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => ignorerSuggestion(i)}
+                        className="text-xs text-ink/40 hover:text-ink/60 underline transition-colors"
+                      >
+                        Ignorer
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 27/09 — Sur téléphone, un devis de vingt lignes faisait défiler
+              longtemps avant de trouver « Valider ». Le bouton reste sous le
+              pouce, au-dessus de la barre du bas, avec le total à jour ; une
+              erreur s'affiche juste au-dessus de lui, là où on regarde. */}
+          <div className="sticky bottom-[calc(var(--barre-bas,0px)+env(safe-area-inset-bottom)+1.75rem)] z-10 mt-5 sm:static">
+            {erreur && (
+              <p className="mb-2 rounded-xl bg-surface px-3 py-2 text-sm text-signal-fonce ring-1 ring-signal/30 dark:text-signal-clair sm:bg-transparent sm:p-0 sm:ring-0">
+                {erreur}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={validerDevis}
+              disabled={enregistrement}
+              className="flex w-full min-h-14 items-center justify-between gap-3 rounded-2xl bg-ink px-5 text-paper shadow-[0_10px_30px_-12px_rgb(var(--c-ink)/0.6)] transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:justify-center sm:shadow-none"
+            >
+              {/* Refonte (03/10, duel F lot 3) — sur ordinateur, ce bouton valide
+                  sans rien envoyer : l'envoi est l'étape suivante (« Prêt à
+                  partir »). Le dire évite de chercher « Envoyer » ici. */}
+              <span className="text-[16px] font-semibold">
+                {enregistrement ? (
+                  "Validation…"
+                ) : (
+                  <>
+                    <span className="sm:hidden">Valider ce devis</span>
+                    <span className="hidden sm:inline">Valider sans l&apos;envoyer</span>
+                  </>
+                )}
+              </span>
+              <span className="font-mono text-[15px] tabular-nums text-paper/80 sm:hidden">{formatEuros(totaux.total_ttc)}</span>
+            </button>
+          </div>
+        </Card>
       </div>
-    </Card>
+    </>
   );
 }

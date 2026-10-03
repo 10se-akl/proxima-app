@@ -278,16 +278,32 @@ export function VueEspaceDevis({
     }
   }
 
+  // Le score (anneau, points à vérifier) : seulement tant qu'on peut encore
+  // corriger. Au brouillon, c'est ValiderDevis qui le place au-dessus de
+  // l'éditeur complet (sur téléphone, il n'apparaît qu'avec lui : la revue
+  // n'a plus d'anneau) ; à l'étape « à envoyer », il garde sa place d'avant.
+  const masqueTelephone = estBrouillon ? "max-sm:hidden" : "";
+  const scoreDevis =
+    estBrouillon || devis.statut === "a_valider" ? (
+      <ScoreDevis
+        evaluation={evaluation}
+        completion={onParametres ? { parametres, organisationId, artisanId, surEnregistre: onParametres } : undefined}
+      />
+    ) : null;
+
   return (
     <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-8">
+      {/* Refonte (03/10, duel F lot 3) — sur téléphone, le brouillon a sa
+          propre revue (components/devis/RevueDevis.tsx), avec son retour au
+          projet, son numéro et son total : on ne les montre pas deux fois. */}
       <Link
         href={`/dashboard/demandes/${projet.id}`}
-        className="inline-flex min-h-11 items-center text-xs text-ink/50 transition-colors hover:text-ink"
+        className={`inline-flex min-h-11 items-center text-xs text-ink/50 transition-colors hover:text-ink ${masqueTelephone}`}
       >
         ← Projet · {projet.nom_client}
       </Link>
 
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
+      <div className={`mt-2 flex flex-wrap items-end justify-between gap-4 ${masqueTelephone}`}>
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
             <h1 className="font-display text-2xl font-semibold">Devis n° {devis.numero}</h1>
@@ -332,7 +348,7 @@ export function VueEspaceDevis({
           )}
         </div>
       </div>
-      {erreurPdf && <p className="mt-2 text-sm text-signal">{erreurPdf}</p>}
+      {erreurPdf && <p className={`mt-2 text-sm text-signal ${masqueTelephone}`}>{erreurPdf}</p>}
       {questionEnvoi && devis.statut === "a_valider" && (
         <div className="mt-3 rounded-xl border border-ink/10 bg-surface px-4 py-3">
           <p className="text-sm font-medium text-ink">Ce devis est parti chez le client ?</p>
@@ -350,7 +366,7 @@ export function VueEspaceDevis({
       )}
 
       {estBrouillon && (
-        <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-ink/10 bg-surface p-1 lg:hidden" role="tablist">
+        <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-ink/10 bg-surface p-1 max-sm:hidden lg:hidden" role="tablist">
           {(
             [
               ["edition", "Modifier"],
@@ -373,18 +389,19 @@ export function VueEspaceDevis({
         </div>
       )}
 
-      <div className="mt-6 grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <section className={`min-w-0 space-y-4 ${estBrouillon && vue === "apercu" ? "hidden lg:block" : ""}`}>
+      <div
+        className={`grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] ${estBrouillon ? "mt-6 max-sm:mt-0" : "mt-6"}`}
+      >
+        {/* Sur téléphone, le brouillon n'a plus d'onglets : la revue (ou
+            l'éditeur complet) est toujours là, le PDF s'ouvre depuis la
+            revue (« Voir le PDF »). Même si l'onglet « Aperçu » avait été
+            choisi avant de tourner le téléphone. */}
+        <section
+          className={`min-w-0 space-y-4 ${estBrouillon && vue === "apercu" ? "hidden max-sm:block lg:block" : ""}`}
+        >
           {/* Le score n'a de sens que tant qu'on peut encore corriger : une
               fois le devis parti, il est figé (voir mentions_legales). */}
-          {(estBrouillon || devis.statut === "a_valider") && (
-            <ScoreDevis
-              evaluation={evaluation}
-              completion={
-                onParametres ? { parametres, organisationId, artisanId, surEnregistre: onParametres } : undefined
-              }
-            />
-          )}
+          {!estBrouillon && scoreDevis}
           {estBrouillon ? (
             <ValiderDevis
               // Remonté à chaque nouvelle version chargée : l'éditeur repart
@@ -397,6 +414,16 @@ export function VueEspaceDevis({
               adresseClient={projet.adresse_client}
               onApercu={setBrouillon}
               onValide={onRecharger}
+              score={scoreDevis}
+              revue={{
+                nomClient: projet.nom_client,
+                lienProjet: `/dashboard/demandes/${projet.id}`,
+                evaluation,
+                completion: onParametres
+                  ? { parametres, organisationId, artisanId, surEnregistre: onParametres }
+                  : undefined,
+                modele,
+              }}
             />
           ) : (
             <SuiviDevis
@@ -413,7 +440,7 @@ export function VueEspaceDevis({
         </section>
 
         <aside
-          className={`min-w-0 lg:sticky lg:top-6 ${estBrouillon && vue === "edition" ? "hidden lg:block" : ""}`}
+          className={`min-w-0 lg:sticky lg:top-6 ${estBrouillon ? "max-sm:hidden" : ""} ${estBrouillon && vue === "edition" ? "hidden lg:block" : ""}`}
           aria-label="Aperçu du PDF"
         >
           <p className="mb-3 text-xs text-ink/45">

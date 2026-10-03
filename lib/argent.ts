@@ -105,6 +105,20 @@ export type LigneDevisAEnvoyer = {
   href: string;
 };
 
+export type LigneAFacturer = {
+  demandeId: string;
+  artisanId: string | null;
+  /** Jours depuis la fin du chantier. */
+  jours: number;
+  nom: string;
+  /** Le devis accepté, TTC. */
+  montantDevis: number;
+  /** Ce qui reste à facturer, après acomptes, factures et avoirs. */
+  solde: number;
+  /** La fiche ; « Facturer » l'ouvre sur son bloc #facturation (FacturesProjet). */
+  href: string;
+};
+
 export type AEncaisser = { total: number; nombre: number; enRetard: number };
 
 export type Argent = {
@@ -113,6 +127,9 @@ export type Argent = {
   /** Devis à relire (brouillon) puis à envoyer, du plus ancien au plus récent. */
   devisAEnvoyer: LigneDevisAEnvoyer[];
   aEncaisser: AEncaisser;
+  /** Vide sauf avec `avecAFacturer` (voir calculerArgent). */
+  aFacturer: LigneAFacturer[];
+  totalAFacturer: number;
 };
 
 /** Supabase type une jointure « demandes(...) » comme un tableau, même si
@@ -172,13 +189,69 @@ function cleDe(metadata: unknown, champ: string): string | null {
   return typeof v === "string" ? v : null;
 }
 
+/**
+ * « À facturer » (refonte 03/10 — duel B, lot 4, règle validée par le
+ * fondateur) : un chantier terminé, dont le devis a été accepté, et dont
+ * le solde reste positif après acomptes, factures et avoirs.
+ *
+ * - Le devis accepté est celui du Bilan (devisRetenu) : le montant affiché
+ *   est le même que dans « Chantiers terminés ».
+ * - Le déjà facturé additionne TOUTES les factures du projet, quel que soit
+ *   leur statut, comme le fait la fiche (FacturesProjet.tsx) : une facture
+ *   annulée et l'avoir qui l'annule s'y compensent ; filtrer les annulées
+ *   compterait l'avoir sans la facture, et le solde serait faux.
+ * - Un chantier terminé sans « oui » au devis (accepte_le vide) n'y est
+ *   pas : Compyo ne sait pas ce qui a été vendu.
+ */
+function calculerAFacturer(
+  projets: ProjetArgent[],
+  devis: DevisArgent[],
+  factures: FactureArgent[],
+  maintenant: Date
+): LigneAFacturer[] {
+  const devisParProjet = new Map<string, DevisArgent[]>();
+  for (const x of devis) {
+    if (!x.demande_id) continue;
+    devisParProjet.set(x.demande_id, [...(devisParProjet.get(x.demande_id) ?? []), x]);
+  }
+  const factureParProjet = new Map<string, number>();
+  for (const f of factures) {
+    factureParProjet.set(f.demande_id, (factureParProjet.get(f.demande_id) ?? 0) + Number(f.total_ttc ?? 0));
+  }
+  const nomParProjet = (id: string) => devis.find((x) => x.demande_id === id)?.demandes?.nom_client;
+
+  return projets
+    .filter((p) => p.statut === "termine" && p.accepte_le)
+    .map((p) => {
+      const retenu = devisRetenu(devisParProjet.get(p.id) ?? []);
+      const montantDevis = nombre(retenu?.total_estime) ?? 0;
+      const solde = arrondi(montantDevis - (factureParProjet.get(p.id) ?? 0));
+      const fin = p.termine_le ?? p.accepte_le ?? null;
+      return {
+        demandeId: p.id,
+        artisanId: p.artisan_id ?? null,
+        jours: fin ? Math.max(0, Math.floor((maintenant.getTime() - Date.parse(fin)) / JOUR_MS)) : 0,
+        nom: p.nom_client || nomParProjet(p.id) || "Client",
+        montantDevis,
+        solde,
+        href: `/dashboard/demandes/${p.id}`,
+      };
+    })
+    .filter((l) => l.montantDevis > 0 && l.solde > 0)
+    .sort((a, b) => b.jours - a.jours);
+}
+
 export function calculerArgent(d: {
   devis: DevisArgent[];
   factures: FactureArgent[];
   /** Pour écarter les devis d'un chantier terminé (ses factures restent). */
-  projets?: Pick<ProjetArgent, "id" | "statut">[];
+  projets?: ProjetArgent[];
   /** Les traces `message_prepare` récentes, pour la pause après relance. */
   messages?: MessagePrepare[];
+  /** Calculer « À facturer ». Il faut alors TOUTES les factures (pas
+   *  seulement les émises), et les projets avec accepte_le et termine_le ;
+   *  sinon le solde serait faux. L'accueil ne s'en sert pas. */
+  avecAFacturer?: boolean;
   maintenant?: Date;
 }): Argent {
   const maintenant = d.maintenant ?? new Date();
@@ -187,6 +260,12 @@ export function calculerArgent(d: {
 
   const termines = new Set((d.projets ?? []).filter((p) => p.statut === "termine").map((p) => p.id));
   const devisActifs = d.devis.filter((x) => !x.demande_id || !termines.has(x.demande_id));
+  // Un devis accepté garde le statut « envoye » (seul le projet passe à
+  // « accepte », voir marquerDevisAccepte et repondre_devis) : sans ce
+  // filtre, un chantier signé apparaissait en « Devis sans réponse ».
+  const acceptes = new Set(
+    (d.projets ?? []).filter((p) => ["accepte", "en_cours", "termine"].includes(p.statut)).map((p) => p.id)
+  );
 
   // Les relances préparées depuis moins de sept jours.
   const recentes = (d.messages ?? []).filter((m) => t - Date.parse(m.created_at) < JOURS_PAUSE_RELANCE * JOUR_MS);
@@ -232,7 +311,7 @@ export function calculerArgent(d: {
     }));
 
   const devisEnAttente: LigneEnAttente[] = devisActifs
-    .filter((x) => x.statut === "envoye" && x.envoye_le)
+    .filter((x) => x.statut === "envoye" && x.envoye_le && !(x.demande_id && acceptes.has(x.demande_id)))
     .map((x) => ({ x, jours: joursDepuis(x.envoye_le as string) }))
     .filter(({ jours }) => jours >= JOURS_AFFICHAGE_DEVIS)
     .map(({ x, jours }) => ({
@@ -268,10 +347,14 @@ export function calculerArgent(d: {
     // À relire d'abord (c'est ce qui bloque l'envoi), puis le plus ancien.
     .sort((a, b) => (a.quoi === b.quoi ? b.jours - a.jours : a.quoi === "Devis à relire" ? -1 : 1));
 
+  const aFacturer = d.avecAFacturer ? calculerAFacturer(d.projets ?? [], d.devis, d.factures, maintenant) : [];
+
   return {
     enAttente: [...factures, ...devisEnAttente].sort((a, b) => b.jours - a.jours),
     devisAEnvoyer,
     aEncaisser: resumerAEncaisser(d.factures, maintenant),
+    aFacturer,
+    totalAFacturer: arrondi(aFacturer.reduce((s, l) => s + l.solde, 0)),
   };
 }
 

@@ -98,13 +98,14 @@ export function LigneAccueil({
   );
 }
 
+/** La colonne de fin d'une ligne, quand l'action est un mot. */
+export const CLASSE_FIN_TEXTE =
+  "flex shrink-0 items-center border-l border-ink/15 px-3 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink";
+
 /** La colonne de fin « Relancer » : le message prêt s'ouvre sur la fiche. */
 export function FinRelancer({ href }: { href: string }) {
   return (
-    <Link
-      href={href}
-      className="flex shrink-0 items-center border-l border-ink/15 px-3 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
-    >
+    <Link href={href} className={CLASSE_FIN_TEXTE}>
       Relancer
     </Link>
   );

@@ -2,8 +2,9 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganisationId } from "@/lib/organisation";
 import { aplatirClient, calculerArgent, euros, JOURS_PAUSE_RELANCE, type LigneEnAttente } from "@/lib/argent";
-import { CLASSE_BOUTON_TEXTE, FinRelancer, LigneAccueil } from "@/components/accueil/Blocs";
+import { CLASSE_BOUTON_TEXTE, CLASSE_FIN_TEXTE, FinRelancer, LigneAccueil } from "@/components/accueil/Blocs";
 import { BlocDepliable } from "@/components/accueil/BlocDepliable";
+import { LienAncre } from "@/components/accueil/LienAncre";
 
 // ============================================================
 // Argent (refonte 03/10 — duel B, lot 2).
@@ -15,7 +16,9 @@ import { BlocDepliable } from "@/components/accueil/BlocDepliable";
 //   2. En attente du client : les mêmes lignes que l'accueil, mais toutes,
 //      y compris celles qui n'appellent pas encore de relance ;
 //   3. Devis à envoyer ;
-//   4. en pied : Tous les devis · Toutes les factures · Bilan du mois.
+//   4. À facturer (lot 4) : les chantiers terminés dont le devis accepté
+//      n'est pas encore entièrement facturé, avec « Facturer » ;
+//   5. en pied : Tous les devis · Toutes les factures · Bilan du mois.
 // Aucune pastille : rien ici n'est urgent au point de clignoter.
 // Les lignes viennent de lib/argent.ts, la fonction que l'accueil appelle.
 // ============================================================
@@ -34,16 +37,20 @@ export default async function ArgentPage() {
 
   const [{ data: projets, error: e1 }, { data: devis, error: e2 }, { data: factures, error: e3 }, { data: messages }] =
     await Promise.all([
-      supabase.from("demandes").select("id, nom_client, statut").eq("organisation_id", organisationId),
+      supabase
+        .from("demandes")
+        .select("id, nom_client, statut, accepte_le, termine_le, artisan_id")
+        .eq("organisation_id", organisationId),
       supabase
         .from("devis")
-        .select("id, statut, numero, envoye_le, created_at, demande_id, artisan_id, total_estime, demandes(nom_client)")
+        .select("id, statut, numero, envoye_le, created_at, demande_id, artisan_id, total_estime, signe_le, demandes(nom_client)")
         .eq("organisation_id", organisationId),
+      // Toutes les factures, pas seulement les émises : « À facturer »
+      // déduit aussi les payées, les annulées et leurs avoirs (lib/argent.ts).
       supabase
         .from("factures")
         .select("id, numero, demande_id, statut, type, total_ttc, date_emission, date_echeance, artisan_id, demandes(nom_client)")
-        .eq("organisation_id", organisationId)
-        .eq("statut", "emise"),
+        .eq("organisation_id", organisationId),
       // Les relances préparées depuis une semaine : « relancé » sur la ligne.
       supabase
         .from("evenements_projet")
@@ -59,11 +66,12 @@ export default async function ArgentPage() {
   const erreur = e1 ?? e2 ?? e3;
   if (erreur) throw new Error(`Argent : lecture impossible (${erreur.message})`);
 
-  const { enAttente, devisAEnvoyer, aEncaisser } = calculerArgent({
+  const { enAttente, devisAEnvoyer, aEncaisser, aFacturer } = calculerArgent({
     projets: projets ?? [],
     devis: aplatirClient(devis),
     factures: aplatirClient(factures),
     messages: messages ?? [],
+    avecAFacturer: true,
     maintenant,
   });
 
@@ -122,6 +130,29 @@ export default async function ArgentPage() {
               secondaire={[d.quoi === "Devis à relire" ? "À relire" : "Prêt à envoyer", d.montant != null && euros(d.montant)]
                 .filter(Boolean)
                 .join(" · ")}
+            />
+          ))}
+        />
+      )}
+
+      {/* 4. À facturer : le chantier est fini, le client a dit oui, et tout
+          n'est pas encore facturé. « Facturer » ouvre la fiche sur son bloc
+          Facturation ; la facture se crée là, comme avant. */}
+      {aFacturer.length > 0 && (
+        <BlocDepliable
+          titre="À facturer"
+          lignes={aFacturer.map((l) => (
+            <LigneAccueil
+              key={l.demandeId}
+              href={l.href}
+              repere={`${l.jours} j`}
+              principal={l.nom}
+              secondaire={`Reste ${euros(l.solde)}`}
+              fin={
+                <LienAncre href={l.href} ancre="facturation" className={CLASSE_FIN_TEXTE}>
+                  Facturer
+                </LienAncre>
+              }
             />
           ))}
         />

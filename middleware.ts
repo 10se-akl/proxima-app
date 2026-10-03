@@ -102,9 +102,14 @@ export async function middleware(request: NextRequest) {
     // Première des trois barrières : le layout du dashboard refait la même
     // vérification, et la base elle-même n'ouvre les données qu'aux
     // membres d'une organisation — qu'un compte en attente n'a pas.
+    //
+    // Refonte (03/10, duel A) — vers /rejoindre, hors de /dashboard et donc
+    // jamais bloquée ici : une personne invitée par une équipe y passe
+    // devant la liste d'attente ; sans invitation, /rejoindre la renvoie
+    // vers « candidature en cours », comme avant.
     if (besoinSession && user?.app_metadata?.acces === "en_attente") {
       const url = request.nextUrl.clone();
-      url.pathname = "/candidature-en-cours";
+      url.pathname = "/rejoindre";
       url.search = "";
       return NextResponse.redirect(url);
     }

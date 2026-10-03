@@ -6,7 +6,18 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 //
 // Exceptions connues, chacune justifiée dans son fichier :
 //   - app/api/cron/*                          (protégées par CRON_SECRET)
-//   - app/api/equipe/inviter                  (réservée au propriétaire)
+//   - app/api/equipe/inviter et retirer       (réservées au propriétaire,
+//     vérifié par la RLS avant tout appel ; les invitations et les
+//     équipes n'ont aucune policy d'écriture)
+//   - app/api/equipe/rejoindre + lib/equipe/serveur.ts (refonte 03/10) :
+//     la personne invitée n'est encore membre de rien, la RLS lui cache
+//     donc son invitation. Chaque lecture et chaque écriture sont bornées
+//     à SON compte et à SON adresse (celle du compte Auth, pas celle du
+//     profil) ; rejoindre exige une session ouverte par un lien reçu dans
+//     cette boîte mail. Le mot de passe éventuel passe tel quel à
+//     Supabase Auth, jamais stocké ni journalisé.
+//   - lib/notifications/push.ts               (appelée par les crons
+//     seulement, avec leur client admin : retrouver le destinataire actif)
 //   - lib/limiteIA.ts                         (comptage seul, sur un
 //     organisation_id obtenu côté serveur : "logs" n'a pas de SELECT RLS)
 //   - lib/candidatures/creerCompteCandidat.ts (Module 43 : la demande

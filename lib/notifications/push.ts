@@ -50,11 +50,79 @@ function configurerVapidSiNecessaire(): boolean {
   return true;
 }
 
+// Refonte (03/10, duel A) — F7 : une notification ne part qu'à un membre
+// ACTIF de l'entreprise concernée. Les rappels et relances d'une personne
+// retirée de l'équipe (ou passée dans une autre entreprise) partent au
+// propriétaire de l'entreprise : le travail n'est pas perdu, et l'ancien
+// membre ne reçoit plus de titres de notes ni de noms de clients.
+// Sur une lecture en échec, on n'envoie rien (la note reste visible dans
+// l'application) : mieux vaut une notification manquée qu'une fuite.
+async function destinataireActif(
+  supabase: SupabaseClient,
+  artisanId: string,
+  organisationId: string | null
+): Promise<{ userId: string; organisationId: string } | null> {
+  const { data: lignes, error } = await supabase
+    .from("memberships")
+    .select("organisation_id")
+    .eq("user_id", artisanId);
+  if (error) {
+    console.error("Notification : lecture de l'équipe impossible", error);
+    return null;
+  }
+  const actuelle = (lignes ?? [])[0]?.organisation_id ?? null;
+  if (actuelle && (!organisationId || actuelle === organisationId)) {
+    return { userId: artisanId, organisationId: actuelle };
+  }
+
+  // Plus membre de l'entreprise concernée : laquelle était-ce ?
+  let concernee = organisationId;
+  if (!concernee) {
+    const { data: ancien, error: erreurAncien } = await supabase
+      .from("anciens_membres")
+      .select("organisation_id")
+      .eq("user_id", artisanId)
+      .order("retire_le", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (erreurAncien) {
+      console.error("Notification : lecture des anciens membres impossible", erreurAncien);
+      return null;
+    }
+    concernee = ancien?.organisation_id ?? null;
+  }
+  if (!concernee) return null;
+
+  const { data: proprietaire, error: erreurProprietaire } = await supabase
+    .from("memberships")
+    .select("user_id")
+    .eq("organisation_id", concernee)
+    .eq("role", "proprietaire")
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+  if (erreurProprietaire || !proprietaire) {
+    if (erreurProprietaire) console.error("Notification : lecture du propriétaire impossible", erreurProprietaire);
+    return null;
+  }
+  return { userId: proprietaire.user_id, organisationId: concernee };
+}
+
 export async function envoyerPush(
   supabase: SupabaseClient,
-  params: { artisanId: string; titre: string; corps: string; url?: string }
+  params: {
+    artisanId: string;
+    /** L'entreprise concernée par la notification, quand l'appelant la connaît. */
+    organisationId?: string | null;
+    titre: string;
+    corps: string;
+    url?: string;
+  }
 ): Promise<void> {
   if (!configurerVapidSiNecessaire()) return;
+
+  const destinataire = await destinataireActif(supabase, params.artisanId, params.organisationId ?? null);
+  if (!destinataire) return;
 
   // Respecte le seul interrupteur de préférence (voir Module 27bis) —
   // vérifié ici plutôt que dans chaque appelant, pour que la règle "un
@@ -64,14 +132,16 @@ export async function envoyerPush(
   const { data: profil } = await supabase
     .from("profils")
     .select("notifications_push_actives")
-    .eq("id", params.artisanId)
+    .eq("id", destinataire.userId)
     .single();
   if (profil && profil.notifications_push_actives === false) return;
 
+  // Seulement les abonnements pris dans cette entreprise.
   const { data: abonnements } = await supabase
     .from("abonnements_push")
     .select("id, endpoint, cle_p256dh, cle_auth")
-    .eq("artisan_id", params.artisanId);
+    .eq("artisan_id", destinataire.userId)
+    .eq("organisation_id", destinataire.organisationId);
 
   if (!abonnements || abonnements.length === 0) return;
 

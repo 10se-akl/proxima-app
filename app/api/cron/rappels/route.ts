@@ -109,8 +109,12 @@ export async function GET(request: NextRequest) {
         : (note.demandes as { nom_client?: string } | null)?.nom_client;
 
       try {
+        // Refonte (03/10, duel A) — l'entreprise de la note : si son auteur
+        // a quitté l'équipe, le rappel part au propriétaire (voir
+        // lib/notifications/push.ts), jamais à l'ancien membre.
         await envoyerPush(supabase, {
           artisanId: note.artisan_id,
+          organisationId: note.organisation_id,
           titre: note.titre,
           corps: nomClient ? `Projet : ${nomClient}` : note.description || "Rappel Compyo",
           url: note.demande_id ? `/dashboard/demandes/${note.demande_id}` : "/dashboard/notes",

@@ -13,6 +13,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { TypeEvenement, Priorite } from "@/types";
 import { SquelettePage } from "@/components/ui/Skeleton";
+import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 
 const COULEUR_PRIORITE: Record<Priorite, string> = {
   urgent: "bg-[#C23B22]",
@@ -71,6 +72,10 @@ function NouvelEvenementForm() {
   const [chargement, setChargement] = useState(false);
   const [chargementInitial, setChargementInitial] = useState(enModeEdition);
   const [erreur, setErreur] = useState<string | null>(null);
+  // Refonte (02/10, duel G lot 1) — la date d'origine, pour proposer de
+  // prévenir le client quand « Modifier » la change.
+  const [dateHeureInitiale, setDateHeureInitiale] = useState<string | null>(null);
+  const [prevenir, setPrevenir] = useState<{ demandeId: string; ancienneDate: string; nouvelleDate: string } | null>(null);
   // Sprint Robustesse (30/08) — erreur dédiée au chargement initial de
   // l'événement en édition (distincte de `erreur`, qui concerne la
   // soumission du formulaire) : elle affiche <EtatErreur /> à la place du
@@ -121,6 +126,7 @@ function NouvelEvenementForm() {
 
         setType(data.type);
         setTitre(data.titre);
+        setDateHeureInitiale(data.date_heure);
         const d = new Date(data.date_heure);
         setDate(dateLocaleAAAAMMJJ(d));
         setHeure(d.toTimeString().slice(0, 5));
@@ -346,6 +352,21 @@ function NouvelEvenementForm() {
       });
     }
 
+    // Refonte (02/10, duel G lot 1) — « Modifier » déplaçait un rendez-vous
+    // client en silence. Si la date a changé, on propose de prévenir le
+    // client, message prêt avec la nouvelle date ; on quitte la page ensuite.
+    if (
+      enModeEdition &&
+      type === "rendez_vous" &&
+      demandeId &&
+      dateHeureInitiale &&
+      Date.parse(dateHeureInitiale) !== Date.parse(dateHeure)
+    ) {
+      setChargement(false);
+      setPrevenir({ demandeId, ancienneDate: dateHeureInitiale, nouvelleDate: dateHeure });
+      return;
+    }
+
     router.push("/dashboard/planning");
     router.refresh();
   }
@@ -568,6 +589,19 @@ function NouvelEvenementForm() {
           </button>
         </form>
       </Card>
+      )}
+
+      {prevenir && (
+        <FeuilleMessageClient
+          ouverte
+          surFermer={() => {
+            setPrevenir(null);
+            router.push("/dashboard/planning");
+            router.refresh();
+          }}
+          demandeId={prevenir.demandeId}
+          demande={{ cle: "decalage", ancienneDate: prevenir.ancienneDate, nouvelleDate: prevenir.nouvelleDate }}
+        />
       )}
     </div>
   );

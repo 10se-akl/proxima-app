@@ -113,7 +113,7 @@ export function FeuilleDeplacer({
           </label>
 
           {/* Le bouton reste sous le pouce même si la liste des jours fait défiler la feuille. */}
-          <div className="sticky bottom-0 -mx-5 -mb-5 border-t border-ink/15 bg-paper px-5 pt-3 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">
+          <div className="sticky bottom-[calc(-1.25rem_-_env(safe-area-inset-bottom))] -mx-5 -mb-[calc(1.25rem_+_env(safe-area-inset-bottom))] border-t border-ink/15 bg-paper px-5 pt-3 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">
             <p aria-live="polite" className="min-h-5 text-sm font-semibold text-signal-fonce dark:text-signal-clair">
               {erreur}
             </p>

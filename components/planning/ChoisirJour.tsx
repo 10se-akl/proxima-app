@@ -110,7 +110,7 @@ export function ChoisirJour({
                   {pris === null ? (
                     <span aria-hidden className="block h-4 w-24 rounded-full bg-ink/10 motion-safe:animate-pulse" />
                   ) : gene ? (
-                    <span className="font-semibold text-signal-fonce dark:text-signal-clair">Déjà pris à cette heure.</span>
+                    <span className="font-semibold text-signal-fonce dark:text-signal-clair">Heure déjà prise</span>
                   ) : visibles.length === 0 ? (
                     "Rien de prévu"
                   ) : (

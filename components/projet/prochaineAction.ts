@@ -27,7 +27,13 @@ export type IdAction =
   | "demarrer"
   | "terminer"
   | "ajouter"
-  | "facturation";
+  | "facturation"
+  // Refonte (03/10, duel D lot 3) — ouvre la question « Facture de solde :
+  // 5 075 € ? » de la facturation.
+  | "facturer_solde"
+  // « Bien reçu » par SMS ou WhatsApp, juste après une capture.
+  | "accuse_sms"
+  | "accuse_whatsapp";
 
 // 27/09 — `ia` : l'action appelle l'IA. Retour d'Axel : « l'IA, faut
 // savoir où elle est ». Chaque bouton IA porte le même signal (l'étincelle
@@ -57,6 +63,10 @@ export type ProchaineAction = {
   /** Un point qui demande une décision (le projet a changé depuis le
    *  devis…). Son action tient lieu de bouton texte. */
   alerte?: { texte: string; action: Action };
+  /** Refonte (03/10, duel D lot 3) — juste après une capture ou un message
+   *  reçu : « Bien reçu » est l'action de Maintenant, en deux boutons
+   *  (SMS plein, WhatsApp en contour). */
+  accuse?: boolean;
 };
 
 export type EtatProjet = {
@@ -71,7 +81,17 @@ export type EtatProjet = {
   peutAnalyser: boolean;
   analyseAJour: boolean;
   maintenant: Date;
+  /** Refonte (03/10, duel D lot 3) — le solde du devis signé, après
+   *  acomptes et avoirs, tel que la facturation le calcule ; null tant
+   *  qu'il n'est pas connu. */
+  resteAFacturer?: number | null;
+  /** « cree » : on arrive d'une capture (?cree=1) ; « recu » : un message
+   *  vient d'être ajouté à ce projet (?recu=1). Le numéro est connu. */
+  accuse?: "cree" | "recu" | null;
 };
+
+const formatEuros = (n: number) =>
+  `${n.toLocaleString("fr-FR", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} €`;
 
 const formatRdv = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
@@ -106,6 +126,22 @@ function depuis(jours: number): string {
 // 360 px (règle 2) : la situation en quelques mots, la précision dessous
 // (« Chantier, jour 12. » puis « Prochain passage : lun. 8 h »).
 export function prochaineAction(e: EtatProjet): ProchaineAction {
+  const point = selonEtat(e);
+  if (!e.accuse) return point;
+  // Greffe B (duel D) et G3 (duel E) — « Bien reçu » devient l'action :
+  // un seul geste rassure le client. Ce que l'état proposait reste là, en
+  // bouton texte (« Préparer le devis avec l'IA »), ou dans « … ».
+  return {
+    ...point,
+    phrase: e.accuse === "cree" ? "Nouvelle demande." : "Message reçu.",
+    details: ["Répondre : bien reçu"],
+    principale: null,
+    secondaire: point.principale,
+    accuse: true,
+  };
+}
+
+function selonEtat(e: EtatProjet): ProchaineAction {
   const details: string[] = [];
   if (e.prochainRdv) details.push(`Prochain passage : ${dateRdv(e.prochainRdv.date_heure)}`);
   if (e.nbTaches > 0) details.push(`${e.nbTaches} chose${e.nbTaches > 1 ? "s" : ""} à faire`);
@@ -117,18 +153,34 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
   // duplique. L'action vit dans « … » ; quand le projet a changé depuis,
   // l'alerte la montre aussi.
   const dupliquer: Action = { id: "dupliquer_devis", libelle: "Dupliquer le devis" };
-  const alerteSigne = devisChange ? { texte: "Changé depuis le devis signé.", action: dupliquer } : undefined;
+  // Refonte (03/10, duel D lot 3) — après la signature, « changé depuis le
+  // devis signé » est le détail de la ligne du devis (bloc Argent), plus
+  // une alerte ici : Dupliquer reste dans « … ».
+  const alerteSigne = undefined;
 
   // --- Le chantier est fini
   if (e.statut === "termine") {
+    // Greffe C (duel D) — la règle « À facturer » : chantier terminé, devis
+    // signé, solde > 0 après acomptes et avoirs. La facture se crée après
+    // la question « Facture de solde : … ? ».
+    if (e.resteAFacturer != null && e.resteAFacturer > 0) {
+      return {
+        ton: "attention",
+        phrase: `Reste ${formatEuros(e.resteAFacturer)} à facturer.`,
+        details: e.termineLe ? [`Chantier terminé le ${formatDate.format(new Date(e.termineLe))}`] : [],
+        principale: { id: "facturer_solde", libelle: "Préparer la facture" },
+        secondaire: null,
+        dansMenu: [],
+      };
+    }
     return {
       ton: "succes",
-      phrase: "Chantier terminé.",
+      phrase: e.resteAFacturer === 0 ? "Tout est facturé." : "Chantier terminé.",
       details: [
         ...(e.termineLe ? [`Le ${formatDate.format(new Date(e.termineLe))}`] : []),
         ...(e.nbTaches > 0 ? [`${e.nbTaches} chose${e.nbTaches > 1 ? "s" : ""} encore à faire`] : []),
       ],
-      principale: e.devis && e.devis.statut === "envoye" ? { id: "facturation", libelle: "Voir la facturation" } : null,
+      principale: e.resteAFacturer == null && e.devis && e.devis.statut === "envoye" ? { id: "facturation", libelle: "Voir la facturation" } : null,
       secondaire: null,
       dansMenu: [],
     };
@@ -141,7 +193,10 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
       ton: "neutre",
       phrase: jours !== null && jours >= 0 ? `Chantier, jour ${jours + 1}.` : "Chantier en cours.",
       details,
-      principale: { id: "ajouter", libelle: "Ajouter une note ou des photos" },
+      // Refonte (03/10, duel D lot 2) — sur le chantier, l'action la plus
+      // probable est la photo : c'est la tuile « Photo » de la bande qui
+      // est pleine, pas un bouton d'ici (un seul plein par écran).
+      principale: null,
       // Sans passage prévu, le chantier touche peut-être à sa fin. Avec
       // l'alerte, son action tient lieu de bouton texte : « Terminer »
       // reste dans « … ».
@@ -225,10 +280,9 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
   // --- Pas encore de devis
   // « Faire le devis moi-même » (un devis vide, sans l'IA) et « Résumer mes
   // notes avec l'IA » sont dans « … » : le bouton plein suffit ici.
+  // Les points à vérifier ont leur ligne, « À vérifier avant de chiffrer
+  // · N », sous la bande (refonte 03/10, duel D lot 3).
   const precisions = [...details];
-  if (e.nbInfosManquantes > 0) {
-    precisions.push(`${e.nbInfosManquantes} point${e.nbInfosManquantes > 1 ? "s" : ""} à vérifier`);
-  }
   return {
     ton: "neutre",
     phrase: e.prochainRdv ? "Visite prévue." : "Pas encore chiffré.",

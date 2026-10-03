@@ -12,7 +12,7 @@ import { Field } from "@/components/ui/Input";
 import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PropositionUrgence } from "@/components/dashboard/PropositionUrgence";
-import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
+import { ChampAppareil, EtatEnvoiPhotos, PhotosProjet, idChampAppareil, useEnvoiPhotos } from "@/components/dashboard/PhotosProjet";
 import type { TimelineItem } from "@/components/dashboard/Timeline";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { adresseEspaceDevis, dupliquerDevis as creerNouvelleVersion } from "@/lib/devis/actions";
@@ -131,11 +131,19 @@ export default function DetailDemandePage({
   const [rendezVous, setRendezVous] = useState<EvenementPlanning[]>([]);
   const [urlsPhotos, setUrlsPhotos] = useState<Record<string, string>>({});
   const [feuilleReponse, setFeuilleReponse] = useState(false);
+  // Refonte (03/10, duel D lot 3) — le reste à facturer, que la
+  // facturation remonte, et la demande d'ouvrir sa question « Facture de
+  // solde : … ? » depuis « Maintenant » (un compteur).
+  const [resteAFacturer, setResteAFacturer] = useState<number | null>(null);
+  const [demandeSolde, setDemandeSolde] = useState(0);
   const [maintenant, setMaintenant] = useState(() => new Date());
   // "Mémoire client" (06/09) — voir chargerDonnees() : null tant que non
   // chargé, pour ne jamais afficher "0 autre projet" pendant une fraction
   // de seconde avant que la vraie valeur n'arrive.
   const [nbAutresProjetsClient, setNbAutresProjetsClient] = useState<number | null>(null);
+  // Refonte (03/10, duel A lot 4) — les prénoms des AUTRES membres qui ont
+  // écrit sur ce projet, pour le Carnet (« Gérard · note dictée »).
+  const [auteurs, setAuteurs] = useState<Record<string, string>>({});
   const [artisanId, setArtisanId] = useState<string | null>(null);
   const [organisationId, setOrganisationId] = useState<string | null>(null);
   const [parametres, setParametres] = useState<ParametresEntreprise | null>(null);
@@ -174,6 +182,15 @@ export default function DetailDemandePage({
   // lui-même (voir lib/ai/client.ts) — inutile de payer un appel IA dont le
   // résultat est certain de ne jamais être affiché.
   const controleursIARef = useRef<Set<AbortController>>(new Set());
+
+  // Refonte (03/10, duel D lot 2) — l'envoi des photos est tenu ici, une
+  // seule fois pour la fiche : la tuile « Photo » (champ de l'appareil hors
+  // des feuilles) et la feuille « Photos » (galerie) le partagent, avec sa
+  // trace et son « Réessayer ».
+  const envoiPhotos = useEnvoiPhotos({
+    demandeId: params.id,
+    onChemins: (photos) => void surNouvellesPhotos(photos),
+  });
 
   useEffect(() => {
     return () => {
@@ -290,6 +307,22 @@ export default function DetailDemandePage({
             : Promise.resolve({ count: 0 }),
         ]);
         setNomArtisan(profil?.nom ?? "");
+        // Seulement s'il y a d'autres auteurs que soi : l'artisan seul ne
+        // fait aucune requête de plus et ne voit jamais de prénom.
+        const autres = [
+          ...new Set(
+            [
+              ...((notesData as NoteVocale[] | null) ?? []),
+              ...notesProjet,
+              ...((evenementsData as EvenementProjet[] | null) ?? []),
+              ...((rdvData as EvenementPlanning[] | null) ?? []),
+            ]
+              .map((x) => x.artisan_id)
+              .filter((id) => id && id !== user.id)
+          ),
+        ];
+        if (autres.length > 0) void prenomsDesMembres(supabase, autres).then(setAuteurs);
+        else setAuteurs({});
         setMetierArtisan(profil?.metier ?? null);
         setParametres((parametresData as ParametresEntreprise) ?? null);
         setNbAutresProjetsClient(comptageAutresProjets.count ?? 0);
@@ -347,6 +380,19 @@ export default function DetailDemandePage({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cheminsPhotos]);
+
+  async function surNouvellesPhotos(photos: string[]) {
+    if (!demande) return;
+    setDemande({ ...demande, photos });
+    if (!demande.photos_ajoutees_le) {
+      await supabase
+        .from("demandes")
+        .update({ photos_ajoutees_le: new Date().toISOString() })
+        .eq("id", demande.id);
+    }
+    await signalerModification();
+    await chargerDonnees();
+  }
 
   // Marque le projet comme modifié depuis le dernier devis — utilisé pour
   // proposer (jamais imposer) une mise à jour du devis.
@@ -1086,6 +1132,10 @@ export default function DetailDemandePage({
     terminer: marquerTermine,
     ajouter: () => {},
     facturation: () => {},
+    facturer_solde: () => setDemandeSolde((n) => n + 1),
+    // Gérés par la fiche elle-même (VueProjet).
+    accuse_sms: () => {},
+    accuse_whatsapp: () => {},
   };
 
   const factures =
@@ -1099,6 +1149,8 @@ export default function DetailDemandePage({
         telephoneClient={demande.telephone_client}
         adresseClient={demande.adresse_client}
         logoUrl={logoUrl}
+        surSolde={setResteAFacturer}
+        demandeSolde={demandeSolde}
       />
     ) : null;
 
@@ -1106,6 +1158,8 @@ export default function DetailDemandePage({
     <>
       <VueProjet
         signature={{ nom: nomArtisan, entreprise: parametres?.nom_entreprise ?? null }}
+        auteurs={auteurs}
+        resteAFacturer={factures ? resteAFacturer : null}
         projet={demande}
         devis={devis}
         notesVocales={notesVocales}
@@ -1151,6 +1205,7 @@ export default function DetailDemandePage({
               notes={notesVocales}
               telephoneClient={demande.telephone_client}
               masquerListe
+              demarrerAuMontage
               onNouvelleNote={async () => {
                 fermer();
                 await signalerModification();
@@ -1162,19 +1217,16 @@ export default function DetailDemandePage({
             <PhotosProjet
               demandeId={demande.id}
               chemins={demande.photos ?? []}
-              onChemins={async (photos) => {
-                setDemande({ ...demande, photos });
-                if (!demande.photos_ajoutees_le) {
-                  await supabase
-                    .from("demandes")
-                    .update({ photos_ajoutees_le: new Date().toISOString() })
-                    .eq("id", demande.id);
-                }
-                await signalerModification();
-                await chargerDonnees();
-              }}
+              onChemins={(photos) => void surNouvellesPhotos(photos)}
+              envoi={envoiPhotos}
             />
           ),
+          capture: {
+            idChamp: idChampAppareil(demande.id),
+            envoi: envoiPhotos.envoi,
+            champ: <ChampAppareil demandeId={demande.id} envoi={envoiPhotos} />,
+            etat: (surVoir) => <EtatEnvoiPhotos envoi={envoiPhotos} surVoir={surVoir} />,
+          },
           note: (fermer) => (
             <FormulaireNote
               projetIdFixe={demande.id}
@@ -1411,6 +1463,30 @@ export default function DetailDemandePage({
       </Feuille>
     </>
   );
+}
+
+// Refonte (03/10, duel A lot 4) — le prénom de chaque membre, lu dans
+// `profils` (lisible entre membres d'une même organisation, policy du
+// Module 25 de schema.sql). Un ancien membre n'y est plus : il n'affiche
+// rien. Repli prévu : quand la table `anciens_membres` existera (duel A,
+// Module 48), lire ici les identifiants manquants dans cette table. Un
+// échec de lecture n'empêche rien : le Carnet s'affiche sans prénoms.
+async function prenomsDesMembres(
+  supabase: ReturnType<typeof createClient>,
+  ids: string[]
+): Promise<Record<string, string>> {
+  try {
+    const { data, error } = await supabase.from("profils").select("id, nom").in("id", ids);
+    if (error || !data) return {};
+    const prenoms: Record<string, string> = {};
+    for (const p of data as { id: string; nom: string | null }[]) {
+      const prenom = (p.nom ?? "").trim().split(/\s+/)[0];
+      if (prenom) prenoms[p.id] = prenom;
+    }
+    return prenoms;
+  } catch {
+    return {};
+  }
 }
 
 // Repli pour les projets créés avant l'introduction de evenements_projet :

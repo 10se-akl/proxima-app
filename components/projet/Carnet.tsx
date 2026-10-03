@@ -11,7 +11,19 @@ import {
   type EntreeCarnet,
   type FiltreCarnet,
 } from "./entreesCarnet";
-import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEuro, IconeLoupe, IconeMessage, IconeMicro, IconePhoto, IconePoint } from "./icones";
+import {
+  IconeCalendrier,
+  IconeChevron,
+  IconeCoche,
+  IconeDocument,
+  IconeEtincelle,
+  IconeEuro,
+  IconeLoupe,
+  IconeMessage,
+  IconeMicro,
+  IconePhoto,
+  IconePoint,
+} from "./icones";
 
 // ============================================================
 // Le Carnet (24/09) — voir entreesCarnet.ts pour la logique.
@@ -21,7 +33,14 @@ import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEuro, Ic
 // photos »). Une recherche qui ignore les accents et surligne ce qu'elle
 // trouve, et quatre filtres. Un chantier d'un an tient ainsi dans le même
 // écran qu'un chantier d'une semaine.
+//
+// Refonte (03/10, duel D lot 3) — en tête, « Photos · 12 › » ouvre la
+// feuille des photos (galerie, ✕) ; la demande du client est la plus
+// ancienne entrée. Règles 3, 4, 9 et 17 : tailles, encre, 48 px.
 // ============================================================
+
+const FOCUS =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
 
 const formatHeure = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", minute: "2-digit" });
 const formatJourSemaine = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short" });
@@ -81,17 +100,21 @@ function surligner(texte: string, mots: string[]): ReactNode {
   return morceaux;
 }
 
+// Les icônes sont en encre (règle 9) ; seule la coche d'une tâche faite
+// garde sa pastille verte (règle 10).
 function IconeEntree({ e }: { e: EntreeCarnet }) {
   const base = "grid h-8 w-8 shrink-0 place-items-center rounded-full ring-4 ring-paper";
-  if (e.type === "vocal") return <span className={`${base} bg-signal/10 text-signal`}><IconeMicro className="h-4 w-4" /></span>;
-  if (e.type === "photos") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconePhoto className="h-4 w-4" /></span>;
+  const neutre = `${base} bg-ink/10 text-ink`;
+  if (e.type === "vocal") return <span className={neutre}><IconeMicro className="h-4 w-4" /></span>;
+  if (e.type === "photos") return <span className={neutre}><IconePhoto className="h-4 w-4" /></span>;
   if (e.type === "fait") return <span className={`${base} bg-succes/10 text-succes`}><IconeCoche className="h-4 w-4" /></span>;
-  if (e.type === "rdv") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeCalendrier className="h-4 w-4" /></span>;
+  if (e.type === "rdv") return <span className={neutre}><IconeCalendrier className="h-4 w-4" /></span>;
+  if (e.type === "demande") return <span className={neutre}><IconeMessage className="h-4 w-4" /></span>;
   const t = e.typeEvenement ?? "";
-  if (t.startsWith("devis") || t === "analyse_ia") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeDocument className="h-4 w-4" /></span>;
-  if (t === "message_prepare") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeMessage className="h-4 w-4" /></span>;
-  if (t.startsWith("facture") || t === "avoir_cree") return <span className={`${base} bg-ink/[0.07] text-ink/70`}><IconeEuro className="h-4 w-4" /></span>;
-  return <span className={`${base} bg-paper text-ink/35`}><IconePoint className="h-4 w-4" /></span>;
+  if (t.startsWith("devis") || t === "analyse_ia") return <span className={neutre}><IconeDocument className="h-4 w-4" /></span>;
+  if (t === "message_prepare") return <span className={neutre}><IconeMessage className="h-4 w-4" /></span>;
+  if (t.startsWith("facture") || t === "avoir_cree") return <span className={neutre}><IconeEuro className="h-4 w-4" /></span>;
+  return <span className={`${base} bg-paper text-steel`}><IconePoint className="h-4 w-4" /></span>;
 }
 
 const LONGUEUR_APERCU = 180;
@@ -111,7 +134,7 @@ function Entree({
 }) {
   const [deplie, setDeplie] = useState(false);
   const discret = e.type === "evenement";
-  const long = (e.texte?.length ?? 0) > LONGUEUR_APERCU;
+  const long = (e.texte?.length ?? 0) + (e.complement?.texte.length ?? 0) > LONGUEUR_APERCU;
   // Une recherche qui trouve un mot au milieu d'une longue note la montre
   // en entier : sinon, le mot trouvé serait caché derrière « Lire la suite ».
   const complet = deplie || !long || mots.length > 0;
@@ -121,27 +144,44 @@ function Entree({
       <IconeEntree e={e} />
       <div className="min-w-0 flex-1 pt-1">
         <div className="flex items-baseline justify-between gap-3">
-          <p className={`min-w-0 ${discret ? "text-[13.5px] text-ink/65" : "text-[14px] font-medium text-ink"}`}>
-            {surligner(e.titre, mots)}
+          <p className={`min-w-0 truncate ${discret ? "text-sm text-steel" : "text-base font-semibold text-ink"}`}>
+            {e.auteur ? (
+              <>
+                <span className="font-semibold text-ink">{surligner(e.auteur, mots)}</span>
+                {" · "}
+                {surligner(e.titre.charAt(0).toLowerCase() + e.titre.slice(1), mots)}
+              </>
+            ) : (
+              surligner(e.titre, mots)
+            )}
           </p>
-          <time dateTime={e.date} className="shrink-0 font-mono text-[11.5px] tabular-nums text-steel">
+          <time dateTime={e.date} className="shrink-0 font-mono text-sm tabular-nums text-steel">
             {quand(e.date, maintenant)}
           </time>
         </div>
 
         {e.texte && (
-          <div className={`mt-1 ${discret ? "text-[13px] text-ink/50" : "text-[14px] leading-relaxed text-ink/75"}`}>
+          <div className={`mt-1 ${discret ? "text-sm text-steel" : "text-base text-ink"}`}>
             <p className={`whitespace-pre-line ${complet ? "" : "line-clamp-3"}`}>{surligner(e.texte, mots)}</p>
-            {long && mots.length === 0 && (
-              <button
-                type="button"
-                onClick={() => setDeplie((v) => !v)}
-                className="mt-0.5 min-h-0 py-1 text-[12.5px] font-medium text-ink/55 underline decoration-ink/20 underline-offset-2 hover:text-ink"
-              >
-                {deplie ? "Réduire" : "Lire la suite"}
-              </button>
-            )}
           </div>
+        )}
+        {e.complement && complet && (
+          <div className="mt-2 border-l-2 border-ink/15 pl-3">
+            <p className="inline-flex items-center gap-1.5 text-sm text-steel">
+              <IconeEtincelle className="h-4 w-4 text-ink" />
+              {e.complement.titre}
+            </p>
+            <p className="mt-0.5 whitespace-pre-line text-base text-ink">{surligner(e.complement.texte, mots)}</p>
+          </div>
+        )}
+        {long && mots.length === 0 && (
+          <button
+            type="button"
+            onClick={() => setDeplie((v) => !v)}
+            className={`-ml-3 inline-flex min-h-12 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 ${FOCUS}`}
+          >
+            {deplie ? "Réduire" : "Lire la suite"}
+          </button>
         )}
 
         {e.photos && e.photos.length > 0 && (
@@ -152,7 +192,7 @@ function Entree({
                 type="button"
                 onClick={() => surOuvrirPhoto(e.photos!, i)}
                 aria-label={`Voir la photo ${i + 1} sur ${e.photos!.length}`}
-                className="h-16 w-16 overflow-hidden rounded-lg bg-ink/[0.06] ring-1 ring-ink/10 transition hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/60 sm:h-[4.5rem] sm:w-[4.5rem]"
+                className={`h-16 w-16 overflow-hidden rounded-2xl bg-ink/10 ring-1 ring-ink/15 active:opacity-80 sm:h-[4.5rem] sm:w-[4.5rem] ${FOCUS}`}
               >
                 {urlsPhotos[chemin] ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -164,7 +204,7 @@ function Entree({
               <button
                 type="button"
                 onClick={() => surOuvrirPhoto(e.photos!, 5)}
-                className="grid h-16 w-16 place-items-center rounded-lg bg-ink/[0.06] text-[13px] font-medium text-ink/70 ring-1 ring-ink/10 hover:bg-ink/10 sm:h-[4.5rem] sm:w-[4.5rem]"
+                className={`grid h-16 w-16 place-items-center rounded-2xl bg-ink/10 text-sm font-semibold text-ink ring-1 ring-ink/15 sm:h-[4.5rem] sm:w-[4.5rem] ${FOCUS}`}
               >
                 +{e.photos.length - 5}
               </button>
@@ -176,19 +216,21 @@ function Entree({
   );
 }
 
+export const ID_RECHERCHE_CARNET = "recherche-carnet";
+
 export function Carnet({
   entrees,
   urlsPhotos,
   surOuvrirPhoto,
   maintenant,
-  barreAjout,
+  photos,
 }: {
   entrees: EntreeCarnet[];
   urlsPhotos: Record<string, string>;
   surOuvrirPhoto: (chemins: string[], index: number) => void;
   maintenant: Date;
-  /** Les boutons d'ajout (ordinateur) : posés en tête du Carnet. */
-  barreAjout?: ReactNode;
+  /** La ligne « Photos · N › », qui ouvre la feuille des photos. */
+  photos?: { nombre: number; vignettes: string[]; surOuvrir: () => void };
 }) {
   const [recherche, setRecherche] = useState("");
   const [filtre, setFiltre] = useState<FiltreCarnet>("tout");
@@ -199,10 +241,14 @@ export function Carnet({
 
   // 27/09 — Demande d'Axel : tout replié à l'ouverture, pour que la fiche
   // reste propre ; chaque période s'ouvre d'un appui et montre son
-  // résumé (« 3 notes vocales · 12 photos ») en attendant. Seule
-  // exception : ce qu'on vient d'ajouter (note dictée, photos) s'ouvre,
-  // pour qu'on le voie arriver.
-  const [ouvertes, setOuvertes] = useState<Set<string>>(() => new Set());
+  // résumé (« 3 notes vocales · 12 photos ») en attendant. Exceptions : ce
+  // qu'on vient d'ajouter (note dictée, photos) s'ouvre, pour qu'on le
+  // voie arriver ; et (refonte 03/10, duel D) un projet neuf, qui n'a
+  // qu'une période, la montre ouverte.
+  const [ouvertes, setOuvertes] = useState<Set<string>>(() => {
+    const toutes = grouperParPeriode(entrees, maintenant);
+    return new Set(toutes.length === 1 ? [toutes[0].cle] : []);
+  });
   const nbAuDepart = useRef(entrees.length);
   useEffect(() => {
     if (entrees.length <= nbAuDepart.current) return;
@@ -211,8 +257,8 @@ export function Carnet({
     if (premiere) setOuvertes((o) => (o.has(premiere.cle) ? o : new Set(o).add(premiere.cle)));
   }, [entrees, maintenant]);
 
-  // « Photos » compte les photos, pas les envois : le même nombre que le
-  // Dossier.
+  // « Photos » compte les photos, pas les envois : le même nombre que la
+  // ligne « Photos · N ».
   const compte = (f: FiltreCarnet) => {
     const liste = filtrerCarnet(entrees, f, "");
     return f === "photos" ? liste.reduce((n, e) => n + (e.photos?.length ?? 0), 0) : liste.length;
@@ -229,24 +275,44 @@ export function Carnet({
 
   return (
     <section aria-labelledby="titre-carnet">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h2 id="titre-carnet" className="font-display text-lg font-semibold text-ink">
-          Carnet <span className="ml-1 font-sans text-[13px] font-normal text-steel">{entrees.length}</span>
-        </h2>
-        {barreAjout}
-      </div>
+      <h2 id="titre-carnet" className="font-display text-xl font-semibold text-ink">
+        Carnet <span className="ml-2 font-sans text-sm font-normal tabular-nums text-steel">{entrees.length}</span>
+      </h2>
+
+      {photos && photos.nombre > 0 && (
+        <button
+          type="button"
+          onClick={photos.surOuvrir}
+          className={`mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-surface px-4 py-2 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${FOCUS}`}
+        >
+          <IconePhoto className="h-5 w-5 shrink-0 text-ink" />
+          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">
+            Photos <span className="font-normal tabular-nums text-steel">· {photos.nombre}</span>
+          </span>
+          {photos.vignettes.length > 0 && (
+            <span className="flex -space-x-2" aria-hidden>
+              {photos.vignettes.slice(0, 3).map((u) => (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img key={u} src={u} alt="" className="h-9 w-9 rounded-xl object-cover ring-2 ring-surface" />
+              ))}
+            </span>
+          )}
+          <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
+        </button>
+      )}
 
       {entrees.length > 0 && (
         <div className="mt-3 flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <label className="relative block flex-1">
             <span className="sr-only">Chercher dans le carnet</span>
-            <IconeLoupe className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink/40" />
+            <IconeLoupe className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-steel" />
             <input
+              id={ID_RECHERCHE_CARNET}
               type="search"
               value={recherche}
               onChange={(ev) => setRecherche(ev.target.value)}
               placeholder="Chercher : mesure, code, fenêtre…"
-              className="w-full rounded-xl border border-ink/10 bg-surface py-2.5 pl-9 pr-3 text-[15px] text-ink placeholder:text-ink/35 focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
+              className="min-h-12 w-full rounded-2xl bg-surface pl-10 pr-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
             />
           </label>
           <div role="group" aria-label="Filtrer le carnet" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -260,12 +326,12 @@ export function Carnet({
                   aria-pressed={actif}
                   onClick={() => setFiltre(f.cle)}
                   disabled={n === 0 && f.cle !== "tout"}
-                  className={`min-h-11 shrink-0 rounded-full px-3.5 text-[14px] font-medium transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
-                    actif ? "bg-ink text-paper" : "text-ink/60 hover:bg-ink/5 hover:text-ink"
+                  className={`min-h-12 shrink-0 rounded-full px-4 text-sm font-semibold disabled:opacity-60 ${FOCUS} ${
+                    actif ? "bg-ink text-paper" : "text-ink active:bg-ink/10 sm:hover:bg-ink/5"
                   }`}
                 >
                   {f.libelle}
-                  <span className={`ml-1.5 tabular-nums ${actif ? "text-paper/60" : "text-ink/35"}`}>{n}</span>
+                  <span className={`ml-1.5 font-normal tabular-nums ${actif ? "text-paper" : "text-steel"}`}>{n}</span>
                 </button>
               );
             })}
@@ -273,20 +339,16 @@ export function Carnet({
         </div>
       )}
 
-      <div className="mt-5">
-        {entrees.length === 0 && (
-          <p className="rounded-2xl border border-dashed border-ink/15 px-5 py-8 text-center text-[14px] text-ink/50">
-            Le carnet se remplit tout seul : notes dictées, photos, devis, rendez-vous.
-          </p>
-        )}
+      <div className="mt-4">
+        {entrees.length === 0 && <p className="py-4 text-base text-steel">Rien encore.</p>}
         {entrees.length > 0 && visibles.length === 0 && (
-          <p className="py-6 text-center text-[14px] text-ink/50">Rien ne correspond{cherche ? ` à « ${recherche.trim()} »` : ""}.</p>
+          <p className="truncate py-6 text-center text-base text-steel">Rien ne correspond{cherche ? ` à « ${recherche.trim()} »` : ""}.</p>
         )}
 
         {periodes.map((p) => {
           const ouverte = cherche || ouvertes.has(p.cle);
           return (
-            <div key={p.cle} className="border-t border-ink/[0.07] first:border-t-0">
+            <div key={p.cle} className="border-t border-ink/15 first:border-t-0">
               <button
                 type="button"
                 onClick={() => basculer(p.cle)}
@@ -294,15 +356,13 @@ export function Carnet({
                 disabled={cherche}
                 className="group flex min-h-12 w-full items-center gap-2 py-3 text-left focus-visible:outline-none"
               >
-                <IconeChevron className={`h-4 w-4 shrink-0 text-ink/40 transition-transform duration-200 ${ouverte ? "rotate-90" : ""} ${cherche ? "opacity-0" : ""}`} />
-                <span className="font-mono text-[11.5px] uppercase tracking-[0.16em] text-ink/70 group-focus-visible:underline">{p.libelle}</span>
-                <span className="min-w-0 truncate text-[12.5px] text-steel">
-                  {ouverte ? `${p.entrees.length}` : resumePeriode(p.entrees)}
-                </span>
+                <IconeChevron className={`h-5 w-5 shrink-0 text-steel motion-safe:transition-transform ${ouverte ? "rotate-90" : ""} ${cherche ? "opacity-0" : ""}`} />
+                <span className="shrink-0 font-mono text-xs uppercase tracking-[0.16em] text-ink group-focus-visible:underline">{p.libelle}</span>
+                <span className="min-w-0 truncate text-sm text-steel">{ouverte ? `${p.entrees.length}` : resumePeriode(p.entrees)}</span>
               </button>
               {ouverte && (
                 <ol className="relative pb-3 pl-0">
-                  <span aria-hidden className="absolute bottom-4 left-4 top-2 w-px bg-ink/10" />
+                  <span aria-hidden className="absolute bottom-4 left-4 top-2 w-px bg-ink/15" />
                   {p.entrees.map((e) => (
                     <Entree key={e.id} e={e} mots={mots} maintenant={maintenant} urlsPhotos={urlsPhotos} surOuvrirPhoto={surOuvrirPhoto} />
                   ))}

@@ -6,7 +6,6 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 
 type RdvPropose = { date: string; heure: string };
@@ -155,12 +154,15 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
     });
 
     setTraitementRdv(false);
-    router.push("/dashboard/planning");
-    router.refresh();
+    // Refonte (03/10, duel E lot 3) — un seul atterrissage : la fiche, où
+    // « Bien reçu » est l'action de Maintenant (au lieu du planning, sans
+    // accusé). `replace` dans tout le parcours : « Retour » ne revient pas
+    // sur un partage déjà rangé.
+    router.replace(`/dashboard/demandes/${projetId}?cree=1`);
   }
 
   function proposerAutreDate() {
-    router.push(`/dashboard/planning/nouveau?projetId=${projetId}`);
+    router.replace(`/dashboard/planning/nouveau?projetId=${projetId}`);
   }
 
   const dateFormatee = new Date(`${rdv.date}T${rdv.heure}`).toLocaleDateString("fr-FR", {
@@ -170,29 +172,32 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
   });
 
   return (
-    <div className="p-8 max-w-lg">
-      <h1 className="font-display text-2xl font-semibold text-ink">Projet créé</h1>
-      <Card className="mt-6 p-6">
-        <p className="text-sm text-ink/80">
-          {nomClient} propose un rendez-vous le <span className="font-semibold">{dateFormatee}</span>{" "}
-          à <span className="font-semibold">{rdv.heure}</span>.
+    <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
+      <h1 className="font-display text-3xl font-semibold text-ink">Projet créé</h1>
+      <section className="mt-6 rounded-2xl bg-surface p-5 ring-1 ring-ink/15">
+        <p className="text-base text-ink">
+          {nomClient} propose le <span className="font-semibold">{dateFormatee}</span> à{" "}
+          <span className="font-mono font-semibold tabular-nums">{rdv.heure}</span>.
         </p>
-        <p className="mt-2 text-sm text-ink/60">Ce créneau vous convient-il ?</p>
-        <div className="mt-5 flex gap-3">
-          <Button onClick={accepterRdv} disabled={traitementRdv}>
-            {traitementRdv ? "Ajout en cours…" : "✓ Accepter ce créneau"}
+        <p className="mt-1 text-sm text-steel">Ce créneau vous convient ?</p>
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+          <Button onClick={accepterRdv} loading={traitementRdv} className="min-h-14 w-full sm:w-auto">
+            Accepter ce créneau
           </Button>
-          <Button variant="ghost" onClick={proposerAutreDate}>
+          <Button variant="ghost" onClick={proposerAutreDate} disabled={traitementRdv}>
             Choisir une autre date
           </Button>
         </div>
-        {erreur && <p className="mt-3 text-sm text-signal">{erreur}</p>}
-      </Card>
+        <div aria-live="polite">
+          {erreur && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+        </div>
+      </section>
       <Link
-        href={`/dashboard/demandes/${projetId}`}
-        className="mt-4 inline-block text-sm text-ink/50 hover:text-ink transition-colors"
+        href={`/dashboard/demandes/${projetId}?cree=1`}
+        replace
+        className="-ml-3 mt-2 inline-flex min-h-12 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
       >
-        Voir le projet sans planifier maintenant →
+        Voir le projet sans planifier
       </Link>
     </div>
   );

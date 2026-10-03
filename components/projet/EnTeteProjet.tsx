@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import type { Priorite, StatutProjet } from "@/types";
-import { IconeLieu, IconeMessage, IconePoints, IconeRetour, IconeTelephone } from "./icones";
+import { IconeLieu, IconeLoupe, IconeMessage, IconePoints, IconeRetour, IconeTelephone } from "./icones";
 
 // ============================================================
 // L'en-tête de la fiche projet (24/09).
@@ -156,7 +156,11 @@ export function EnTeteProjet({
   statut,
   entreesMenu,
   surMessage,
+  surChercher,
 }: {
+  /** Refonte (03/10, duel D lot 3) — la loupe, seulement quand le Carnet
+   *  a plus de cinq entrées : elle mène à sa recherche. */
+  surChercher?: () => void;
   /** 26/09 (lot D) — ouvre la feuille « Message au client ». Avec Appeler
    *  et Itinéraire : les trois gestes les plus fréquents depuis un chantier. */
   surMessage?: () => void;
@@ -181,6 +185,16 @@ export function EnTeteProjet({
           <IconeRetour className="h-5 w-5" /> Projets
         </Link>
         <div className="-mr-2 flex items-center">
+          {surChercher && (
+            <button
+              type="button"
+              onClick={surChercher}
+              aria-label="Chercher dans ce projet"
+              className={`grid h-12 w-12 place-items-center rounded-full text-ink active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+            >
+              <IconeLoupe className="h-6 w-6" />
+            </button>
+          )}
           <Menu entrees={entreesMenu} />
         </div>
       </div>

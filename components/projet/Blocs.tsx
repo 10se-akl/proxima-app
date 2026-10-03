@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import type { EvenementPlanning, ImportanceNote, Note } from "@/types";
 import type { Action, IdAction, ProchaineAction } from "./prochaineAction";
 import { dateRdv } from "./prochaineAction";
-import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEtincelle, IconePhoto, IconePlus } from "./icones";
+import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeDocument, IconeEtincelle, IconeMicro, IconePhoto } from "./icones";
 
 // ============================================================
 // Les blocs du « Point » (24/09) : Maintenant, À faire, À retenir, Dossier.
@@ -45,8 +45,65 @@ function Titre({ children, compte, action }: { children: ReactNode; compte?: num
   );
 }
 
-function Roue() {
-  return <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />;
+function Roue({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return <span className={`${className} shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin`} aria-hidden />;
+}
+
+// ------------------------------------------------------------ La bande
+
+/** Refonte (03/10, duel D lot 2) — Photo · Dicter · Note, sous
+ *  « Maintenant », à mi-hauteur de l'écran, sous le pouce : trois gestes
+ *  directs au lieu de « [+] puis choisir ». Elle remplace le « + Ajouter »
+ *  du Carnet et l'« Ajouter » d'À faire ; le [+] de la barre du bas reste
+ *  « Ajouter » (décision du 26/09).
+ *
+ *  « Photo » est une étiquette du champ de l'appareil, posé hors des
+ *  feuilles (voir PhotosProjet.tsx) : un appui ouvre l'appareil arrière.
+ *  Sur un chantier en cours, c'est l'action la plus probable : elle est le
+ *  bouton plein de l'écran (et « Maintenant » n'en a pas). */
+export function BandeAjout({
+  idChampPhoto,
+  photoPleine,
+  envoiPhotos,
+  surDicter,
+  surNote,
+}: {
+  idChampPhoto: string;
+  photoPleine: boolean;
+  envoiPhotos: boolean;
+  surDicter: () => void;
+  surNote: () => void;
+}) {
+  const tuile = `flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 rounded-2xl text-sm font-semibold motion-safe:transition-colors sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-5 ${FOCUS}`;
+  const contour = "bg-surface text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5";
+  const plein = "bg-ink text-paper active:bg-ink/80";
+  return (
+    <div role="group" aria-label="Ajouter au projet" className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+      <label
+        htmlFor={idChampPhoto}
+        role="button"
+        tabIndex={0}
+        aria-disabled={envoiPhotos}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          document.getElementById(idChampPhoto)?.click();
+        }}
+        className={`${tuile} ${photoPleine ? plein : contour} cursor-pointer ${envoiPhotos ? "pointer-events-none opacity-60" : ""}`}
+      >
+        {envoiPhotos ? <Roue className="h-6 w-6 sm:h-5 sm:w-5" /> : <IconePhoto className="h-6 w-6 sm:h-5 sm:w-5" />}
+        Photo
+      </label>
+      <button type="button" onClick={surDicter} className={`${tuile} ${contour}`}>
+        <IconeMicro className="h-6 w-6 sm:h-5 sm:w-5" />
+        Dicter
+      </button>
+      <button type="button" onClick={surNote} className={`${tuile} ${contour}`}>
+        <IconeCrayon className="h-6 w-6 sm:h-5 sm:w-5" />
+        Note
+      </button>
+    </div>
+  );
 }
 
 // ------------------------------------------------------------ Maintenant
@@ -121,10 +178,29 @@ export function Maintenant({
       <p className="truncate font-display text-xl font-semibold text-ink">{point.phrase}</p>
       {point.details.length > 0 && <p className="mt-1 truncate text-sm text-steel">{point.details.join(" · ")}</p>}
 
+      {/* Refonte (03/10, duel D lot 3) — juste après une capture : « Bien
+          reçu » en un appui, par SMS (plein) ou WhatsApp, au numéro du
+          client ; le texte part dans la messagerie de l'artisan, qui
+          envoie lui-même. */}
+      {point.accuse && (
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => surAction("accuse_sms")}
+            className={`min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 ${FOCUS}`}
+          >
+            SMS
+          </button>
+          <button type="button" onClick={() => surAction("accuse_whatsapp")} className={`${BOUTON_CONTOUR} min-h-14`}>
+            WhatsApp
+          </button>
+        </div>
+      )}
+
       {/* Au plus un bouton plein, sur toute la largeur et sous le pouce,
           et un bouton texte dessous (règle 5). Le reste est dans « … ». */}
       {(principale || secondaire) && (
-        <div className="mt-4 flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3">
+        <div className={`${point.accuse ? "mt-1" : "mt-4"} flex flex-col gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-3`}>
           {principale && (
             <Button
               onClick={() => surAction(principale.id)}
@@ -142,10 +218,10 @@ export function Maintenant({
           {secondaire && (
             <BoutonAction
               action={secondaire}
-              genre={principale ? "texte" : "contour"}
+              genre={principale || point.accuse ? "texte" : "contour"}
               chargement={chargement[secondaire.id]}
               surAction={surAction}
-              className={principale ? "self-center sm:self-auto" : "w-full sm:w-auto"}
+              className={principale || point.accuse ? "self-center sm:self-auto" : "w-full sm:w-auto"}
             />
           )}
         </div>
@@ -243,22 +319,17 @@ export function AFaire({
   rdvAVenir,
   taches,
   surTerminer,
-  surAjouter,
-  avantDeChiffrer,
+  aVerifier,
   proposition,
 }: {
   rdvAVenir: EvenementPlanning[];
   taches: Note[];
   surTerminer: (id: string, terminee: boolean) => void;
-  surAjouter: () => void;
-  /** Avant le devis seulement : ce que l'analyse et le métier conseillent
-   *  de vérifier. Replié. */
-  avantDeChiffrer: { infos: string[]; questions: string[]; checklist: string[] } | null;
+  /** Avant le devis seulement : « À vérifier avant de chiffrer · N », une
+   *  ligne qui ouvre la feuille (la demande, puis les trois listes). */
+  aVerifier: { nombre: number; surOuvrir: () => void } | null;
   proposition?: ReactNode;
 }) {
-  // Ouvert d'office quand « Maintenant » annonce des points à vérifier :
-  // l'artisan doit les trouver sans chercher.
-  const [conseilsOuverts, setConseilsOuverts] = useState(() => (avantDeChiffrer?.infos.length ?? 0) > 0);
   // La dernière tâche cochée, le temps de pouvoir revenir en arrière : un
   // doigt qui glisse sur le téléphone ne doit rien faire disparaître.
   // Refonte (03/10) — règle 16 : la trace « Fait : … · Annuler » reste
@@ -275,26 +346,18 @@ export function AFaire({
     setCochee(null);
   };
   const total = rdvAVenir.length + taches.length;
-  const nbConseils = avantDeChiffrer ? avantDeChiffrer.infos.length + avantDeChiffrer.questions.length + avantDeChiffrer.checklist.length : 0;
+  const nbConseils = aVerifier?.nombre ?? 0;
+
+  // Refonte (03/10, duel D lot 2) — un bloc vide ne s'affiche pas (règle
+  // 12), sur ordinateur non plus : son « Ajouter » est parti, on ajoute par
+  // la bande Photo · Dicter · Note ou par le [+].
+  if (total === 0 && nbConseils === 0 && !cochee && !proposition) return null;
 
   return (
-    // 27/09 — Vide, le bloc ne disait que « Rien en attente » : sur
-    // téléphone, il laisse la place au reste (ajouter passe par le « + »).
-    <section aria-label="À faire" className={`${BLOC} ${total === 0 && nbConseils === 0 && !cochee ? "hidden sm:block" : ""}`}>
-      <Titre
-        compte={total}
-        action={
-          <button type="button" onClick={surAjouter} className={`-my-2 -mr-3 ${BOUTON_TEXTE} no-underline`}>
-            <IconePlus className="h-5 w-5" /> Ajouter
-          </button>
-        }
-      >
-        À faire
-      </Titre>
+    <section aria-label="À faire" className={BLOC}>
+      {(total > 0 || proposition || cochee) && <Titre compte={total}>À faire</Titre>}
 
       {proposition}
-
-      {total === 0 && !proposition && !cochee && <p className="mt-2 text-base text-steel">Rien en attente.</p>}
 
       {total > 0 && (
         <ul className="mt-1 divide-y divide-ink/15">
@@ -334,26 +397,19 @@ export function AFaire({
         )}
       </div>
 
-      {avantDeChiffrer && nbConseils > 0 && (
-        <div className="mt-3 border-t border-ink/15 pt-1">
-          <button
-            type="button"
-            onClick={() => setConseilsOuverts((v) => !v)}
-            aria-expanded={conseilsOuverts}
-            className={`flex min-h-12 w-full items-center gap-2 rounded-xl text-left text-base font-semibold text-ink ${FOCUS}`}
-          >
-            <IconeChevron className={`h-5 w-5 shrink-0 motion-safe:transition-transform ${conseilsOuverts ? "rotate-90" : ""}`} />
-            <span className="truncate">Avant de chiffrer</span>
-            <span className="font-normal tabular-nums text-steel">{nbConseils}</span>
-          </button>
-          {conseilsOuverts && (
-            <div className="mt-1 space-y-3 pb-2 pl-7 text-sm text-ink">
-              {avantDeChiffrer.infos.length > 0 && <ListeConseils titre="Ce qui manque peut-être" lignes={avantDeChiffrer.infos} />}
-              {avantDeChiffrer.questions.length > 0 && <ListeConseils titre="À demander au client" lignes={avantDeChiffrer.questions} />}
-              {avantDeChiffrer.checklist.length > 0 && <ListeConseils titre="À vérifier sur place" lignes={avantDeChiffrer.checklist} />}
-            </div>
-          )}
-        </div>
+      {/* Greffe C (duel D, lot 3) — « Avant de chiffrer » tient en une
+          ligne ; la feuille montre la demande puis les trois listes. */}
+      {aVerifier && nbConseils > 0 && (
+        <button
+          type="button"
+          onClick={aVerifier.surOuvrir}
+          className={`${total > 0 || cochee ? "mt-2 border-t border-ink/15" : "mt-1"} -mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+        >
+          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">
+            À vérifier avant de chiffrer <span className="font-normal tabular-nums text-steel">· {nbConseils}</span>
+          </span>
+          <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
+        </button>
       )}
     </section>
   );
@@ -388,21 +444,21 @@ export function ARetenir({
   surEnregistrerMemo,
   enregistre,
   erreur,
-  description,
-  resumeIA,
-  dateResume,
+  focusAuMontage = false,
 }: {
   memo: string;
   surChangerMemo: (v: string) => void;
   surEnregistrerMemo: () => void;
   enregistre: boolean;
   erreur: ReactNode;
-  description: string;
-  resumeIA: string | null;
-  dateResume: string | null;
+  /** Ouvert par « … › Écrire à retenir » : le champ prend le focus. */
+  focusAuMontage?: boolean;
 }) {
   const zone = useRef<HTMLTextAreaElement>(null);
-  const [demandeOuverte, setDemandeOuverte] = useState(false);
+  useEffect(() => {
+    if (focusAuMontage) zone.current?.focus();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Le mémo grandit avec son texte, sans barre de défilement. La hauteur
   // se recalcule aussi quand la colonne change de largeur et quand la
   // police finit de charger : le texte ne passe plus à la ligne au même
@@ -453,106 +509,52 @@ export function ARetenir({
       </label>
       {erreur}
 
-      <div className="mt-4 border-t border-ink/15 pt-3">
-        <p className="text-sm text-steel">La demande</p>
-        <p className={`mt-1 whitespace-pre-line text-base text-ink ${demandeOuverte ? "" : "line-clamp-3"}`}>{description}</p>
-        {description.length > 160 && (
-          <button type="button" onClick={() => setDemandeOuverte((v) => !v)} className={`-ml-3 ${BOUTON_TEXTE}`}>
-            {demandeOuverte ? "Réduire" : "Lire tout"}
-          </button>
-        )}
-      </div>
-
-      {resumeIA && (
-        <div className="mt-4 border-t border-ink/15 pt-3">
-          <p className="inline-flex items-center gap-1.5 text-sm text-steel">
-            <IconeEtincelle className="h-4 w-4 text-ink" />
-            Résumé de vos notes{dateResume ? ` · ${new Date(dateResume).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}` : ""}
-          </p>
-          <p className="mt-1 text-base text-ink">{resumeIA}</p>
-        </div>
-      )}
     </section>
   );
 }
 
-// ------------------------------------------------------------ Dossier
+// ------------------------------------------------------------ Argent
 
-export function Dossier({
+/** Refonte (03/10, duel D lot 3) — le Dossier devient « Argent », le même
+ *  mot que la 5e case (duel B) : la ligne du devis, puis la facturation
+ *  entière (payée, avoir, CSV, acompte), sous l'ancre #facturation que
+ *  visent « Facturer » et « Facturer un acompte ». Les photos sont dans le
+ *  Carnet (« Photos · N »), le client dans « Infos du client ». Sans devis,
+ *  le bloc ne s'affiche pas. */
+export function Argent({
   devis,
   surOuvrirDevis,
-  nbPhotos,
-  vignettes,
-  surOuvrirPhotos,
-  client,
-  surModifierClient,
+  factures,
 }: {
-  devis: { numero: string; statut: { texte: string; classe: string }; montant: string; date: string | null } | null;
+  devis: { numero: string; montant: string; detail: string; alerte: string | null };
   surOuvrirDevis: () => void;
-  nbPhotos: number;
-  vignettes: string[];
-  surOuvrirPhotos: () => void;
-  client: { lignes: string[]; autresChantiers: number | null };
-  surModifierClient: () => void;
+  factures: ReactNode;
 }) {
-  const ligne = `-mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`;
   return (
-    <section aria-label="Dossier" className={BLOC}>
-      <Titre>Dossier</Titre>
-      <div className="mt-2 space-y-0.5">
-        <button type="button" onClick={surOuvrirDevis} disabled={!devis} className={`${ligne} disabled:active:bg-transparent sm:disabled:hover:bg-transparent`}>
-          <IconeDocument className="h-5 w-5 shrink-0 text-ink" />
-          {devis ? (
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-base font-semibold text-ink">Devis {devis.numero}</span>
-              <span className="block truncate text-sm text-steel">
-                <span className="font-mono tabular-nums">{devis.montant}</span> TTC · {devis.statut.texte}
-                {devis.date ? ` · ${devis.date}` : ""}
-              </span>
+    <section id="facturation" aria-label="Argent" className={`${BLOC} scroll-mt-20`}>
+      <Titre>Argent</Titre>
+      <button
+        type="button"
+        onClick={surOuvrirDevis}
+        className={`-mx-2 mt-1 flex min-h-16 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+      >
+        <IconeDocument className="h-5 w-5 shrink-0 text-ink" />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-base font-semibold text-ink">Devis {devis.numero}</span>
+          {devis.alerte ? (
+            <span className="flex items-center gap-2 text-sm text-ink">
+              <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
+              <span className="truncate">{devis.alerte}</span>
             </span>
           ) : (
-            <span className="flex-1 text-base text-steel">Pas encore de devis</span>
-          )}
-          {devis && <IconeChevron className="h-5 w-5 shrink-0 text-steel" />}
-        </button>
-
-        <button type="button" onClick={surOuvrirPhotos} className={ligne}>
-          <IconePhoto className="h-5 w-5 shrink-0 text-ink" />
-          <span className="flex-1 text-base text-ink">
-            Photos <span className="tabular-nums text-steel">{nbPhotos}</span>
-          </span>
-          {vignettes.length > 0 && (
-            <span className="flex -space-x-2" aria-hidden>
-              {vignettes.slice(0, 3).map((u) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={u} src={u} alt="" className="h-8 w-8 rounded-lg object-cover ring-2 ring-surface" />
-              ))}
+            <span className="block truncate text-sm text-steel">
+              <span className="font-mono tabular-nums">{devis.montant}</span> · {devis.detail}
             </span>
           )}
-          <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
-        </button>
-
-        <button type="button" onClick={surModifierClient} className={ligne}>
-          <span className="min-w-0 flex-1">
-            <span className="block text-sm text-steel">Client</span>
-            {client.lignes.length > 0 ? (
-              client.lignes.map((l) => (
-                <span key={l} className="block truncate text-base text-ink">
-                  {l}
-                </span>
-              ))
-            ) : (
-              <span className="block truncate text-base text-steel">Ajouter un téléphone, une adresse…</span>
-            )}
-            {client.autresChantiers !== null && client.autresChantiers > 0 && (
-              <span className="mt-0.5 block truncate text-sm text-steel">
-                Déjà {client.autresChantiers} autre{client.autresChantiers > 1 ? "s" : ""} chantier{client.autresChantiers > 1 ? "s" : ""} ensemble
-              </span>
-            )}
-          </span>
-          <span className="shrink-0 text-sm font-semibold text-ink underline decoration-ink/30 underline-offset-4">Modifier</span>
-        </button>
-      </div>
+        </span>
+        <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
+      </button>
+      {factures}
     </section>
   );
 }

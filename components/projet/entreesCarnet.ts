@@ -14,7 +14,10 @@ import type { EvenementPlanning, EvenementProjet, Note, NoteVocale, TypeEvenemen
 // testable tel quel.
 // ============================================================
 
-export type TypeEntree = "vocal" | "photos" | "fait" | "evenement" | "rdv";
+// Refonte (03/10, duel D lot 3) — « demande » : la demande du client (et
+// le résumé IA de vos notes) quittent « À retenir » et deviennent la plus
+// ancienne entrée du Carnet, là où on cherche.
+export type TypeEntree = "vocal" | "photos" | "fait" | "evenement" | "rdv" | "demande";
 
 export type EntreeCarnet = {
   id: string;
@@ -27,13 +30,19 @@ export type EntreeCarnet = {
   /** Chemins de stockage des photos (entrée "photos"). */
   photos?: string[];
   typeEvenement?: TypeEvenementProjet;
+  /** Refonte (03/10, duel A lot 4) — le prénom de l'auteur, seulement
+   *  quand ce n'est pas l'utilisateur connecté : « Gérard · note dictée ».
+   *  L'artisan seul n'en voit jamais. */
+  auteur?: string;
+  /** Sous le texte : le résumé IA de la demande (entrée « demande »). */
+  complement?: { titre: string; texte: string };
 };
 
 export type FiltreCarnet = "tout" | "notes" | "photos" | "suivi";
 
 export const FILTRES: { cle: FiltreCarnet; libelle: string; types: TypeEntree[] }[] = [
-  { cle: "tout", libelle: "Tout", types: ["vocal", "photos", "fait", "evenement", "rdv"] },
-  { cle: "notes", libelle: "Notes", types: ["vocal", "fait"] },
+  { cle: "tout", libelle: "Tout", types: ["vocal", "photos", "fait", "evenement", "rdv", "demande"] },
+  { cle: "notes", libelle: "Notes", types: ["vocal", "fait", "demande"] },
   { cle: "photos", libelle: "Photos", types: ["photos"] },
   { cle: "suivi", libelle: "Suivi", types: ["evenement", "rdv"] },
 ];
@@ -82,7 +91,15 @@ export function construireCarnet({
   evenements,
   rendezVous,
   maintenant,
+  demande,
+  auteurs = {},
 }: {
+  /** Les prénoms des AUTRES membres, par identifiant (l'utilisateur
+   *  connecté n'y est jamais : on ne se nomme pas soi-même). Un auteur
+   *  absent n'affiche rien. */
+  auteurs?: Record<string, string>;
+  /** La demande du client, et le résumé IA s'il existe. */
+  demande?: { texte: string; date: string; resume?: { texte: string; date: string | null } | null } | null;
   notesVocales: NoteVocale[];
   photos: string[];
   datePhotosRepli: string;
@@ -94,7 +111,7 @@ export function construireCarnet({
   const entrees: EntreeCarnet[] = [];
 
   for (const n of notesVocales) {
-    entrees.push({ id: `vocal-${n.id}`, type: "vocal", date: n.created_at, titre: "Note vocale", texte: n.transcription });
+    entrees.push({ id: `vocal-${n.id}`, type: "vocal", date: n.created_at, titre: "Note dictée", texte: n.transcription, auteur: auteurs[n.artisan_id] });
   }
 
   // Les photos d'un même jour forment une seule entrée : « 6 photos »,
@@ -131,6 +148,7 @@ export function construireCarnet({
       date: n.termine_le ?? n.updated_at ?? n.created_at,
       titre: n.titre,
       texte: n.description ?? undefined,
+      auteur: auteurs[n.artisan_id],
     });
   }
 
@@ -143,6 +161,7 @@ export function construireCarnet({
       titre: e.titre,
       texte: e.detail ?? undefined,
       typeEvenement: e.type,
+      auteur: auteurs[e.artisan_id],
     });
   }
 
@@ -157,10 +176,37 @@ export function construireCarnet({
       date: r.date_heure,
       titre: r.type === "tache" ? r.titre : `Rendez-vous · ${r.titre}`,
       texte: r.notes ?? undefined,
+      auteur: auteurs[r.artisan_id],
     });
   }
 
-  return entrees.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  // Datée de la création du projet. À date égale (« Projet créé »), elle
+  // passe en dernier : c'est la plus ancienne entrée.
+  if (demande && demande.texte.trim()) {
+    const resume = demande.resume?.texte.trim();
+    entrees.push({
+      id: "demande",
+      type: "demande",
+      date: demande.date,
+      titre: "La demande",
+      texte: demande.texte,
+      complement: resume
+        ? {
+            titre: `Résumé de vos notes${
+              demande.resume?.date
+                ? ` · ${new Date(demande.resume.date).toLocaleDateString("fr-FR", { timeZone: FUSEAU, day: "numeric", month: "short" })}`
+                : ""
+            }`,
+            texte: resume,
+          }
+        : undefined,
+    });
+  }
+
+  return entrees.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return (a.type === "demande" ? 1 : 0) - (b.type === "demande" ? 1 : 0);
+  });
 }
 
 // ------------------------------------------------------------ recherche
@@ -176,7 +222,7 @@ export function filtrerCarnet(entrees: EntreeCarnet[], filtre: FiltreCarnet, rec
   return entrees.filter((e) => {
     if (!types.includes(e.type)) return false;
     if (mots.length === 0) return true;
-    const texte = normaliser(`${e.titre} ${e.texte ?? ""}`);
+    const texte = normaliser(`${e.auteur ?? ""} ${e.titre} ${e.texte ?? ""} ${e.complement?.texte ?? ""}`);
     return mots.every((m) => texte.includes(m));
   });
 }
@@ -241,14 +287,17 @@ export function resumePeriode(entrees: EntreeCarnet[]): string {
   let photos = 0;
   let faits = 0;
   let suivi = 0;
+  let demande = false;
   for (const e of entrees) {
-    if (e.type === "vocal") vocales++;
+    if (e.type === "demande") demande = true;
+    else if (e.type === "vocal") vocales++;
     else if (e.type === "photos") photos += e.photos?.length ?? 0;
     else if (e.type === "fait") faits++;
     else suivi++;
   }
   const morceaux: string[] = [];
-  if (vocales) morceaux.push(`${vocales} note${vocales > 1 ? "s" : ""} vocale${vocales > 1 ? "s" : ""}`);
+  if (demande) morceaux.push("la demande");
+  if (vocales) morceaux.push(`${vocales} note${vocales > 1 ? "s" : ""} dictée${vocales > 1 ? "s" : ""}`);
   if (photos) morceaux.push(`${photos} photo${photos > 1 ? "s" : ""}`);
   if (faits) morceaux.push(`${faits} tâche${faits > 1 ? "s" : ""} faite${faits > 1 ? "s" : ""}`);
   if (suivi) morceaux.push(`${suivi} étape${suivi > 1 ? "s" : ""}`);

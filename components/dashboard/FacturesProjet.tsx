@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { Field } from "@/components/ui/Input";
 import { ErreurInline } from "@/components/ui/EtatErreur";
 import { FacturePreview } from "@/components/dashboard/FacturePreview";
@@ -11,6 +10,7 @@ import type { Devis, Facture } from "@/types";
 import { montantAcompte as calculerAcompteSigne } from "@/lib/devis/mentionsLegales";
 import { montantFrancais } from "@/lib/messagesClient";
 import { Feuille } from "@/components/projet/Feuille";
+import { BOUTON_TEXTE } from "@/components/projet/Blocs";
 
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -22,10 +22,12 @@ const LIBELLE_TYPE: Record<Facture["type"], string> = {
   avoir: "Avoir",
 };
 
+// Refonte (03/10) — règles 4 et 10 : deux tons de texte ; « Payée »
+// s'écrit en encre (plus en terracotta).
 const LIBELLE_STATUT: Record<Facture["statut"], { texte: string; classe: string }> = {
   emise: { texte: "Émise", classe: "text-steel" },
-  payee: { texte: "Payée", classe: "text-signal" },
-  annulee: { texte: "Annulée", classe: "text-ink/40" },
+  payee: { texte: "Payée", classe: "font-semibold text-ink" },
+  annulee: { texte: "Annulée", classe: "text-steel" },
 };
 
 // ============================================================
@@ -43,7 +45,16 @@ export function FacturesProjet({
   telephoneClient,
   adresseClient,
   logoUrl,
+  surSolde,
+  demandeSolde = 0,
 }: {
+  /** Refonte (03/10, duel D lot 3) — le reste à facturer (après acomptes
+   *  et avoirs), remonté à la fiche à chaque chargement : « Maintenant »
+   *  dit « Reste 5 075 € à facturer. » sans second chargement. */
+  surSolde?: (solde: number) => void;
+  /** Un compteur : chaque hausse ouvre la question « Facture de solde :
+   *  … ? » (« Préparer la facture », dans « Maintenant »). */
+  demandeSolde?: number;
   devis: Devis;
   nomClient: string;
   telephoneClient?: string | null;
@@ -189,8 +200,20 @@ export function FacturesProjet({
     }
   }
 
+  useEffect(() => {
+    if (chargement || erreurChargement) return;
+    const deja = factures.reduce((s, f) => s + f.total_ttc, 0);
+    surSolde?.(Math.max(0, Math.round((devis.total_estime - deja) * 100) / 100));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [factures, chargement, erreurChargement, devis.total_estime]);
+
+  useEffect(() => {
+    if (demandeSolde > 0) setQuestion({ genre: "solde" });
+  }, [demandeSolde]);
+
+  // Règle 11 : la forme vide d'une ligne, pas un mot.
   if (chargement) {
-    return <p className="mt-4 text-xs text-ink/40">Chargement des factures…</p>;
+    return <div className="mt-2 h-16 rounded-2xl bg-ink/10 motion-safe:animate-pulse" aria-busy="true" aria-label="Chargement des factures" />;
   }
 
   // Somme SANS filtrer sur le statut, volontairement : une facture annulée
@@ -203,19 +226,10 @@ export function FacturesProjet({
   const soldeRestant = Math.max(0, devis.total_estime - totalDejaFacture);
 
   return (
-    <Card className="mt-4 p-6">
-      <div className="flex items-center justify-between">
-        <p className="text-xs font-medium text-ink/50 uppercase tracking-wider">Facturation</p>
-        {factures.length > 0 && (
-          <a
-            href="/api/factures/export-comptable"
-            className="text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40"
-          >
-            Export comptable (CSV)
-          </a>
-        )}
-      </div>
-
+    // Refonte (03/10, duel D lot 3) — dans le bloc « Argent » de la fiche,
+    // sous la ligne du devis : plus de carte dans un bloc (règle 8), le
+    // titre est celui du bloc. L'ancre #facturation est sur le bloc.
+    <div className="mt-1">
       {erreurChargement && (
         <ErreurInline
           className="mt-3"
@@ -227,33 +241,29 @@ export function FacturesProjet({
         />
       )}
 
-      {!erreurChargement && factures.length === 0 && (
-        <p className="mt-2 text-sm text-ink/50">Aucune facture pour l&apos;instant.</p>
-      )}
+      {!erreurChargement && factures.length === 0 && <p className="mt-2 text-base text-steel">Aucune facture.</p>}
 
       {factures.length > 0 && (
-        <div className="mt-3 flex flex-col gap-2">
+        <div className="mt-1 divide-y divide-ink/15 border-t border-ink/15">
           {factures.map((f) => (
-            <div key={f.id} className="rounded-xl border border-ink/10 p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium">
+            <div key={f.id} className="py-2">
+              <div className="flex min-h-12 items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-base font-semibold text-ink">
                     {LIBELLE_TYPE[f.type]} n° {f.numero}
                   </p>
-                  <p className="text-xs text-ink/50">
+                  <p className="truncate text-sm text-steel">
                     {new Date(f.date_emission).toLocaleDateString("fr-FR")} ·{" "}
                     <span className={LIBELLE_STATUT[f.statut].classe}>{LIBELLE_STATUT[f.statut].texte}</span>
                   </p>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="font-mono text-sm">{formatEuros(f.total_ttc)}</p>
-                </div>
+                <p className="shrink-0 font-mono text-base tabular-nums text-ink">{formatEuros(f.total_ttc)}</p>
               </div>
-              <div className="mt-2 flex flex-wrap gap-2">
+              <div className="-ml-3 flex flex-wrap">
                 <button
                   type="button"
                   onClick={() => setFactureOuverteId(factureOuverteId === f.id ? null : f.id)}
-                  className="text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40"
+                  className={BOUTON_TEXTE}
                 >
                   {factureOuverteId === f.id ? "Masquer" : "Voir / Imprimer"}
                 </button>
@@ -263,7 +273,7 @@ export function FacturesProjet({
                       type="button"
                       onClick={() => marquerPayee(f.id)}
                       disabled={actionEnCoursId === f.id}
-                      className="text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40 disabled:opacity-50"
+                      className={BOUTON_TEXTE}
                     >
                       Marquer payée
                     </button>
@@ -271,9 +281,9 @@ export function FacturesProjet({
                       type="button"
                       onClick={() => setQuestion({ genre: "avoir", id: f.id })}
                       disabled={actionEnCoursId === f.id}
-                      className="text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40 disabled:opacity-50"
+                      className={BOUTON_TEXTE}
                     >
-                      Annuler (créer un avoir)
+                      Annuler
                     </button>
                   </>
                 )}
@@ -282,9 +292,9 @@ export function FacturesProjet({
                     type="button"
                     onClick={() => setQuestion({ genre: "avoir", id: f.id })}
                     disabled={actionEnCoursId === f.id}
-                    className="text-xs text-ink/50 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40 disabled:opacity-50"
+                    className={BOUTON_TEXTE}
                   >
-                    Annuler (créer un avoir)
+                    Annuler
                   </button>
                 )}
               </div>
@@ -305,14 +315,14 @@ export function FacturesProjet({
       )}
 
       {soldeRestant > 0 && (
-        <p className="mt-4 text-xs text-ink/50">
-          Reste à facturer sur ce devis : <span className="font-mono">{formatEuros(soldeRestant)}</span>
+        <p className="mt-3 truncate text-sm text-steel">
+          Reste à facturer : <span className="font-mono tabular-nums text-ink">{formatEuros(soldeRestant)}</span>
         </p>
       )}
 
       {erreur && <ErreurInline className="mt-3" message={erreur} />}
 
-      <div className="mt-4 flex flex-wrap gap-3">
+      <div className="mt-3 flex flex-wrap gap-2">
         {soldeRestant > 0 && !afficherFormAcompte && (
           <Button
             variant="ghost"
@@ -329,7 +339,7 @@ export function FacturesProjet({
               setAfficherFormAcompte(true);
             }}
           >
-            + Facture d&apos;acompte
+            Facture d&apos;acompte
           </Button>
         )}
         {soldeRestant > 0 && (
@@ -338,7 +348,7 @@ export function FacturesProjet({
             onClick={() => setQuestion({ genre: "solde" })}
             loading={creationEnCours === "facture"}
           >
-            {creationEnCours === "facture" ? "Création…" : "+ Facture (solde)"}
+            Facture de solde
           </Button>
         )}
       </div>
@@ -371,7 +381,7 @@ export function FacturesProjet({
       {afficherFormAcompte && depassement && (
         <div role="alert" className="mt-3 rounded-xl border border-alerte-orange/40 bg-alerte-orange/10 px-4 py-3">
           <p className="text-sm font-medium text-ink">Attention : cet acompte dépasse le devis.</p>
-          <p className="mt-1 text-sm text-ink/70">
+          <p className="mt-1 text-sm text-steel">
             Avec lui, {formatEuros(depassement.total)} seront facturés sur un devis de {formatEuros(depassement.plafond)}
             {depassement.deja > 0 ? ` (dont ${formatEuros(depassement.deja)} déjà en acompte)` : ""}. La facture de solde ne sera
             plus possible sur ce devis.
@@ -385,6 +395,12 @@ export function FacturesProjet({
             </Button>
           </div>
         </div>
+      )}
+
+      {factures.length > 0 && (
+        <a href="/api/factures/export-comptable" className={`-ml-3 mt-1 ${BOUTON_TEXTE}`}>
+          Export comptable (CSV)
+        </a>
       )}
 
       <Feuille
@@ -429,6 +445,6 @@ export function FacturesProjet({
           </button>
         </div>
       </Feuille>
-    </Card>
+    </div>
   );
 }

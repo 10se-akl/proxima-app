@@ -12,6 +12,7 @@ import { CentreNotifications } from "@/components/notifications/CentreNotificati
 import { Feuille } from "@/components/projet/Feuille";
 import { IconeChevron, IconePlus, IconePoints } from "@/components/projet/icones";
 import { FeuilleCapture } from "@/components/navigation/FeuilleCapture";
+import { LiensCompte, MenuCompte } from "@/components/navigation/MenuCompte";
 import {
   IconeAccueil,
   IconeDossier,
@@ -19,9 +20,7 @@ import {
   IconeFacture,
   IconeBilan,
   IconeCalendrier,
-  IconeGuide,
   IconeNote,
-  IconeParametres,
 } from "@/components/ui/Icones";
 
 // ============================================================
@@ -38,12 +37,18 @@ import {
 // destination. Sur une fiche projet, il ajoute à ce projet (voir
 // VueProjet.tsx, qui intercepte l'évènement « compyo:capture »).
 // « Plus » ouvre une feuille avec le reste : Devis, Factures, Notes,
-// Bilan, Paramètres, puis, à part, les idées et retours.
+// Bilan.
+//
+// Refonte (03/10 — duel B, lot 1) : Paramètres, le guide et l'avis ne
+// servent pas tous les jours. Sur téléphone, ils passent derrière l'avatar
+// en haut à droite (components/navigation/MenuCompte.tsx), avec le thème,
+// l'installation et la déconnexion. Sur ordinateur, ils sont à un clic en
+// bas de la barre latérale, sans menu qui s'ouvre. La Carte mentale sort
+// de l'application : /carte-mentale reste publique, liée depuis le site
+// vitrine. Équipe vit dans Paramètres.
 //
 // Sur ordinateur, la même structure dans la barre latérale : les
 // destinations en haut, le reste en plus petit sous un séparateur.
-// Équipe vit dans Paramètres (onglet « Mon équipe »), la carte mentale
-// dans « Idées et retours » : ni l'une ni l'autre ne sert au quotidien.
 //
 // Plafond : quatre destinations plus la capture. Pas une de plus.
 // ============================================================
@@ -82,22 +87,16 @@ const SECONDAIRES = [
   { href: "/dashboard/factures", label: "Factures", Icone: IconeFacture },
   { href: "/dashboard/notes", label: "Notes", Icone: IconeNote },
   { href: "/dashboard/bilan", label: "Bilan", Icone: IconeBilan },
-  { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
-  // 27/09 — Le guide d'utilisation, illustré (voir components/guide).
-  { href: "/dashboard/guide", label: "Guide", Icone: IconeGuide },
+  // Refonte (03/10) — Paramètres et Guide passent au compte (MenuCompte).
 ];
 
 function estActif(pathname: string, href: string) {
   return href === "/dashboard" ? pathname === "/dashboard" : pathname === href || pathname.startsWith(`${href}/`);
 }
 
-/** Ouvre la feuille « Faire un retour » (components/dashboard/BoutonRetour.tsx). */
-function ouvrirRetour() {
-  window.dispatchEvent(new CustomEvent("compyo:ouvrir-retour"));
-}
-
 // Bloc "compte" en bas de la barre latérale (ordinateur) : identité,
-// actions courantes en une rangée, liens du site vitrine tout en bas.
+// actions courantes en une rangée, Paramètres · Guide · Avis à un clic,
+// liens du site vitrine tout en bas.
 function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; onDeconnexion: () => void }) {
   return (
     <div className="px-4 py-5 border-t border-white/10 flex flex-col gap-3">
@@ -123,6 +122,7 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
           <span aria-hidden="true">⏻</span>
         </button>
       </div>
+      <LiensCompte />
       <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-white/5 text-xs text-white/40">
         <Link href="/" className="flex items-center hover:text-white/70 transition-colors [@media(pointer:coarse)]:min-h-11">
           Site vitrine
@@ -192,14 +192,19 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
 
   return (
     <>
-      {/* Téléphone — en haut, le logo et les notifications, rien d'autre.
-          pt safe-area : sous l'encoche en application installée. */}
+      {/* Téléphone — en haut, le logo, les notifications et le compte
+          (refonte 03/10 : l'avatar ouvre Paramètres, Guide, avis, thème,
+          installation, déconnexion). pt safe-area : sous l'encoche en
+          application installée. */}
       <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between bg-anthracite text-white pl-4 pr-1 min-h-12 [padding-top:env(safe-area-inset-top)]">
         <span className="flex items-center gap-2">
           <CompyoMark variante="blanc" taille={22} />
           <span className="font-display font-semibold">Compyo</span>
         </span>
-        <CentreNotifications vers="bas" />
+        <span className="flex items-center">
+          <CentreNotifications vers="bas" />
+          <MenuCompte nom={nomArtisan} surDeconnexion={handleLogout} />
+        </span>
       </div>
 
       {/* Téléphone — la barre du bas, sous le pouce. */}
@@ -246,6 +251,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               type="button"
               onClick={() => setPlusOuvert(true)}
               aria-haspopup="dialog"
+              aria-expanded={plusOuvert}
               className={`relative flex min-h-[4rem] w-full flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
                 plusActif ? "text-ink font-semibold" : "text-ink/55"
               }`}
@@ -277,39 +283,6 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             </li>
           ))}
         </ul>
-
-        <div className="mt-6">
-          <p className="text-[12px] text-ink/45">Idées et retours</p>
-          <div className="mt-1 flex flex-wrap gap-x-5">
-            <button
-              type="button"
-              onClick={() => {
-                setPlusOuvert(false);
-                ouvrirRetour();
-              }}
-              className="min-h-12 text-[14px] text-ink/70 underline decoration-ink/20 underline-offset-4"
-            >
-              Donner mon avis
-            </button>
-            <Link
-              href="/carte-mentale"
-              onClick={() => setPlusOuvert(false)}
-              className="flex min-h-12 items-center text-[14px] text-ink/70 underline decoration-ink/20 underline-offset-4"
-            >
-              Ce que disent les artisans
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-4 flex items-center justify-between border-t border-ink/10 pt-3">
-          <div className="flex items-center gap-1 text-ink/60">
-            <ThemeToggle className="w-12 h-12 grid place-items-center rounded-xl hover:bg-ink/5 transition-colors" />
-            <BoutonInstallerDiscret compact className="w-12 h-12 grid place-items-center rounded-xl hover:bg-ink/5 transition-colors" />
-          </div>
-          <button type="button" onClick={handleLogout} className="min-h-12 px-2 text-[14px] text-ink/55 hover:text-ink">
-            Se déconnecter
-          </button>
-        </div>
       </Feuille>
 
       <FeuilleCapture ouverte={captureOuverte} surFermer={() => setCaptureOuverte(false)} />
@@ -374,12 +347,6 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                 </Link>
               );
             })}
-            <Link
-              href="/carte-mentale"
-              className="mt-2 flex items-center px-3 py-2 text-[12px] text-white/35 hover:text-white/70 transition-colors [@media(pointer:coarse)]:min-h-11"
-            >
-              Idées et retours
-            </Link>
           </nav>
         </div>
 

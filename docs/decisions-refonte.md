@@ -338,3 +338,55 @@ Arbitrage complet : `refonte-maquettes/duel-E/arbitrage.md`.
 5. Les prix de l'artisan dès la génération (si la mesure le justifie).
 
 Arbitrage complet : `refonte-maquettes/duel-F/arbitrage.md`.
+
+---
+
+## Duel G : le planning sur téléphone
+
+**Problème.** Créer un rendez-vous demande 8 à 9 gestes. Déplacer ou annuler ne propose pas de prévenir le client. La règle anti-chevauchement porte sur toute l'entreprise.
+
+**Candidats.**
+- A : l'existant corrigé, avec un chevauchement par créateur, 55.
+- B : une seule liste « à venir », 64.
+- **C : la semaine en sept lignes, 69,5.**
+- D : une synthèse, chevauchement réduit à « même chantier », 61.
+
+**Vainqueur : C, sans son lot 4.**
+- **La vue par défaut :** sept jours glissants à partir d'aujourd'hui, une ligne par rendez-vous. Un jour vide affiche « Rien de prévu » avec un « + ».
+- **Pourquoi :** l'accueil montre déjà la journée, le Planning sert à voir la semaine. Le sélecteur de jours montre ce qui est pris avant de choisir.
+- **Greffes :**
+  - « Annuler » sur la grille de l'ordinateur passe par la question et le message (de B) ;
+  - `?projetId=` préremplit le formulaire (de D) ;
+  - « Supprimer » quitte la feuille du téléphone (de B).
+- **Corrections :**
+  - pas de huitième modèle de message (l'annulation réutilise une phrase neutre) ;
+  - une puce « À l'heure… » ;
+  - pas de « Pluie 70 % » inventé ;
+  - les dates à l'heure de Paris ;
+  - `AgendaMobile` garde ses props, pour ne pas casser le banc d'aperçu.
+- **« Modifier » :** si la date d'un rendez-vous lié à un projet change, l'enregistrement propose de prévenir le client. C'est le dernier déplacement silencieux, et aucun candidat ne le traitait.
+- **Chevauchement : inchangé, à l'échelle de l'entreprise, sans migration.**
+  - Cette règle protège l'artisan seul et le couple « un terrain, un bureau ».
+  - La clé « créateur » de A cassait la protection du couple.
+  - Seul le message d'erreur change, pour « Déjà pris à cette heure. ».
+- **Équipe :** le planning reste partagé, sans prénom. « Pour qui » est une décision du fondateur ; le juge recommande non pour l'instant. Le Module 53 (une colonne « pour qui » et une contrainte par personne) est écrit dans l'arbitrage, mais il n'est pas retenu.
+
+**Gestes.**
+- Voir la semaine : jusqu'à 7 → 1.
+- Créer depuis une fiche : ≈ 8 → 3.
+- Reporter à demain en prévenant : 11 → 5.
+- Annuler en prévenant : 2, sans un mot, → 5.
+- Prévenir pour la météo : 4 → 3.
+
+**Dissidence valable.**
+- « Rien de prévu » ne veut pas dire « libre ».
+- Au-delà de 3 ou 4 rendez-vous par jour, la vue redevient la liste de B.
+- À deux, le planning ne dit pas qui y va.
+
+**Lots.**
+1. Prévenir après chaque changement (feuille, grille, Modifier), sans migration.
+2. La semaine en sept lignes.
+3. Planifier en trois appuis.
+4. « Pour qui », seulement si le fondateur dit oui.
+
+Arbitrage complet : `refonte-maquettes/duel-G/arbitrage.md`.

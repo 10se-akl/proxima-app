@@ -10,6 +10,7 @@ import {
 } from "@/lib/moteur-metier/tempsMainOeuvre";
 import type { LigneEditee, TarifsEditeur } from "@/components/devis/EditeurLignes";
 import { formatEuros, libellePrix, nombreSaisi, texteDepuisNombre } from "@/components/devis/formatLigne";
+import { estPrixCompyo } from "@/lib/devis/qualite";
 
 // ============================================================
 // La feuille d'une ligne (refonte du 03/10, duel F lot 3) : toucher une
@@ -172,6 +173,9 @@ function ContenuLigne({
               />
               <span className="shrink-0 text-sm text-steel">€</span>
             </div>
+            {/* Refonte (03/10, duel F lot 4) — ce prix n'est pas le vôtre : il
+                disparaît dès que vous en tapez un. */}
+            {estPrixCompyo(ligne) && <p className="mt-1 text-sm text-steel">Prix de référence Compyo, à ajuster.</p>}
           </div>
         </>
       )}

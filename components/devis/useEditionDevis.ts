@@ -263,6 +263,8 @@ export function useEditionDevis(devis: Devis, parametres: ParametresEntreprise |
           prix_unitaire: poste.prix_unitaire,
           total: poste.prix_unitaire,
           detail_calcul: `Prix repris de votre dernière utilisation — à ajuster si besoin`,
+          // Refonte (03/10, duel F lot 4) — un prix qu'il a déjà chiffré lui-même.
+          prix_source: "artisan",
         },
         lots
       ),

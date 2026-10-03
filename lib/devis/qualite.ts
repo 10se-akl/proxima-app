@@ -332,16 +332,30 @@ export function evaluerDevis(
 //
 // Une ligne porte au plus UN signal, le plus utile d'abord. Ne sont
 // signalés que des constats qu'on peut prouver (une quantité à 0, un prix à
-// 0, une journée au prix d'une heure) — pas des intuitions.
+// 0, une journée au prix d'une heure, un prix qui vient de Compyo et non de
+// l'artisan) — pas des intuitions.
 // ============================================================
 
 export type SignalLigne = {
-  id: "quantite" | "prix" | "prix_a_verifier";
+  id: "quantite" | "prix" | "prix_a_verifier" | "prix_compyo";
   /** Le mot d'alerte, tel qu'il s'affiche devant le détail de la ligne. */
   libelle: string;
 };
 
-type LigneARelire = Pick<LigneDevisCalculee, "description" | "categorie" | "quantite" | "unite" | "prix_unitaire">;
+type LigneARelire = Pick<
+  LigneDevisCalculee,
+  "description" | "categorie" | "quantite" | "unite" | "prix_unitaire" | "prix_source" | "detail_calcul"
+>;
+
+// Le seul signal prouvable aujourd'hui : le prix vient du tarif de référence
+// interne de Compyo, pas de l'artisan. calculerDevis le pose (prix_source) ;
+// l'éditeur le passe à « artisan » dès que l'artisan tape un prix. Les devis
+// d'avant n'ont pas ce champ : on se replie sur la note de calcul que le
+// moteur a toujours écrite pour ces lignes.
+export function estPrixCompyo(ligne: Pick<LigneDevisCalculee, "prix_source" | "detail_calcul">): boolean {
+  if (ligne.prix_source) return ligne.prix_source === "compyo";
+  return (ligne.detail_calcul ?? "").trim().startsWith("Tarif de référence interne");
+}
 
 /** Un signal (ou null) par ligne, dans l'ordre des lignes reçues. */
 export function lignesADoute(
@@ -359,6 +373,7 @@ export function lignesADoute(
         return { id: "prix_a_verifier", libelle: "Prix à vérifier" };
       }
     }
+    if (estPrixCompyo(l)) return { id: "prix_compyo", libelle: "Prix Compyo" };
     return null;
   });
 }

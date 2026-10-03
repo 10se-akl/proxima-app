@@ -206,6 +206,14 @@ export type LigneDevisCalculee = {
   // parle pas de lui-même (17/09). Proposée par l'IA en même temps que le
   // poste, modifiable et supprimable par l'artisan, jamais obligatoire.
   explication?: string | null;
+  // Refonte (03/10, duel F lot 4) — d'où vient le prix unitaire. « compyo » :
+  // un tarif de référence interne (fournitures, forfaits), jamais le prix de
+  // l'artisan ; « artisan » : son tarif horaire ou journalier, un poste qu'il
+  // a déjà chiffré, ou un prix qu'il a tapé lui-même. Posé par calculerDevis ;
+  // absent sur les devis plus anciens (la revue se replie alors sur la note
+  // de calcul, voir lignesADoute). INTERNE : jamais recopié vers ce que lit
+  // le client (voir lignesDeVente). Aucune migration : les lignes sont en jsonb.
+  prix_source?: "compyo" | "artisan";
 };
 
 // Ligne telle que le CLIENT la lit : marge incluse dans le prix, et le

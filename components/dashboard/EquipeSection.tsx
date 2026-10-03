@@ -1,257 +1,386 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { lireMembership } from "@/lib/organisation";
 import { Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Avatar } from "@/components/ui/Avatar";
+import { Feuille } from "@/components/projet/Feuille";
+import { lienPartageWhatsApp, messageInvitationEquipe } from "@/lib/messagesClient";
 
-type Membre = {
-  userId: string;
-  nom: string;
-  email: string;
-  role: "proprietaire" | "employe";
-};
+// ============================================================
+// Paramètres › Équipe (refonte 03/10, duel A) — la SEULE interface
+// d'équipe (/dashboard/equipe redirige ici, GestionEquipe.tsx est retiré).
+//
+// Tout le monde voit tout, comme dans un seul bureau : aucun mot de rôle
+// n'est affiché. Ce qui distingue la personne qui a ouvert le compte ne
+// se voit qu'à ce qu'elle peut faire : inviter, retirer, renvoyer ou
+// annuler une invitation. Les autres voient la liste seule.
+//
+// Rien ne s'affiche comme fait avant que le serveur l'ait confirmé ; une
+// erreur reste là où était le doigt (dans la feuille, sur la ligne).
+// La sécurité n'est pas ici : la base et les routes serveur refusent
+// d'elles-mêmes ce que cet écran ne propose pas.
+// ============================================================
 
-// Onglet "Mon équipe" de Paramètres — voir Module 14 dans
-// supabase/schema.sql pour le modèle organisation/membership sous-jacent.
-// Un artisan solo (le cas le plus courant en bêta) voit juste lui-même
-// dans la liste, avec de quoi inviter un premier coéquipier s'il en a
-// besoin : rien à configurer pour que ça reste simple par défaut.
+type Membre = { userId: string; nom: string; email: string; estProprietaire: boolean; estMoi: boolean };
+type InvitationEnCours = { id: string; prenom: string; email: string; expiree: boolean };
+
+const CLASSE_ALERTE = "text-sm font-semibold text-signal-fonce dark:text-signal-clair";
+const CLASSE_TEXTE_BOUTON =
+  "min-h-12 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink";
+// La phrase validée par le fondateur (03/10) : c'est une promesse.
+const PHRASE_PROMESSE = "Elle verra tout, comme vous : devis, prix, factures.";
+
+function premierMot(nom: string): string {
+  return nom.trim().split(/\s+/)[0] ?? "";
+}
+
 export function EquipeSection() {
-  const supabase = createClient();
-
   const [chargement, setChargement] = useState(true);
+  const [erreurChargement, setErreurChargement] = useState(false);
   const [membres, setMembres] = useState<Membre[]>([]);
-  const [monRole, setMonRole] = useState<"proprietaire" | "employe" | null>(null);
-  const [monUserId, setMonUserId] = useState<string | null>(null);
+  const [invitations, setInvitations] = useState<InvitationEnCours[]>([]);
+  const [peutGerer, setPeutGerer] = useState(false);
+  const [entreprise, setEntreprise] = useState<string | null>(null);
 
-  const [nomInvite, setNomInvite] = useState("");
-  const [emailInvite, setEmailInvite] = useState("");
+  const [nom, setNom] = useState("");
+  const [email, setEmail] = useState("");
   const [envoi, setEnvoi] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
-  const [succes, setSucces] = useState<string | null>(null);
+  const [erreurInvitation, setErreurInvitation] = useState<string | null>(null);
+  const [pret, setPret] = useState<{ prenom: string; emailParti: boolean } | null>(null);
 
-  async function charger() {
-    setChargement(true);
-    // Sprint Robustesse (30/08) — cette fonction enchaîne 3 requêtes
-    // Supabase sans jamais vérifier leur `error` individuellement : si l'une
-    // échouait (coupure réseau en cours de route, par exemple), la liste de
-    // membres se construisait quand même à partir de `data` vide/partiel,
-    // silencieusement tronquée. On affiche désormais un message clair et on
-    // arrête la construction de la liste dès qu'une requête échoue, plutôt
-    // que de laisser l'artisan croire que l'équipe est plus petite qu'elle
-    // ne l'est réellement.
-    setErreur(null);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) {
+  const [aRetirer, setARetirer] = useState<Membre | null>(null);
+  const [retrait, setRetrait] = useState(false);
+  const [erreurRetrait, setErreurRetrait] = useState<string | null>(null);
+
+  const [invitationEnAction, setInvitationEnAction] = useState<string | null>(null);
+  const [retourInvitation, setRetourInvitation] = useState<{ id: string; texte: string; erreur: boolean } | null>(null);
+
+  const charger = useCallback(async () => {
+    const supabase = createClient();
+    setErreurChargement(false);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        setErreurChargement(true);
+        return;
+      }
+      const lecture = await lireMembership(supabase, user.id);
+      if (lecture.etat !== "membre") {
+        setErreurChargement(true);
+        return;
+      }
+      const org = lecture.organisationId;
+
+      const [lignes, invits, organisation] = await Promise.all([
+        supabase
+          .from("memberships")
+          .select("user_id, role, created_at")
+          .eq("organisation_id", org)
+          .order("created_at", { ascending: true }),
+        supabase
+          .from("invitations")
+          .select("id, prenom, email, expire_le")
+          .eq("organisation_id", org)
+          .is("acceptee_le", null)
+          .is("annulee_le", null)
+          .order("cree_le", { ascending: true }),
+        supabase.from("organisations").select("nom").eq("id", org).maybeSingle(),
+      ]);
+      if (lignes.error || invits.error || organisation.error) {
+        setErreurChargement(true);
+        return;
+      }
+
+      const ids = (lignes.data ?? []).map((m) => m.user_id);
+      const { data: profils, error: erreurProfils } = ids.length
+        ? await supabase.from("profils").select("id, nom, email").in("id", ids)
+        : { data: [], error: null };
+      if (erreurProfils) {
+        setErreurChargement(true);
+        return;
+      }
+
+      const liste: Membre[] = (lignes.data ?? []).map((m) => {
+        const profil = (profils ?? []).find((p) => p.id === m.user_id);
+        return {
+          userId: m.user_id,
+          nom: profil?.nom?.trim() || profil?.email || "Sans nom",
+          email: profil?.email ?? "",
+          estProprietaire: m.role === "proprietaire",
+          estMoi: m.user_id === user.id,
+        };
+      });
+      // Soi d'abord, puis dans l'ordre d'arrivée.
+      liste.sort((a, b) => Number(b.estMoi) - Number(a.estMoi));
+
+      const maintenant = Date.now();
+      setMembres(liste);
+      setInvitations(
+        (invits.data ?? []).map((i) => ({
+          id: i.id,
+          prenom: i.prenom,
+          email: i.email,
+          expiree: Date.parse(i.expire_le) <= maintenant,
+        }))
+      );
+      setPeutGerer(lecture.role === "proprietaire");
+      setEntreprise(organisation.data?.nom ?? null);
+    } catch {
+      setErreurChargement(true);
+    } finally {
       setChargement(false);
-      return;
     }
-    setMonUserId(user.id);
-
-    const { data: maMembership, error: erreurMembership } = await supabase
-      .from("memberships")
-      .select("organisation_id, role")
-      .eq("user_id", user.id)
-      .maybeSingle();
-
-    if (erreurMembership) {
-      setErreur("Impossible de charger votre équipe. Vérifiez votre connexion.");
-      setChargement(false);
-      return;
-    }
-
-    if (!maMembership) {
-      setChargement(false);
-      return;
-    }
-    setMonRole(maMembership.role as "proprietaire" | "employe");
-
-    const { data: memberships, error: erreurMemberships } = await supabase
-      .from("memberships")
-      .select("user_id, role")
-      .eq("organisation_id", maMembership.organisation_id);
-
-    if (erreurMemberships) {
-      setErreur("Impossible de charger la liste des membres. Vérifiez votre connexion.");
-      setChargement(false);
-      return;
-    }
-
-    const idsMembres = (memberships ?? []).map((m) => m.user_id);
-    const { data: profils, error: erreurProfils } = await supabase
-      .from("profils")
-      .select("id, nom, email")
-      .in("id", idsMembres.length > 0 ? idsMembres : ["00000000-0000-0000-0000-000000000000"]);
-
-    if (erreurProfils) {
-      setErreur("Impossible de charger les informations des membres. Vérifiez votre connexion.");
-      setChargement(false);
-      return;
-    }
-
-    const liste: Membre[] = (memberships ?? []).map((m) => {
-      const profil = profils?.find((p) => p.id === m.user_id);
-      return {
-        userId: m.user_id,
-        nom: profil?.nom ?? "—",
-        email: profil?.email ?? "",
-        role: m.role as "proprietaire" | "employe",
-      };
-    });
-    // Le propriétaire en premier, puis par ordre d'ajout — plus lisible
-    // qu'un ordre arbitraire renvoyé par la base.
-    liste.sort((a, b) => (a.role === b.role ? 0 : a.role === "proprietaire" ? -1 : 1));
-    setMembres(liste);
-    setChargement(false);
-  }
+  }, []);
 
   useEffect(() => {
     charger();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [charger]);
 
-  async function handleInviter(e: React.FormEvent) {
+  async function inviter(e: React.FormEvent) {
     e.preventDefault();
-    setErreur(null);
-    setSucces(null);
+    setErreurInvitation(null);
     setEnvoi(true);
-
-    const reponse = await fetch("/api/equipe/inviter", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ nom: nomInvite, email: emailInvite }),
-    });
-    const resultat = await reponse.json();
-
-    setEnvoi(false);
-
-    if (!reponse.ok) {
-      setErreur(resultat.error ?? "Impossible d'envoyer l'invitation.");
-      return;
+    try {
+      const reponse = await fetch("/api/equipe/inviter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nom, email }),
+      });
+      const resultat = await reponse.json().catch(() => null);
+      if (!reponse.ok) {
+        setErreurInvitation(resultat?.error ?? "L'invitation n'est pas partie. Réessayez.");
+        return;
+      }
+      setPret({ prenom: premierMot(nom), emailParti: resultat?.emailParti !== false });
+      setNom("");
+      setEmail("");
+      charger();
+    } catch {
+      setErreurInvitation("Pas de réseau. L'invitation n'est pas partie.");
+    } finally {
+      setEnvoi(false);
     }
-
-    setSucces(`Invitation envoyée à ${emailInvite}.`);
-    setNomInvite("");
-    setEmailInvite("");
-    charger();
   }
 
-  async function handleRetirer(userId: string, nom: string) {
-    if (!confirm(`Retirer ${nom} de l'équipe ? Cette personne perdra immédiatement l'accès.`)) {
-      return;
-    }
-    // Sprint Robustesse (30/08) — en cas d'échec, rien n'était affiché :
-    // l'artisan cliquait sur "Retirer" et ne pouvait pas savoir si la
-    // personne avait bien été retirée ou non.
-    setErreur(null);
-    const reponse = await fetch("/api/equipe/retirer", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userId }),
-    });
-    if (reponse.ok) {
+  async function agirSurInvitation(invitation: InvitationEnCours, action: "renvoyer" | "annuler") {
+    setInvitationEnAction(invitation.id);
+    setRetourInvitation(null);
+    try {
+      const reponse = await fetch("/api/equipe/inviter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, invitationId: invitation.id }),
+      });
+      const resultat = await reponse.json().catch(() => null);
+      if (!reponse.ok) {
+        setRetourInvitation({ id: invitation.id, texte: resultat?.error ?? "Pas enregistré. Réessayez.", erreur: true });
+        return;
+      }
+      if (action === "annuler") {
+        await charger();
+        return;
+      }
+      setRetourInvitation({
+        id: invitation.id,
+        texte: resultat?.emailParti === false ? "L'e-mail n'est pas parti. Réessayez dans un moment." : "Renvoyée.",
+        erreur: resultat?.emailParti === false,
+      });
       charger();
-      return;
+    } catch {
+      setRetourInvitation({ id: invitation.id, texte: "Pas de réseau. Réessayez.", erreur: true });
+    } finally {
+      setInvitationEnAction(null);
     }
-    const resultat = await reponse.json().catch(() => null);
-    setErreur(resultat?.error ?? "Impossible de retirer cette personne. Réessayez.");
+  }
+
+  function fermerRetrait() {
+    if (retrait) return;
+    setARetirer(null);
+    setErreurRetrait(null);
+  }
+
+  async function confirmerRetrait() {
+    if (!aRetirer) return;
+    setRetrait(true);
+    setErreurRetrait(null);
+    try {
+      const reponse = await fetch("/api/equipe/retirer", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId: aRetirer.userId }),
+      });
+      const resultat = await reponse.json().catch(() => null);
+      if (!reponse.ok) {
+        setErreurRetrait(resultat?.error ?? "Pas retiré. Réessayez.");
+        return;
+      }
+      setARetirer(null);
+      await charger();
+    } catch {
+      setErreurRetrait("Pas de réseau. Pas retiré.");
+    } finally {
+      setRetrait(false);
+    }
+  }
+
+  function prevenirParWhatsApp() {
+    if (!pret) return;
+    window.open(lienPartageWhatsApp(messageInvitationEquipe({ prenom: pret.prenom, entreprise })), "_blank", "noopener");
   }
 
   if (chargement) {
-    return <div className="text-sm text-ink/50">Chargement…</div>;
+    return (
+      <div aria-busy="true" aria-label="Chargement de l'équipe" className="flex flex-col gap-2">
+        <div className="h-16 rounded-2xl bg-ink/10 motion-safe:animate-pulse" />
+        <div className="h-16 rounded-2xl bg-ink/10 motion-safe:animate-pulse" />
+      </div>
+    );
   }
+
+  if (erreurChargement) {
+    return (
+      <div className="flex flex-col items-start gap-3">
+        <p className={CLASSE_ALERTE}>L&apos;équipe n&apos;a pas pu être chargée.</p>
+        <Button variant="ghost" onClick={charger}>
+          Réessayer
+        </Button>
+      </div>
+    );
+  }
+
+  const prenomRetire = aRetirer ? premierMot(aRetirer.nom) : "";
+  const prenomSaisi = premierMot(nom);
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-sm text-ink/60">
-        Toutes les personnes de votre équipe voient et travaillent sur les mêmes projets,
-        devis et planning — comme si vous partagiez un seul bureau.
-      </p>
-
-      {/* Sprint Robustesse (30/08) — affiché ici (pas seulement dans le
-          formulaire d'invitation plus bas) pour rester visible même quand
-          `charger()` ou `handleRetirer` échouent avant que le rôle de
-          l'artisan soit connu. */}
-      {erreur && <p className="text-sm text-signal">{erreur}</p>}
-
-      <Card className="p-5">
-        <h2 className="text-sm font-semibold text-ink/70 mb-4">Membres ({membres.length})</h2>
-        <div className="flex flex-col gap-3">
-          {membres.map((m) => (
-            <div key={m.userId} className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar nom={m.nom} taille={32} />
-                <div className="min-w-0">
-                  <p className="text-sm font-medium truncate">
-                    {m.nom} {m.userId === monUserId && <span className="text-ink/40">(vous)</span>}
-                  </p>
-                  <p className="text-xs text-ink/50 truncate">{m.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span
-                  className={`text-[11px] font-mono uppercase tracking-wide px-2 py-1 rounded-full ${
-                    m.role === "proprietaire"
-                      ? "bg-signal/10 text-signal-fonce"
-                      : "bg-ink/5 text-ink/50"
-                  }`}
+      <ul className="divide-y divide-ink/10" aria-label="Équipe">
+        {membres.map((m) => (
+          <li key={m.userId} className="flex min-h-16 items-center gap-3 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base font-semibold text-ink">
+                {m.nom}
+                {m.estMoi ? ", vous" : ""}
+              </p>
+              {m.email && <p className="truncate text-sm text-steel">{m.email}</p>}
+            </div>
+            {peutGerer && !m.estMoi && !m.estProprietaire && (
+              <Button
+                variant="danger"
+                className="shrink-0"
+                onClick={() => {
+                  setErreurRetrait(null);
+                  setARetirer(m);
+                }}
+              >
+                Retirer
+              </Button>
+            )}
+          </li>
+        ))}
+        {invitations.map((i) => (
+          <li key={i.id} className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-1 py-2">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-base font-semibold text-ink">
+                {premierMot(i.prenom)}, {i.expiree ? "invitation expirée" : "en attente"}
+              </p>
+              <p className="truncate text-sm text-steel">{i.email}</p>
+            </div>
+            {peutGerer && (
+              <div className="flex shrink-0 items-center">
+                <button
+                  type="button"
+                  className={CLASSE_TEXTE_BOUTON}
+                  disabled={invitationEnAction === i.id}
+                  onClick={() => agirSurInvitation(i, "renvoyer")}
                 >
-                  {m.role === "proprietaire" ? "Propriétaire" : "Employé"}
-                </span>
-                {monRole === "proprietaire" && m.userId !== monUserId && (
-                  <button
-                    onClick={() => handleRetirer(m.userId, m.nom)}
-                    className="text-xs text-ink/40 hover:text-signal underline underline-offset-2"
-                  >
-                    Retirer
-                  </button>
-                )}
+                  Renvoyer
+                </button>
+                <button
+                  type="button"
+                  className={CLASSE_TEXTE_BOUTON}
+                  disabled={invitationEnAction === i.id}
+                  onClick={() => agirSurInvitation(i, "annuler")}
+                >
+                  Annuler
+                </button>
               </div>
+            )}
+            <div aria-live="polite" className="w-full empty:hidden">
+              {retourInvitation?.id === i.id && (
+                <p className={retourInvitation.erreur ? CLASSE_ALERTE : "text-sm text-ink"}>{retourInvitation.texte}</p>
+              )}
             </div>
-          ))}
-        </div>
-      </Card>
+          </li>
+        ))}
+      </ul>
 
-      {monRole === "proprietaire" ? (
-        <Card className="p-5">
-          <h2 className="text-sm font-semibold text-ink/70 mb-1">Inviter quelqu'un</h2>
-          <p className="text-xs text-ink/50 mb-4">
-            Un employé, un conjoint... Cette personne recevra un email pour créer son mot de
-            passe et accédera immédiatement aux mêmes projets que vous.
+      {peutGerer && (
+        <form onSubmit={inviter} className="flex flex-col gap-4">
+          <h3 className="text-base font-semibold text-ink">Inviter quelqu&apos;un</h3>
+          <Field
+            label="Prénom et nom"
+            required
+            maxLength={60}
+            autoComplete="off"
+            value={nom}
+            onChange={(e) => setNom(e.target.value)}
+          />
+          <Field
+            label="E-mail"
+            type="email"
+            required
+            maxLength={254}
+            autoComplete="off"
+            inputMode="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <p className="text-base text-ink">
+            {prenomSaisi ? `${prenomSaisi} verra tout, comme vous : devis, prix, factures.` : PHRASE_PROMESSE}
           </p>
-          <form onSubmit={handleInviter} className="flex flex-col gap-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field
-                label="Nom"
-                required
-                value={nomInvite}
-                onChange={(e) => setNomInvite(e.target.value)}
-              />
-              <Field
-                label="Email"
-                type="email"
-                required
-                value={emailInvite}
-                onChange={(e) => setEmailInvite(e.target.value)}
-              />
-            </div>
-            {erreur && <p className="text-sm text-signal">{erreur}</p>}
-            {succes && <p className="text-sm text-steel">{succes}</p>}
-            <Button type="submit" disabled={envoi} className="self-start">
-              {envoi ? "Envoi…" : "Envoyer l'invitation"}
-            </Button>
-          </form>
-        </Card>
-      ) : (
-        <p className="text-xs text-ink/40">
-          Seul le propriétaire du compte peut inviter ou retirer un membre de l'équipe.
-        </p>
+          <div aria-live="polite">{erreurInvitation && <p className={CLASSE_ALERTE}>{erreurInvitation}</p>}</div>
+          <Button type="submit" loading={envoi} className="min-h-14 w-full sm:w-auto">
+            Envoyer l&apos;invitation
+          </Button>
+        </form>
       )}
+
+      <Feuille ouverte={aRetirer !== null} titre={`Retirer ${prenomRetire} ?`} surFermer={fermerRetrait}>
+        <p className="text-base text-ink">
+          {prenomRetire} n&apos;ouvre plus Compyo. Ses notes, photos et projets restent.
+        </p>
+        <div aria-live="polite" className="mt-3">
+          {erreurRetrait && <p className={CLASSE_ALERTE}>{erreurRetrait}</p>}
+        </div>
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row-reverse sm:justify-start">
+          <Button variant="danger" loading={retrait} onClick={confirmerRetrait}>
+            Retirer {prenomRetire}
+          </Button>
+          <Button variant="ghost" disabled={retrait} onClick={fermerRetrait}>
+            Annuler
+          </Button>
+        </div>
+      </Feuille>
+
+      <Feuille ouverte={pret !== null} titre="C'est prêt" surFermer={() => setPret(null)}>
+        <p className="text-base text-ink">
+          {pret?.emailParti
+            ? `${pret.prenom || "La personne"} reçoit un e-mail de Compyo.`
+            : "L'e-mail n'est pas parti. Réessayez « Renvoyer » dans un moment."}
+        </p>
+        <div className="mt-5 flex flex-col gap-3">
+          <Button onClick={prevenirParWhatsApp} className="min-h-14 w-full">
+            {pret?.prenom ? `Prévenir ${pret.prenom} par WhatsApp` : "Prévenir par WhatsApp"}
+          </Button>
+          <Button variant="ghost" onClick={() => setPret(null)} className="w-full">
+            Terminé
+          </Button>
+        </div>
+      </Feuille>
     </div>
   );
 }

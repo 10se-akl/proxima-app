@@ -189,6 +189,25 @@ export function ouvrirMessage(canal: Canal, numero: string, texte: string): bool
   return true;
 }
 
+// ---------------------------------------------------------------- l'équipe
+
+/** Refonte (03/10, duel A) — prévenir la personne qu'on vient d'inviter.
+ *  Volontairement SANS lien : c'est l'e-mail de Compyo qui prouve son
+ *  adresse ; un lien transféré par WhatsApp ferait entrer n'importe qui.
+ *  Tutoiement : le message part du téléphone du patron vers son équipe,
+ *  il le modifie avant d'envoyer s'il vouvoie. */
+export function messageInvitationEquipe(p: { prenom: string; entreprise?: string | null }): string {
+  const prenom = propre(p.prenom);
+  const entreprise = propre(p.entreprise);
+  return `Bonjour${prenom ? ` ${prenom}` : ""}, je viens de t'ajouter à l'équipe${entreprise ? ` ${entreprise}` : ""} sur Compyo. Un e-mail de Compyo t'attend : regarde aussi dans les indésirables.`;
+}
+
+/** WhatsApp sans destinataire : l'artisan choisit le contact, texte prêt.
+ *  Rien n'est envoyé : c'est lui qui appuie sur envoyer. */
+export function lienPartageWhatsApp(texte: string): string {
+  return `https://wa.me/?text=${encodeURIComponent(texte)}`;
+}
+
 // ---------------------------------------------------------------- le choix
 
 export type ContexteMessage = {

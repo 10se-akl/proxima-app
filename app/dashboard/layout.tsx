@@ -6,7 +6,7 @@ import { PremierLancement } from "@/components/onboarding/PremierLancement";
 import { TutoPremierProjet } from "@/components/onboarding/TutoPremierProjet";
 import { IndiceDefilement } from "@/components/ui/IndiceDefilement";
 import { PopupRappel } from "@/components/notes/PopupRappel";
-import { getOrganisationId } from "@/lib/organisation";
+import { lireMembership } from "@/lib/organisation";
 import { BandeauReseau } from "@/components/ui/BandeauReseau";
 
 export default async function DashboardLayout({
@@ -30,14 +30,29 @@ export default async function DashboardLayout({
   // dehors. Seul le statut explicite "en_attente" bloque : les comptes
   // créés avant le Module 43 et les employés invités n'ont pas ce statut,
   // ils ne sont pas concernés.
+  //
+  // Refonte (03/10, duel A) — vers /rejoindre plutôt que directement vers
+  // « candidature en cours » : une personne invitée par une équipe y
+  // passe devant la liste d'attente ; sans invitation, /rejoindre la
+  // renvoie vers « candidature en cours » comme avant.
   if (user.app_metadata?.acces === "en_attente") {
-    redirect("/candidature-en-cours");
+    redirect("/rejoindre");
   }
 
-  const [{ data: profil }, organisationId] = await Promise.all([
+  const [{ data: profil }, membership] = await Promise.all([
     supabase.from("profils").select("nom, metier").eq("id", user.id).single(),
-    getOrganisationId(supabase, user.id),
+    lireMembership(supabase, user.id),
   ]);
+
+  // Refonte (03/10, duel A) — un compte sans équipe (retiré, ou invité
+  // qui n'a pas encore rejoint) n'a rien à faire ici : la base ne lui
+  // montre plus rien. /rejoindre lui dit pourquoi, après avoir revérifié
+  // côté serveur. Une PANNE de lecture (« erreur ») n'y envoie jamais :
+  // les pages affichent leur propre « Réessayer ».
+  if (membership.etat === "aucune") {
+    redirect("/rejoindre");
+  }
+  const organisationId = membership.etat === "membre" ? membership.organisationId : null;
 
   // 26/09 — la pastille de « Aujourd'hui » dans la navigation : seulement
   // ce qui risque d'être oublié, c'est-à-dire les notes dont le rappel est

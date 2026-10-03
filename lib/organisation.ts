@@ -55,3 +55,27 @@ export async function getMembership(
   if (!data) return null;
   return { organisationId: data.organisation_id, role: data.role as "proprietaire" | "employe" };
 }
+
+export type LectureMembership =
+  | { etat: "membre"; organisationId: string; role: "proprietaire" | "employe" }
+  | { etat: "aucune" }
+  | { etat: "erreur" };
+
+// Refonte (03/10, duel A) — getOrganisationId et getMembership renvoient
+// `null` aussi bien pour « pas d'équipe » que pour une panne réseau.
+// Les décisions lourdes (renvoyer vers « Votre accès a été retiré »,
+// refuser une action d'équipe) ne doivent jamais se prendre sur une
+// panne : celle-ci distingue les trois cas.
+export async function lireMembership(supabase: SupabaseClient, userId: string): Promise<LectureMembership> {
+  const { data, error } = await supabase
+    .from("memberships")
+    .select("organisation_id, role")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (error) {
+    console.error("lireMembership: échec Supabase (memberships)", error);
+    return { etat: "erreur" };
+  }
+  if (!data) return { etat: "aucune" };
+  return { etat: "membre", organisationId: data.organisation_id, role: data.role as "proprietaire" | "employe" };
+}

@@ -277,8 +277,15 @@ function estApiOuSupabase(url) {
 // référencement, aucune valeur hors-ligne pour Axel non plus). Ces pages
 // sont désormais réseau-uniquement, jamais écrites en cache — voir
 // reponseReseauSansCache plus bas.
+// Refonte (03/10, duel A) — /rejoindre aussi : elle dit à une personne
+// retirée « Votre accès a été retiré » ; une version gardée en cache
+// pourrait montrer un état périmé (ou le nom d'une équipe) hors ligne.
 function estPageProtegee(url) {
-  return url.pathname.startsWith("/dashboard") || url.pathname.startsWith("/admin");
+  return (
+    url.pathname.startsWith("/dashboard") ||
+    url.pathname.startsWith("/admin") ||
+    url.pathname.startsWith("/rejoindre")
+  );
 }
 
 function estRessourceStatiqueImmuable(url) {

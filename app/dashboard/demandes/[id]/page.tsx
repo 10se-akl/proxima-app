@@ -141,6 +141,9 @@ export default function DetailDemandePage({
   // chargé, pour ne jamais afficher "0 autre projet" pendant une fraction
   // de seconde avant que la vraie valeur n'arrive.
   const [nbAutresProjetsClient, setNbAutresProjetsClient] = useState<number | null>(null);
+  // Refonte (03/10, duel A lot 4) — les prénoms des AUTRES membres qui ont
+  // écrit sur ce projet, pour le Carnet (« Gérard · note dictée »).
+  const [auteurs, setAuteurs] = useState<Record<string, string>>({});
   const [artisanId, setArtisanId] = useState<string | null>(null);
   const [organisationId, setOrganisationId] = useState<string | null>(null);
   const [parametres, setParametres] = useState<ParametresEntreprise | null>(null);
@@ -304,6 +307,22 @@ export default function DetailDemandePage({
             : Promise.resolve({ count: 0 }),
         ]);
         setNomArtisan(profil?.nom ?? "");
+        // Seulement s'il y a d'autres auteurs que soi : l'artisan seul ne
+        // fait aucune requête de plus et ne voit jamais de prénom.
+        const autres = [
+          ...new Set(
+            [
+              ...((notesData as NoteVocale[] | null) ?? []),
+              ...notesProjet,
+              ...((evenementsData as EvenementProjet[] | null) ?? []),
+              ...((rdvData as EvenementPlanning[] | null) ?? []),
+            ]
+              .map((x) => x.artisan_id)
+              .filter((id) => id && id !== user.id)
+          ),
+        ];
+        if (autres.length > 0) void prenomsDesMembres(supabase, autres).then(setAuteurs);
+        else setAuteurs({});
         setMetierArtisan(profil?.metier ?? null);
         setParametres((parametresData as ParametresEntreprise) ?? null);
         setNbAutresProjetsClient(comptageAutresProjets.count ?? 0);
@@ -1139,6 +1158,7 @@ export default function DetailDemandePage({
     <>
       <VueProjet
         signature={{ nom: nomArtisan, entreprise: parametres?.nom_entreprise ?? null }}
+        auteurs={auteurs}
         resteAFacturer={factures ? resteAFacturer : null}
         projet={demande}
         devis={devis}
@@ -1443,6 +1463,30 @@ export default function DetailDemandePage({
       </Feuille>
     </>
   );
+}
+
+// Refonte (03/10, duel A lot 4) — le prénom de chaque membre, lu dans
+// `profils` (lisible entre membres d'une même organisation, policy du
+// Module 25 de schema.sql). Un ancien membre n'y est plus : il n'affiche
+// rien. Repli prévu : quand la table `anciens_membres` existera (duel A,
+// Module 48), lire ici les identifiants manquants dans cette table. Un
+// échec de lecture n'empêche rien : le Carnet s'affiche sans prénoms.
+async function prenomsDesMembres(
+  supabase: ReturnType<typeof createClient>,
+  ids: string[]
+): Promise<Record<string, string>> {
+  try {
+    const { data, error } = await supabase.from("profils").select("id, nom").in("id", ids);
+    if (error || !data) return {};
+    const prenoms: Record<string, string> = {};
+    for (const p of data as { id: string; nom: string | null }[]) {
+      const prenom = (p.nom ?? "").trim().split(/\s+/)[0];
+      if (prenom) prenoms[p.id] = prenom;
+    }
+    return prenoms;
+  } catch {
+    return {};
+  }
 }
 
 // Repli pour les projets créés avant l'introduction de evenements_projet :

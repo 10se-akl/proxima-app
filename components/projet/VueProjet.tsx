@@ -103,7 +103,11 @@ export function VueProjet({
   rendus,
   signature,
   resteAFacturer = null,
+  auteurs,
 }: {
+  /** Refonte (03/10, duel A lot 4) — les prénoms des autres membres qui
+   *  ont écrit sur ce projet (jamais l'utilisateur connecté). */
+  auteurs?: Record<string, string>;
   /** Refonte (03/10, duel D lot 3) — le solde du devis signé que
    *  FacturesProjet remonte (null tant qu'il n'est pas connu). */
   resteAFacturer?: number | null;
@@ -224,6 +228,7 @@ export function VueProjet({
         evenements,
         rendezVous,
         maintenant,
+        auteurs,
         demande: {
           texte: projet.description,
           date: projet.created_at,
@@ -244,6 +249,7 @@ export function VueProjet({
       projet.description,
       projet.questions_manquantes?.resume,
       projet.derniere_analyse_le,
+      auteurs,
     ]
   );
 

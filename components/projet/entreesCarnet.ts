@@ -30,6 +30,10 @@ export type EntreeCarnet = {
   /** Chemins de stockage des photos (entrée "photos"). */
   photos?: string[];
   typeEvenement?: TypeEvenementProjet;
+  /** Refonte (03/10, duel A lot 4) — le prénom de l'auteur, seulement
+   *  quand ce n'est pas l'utilisateur connecté : « Gérard · note dictée ».
+   *  L'artisan seul n'en voit jamais. */
+  auteur?: string;
   /** Sous le texte : le résumé IA de la demande (entrée « demande »). */
   complement?: { titre: string; texte: string };
 };
@@ -88,7 +92,12 @@ export function construireCarnet({
   rendezVous,
   maintenant,
   demande,
+  auteurs = {},
 }: {
+  /** Les prénoms des AUTRES membres, par identifiant (l'utilisateur
+   *  connecté n'y est jamais : on ne se nomme pas soi-même). Un auteur
+   *  absent n'affiche rien. */
+  auteurs?: Record<string, string>;
   /** La demande du client, et le résumé IA s'il existe. */
   demande?: { texte: string; date: string; resume?: { texte: string; date: string | null } | null } | null;
   notesVocales: NoteVocale[];
@@ -102,7 +111,7 @@ export function construireCarnet({
   const entrees: EntreeCarnet[] = [];
 
   for (const n of notesVocales) {
-    entrees.push({ id: `vocal-${n.id}`, type: "vocal", date: n.created_at, titre: "Note vocale", texte: n.transcription });
+    entrees.push({ id: `vocal-${n.id}`, type: "vocal", date: n.created_at, titre: "Note dictée", texte: n.transcription, auteur: auteurs[n.artisan_id] });
   }
 
   // Les photos d'un même jour forment une seule entrée : « 6 photos »,
@@ -139,6 +148,7 @@ export function construireCarnet({
       date: n.termine_le ?? n.updated_at ?? n.created_at,
       titre: n.titre,
       texte: n.description ?? undefined,
+      auteur: auteurs[n.artisan_id],
     });
   }
 
@@ -151,6 +161,7 @@ export function construireCarnet({
       titre: e.titre,
       texte: e.detail ?? undefined,
       typeEvenement: e.type,
+      auteur: auteurs[e.artisan_id],
     });
   }
 
@@ -165,6 +176,7 @@ export function construireCarnet({
       date: r.date_heure,
       titre: r.type === "tache" ? r.titre : `Rendez-vous · ${r.titre}`,
       texte: r.notes ?? undefined,
+      auteur: auteurs[r.artisan_id],
     });
   }
 
@@ -210,7 +222,7 @@ export function filtrerCarnet(entrees: EntreeCarnet[], filtre: FiltreCarnet, rec
   return entrees.filter((e) => {
     if (!types.includes(e.type)) return false;
     if (mots.length === 0) return true;
-    const texte = normaliser(`${e.titre} ${e.texte ?? ""} ${e.complement?.texte ?? ""}`);
+    const texte = normaliser(`${e.auteur ?? ""} ${e.titre} ${e.texte ?? ""} ${e.complement?.texte ?? ""}`);
     return mots.every((m) => texte.includes(m));
   });
 }
@@ -285,7 +297,7 @@ export function resumePeriode(entrees: EntreeCarnet[]): string {
   }
   const morceaux: string[] = [];
   if (demande) morceaux.push("la demande");
-  if (vocales) morceaux.push(`${vocales} note${vocales > 1 ? "s" : ""} vocale${vocales > 1 ? "s" : ""}`);
+  if (vocales) morceaux.push(`${vocales} note${vocales > 1 ? "s" : ""} dictée${vocales > 1 ? "s" : ""}`);
   if (photos) morceaux.push(`${photos} photo${photos > 1 ? "s" : ""}`);
   if (faits) morceaux.push(`${faits} tâche${faits > 1 ? "s" : ""} faite${faits > 1 ? "s" : ""}`);
   if (suivi) morceaux.push(`${suivi} étape${suivi > 1 ? "s" : ""}`);

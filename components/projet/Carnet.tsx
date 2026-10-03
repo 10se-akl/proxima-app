@@ -145,7 +145,15 @@ function Entree({
       <div className="min-w-0 flex-1 pt-1">
         <div className="flex items-baseline justify-between gap-3">
           <p className={`min-w-0 truncate ${discret ? "text-sm text-steel" : "text-base font-semibold text-ink"}`}>
-            {surligner(e.titre, mots)}
+            {e.auteur ? (
+              <>
+                <span className="font-semibold text-ink">{surligner(e.auteur, mots)}</span>
+                {" · "}
+                {surligner(e.titre.charAt(0).toLowerCase() + e.titre.slice(1), mots)}
+              </>
+            ) : (
+              surligner(e.titre, mots)
+            )}
           </p>
           <time dateTime={e.date} className="shrink-0 font-mono text-sm tabular-nums text-steel">
             {quand(e.date, maintenant)}

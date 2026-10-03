@@ -14,7 +14,10 @@ import type { EvenementPlanning, EvenementProjet, Note, NoteVocale, TypeEvenemen
 // testable tel quel.
 // ============================================================
 
-export type TypeEntree = "vocal" | "photos" | "fait" | "evenement" | "rdv";
+// Refonte (03/10, duel D lot 3) — « demande » : la demande du client (et
+// le résumé IA de vos notes) quittent « À retenir » et deviennent la plus
+// ancienne entrée du Carnet, là où on cherche.
+export type TypeEntree = "vocal" | "photos" | "fait" | "evenement" | "rdv" | "demande";
 
 export type EntreeCarnet = {
   id: string;
@@ -27,13 +30,15 @@ export type EntreeCarnet = {
   /** Chemins de stockage des photos (entrée "photos"). */
   photos?: string[];
   typeEvenement?: TypeEvenementProjet;
+  /** Sous le texte : le résumé IA de la demande (entrée « demande »). */
+  complement?: { titre: string; texte: string };
 };
 
 export type FiltreCarnet = "tout" | "notes" | "photos" | "suivi";
 
 export const FILTRES: { cle: FiltreCarnet; libelle: string; types: TypeEntree[] }[] = [
-  { cle: "tout", libelle: "Tout", types: ["vocal", "photos", "fait", "evenement", "rdv"] },
-  { cle: "notes", libelle: "Notes", types: ["vocal", "fait"] },
+  { cle: "tout", libelle: "Tout", types: ["vocal", "photos", "fait", "evenement", "rdv", "demande"] },
+  { cle: "notes", libelle: "Notes", types: ["vocal", "fait", "demande"] },
   { cle: "photos", libelle: "Photos", types: ["photos"] },
   { cle: "suivi", libelle: "Suivi", types: ["evenement", "rdv"] },
 ];
@@ -82,7 +87,10 @@ export function construireCarnet({
   evenements,
   rendezVous,
   maintenant,
+  demande,
 }: {
+  /** La demande du client, et le résumé IA s'il existe. */
+  demande?: { texte: string; date: string; resume?: { texte: string; date: string | null } | null } | null;
   notesVocales: NoteVocale[];
   photos: string[];
   datePhotosRepli: string;
@@ -160,7 +168,33 @@ export function construireCarnet({
     });
   }
 
-  return entrees.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0));
+  // Datée de la création du projet. À date égale (« Projet créé »), elle
+  // passe en dernier : c'est la plus ancienne entrée.
+  if (demande && demande.texte.trim()) {
+    const resume = demande.resume?.texte.trim();
+    entrees.push({
+      id: "demande",
+      type: "demande",
+      date: demande.date,
+      titre: "La demande",
+      texte: demande.texte,
+      complement: resume
+        ? {
+            titre: `Résumé de vos notes${
+              demande.resume?.date
+                ? ` · ${new Date(demande.resume.date).toLocaleDateString("fr-FR", { timeZone: FUSEAU, day: "numeric", month: "short" })}`
+                : ""
+            }`,
+            texte: resume,
+          }
+        : undefined,
+    });
+  }
+
+  return entrees.sort((a, b) => {
+    if (a.date !== b.date) return a.date < b.date ? 1 : -1;
+    return (a.type === "demande" ? 1 : 0) - (b.type === "demande" ? 1 : 0);
+  });
 }
 
 // ------------------------------------------------------------ recherche
@@ -176,7 +210,7 @@ export function filtrerCarnet(entrees: EntreeCarnet[], filtre: FiltreCarnet, rec
   return entrees.filter((e) => {
     if (!types.includes(e.type)) return false;
     if (mots.length === 0) return true;
-    const texte = normaliser(`${e.titre} ${e.texte ?? ""}`);
+    const texte = normaliser(`${e.titre} ${e.texte ?? ""} ${e.complement?.texte ?? ""}`);
     return mots.every((m) => texte.includes(m));
   });
 }
@@ -241,13 +275,16 @@ export function resumePeriode(entrees: EntreeCarnet[]): string {
   let photos = 0;
   let faits = 0;
   let suivi = 0;
+  let demande = false;
   for (const e of entrees) {
-    if (e.type === "vocal") vocales++;
+    if (e.type === "demande") demande = true;
+    else if (e.type === "vocal") vocales++;
     else if (e.type === "photos") photos += e.photos?.length ?? 0;
     else if (e.type === "fait") faits++;
     else suivi++;
   }
   const morceaux: string[] = [];
+  if (demande) morceaux.push("la demande");
   if (vocales) morceaux.push(`${vocales} note${vocales > 1 ? "s" : ""} vocale${vocales > 1 ? "s" : ""}`);
   if (photos) morceaux.push(`${photos} photo${photos > 1 ? "s" : ""}`);
   if (faits) morceaux.push(`${faits} tâche${faits > 1 ? "s" : ""} faite${faits > 1 ? "s" : ""}`);

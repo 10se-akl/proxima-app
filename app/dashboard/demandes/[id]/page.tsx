@@ -131,6 +131,11 @@ export default function DetailDemandePage({
   const [rendezVous, setRendezVous] = useState<EvenementPlanning[]>([]);
   const [urlsPhotos, setUrlsPhotos] = useState<Record<string, string>>({});
   const [feuilleReponse, setFeuilleReponse] = useState(false);
+  // Refonte (03/10, duel D lot 3) — le reste à facturer, que la
+  // facturation remonte, et la demande d'ouvrir sa question « Facture de
+  // solde : … ? » depuis « Maintenant » (un compteur).
+  const [resteAFacturer, setResteAFacturer] = useState<number | null>(null);
+  const [demandeSolde, setDemandeSolde] = useState(0);
   const [maintenant, setMaintenant] = useState(() => new Date());
   // "Mémoire client" (06/09) — voir chargerDonnees() : null tant que non
   // chargé, pour ne jamais afficher "0 autre projet" pendant une fraction
@@ -1108,6 +1113,10 @@ export default function DetailDemandePage({
     terminer: marquerTermine,
     ajouter: () => {},
     facturation: () => {},
+    facturer_solde: () => setDemandeSolde((n) => n + 1),
+    // Gérés par la fiche elle-même (VueProjet).
+    accuse_sms: () => {},
+    accuse_whatsapp: () => {},
   };
 
   const factures =
@@ -1121,6 +1130,8 @@ export default function DetailDemandePage({
         telephoneClient={demande.telephone_client}
         adresseClient={demande.adresse_client}
         logoUrl={logoUrl}
+        surSolde={setResteAFacturer}
+        demandeSolde={demandeSolde}
       />
     ) : null;
 
@@ -1128,6 +1139,7 @@ export default function DetailDemandePage({
     <>
       <VueProjet
         signature={{ nom: nomArtisan, entreprise: parametres?.nom_entreprise ?? null }}
+        resteAFacturer={factures ? resteAFacturer : null}
         projet={demande}
         devis={devis}
         notesVocales={notesVocales}

@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel G — Candidat A : ne rien changer, boucher trois trous</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Compléments propres à cette maquette. Couleurs : variables seulement. */
+  svg.ico { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .intro { flex-basis: 100%; max-width: 1180px; display: flex; flex-direction: column; gap: 6px; }
+  .intro h1 { font: 800 24px/1.2 Manrope, sans-serif; }
+  .intro p { font: 14px/1.45 Inter; color: rgb(var(--c-steel)); }
+  .cadre { width: 360px; }
+
+  .entete { height: 48px; flex-shrink: 0; background: rgb(var(--c-anthracite)); color: rgb(var(--c-paper)); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; font: 700 17px Manrope, sans-serif; }
+  .page { flex: 1; padding: 16px 16px 96px; display: flex; flex-direction: column; gap: 12px; }
+  .titre-page { display: flex; align-items: center; justify-content: space-between; }
+  .pilule { min-height: 48px; padding: 0 16px; border-radius: 99px; display: inline-flex; align-items: center; font: 600 16px Inter; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .semaine { display: flex; align-items: center; justify-content: space-between; color: rgb(var(--c-ink)); }
+  .semaine .fl { width: 48px; height: 48px; display: grid; place-items: center; color: rgb(var(--c-steel)); }
+  .semaine p { font: 500 16px Inter; }
+
+  .bande { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+  .jour { min-height: 60px; border-radius: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: rgb(var(--c-ink)); }
+  .jour small { font: 500 11px Inter; color: rgb(var(--c-steel)); text-transform: uppercase; }
+  .jour b { font: 600 17px Inter; font-variant-numeric: tabular-nums; }
+  .jour i { width: 4px; height: 4px; border-radius: 50%; margin-top: 2px; background: transparent; }
+  .jour.pt i { background: rgb(var(--c-signal)); }
+  .jour.actif { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .jour.actif small { color: rgb(var(--c-paper) / .7); }
+  .jour.actif.pt i { background: rgb(var(--c-paper)); }
+
+  .liste { display: flex; flex-direction: column; gap: 8px; }
+  .rdv { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px 16px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .rdv .h { width: 56px; flex-shrink: 0; font: 500 15px "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .rdv .q { min-width: 0; flex: 1; }
+  .rdv .q b, .rdv .q span { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rdv .q b { font: 600 16px Inter; }
+  .rdv .q span { font: 400 14px Inter; color: rgb(var(--c-steel)); }
+  .rdv .q .meteo { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+  .rdv .fl { color: rgb(var(--c-steel)); }
+
+  /* Feuilles */
+  .feuille h3 { font: 700 20px Manrope, sans-serif; }
+  .feuille .sous { font: 400 14px Inter; color: rgb(var(--c-steel)); margin-top: -6px; }
+  .trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .grand { min-height: 72px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px Inter; color: rgb(var(--c-ink)); }
+  .rang { display: flex; align-items: center; justify-content: space-between; min-height: 56px; border-bottom: 1px solid rgb(var(--c-ink) / .15); font: 400 16px Inter; }
+  .rang:last-child { border-bottom: 0; }
+  .rang .fl { color: rgb(var(--c-steel)); }
+  .a-lecart { display: flex; flex-wrap: wrap; column-gap: 24px; }
+  .lien { min-height: 48px; display: inline-flex; align-items: center; font: 500 14px Inter; text-decoration: underline; text-underline-offset: 4px; color: rgb(var(--c-ink)); }
+  .lien.destr { color: rgb(var(--c-signal-fonce)); }
+  .btn-encre { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .btn-destr { background: transparent; color: rgb(var(--c-signal-fonce)); box-shadow: inset 0 0 0 1px rgb(var(--c-signal-fonce) / .5); }
+  .btn-contour { background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .6); }
+  .lien-centre { justify-content: center; width: 100%; font-size: 16px; font-weight: 600; }
+
+  .champ { min-height: 48px; border-radius: 12px; border: 1px solid rgb(var(--c-ink) / .15); background: rgb(var(--c-paper)); padding: 0 12px; display: flex; align-items: center; justify-content: space-between; font: 400 16px Inter; color: rgb(var(--c-ink)); }
+  .champ.vide { color: rgb(var(--c-steel)); }
+  .lbl { font: 600 14px Inter; color: rgb(var(--c-ink)); display: block; margin-bottom: 6px; }
+  .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .puces { display: flex; flex-wrap: wrap; gap: 8px; }
+  .puce { min-height: 48px; padding: 0 16px; border-radius: 99px; display: inline-flex; align-items: center; font: 500 16px Inter; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .puce.on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .seg div { min-height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font: 600 16px Inter; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .seg .on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: none; }
+  .retour { font: 500 14px Inter; color: rgb(var(--c-steel)); }
+  .msg { background: rgb(var(--c-surface)); border-radius: 16px; padding: 16px; box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .msg .t-sur { font-size: 12px; letter-spacing: .08em; }
+  .msg p { font: 400 15px/1.4 Inter; margin-top: 6px; }
+  .msg .deux { gap: 8px; margin-top: 12px; }
+
+  /* Annotation de maquette (hors application) : pointillé gris. */
+  .marque { position: relative; outline: 2px dashed rgb(var(--c-steel)); outline-offset: 3px; border-radius: 16px; }
+  .marque::after { content: attr(data-m); position: absolute; right: 10px; top: -12px; background: rgb(var(--c-paper)); color: rgb(var(--c-steel)); font: 600 11px Inter; padding: 0 6px; }
+  .tel .voile { z-index: 1; }
+  .tel .feuille { z-index: 2; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-tel" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-lieu" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M4 11l8-7 8 7v9H4z"/></symbol>
+  <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v11H3z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-cloche" viewBox="0 0 24 24"><path d="M6 17v-6a6 6 0 0 1 12 0v6l1.5 2h-15zM10 21h4"/></symbol>
+</svg>
+
+<div class="intro">
+  <h1>Duel G, candidat A : ne rien changer, boucher trois trous</h1>
+  <p>Le planning du téléphone reste tel quel. Trois corrections : le chevauchement par personne, la question avant d'annuler, et « prévenir le client » après un déplacement ou une annulation. Les pointillés gris sont des annotations de maquette : ce que A ajoute, ou laisse ouvert.</p>
+</div>
+
+<!-- 1. Vue par défaut -->
+<div class="cadre">
+  <h2>1 · Vue par défaut (inchangée)</h2>
+  <div class="tel">
+    <div class="entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="titre-page"><span class="t-titre">Planning</span><span class="pilule">+ Ajouter</span></div>
+      <div class="semaine">
+        <span class="fl"><svg class="ico" style="transform:rotate(180deg)"><use href="#i-chev"/></svg></span>
+        <p>28 septembre – 4 octobre</p>
+        <span class="fl"><svg class="ico"><use href="#i-chev"/></svg></span>
+      </div>
+      <div class="bande">
+        <div class="jour"><small>L</small><b>28</b><i></i></div>
+        <div class="jour"><small>M</small><b>29</b><i></i></div>
+        <div class="jour"><small>M</small><b>30</b><i></i></div>
+        <div class="jour actif pt"><small>J</small><b>1</b><i></i></div>
+        <div class="jour pt"><small>V</small><b>2</b><i></i></div>
+        <div class="jour"><small>S</small><b>3</b><i></i></div>
+        <div class="jour"><small>D</small><b>4</b><i></i></div>
+      </div>
+      <h3 class="t-grand">Aujourd'hui</h3>
+      <div class="liste">
+        <div class="rdv"><span class="h">8h30</span><span class="q"><b>Mme Lebrun</b><span>Enduit façade · 4 rue Pasteur, Meaux</span><span class="meteo">Météo à risque · 70 % de pluie</span></span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+        <div class="rdv"><span class="h">11h00</span><span class="q"><b>M. Roux</b><span>Métré · 8 allée des Tilleuls</span></span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+        <div class="rdv"><span class="h">14h00</span><span class="q"><b>M. Dupont</b><span>Pose cloisons · 12 rue des Lilas</span></span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-plus"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Inchangée : l'heure en gros, le client, le où, la météo sur la ligne. Un appui ouvre le rendez-vous.</p>
+</div>
+
+<!-- 2. Création depuis une fiche projet -->
+<div class="cadre">
+  <h2>2 · Créer depuis la fiche Dupont (inchangé)</h2>
+  <div class="tel">
+    <div class="entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <span class="retour">← Retour au planning</span>
+      <span class="t-titre">Ajouter au planning</span>
+      <div class="carte" style="display:flex;flex-direction:column;gap:14px">
+        <div class="seg"><div class="on">Rendez-vous</div><div>Tâche</div></div>
+        <div>
+          <span class="lbl">Projet lié (optionnel)</span>
+          <div class="champ"><span>Dupont · Pose cloisons</span><svg class="ico"><use href="#i-chev"/></svg></div>
+        </div>
+        <div class="marque" data-m="vide">
+          <span class="lbl">Titre *</span>
+          <div class="champ vide">Ex : Chantier Dupont</div>
+        </div>
+        <div class="deux marque" data-m="vides" style="margin-top:4px">
+          <div><span class="lbl">Date *</span><div class="champ vide">jj/mm/aaaa</div></div>
+          <div><span class="lbl">Heure *</span><div class="champ vide">--:--</div></div>
+        </div>
+        <div>
+          <span class="lbl">Durée</span>
+          <div class="puces"><span class="puce">30 min</span><span class="puce on">1 h</span><span class="puce">2 h</span><span class="puce">½ journée</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-plus"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Le projet est reconnu, mais titre, date et heure restent vides : 8 gestes, non corrigé par A.</p>
+</div>
+
+<!-- 3. Feuille d'actions -->
+<div class="cadre">
+  <h2>3 · La feuille d'un rendez-vous</h2>
+  <div class="tel">
+    <div class="entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="titre-page"><span class="t-titre">Planning</span><span class="pilule">+ Ajouter</span></div>
+      <h3 class="t-grand">Aujourd'hui</h3>
+      <div class="liste">
+        <div class="rdv"><span class="h">8h30</span><span class="q"><b>Mme Lebrun</b><span>Enduit façade · 4 rue Pasteur</span></span></div>
+        <div class="rdv"><span class="h">11h00</span><span class="q"><b>M. Roux</b><span>Métré · 8 allée des Tilleuls</span></span></div>
+        <div class="rdv"><span class="h">14h00</span><span class="q"><b>M. Dupont</b><span>Pose cloisons · 12 rue des Lilas</span></span></div>
+      </div>
+    </div>
+    <div class="barre"></div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3>14h00 · M. Dupont</h3>
+      <div class="trois">
+        <div class="grand"><svg class="ico"><use href="#i-tel"/></svg>Appeler</div>
+        <div class="grand"><svg class="ico"><use href="#i-msg"/></svg>Message</div>
+        <div class="grand"><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</div>
+      </div>
+      <div>
+        <div class="rang"><span>C'est fait</span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+        <div class="rang"><span>Ouvrir le projet</span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+        <div class="rang marque" data-m="nouveau" style="padding:0 8px;border-bottom:0"><span>Déplacer</span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+        <div class="rang"><span>Modifier</span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="a-lecart"><span class="lien">Annuler le rendez-vous</span><span class="lien destr">Supprimer</span></div>
+    </div>
+  </div>
+  <p class="note-maquette">Trois grands boutons gardés. Seule nouveauté : « Déplacer » à côté de « Modifier », donc neuf choix en tout.</p>
+</div>
+
+<!-- 4. Déplacer -->
+<div class="cadre">
+  <h2>4 · Déplacer à demain (feuille déjà livrée)</h2>
+  <div class="tel">
+    <div class="entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="titre-page"><span class="t-titre">Planning</span><span class="pilule">+ Ajouter</span></div>
+      <h3 class="t-grand">Aujourd'hui</h3>
+      <div class="liste">
+        <div class="rdv"><span class="h">8h30</span><span class="q"><b>Mme Lebrun</b><span>Enduit façade · 4 rue Pasteur</span></span></div>
+        <div class="rdv"><span class="h">11h00</span><span class="q"><b>M. Roux</b><span>Métré · 8 allée des Tilleuls</span></span></div>
+        <div class="rdv"><span class="h">14h00</span><span class="q"><b>M. Dupont</b><span>Pose cloisons · 12 rue des Lilas</span></span></div>
+      </div>
+    </div>
+    <div class="barre"></div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3>Déplacer le rendez-vous</h3>
+      <div class="deux">
+        <div><span class="lbl">Jour</span><div class="champ"><span>02/10/2026</span></div></div>
+        <div><span class="lbl">Heure</span><div class="champ"><span>14:00</span></div></div>
+      </div>
+      <p class="t-petit" style="min-height:20px">&nbsp;</p>
+      <div class="btn btn-encre">Déplacer</div>
+    </div>
+  </div>
+  <p class="note-maquette">Demain, même heure, déjà rempli : un appui sur « Déplacer ». Un créneau pris se dit en clair.</p>
+</div>
+
+<!-- 5. Message au client après le déplacement -->
+<div class="cadre">
+  <h2>5 · Puis « prévenir le client »</h2>
+  <div class="tel">
+    <div class="entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="titre-page"><span class="t-titre">Planning</span><span class="pilule">+ Ajouter</span></div>
+      <h3 class="t-grand">Aujourd'hui</h3>
+      <div class="liste">
+        <div class="rdv"><span class="h">8h30</span><span class="q"><b>Mme Lebrun</b><span>Enduit façade · 4 rue Pasteur</span></span></div>
+        <div class="rdv"><span class="h">11h00</span><span class="q"><b>M. Roux</b><span>Métré · 8 allée des Tilleuls</span></span></div>
+      </div>
+    </div>
+    <div class="barre"></div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3>Message à M. Dupont</h3>
+      <div class="msg">
+        <span class="t-sur">Décalage du rendez-vous</span>
+        <p>Bonjour, je dois décaler notre rendez-vous du 1 octobre. Je vous propose le 2 octobre à 14h00. Cela vous convient-il ?</p>
+        <div class="deux">
+          <div class="btn btn-encre" style="min-height:48px;font-size:16px">SMS</div>
+          <div class="btn btn-contour" style="min-height:48px;font-size:16px">WhatsApp</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette">Écrit en base d'abord, puis le texte prêt avec la nouvelle date. L'artisan envoie lui-même, depuis son téléphone.</p>
+</div>
+
+<!-- 6. Annuler -->
+<div class="cadre">
+  <h2>6 · Annuler : la question, puis prévenir</h2>
+  <div class="tel">
+    <div class="entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="titre-page"><span class="t-titre">Planning</span><span class="pilule">+ Ajouter</span></div>
+      <h3 class="t-grand">Aujourd'hui</h3>
+      <div class="liste">
+        <div class="rdv"><span class="h">8h30</span><span class="q"><b>Mme Lebrun</b><span>Enduit façade · 4 rue Pasteur</span></span></div>
+        <div class="rdv"><span class="h">11h00</span><span class="q"><b>M. Roux</b><span>Métré · 8 allée des Tilleuls</span></span></div>
+        <div class="rdv"><span class="h">14h00</span><span class="q"><b>M. Dupont</b><span>Pose cloisons · 12 rue des Lilas</span></span></div>
+      </div>
+    </div>
+    <div class="barre"></div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3>Annuler ce rendez-vous ?</h3>
+      <p class="sous">14h00 · M. Dupont</p>
+      <div class="btn btn-destr" style="min-height:56px;font-size:16px;font-weight:600">Annuler et prévenir M. Dupont</div>
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <span class="lien lien-centre">Annuler sans prévenir</span>
+        <span class="lien lien-centre">Garder le rendez-vous</span>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette">Trois sorties, jamais de bouton plein. Le texte prêt dira : « …je dois annuler notre rendez-vous du 1 octobre. »</p>
+</div>
+
+<!-- 7. Deux personnes -->
+<div class="cadre">
+  <h2>7 · Deux personnes : Gérard et Raph</h2>
+  <div class="tel">
+    <div class="entete"><span>Compyo</span><svg class="ico"><use href="#i-cloche"/></svg></div>
+    <div class="page">
+      <div class="titre-page"><span class="t-titre">Planning</span><span class="pilule">+ Ajouter</span></div>
+      <div class="bande">
+        <div class="jour"><small>L</small><b>28</b><i></i></div>
+        <div class="jour"><small>M</small><b>29</b><i></i></div>
+        <div class="jour"><small>M</small><b>30</b><i></i></div>
+        <div class="jour actif pt"><small>J</small><b>1</b><i></i></div>
+        <div class="jour pt"><small>V</small><b>2</b><i></i></div>
+        <div class="jour"><small>S</small><b>3</b><i></i></div>
+        <div class="jour"><small>D</small><b>4</b><i></i></div>
+      </div>
+      <h3 class="t-grand">Aujourd'hui</h3>
+      <div class="marque" data-m="qui est où ?" style="display:flex;flex-direction:column;gap:8px;padding:2px">
+        <div class="rdv"><span class="h">8h30</span><span class="q"><b>Mme Lebrun</b><span>Enduit façade · 4 rue Pasteur, Meaux</span><span class="meteo">Météo à risque · 70 % de pluie</span></span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+        <div class="rdv"><span class="h">8h30</span><span class="q"><b>M. Perrin</b><span>Pose rails · 3 chemin des Vignes</span></span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="liste">
+        <div class="rdv"><span class="h">11h00</span><span class="q"><b>M. Roux</b><span>Métré · 8 allée des Tilleuls</span></span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+        <div class="rdv"><span class="h">14h00</span><span class="q"><b>M. Dupont</b><span>Pose cloisons · 12 rue des Lilas</span></span><svg class="ico fl"><use href="#i-chev"/></svg></div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-plus"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Après la correction, deux rendez-vous à 8h30 sont permis, mais rien ne dit qui va où : c'est la limite de A.</p>
+</div>
+
+</body>
+</html>

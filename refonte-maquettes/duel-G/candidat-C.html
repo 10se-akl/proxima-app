@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel G — candidat C — la semaine en sept lignes</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Propre à ce candidat. Aucune couleur en dur : seulement les variables. */
+  svg.ico { fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .barre .btn-rond { font: 400 34px/1 Inter; }
+
+  .titre-ligne { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .pilule { min-height: 48px; padding: 0 16px; border-radius: 99px; display: inline-flex; align-items: center; font: 600 16px Inter; border: 1.5px solid rgb(var(--c-ink) / .6); }
+  .nav-sem { display: flex; align-items: center; gap: 4px; margin-top: -6px; }
+  .nav-sem p { flex: 1; text-align: center; font: 600 16px Inter; }
+
+  .sem { display: flex; flex-direction: column; gap: 10px; }
+  .jour { display: grid; grid-template-columns: 52px 1fr; gap: 8px; align-items: start; }
+  .rep { min-height: 64px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .rep .j { font: 600 12px/1 Inter; color: rgb(var(--c-steel)); text-transform: uppercase; letter-spacing: .04em; }
+  .rep .n { font: 700 20px/1 Manrope, sans-serif; padding: 3px 8px; border-radius: 12px; }
+  .rep.auj .n { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .rdvs { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+
+  .rdv { display: flex; align-items: stretch; min-height: 64px; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); border-radius: 16px; overflow: hidden; }
+  .rdv .zone { flex: 1; min-width: 0; padding: 10px 14px; display: flex; flex-direction: column; justify-content: center; }
+  .rdv .quoi { font: 600 16px/1.25 Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .rdv .detail { font: 400 14px/1.3 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h { font: 500 14px "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: rgb(var(--c-ink)); }
+  .alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+  .dark .alerte { color: rgb(var(--c-signal-clair)); }
+  .rdv .fin { width: 56px; flex: none; border-left: 1px solid rgb(var(--c-gris-clair)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .rdv .fin.mot { width: 80px; font: 600 14px Inter; }
+  .rdv.vide { background: transparent; border-style: dashed; }
+  .rdv.vide .quoi { font-weight: 500; color: rgb(var(--c-steel)); }
+  .rdv.fait .quoi { text-decoration: line-through; color: rgb(var(--c-steel)); }
+  .ok { color: rgb(var(--c-succes)); }
+
+  /* Feuilles */
+  .feuille { gap: 10px; }
+  .gb { min-height: 72px; border-radius: 16px; border: 1px solid rgb(var(--c-gris-clair)); background: rgb(var(--c-surface)); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 500 14px Inter; }
+  .trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .lignef { min-height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 12px; border-bottom: 1px solid rgb(var(--c-gris-clair)); font: 600 16px Inter; }
+  .lignef:last-of-type { border-bottom: 0; }
+  .btn-plein { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .btn-contour { background: transparent; min-height: 52px; color: rgb(var(--c-ink)); border: 1.5px solid rgb(var(--c-ink) / .6); font-weight: 600; font-size: 16px; }
+  .btn-destr { background: transparent; min-height: 52px; font-weight: 600; font-size: 16px; color: rgb(var(--c-signal-fonce)); border: 1.5px solid rgb(var(--c-signal-fonce) / .5); }
+  .dark .btn-destr { color: rgb(var(--c-signal-clair)); border-color: rgb(var(--c-signal-clair) / .5); }
+  .texte-btn { min-height: 48px; display: inline-flex; align-items: center; font: 600 16px Inter; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; }
+  .texte-btn.destr { color: rgb(var(--c-signal-fonce)); }
+  .dark .texte-btn.destr { color: rgb(var(--c-signal-clair)); }
+  .bas { display: flex; gap: 20px; flex-wrap: wrap; }
+
+  /* Le sélecteur de sept jours (créer et reporter) */
+  .choix { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 14px; background: rgb(var(--c-surface)); border: 1px solid rgb(var(--c-gris-clair)); border-radius: 16px; }
+  .choix + .choix { margin-top: 6px; }
+  .choix .d { width: 92px; flex: none; font: 600 16px Inter; }
+  .choix .c { flex: 1; min-width: 0; font: 400 14px Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .choix .r { width: 22px; height: 22px; flex: none; border-radius: 99px; border: 2px solid rgb(var(--c-steel)); }
+  .choix.sel { border: 2px solid rgb(var(--c-ink)); padding: 0 13px; }
+  .choix.sel .r { border-color: rgb(var(--c-ink)); background: rgb(var(--c-ink)); box-shadow: inset 0 0 0 4px rgb(var(--c-surface)); }
+  .puces { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .puce { min-height: 48px; border-radius: 99px; display: flex; align-items: center; justify-content: center; font: 600 15px Inter; border: 1.5px solid rgb(var(--c-gris-clair)); background: rgb(var(--c-surface)); }
+  .puce.sel { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); border-color: rgb(var(--c-ink)); }
+
+  /* Prévenir */
+  .trace { min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-radius: 16px; background: rgb(var(--c-succes) / .1); font: 500 15px Inter; }
+  .msg { border: 1px solid rgb(var(--c-gris-clair)); border-radius: 16px; padding: 14px; display: flex; flex-direction: column; gap: 8px; }
+  .msg .apercu { font: 400 15px Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fiche-corps { display: flex; flex-direction: column; gap: 12px; }
+</style>
+</head>
+<body>
+
+<!-- Icônes (stroke = currentColor) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10"/></symbol>
+  <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-plus-menu" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-tel" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-lieu" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11a7 7 0 0 0-14 0c0 4.8 7 11 7 11z"/><circle cx="12" cy="10" r="2.5"/></symbol>
+  <symbol id="i-ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-suiv" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-prec" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+
+<!-- ============ 1. Vue par défaut, un artisan seul ============ -->
+<div class="cadre">
+  <h2>1 · Par défaut : sept jours, une ligne chacun</h2>
+  <div class="tel">
+    <div class="contenu">
+      <div class="titre-ligne">
+        <h1 class="t-titre">Planning</h1>
+        <span class="pilule">+ Ajouter</span>
+      </div>
+      <div class="nav-sem">
+        <span class="cible" aria-label="Jours précédents"><svg class="ico"><use href="#i-prec"/></svg></span>
+        <p>1 – 7 octobre</p>
+        <span class="cible" aria-label="Jours suivants"><svg class="ico"><use href="#i-suiv"/></svg></span>
+      </div>
+
+      <div class="sem">
+        <div class="jour">
+          <div class="rep auj"><span class="j">auj.</span><span class="n">1</span></div>
+          <div class="rdvs">
+            <div class="rdv">
+              <div class="zone"><span class="quoi">SCI Les Jardins de la Vallée</span><span class="detail"><span class="h">8h30</span> · <span class="alerte">Pluie 70&nbsp;%</span></span></div>
+              <div class="fin mot" aria-label="Prévenir SCI Les Jardins"><svg class="ico"><use href="#i-msg"/></svg>Prévenir</div>
+            </div>
+            <div class="rdv fait">
+              <div class="zone"><span class="quoi">M. Roux</span><span class="detail"><span class="h">14h00</span> · Fait</span></div>
+              <div class="fin ok" aria-label="Fait"><svg class="ico"><use href="#i-ok"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">dem.</span><span class="n">2</span></div>
+          <div class="rdvs"><div class="rdv vide"><div class="zone"><span class="quoi">Rien de prévu</span></div><div class="fin" aria-label="Planifier demain"><svg class="ico"><use href="#i-plus"/></svg></div></div></div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">sam–dim</span><span class="n">3–4</span></div>
+          <div class="rdvs"><div class="rdv vide"><div class="zone"><span class="quoi">Rien de prévu</span></div><div class="fin" aria-label="Planifier ce week-end"><svg class="ico"><use href="#i-plus"/></svg></div></div></div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">lun.</span><span class="n">5</span></div>
+          <div class="rdvs"><div class="rdv"><div class="zone"><span class="quoi">Dupont</span><span class="detail"><span class="h">8h00</span> · Cloisons · journée</span></div></div></div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">mar.</span><span class="n">6</span></div>
+          <div class="rdvs"><div class="rdv"><div class="zone"><span class="quoi">Dupont</span><span class="detail"><span class="h">8h00</span> · Cloisons · journée</span></div></div></div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">mer.</span><span class="n">7</span></div>
+          <div class="rdvs"><div class="rdv"><div class="zone"><span class="quoi">Mme Lefèvre</span><span class="detail"><span class="h">10h00</span> · Métré</span></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="btn-rond" aria-label="Nouveau">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-plus-menu"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Toute la semaine d'un coup d'œil ; la pluie est sur la ligne, avec « Prévenir » à côté.</p>
+</div>
+
+<!-- ============ 2. Un appui sur une ligne ============ -->
+<div class="cadre">
+  <h2>2 · Un appui sur une ligne</h2>
+  <div class="tel">
+    <div class="contenu">
+      <div class="titre-ligne"><h1 class="t-titre">Planning</h1><span class="pilule">+ Ajouter</span></div>
+      <div class="sem">
+        <div class="jour">
+          <div class="rep auj"><span class="j">auj.</span><span class="n">1</span></div>
+          <div class="rdvs">
+            <div class="rdv"><div class="zone"><span class="quoi">SCI Les Jardins de la Vallée</span><span class="detail"><span class="h">8h30</span> · <span class="alerte">Pluie 70&nbsp;%</span></span></div><div class="fin mot"><svg class="ico"><use href="#i-msg"/></svg>Prévenir</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3 class="t-grand">8h30 · SCI Les Jardins</h3>
+      <div class="trois">
+        <div class="gb"><svg class="ico"><use href="#i-tel"/></svg>Appeler</div>
+        <div class="gb"><svg class="ico"><use href="#i-msg"/></svg>Prévenir</div>
+        <div class="gb"><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</div>
+      </div>
+      <div>
+        <div class="lignef">Reporter<svg class="ico"><use href="#i-suiv"/></svg></div>
+        <div class="lignef">C'est fait<svg class="ico"><use href="#i-suiv"/></svg></div>
+        <div class="lignef">Modifier<svg class="ico"><use href="#i-suiv"/></svg></div>
+        <div class="lignef">Ouvrir le chantier<svg class="ico"><use href="#i-suiv"/></svg></div>
+      </div>
+      <div class="bas">
+        <span class="texte-btn destr">Annuler le rendez-vous</span>
+        <span class="texte-btn destr">Supprimer</span>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette">La feuille d'aujourd'hui, avec « Reporter » ; la phrase météo n'y est plus, elle est sur la ligne.</p>
+</div>
+
+<!-- ============ 3. Créer depuis une fiche projet ============ -->
+<div class="cadre">
+  <h2>3 · Planifier depuis la fiche d'un projet</h2>
+  <div class="tel">
+    <div class="contenu">
+      <div class="titre-ligne" style="justify-content:flex-start">
+        <span class="cible" aria-label="Retour"><svg class="ico"><use href="#i-prec"/></svg></span>
+        <h1 class="t-grand">Famille Martin</h1>
+      </div>
+      <div class="fiche-corps">
+        <p class="t-petit">Salle de bain · cloisons · Tours</p>
+        <div class="carte">
+          <p class="t-sur">Rendez-vous</p>
+          <p class="t-corps" style="margin:6px 0 10px">Rien de prévu</p>
+          <div class="btn btn-contour">Planifier</div>
+        </div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3 class="t-grand">Quand chez Martin ?</h3>
+      <div>
+        <div class="choix"><span class="d">Aujourd'hui</span><span class="c">SCI, M. Roux</span><span class="r"></span></div>
+        <div class="choix sel"><span class="d">Demain</span><span class="c">Rien de prévu</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Sam. 3</span><span class="c">Rien de prévu</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Dim. 4</span><span class="c">Rien de prévu</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Lun. 5</span><span class="c">Dupont · journée</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Mar. 6</span><span class="c">Dupont · journée</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Mer. 7</span><span class="c">Mme Lefèvre</span><span class="r"></span></div>
+      </div>
+      <div class="puces">
+        <span class="puce">Matin</span><span class="puce">Après-midi</span><span class="puce sel">Journée</span>
+      </div>
+      <p class="t-petit">Cloisons · de 8h à 17h</p>
+      <div class="btn btn-plein">Planifier</div>
+    </div>
+  </div>
+  <p class="note-maquette">Planifier, un jour, Planifier : 3 appuis (2 si demain, journée convient). Titre et heure sont déjà remplis.</p>
+</div>
+
+<!-- ============ 4. Reporter : choisir le jour ============ -->
+<div class="cadre">
+  <h2>4 · Reporter : on voit chaque jour avant de choisir</h2>
+  <div class="tel">
+    <div class="contenu">
+      <div class="titre-ligne"><h1 class="t-titre">Planning</h1><span class="pilule">+ Ajouter</span></div>
+      <div class="sem">
+        <div class="jour">
+          <div class="rep auj"><span class="j">auj.</span><span class="n">1</span></div>
+          <div class="rdvs">
+            <div class="rdv"><div class="zone"><span class="quoi">SCI Les Jardins de la Vallée</span><span class="detail"><span class="h">8h30</span> · <span class="alerte">Pluie 70&nbsp;%</span></span></div><div class="fin mot"><svg class="ico"><use href="#i-msg"/></svg>Prévenir</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3 class="t-grand">Reporter à quel jour ?</h3>
+      <div>
+        <div class="choix sel"><span class="d">Demain</span><span class="c">Rien de prévu</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Sam. 3</span><span class="c">Rien de prévu</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Dim. 4</span><span class="c">Rien de prévu</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Lun. 5</span><span class="c">Dupont · journée</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Mar. 6</span><span class="c">Dupont · journée</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Mer. 7</span><span class="c">Mme Lefèvre</span><span class="r"></span></div>
+        <div class="choix"><span class="d">Jeu. 8</span><span class="c">Rien de prévu</span><span class="r"></span></div>
+      </div>
+      <div class="lignef" style="border-bottom:0">À la même heure<span class="h" style="font-size:16px">8h30</span></div>
+      <div class="btn btn-plein">Reporter à demain</div>
+    </div>
+  </div>
+  <p class="note-maquette">Demain, même heure : déjà choisis. Un jour déjà pris se voit avant, au lieu d'une erreur après.</p>
+</div>
+
+<!-- ============ 5. Prévenir le client ============ -->
+<div class="cadre">
+  <h2>5 · Juste après le report : prévenir le client ?</h2>
+  <div class="tel">
+    <div class="contenu">
+      <div class="titre-ligne"><h1 class="t-titre">Planning</h1><span class="pilule">+ Ajouter</span></div>
+      <div class="sem">
+        <div class="jour">
+          <div class="rep"><span class="j">dem.</span><span class="n">2</span></div>
+          <div class="rdvs">
+            <div class="rdv"><div class="zone"><span class="quoi">SCI Les Jardins de la Vallée</span><span class="detail"><span class="h">8h30</span> · Visite technique</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3 class="t-grand">Prévenir le client ?</h3>
+      <div class="trace"><span class="ok"><svg class="ico"><use href="#i-ok"/></svg></span>Reporté à demain, 8h30.</div>
+      <div class="msg">
+        <p class="t-sur">Décalage du rendez-vous</p>
+        <p class="apercu">Bonjour, je dois décaler notre rendez-vous du 1 octobre.</p>
+        <div class="deux">
+          <div class="btn btn-plein">SMS</div>
+          <div class="btn btn-contour">WhatsApp</div>
+        </div>
+      </div>
+      <div style="text-align:center"><span class="texte-btn">Pas maintenant</span></div>
+    </div>
+  </div>
+  <p class="note-maquette">Le report est enregistré d'abord. Le texte est prêt ; il part du SMS de Gérard, quand il appuie sur envoyer.</p>
+</div>
+
+<!-- ============ 6. Annuler : la question avant ============ -->
+<div class="cadre">
+  <h2>6 · Annuler : la question, puis le même écran « Prévenir »</h2>
+  <div class="tel">
+    <div class="contenu">
+      <div class="titre-ligne"><h1 class="t-titre">Planning</h1><span class="pilule">+ Ajouter</span></div>
+      <div class="sem">
+        <div class="jour">
+          <div class="rep"><span class="j">lun.</span><span class="n">5</span></div>
+          <div class="rdvs">
+            <div class="rdv"><div class="zone"><span class="quoi">Dupont</span><span class="detail"><span class="h">8h00</span> · Cloisons · journée</span></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <h3 class="t-grand">Annuler ce rendez-vous ?</h3>
+      <p class="t-corps">Lundi 5 · 8h00 · Dupont</p>
+      <div class="btn btn-destr">Oui, annuler</div>
+      <div class="btn btn-contour">Non, le garder</div>
+    </div>
+  </div>
+  <p class="note-maquette">Annuler ne se fait plus d'un seul appui, sans un mot. Après « Oui », l'écran 5 apparaît.</p>
+</div>
+
+<!-- ============ 7. Deux personnes ============ -->
+<div class="cadre">
+  <h2>7 · Deux personnes : Gérard et Raph</h2>
+  <div class="tel">
+    <div class="contenu">
+      <div class="titre-ligne">
+        <h1 class="t-titre">Planning</h1>
+        <span class="pilule">+ Ajouter</span>
+      </div>
+      <div class="nav-sem">
+        <span class="cible" aria-label="Jours précédents"><svg class="ico"><use href="#i-prec"/></svg></span>
+        <p>1 – 7 octobre</p>
+        <span class="cible" aria-label="Jours suivants"><svg class="ico"><use href="#i-suiv"/></svg></span>
+      </div>
+
+      <div class="sem">
+        <div class="jour">
+          <div class="rep auj"><span class="j">auj.</span><span class="n">1</span></div>
+          <div class="rdvs">
+            <div class="rdv">
+              <div class="zone"><span class="quoi">SCI Les Jardins de la Vallée</span><span class="detail"><span class="h">8h30</span> · Gérard · <span class="alerte">Pluie</span></span></div>
+              <div class="fin mot" aria-label="Prévenir SCI Les Jardins"><svg class="ico"><use href="#i-msg"/></svg>Prévenir</div>
+            </div>
+            <div class="rdv fait">
+              <div class="zone"><span class="quoi">M. Roux</span><span class="detail"><span class="h">14h00</span> · Raph · Fait</span></div>
+              <div class="fin ok" aria-label="Fait"><svg class="ico"><use href="#i-ok"/></svg></div>
+            </div>
+          </div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">dem.</span><span class="n">2</span></div>
+          <div class="rdvs"><div class="rdv vide"><div class="zone"><span class="quoi">Rien de prévu</span></div><div class="fin" aria-label="Planifier demain"><svg class="ico"><use href="#i-plus"/></svg></div></div></div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">sam–dim</span><span class="n">3–4</span></div>
+          <div class="rdvs"><div class="rdv vide"><div class="zone"><span class="quoi">Rien de prévu</span></div><div class="fin" aria-label="Planifier ce week-end"><svg class="ico"><use href="#i-plus"/></svg></div></div></div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">lun.</span><span class="n">5</span></div>
+          <div class="rdvs"><div class="rdv"><div class="zone"><span class="quoi">Dupont</span><span class="detail"><span class="h">8h00</span> · Gérard + Raph</span></div></div></div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">mar.</span><span class="n">6</span></div>
+          <div class="rdvs">
+            <div class="rdv"><div class="zone"><span class="quoi">Dupont</span><span class="detail"><span class="h">8h00</span> · Gérard</span></div></div>
+            <div class="rdv"><div class="zone"><span class="quoi">Chercher les plaques</span><span class="detail"><span class="h">8h00</span> · Raph</span></div></div>
+          </div>
+        </div>
+        <div class="jour">
+          <div class="rep"><span class="j">mer.</span><span class="n">7</span></div>
+          <div class="rdvs"><div class="rdv"><div class="zone"><span class="quoi">Mme Lefèvre</span><span class="detail"><span class="h">10h00</span> · Gérard</span></div></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="btn-rond" aria-label="Nouveau">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-plus-menu"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Le prénom entre dans la ligne seulement à partir de deux membres ; un jour reste une ligne, pas un tableau.</p>
+</div>
+
+</body>
+</html>

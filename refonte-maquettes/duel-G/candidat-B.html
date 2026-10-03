@@ -1,0 +1,378 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Duel G · Candidat B · Une seule liste « à venir »</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+/* Styles propres à cette maquette — uniquement des variables de la feuille commune. */
+.entete { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+.entete h1 { font: 700 22px/1.2 Manrope, sans-serif; }
+.entete p { max-width: 900px; font: 14px/1.45 Inter; color: rgb(var(--c-steel)); }
+.contenu.liste-ecran { gap: 0; padding-bottom: 168px; }
+.titre { font: 700 30px/1.15 Manrope, sans-serif; margin: 4px 0 20px; }
+.bloc + .bloc { margin-top: 26px; }
+.bt { font: 700 20px/1.25 Manrope, sans-serif; display: flex; align-items: baseline; gap: 8px; }
+.bt .nb { font: 500 14px Inter; color: rgb(var(--c-steel)); font-variant-numeric: tabular-nums; }
+.liste { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+/* La ligne : une seule recette (langage-interface, règle 7) */
+.lg { position: relative; display: flex; align-items: stretch; min-height: 64px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: 0 0 0 1px rgb(var(--c-ink) / .15); }
+.lg .zone { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 10px 16px; }
+.lg .rep { width: 52px; flex: none; font: 500 16px "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; color: rgb(var(--c-ink)); }
+.lg .rep.deux { display: flex; flex-direction: column; gap: 2px; }
+.lg .rep.deux small { font: 600 13px Inter; color: rgb(var(--c-steel)); }
+.lg .rep.deux span { font: 500 16px "IBM Plex Mono", monospace; }
+.lg .corps { flex: 1; min-width: 0; }
+.lg .qui { font: 600 16px/1.3 Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg .det { font: 400 14px/1.35 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lg .det b { color: rgb(var(--c-ink)); font-weight: 600; }
+.alerte { color: rgb(var(--c-signal-fonce)); font-weight: 600; }
+.dark .alerte { color: rgb(var(--c-signal-clair)); }
+.lg .fin { width: 56px; flex: none; display: grid; place-items: center; border-left: 1px solid rgb(var(--c-ink) / .15); }
+.coche { width: 28px; height: 28px; border-radius: 99px; border: 1.5px solid rgb(var(--c-steel)); display: grid; place-items: center; color: transparent; }
+.coche.faite { border-color: rgb(var(--c-succes)); background: rgb(var(--c-succes) / .1); color: rgb(var(--c-succes)); }
+.coche .ico { width: 16px; height: 16px; }
+.lien { min-height: 48px; display: flex; align-items: center; font: 600 16px Inter; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; margin-top: 10px; }
+
+/* Boutons (règles 5 et 6) : un seul plein, le reste en contour ou en texte */
+.btn-plein { min-height: 56px; width: 100%; border: 0; border-radius: 16px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 600 16px Inter; display: flex; align-items: center; justify-content: center; position: relative; }
+.btn-contour { min-height: 48px; width: 100%; border: 0; border-radius: 16px; background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .6); font: 600 16px Inter; display: flex; align-items: center; justify-content: center; position: relative; }
+.btn-destructif { min-height: 48px; width: 100%; border: 0; border-radius: 16px; background: transparent; color: rgb(var(--c-signal-fonce)); box-shadow: inset 0 0 0 1px rgb(var(--c-signal-fonce) / .5); font: 600 16px Inter; display: flex; align-items: center; justify-content: center; }
+.dark .btn-destructif { color: rgb(var(--c-signal-clair)); box-shadow: inset 0 0 0 1px rgb(var(--c-signal-clair) / .5); }
+.btn-texte { min-height: 48px; width: 100%; background: transparent; border: 0; color: rgb(var(--c-ink)); font: 600 16px Inter; text-decoration: underline; text-decoration-color: rgb(var(--c-ink) / .3); text-underline-offset: 4px; }
+.pied { position: absolute; left: 0; right: 0; bottom: 72px; padding: 12px 16px; background: rgb(var(--c-paper)); }
+
+/* Feuilles */
+.feuille.serre { gap: 10px; z-index: 2; }
+.feuille h3 { font: 700 20px/1.25 Manrope, sans-serif; }
+.feuille .sous { font: 400 14px/1.35 Inter; color: rgb(var(--c-steel)); margin-top: -6px; }
+.feuille .ligne-f { display: flex; align-items: center; justify-content: space-between; min-height: 56px; font: 400 16px Inter; border-top: 1px solid rgb(var(--c-ink) / .15); }
+.feuille .ligne-f:first-of-type { border-top: 0; }
+.trois { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.grand { min-height: 72px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font: 600 14px Inter; position: relative; }
+.rang { display: grid; grid-template-columns: 52px repeat(4, 1fr); gap: 6px; align-items: center; }
+.rang .et { font: 600 14px Inter; }
+.chip { min-height: 48px; border-radius: 16px; display: flex; align-items: center; justify-content: center; font: 600 15px Inter; padding: 0 2px; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); background: rgb(var(--c-surface)); color: rgb(var(--c-ink)); }
+.chip.on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: none; }
+.libre { font: 400 14px/1.35 Inter; color: rgb(var(--c-steel)); }
+.chantier { min-height: 56px; display: flex; align-items: center; gap: 12px; padding: 6px 14px; border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); position: relative; }
+.chantier .corps { flex: 1; min-width: 0; }
+.chantier .qui { font: 600 16px/1.25 Inter; }
+.chantier .det { font: 400 14px/1.3 Inter; color: rgb(var(--c-steel)); }
+.chantier.sel { box-shadow: inset 0 0 0 2px rgb(var(--c-ink)); }
+.radio { width: 28px; height: 28px; border-radius: 99px; border: 1.5px solid rgb(var(--c-steel)); display: grid; place-items: center; color: transparent; flex: none; }
+.radio.on { background: rgb(var(--c-ink)); border-color: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+.radio .ico { width: 16px; height: 16px; }
+.champ { min-height: 48px; border-radius: 12px; border: 1px solid rgb(var(--c-ink) / .15); background: rgb(var(--c-paper)); padding: 0 12px; display: flex; align-items: center; font: 400 16px Inter; }
+.etq { font: 600 14px Inter; display: block; }
+.msg { border-radius: 16px; background: rgb(var(--c-surface)); box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; }
+.msg .t-sur { font-size: 12px; }
+.msg p { font: 400 15px/1.35 Inter; }
+.msg .nouv { font: 600 14px/1.35 Inter; }
+.deux-btn { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.deux-btn .btn-plein, .deux-btn .btn-contour { min-height: 48px; }
+.fond { opacity: 1; }
+.g { position: absolute; top: -9px; right: -5px; width: 22px; height: 22px; border-radius: 99px; background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); font: 700 12px Inter; display: grid; place-items: center; z-index: 4; box-shadow: 0 0 0 2px rgb(var(--c-paper)); }
+.g.gauche { right: auto; left: -5px; }
+.dos { position: relative; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-maison" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8M5 10v10h14V10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-dossier" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></g></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></symbol>
+  <symbol id="i-plus-plus" viewBox="0 0 24 24"><g fill="currentColor"><circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/></g></symbol>
+  <symbol id="i-coche" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  <symbol id="i-tel" viewBox="0 0 24 24"><path d="M6 3h3l2 5-2 1.5a11 11 0 006 6L16.500 14l5 2v3a2 2 0 01-2 2A16 16 0 014 5a2 2 0 012-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></symbol>
+  <symbol id="i-lieu" viewBox="0 0 24 24"><g fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 21s7-6.200 7-11a7 7 0 10-14 0c0 4.800 7 11 7 11z" stroke-linejoin="round"/><circle cx="12" cy="10" r="2.400"/></g></symbol>
+</svg>
+
+<div class="entete">
+  <h1>Duel G · Candidat B — Une seule liste « à venir », et on ne bouge rien sans prévenir</h1>
+  <p>Gérard, plaquiste, mardi 6 octobre 2026. Téléphone : une liste (Aujourd'hui, Demain, Ensuite), créer en trois appuis, déplacer ou annuler mène à « Prévenir ? ». L'ordinateur garde la grille de la semaine (non montrée). Les pastilles numérotées sont des annotations de la maquette : elles comptent les appuis.</p>
+</div>
+
+<!-- ============ 1. Vue par défaut ============ -->
+<div class="cadre">
+  <h2>1 · Vue par défaut, Gérard seul</h2>
+  <div class="tel">
+    <div class="contenu liste-ecran">
+      <h1 class="titre">Planning</h1>
+
+      <section class="bloc">
+        <h2 class="bt">Aujourd'hui <span class="nb">2</span></h2>
+        <div class="liste">
+          <div class="lg">
+            <div class="zone"><span class="rep">8h30</span><span class="corps"><span class="qui" style="display:block">Mme Roux</span><span class="det" style="display:block">Fait · Cloison salle de bain</span></span></div>
+            <div class="fin"><span class="coche faite"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+          </div>
+          <div class="lg">
+            <div class="zone"><span class="rep">14h00</span><span class="corps"><span class="qui" style="display:block">M. Bernard</span><span class="det" style="display:block">Pose ITE · <span class="alerte">Pluie 70 %</span></span></span></div>
+            <div class="fin"><span class="coche"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h2 class="bt">Demain <span class="nb">1</span></h2>
+        <div class="liste">
+          <div class="lg"><div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">M. Dupont</span><span class="det" style="display:block">Reprise plafond</span></span></div></div>
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h2 class="bt">Ensuite <span class="nb">3</span></h2>
+        <div class="liste">
+          <div class="lg"><div class="zone"><span class="rep deux"><small>jeu. 8</small><span>8h00</span></span><span class="corps"><span class="qui" style="display:block">M. Martin</span><span class="det" style="display:block">Placo garage</span></span></div></div>
+          <div class="lg"><div class="zone"><span class="rep deux"><small>jeu. 8</small><span>14h00</span></span><span class="corps"><span class="qui" style="display:block">Mme Benali</span><span class="det" style="display:block">Métré combles</span></span></div></div>
+          <div class="lg"><div class="zone"><span class="rep deux"><small>lun. 12</small><span>8h00</span></span><span class="corps"><span class="qui" style="display:block">Mme Roux</span><span class="det" style="display:block">Reprise enduits</span></span></div></div>
+        </div>
+        <button class="lien" type="button" style="background:none;border:0;color:inherit">Voir la suite</button>
+      </section>
+    </div>
+
+    <div class="pied"><div class="btn-plein"><span class="g">1</span>Ajouter un rendez-vous</div></div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-maison"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet"><span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>Nouveau</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-plus-plus"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Tout ce qui vient est visible sans un appui ; la météo n'est qu'un mot sur la ligne concernée.</p>
+</div>
+
+<!-- ============ 2. Depuis la fiche projet ============ -->
+<div class="cadre">
+  <h2>2 · Créer depuis la fiche projet : 2 appuis</h2>
+  <div class="tel">
+    <div class="contenu" style="gap:0">
+      <h1 class="titre" style="margin-bottom:6px">M. Pinto</h1>
+      <p class="t-petit" style="margin-bottom:22px">Placo garage · Devis signé</p>
+      <h2 class="bt">Rendez-vous</h2>
+      <p class="t-corps" style="color:rgb(var(--c-steel));margin:10px 0 10px">Rien de prévu.</p>
+      <div class="lg" style="min-height:56px"><div class="zone"><span class="corps"><span class="qui" style="display:block">Planifier un rendez-vous</span></span></div><span class="g">1</span></div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille serre">
+      <h3>Nouveau rendez-vous</h3>
+      <p class="sous">M. Pinto · Placo garage</p>
+      <div class="rang"><span class="et">Jour</span><span class="chip on">Demain</span><span class="chip">Jeu. 8</span><span class="chip">Ven. 9</span><span class="chip">Autre</span></div>
+      <div class="rang"><span class="et">Heure</span><span class="chip">8h</span><span class="chip">10h</span><span class="chip on">14h</span><span class="chip">Autre</span></div>
+      <div class="rang"><span class="et">Durée</span><span class="chip">1 h</span><span class="chip">2 h</span><span class="chip on">½ j</span><span class="chip">Journée</span></div>
+      <p class="libre">Demain : pris jusqu'à 12 h. Libre dès 14 h.</p>
+      <div class="btn-plein" style="margin-top:2px"><span class="g">2</span>Enregistrer</div>
+    </div>
+  </div>
+  <p class="note-maquette">Chantier connu, jour, heure et durée déjà choisis : le titre « Chantier Pinto » se met seul, sans champ.</p>
+</div>
+
+<!-- ============ 3. Depuis le Planning, équipe ============ -->
+<div class="cadre">
+  <h2>3 · Créer depuis le Planning : 3 appuis (avec ① de l'écran 1)</h2>
+  <div class="tel">
+    <div class="contenu" style="gap:0">
+      <h1 class="titre">Planning</h1>
+      <h2 class="bt">Aujourd'hui <span class="nb">2</span></h2>
+      <div class="liste">
+        <div class="lg"><div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">Mme Roux</span><span class="det" style="display:block">Cloison salle de bain</span></span></div></div>
+        <div class="lg"><div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">M. Dupont</span><span class="det" style="display:block"><b>Raph</b> · Reprise plafond</span></span></div></div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille serre">
+      <h3>Nouveau rendez-vous</h3>
+      <div class="chantier sel"><span class="g">2</span><span class="corps"><span class="qui" style="display:block">M. Pinto</span><span class="det" style="display:block">Placo garage</span></span><span class="radio on"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+      <div class="chantier"><span class="corps"><span class="qui" style="display:block">M. Dupont</span><span class="det" style="display:block">Reprise plafond</span></span><span class="radio"></span></div>
+      <div class="chantier"><span class="corps"><span class="qui" style="display:block">Mme Benali</span><span class="det" style="display:block">Isolation combles</span></span><span class="radio"></span></div>
+      <div class="lien" style="margin-top:0">Autre chantier…</div>
+      <div class="rang"><span class="et">Jour</span><span class="chip on">Demain</span><span class="chip">Jeu. 8</span><span class="chip">Ven. 9</span><span class="chip">Autre</span></div>
+      <div class="rang"><span class="et">Heure</span><span class="chip">8h</span><span class="chip">10h</span><span class="chip on">14h</span><span class="chip">Autre</span></div>
+      <div class="rang"><span class="et">Durée</span><span class="chip">1 h</span><span class="chip">2 h</span><span class="chip on">½ j</span><span class="chip">Journée</span></div>
+      <div class="rang"><span class="et">Pour</span><span class="chip on">Moi</span><span class="chip">Raph</span></div>
+      <p class="libre">Vous : pris jusqu'à 12 h. Libre dès 14 h.</p>
+      <div class="btn-plein"><span class="g">3</span>Enregistrer</div>
+    </div>
+  </div>
+  <p class="note-maquette">La ligne « Pour » n'existe que s'il y a deux membres ou plus ; « Autre chantier… » ouvre le formulaire actuel, route intacte.</p>
+</div>
+
+<!-- ============ 4a. Feuille d'actions ============ -->
+<div class="cadre">
+  <h2>4a · Reporter à demain : toucher la ligne (météo)</h2>
+  <div class="tel">
+    <div class="contenu" style="gap:0">
+      <h1 class="titre">Planning</h1>
+      <h2 class="bt">Aujourd'hui <span class="nb">2</span></h2>
+      <div class="liste">
+        <div class="lg"><div class="zone"><span class="rep">8h30</span><span class="corps"><span class="qui" style="display:block">Mme Roux</span><span class="det" style="display:block">Fait · Cloison salle de bain</span></span></div></div>
+        <div class="lg"><div class="zone"><span class="rep">14h00</span><span class="corps"><span class="qui" style="display:block">M. Bernard</span><span class="det" style="display:block">Pose ITE · <span class="alerte">Pluie 70 %</span></span></span></div><span class="g">1</span></div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille serre">
+      <h3>14h00 · M. Bernard</h3>
+      <div class="trois">
+        <div class="grand"><svg class="ico"><use href="#i-tel"/></svg>Appeler</div>
+        <div class="grand"><svg class="ico"><use href="#i-msg"/></svg>Prévenir</div>
+        <div class="grand"><svg class="ico"><use href="#i-lieu"/></svg>Itinéraire</div>
+      </div>
+      <p class="libre"><span class="alerte">Météo à risque : 70 % de pluie.</span></p>
+      <div>
+        <div class="ligne-f">C'est fait</div>
+        <div class="ligne-f" style="position:relative">Déplacer<span class="g" style="top:8px;right:0">2</span></div>
+        <div class="ligne-f">Ouvrir le projet</div>
+      </div>
+      <div class="btn-destructif">Annuler le rendez-vous</div>
+    </div>
+  </div>
+  <p class="note-maquette">« Modifier ou déplacer » devient « Déplacer » ; « Supprimer » quitte la feuille : annuler suffit, rien n'est effacé.</p>
+</div>
+
+<!-- ============ 4b. Déplacer ============ -->
+<div class="cadre">
+  <h2>4b · Déplacer : demain, même heure</h2>
+  <div class="tel">
+    <div class="contenu" style="gap:0">
+      <h1 class="titre">Planning</h1>
+      <h2 class="bt">Aujourd'hui <span class="nb">2</span></h2>
+      <div class="liste">
+        <div class="lg"><div class="zone"><span class="rep">8h30</span><span class="corps"><span class="qui" style="display:block">Mme Roux</span><span class="det" style="display:block">Fait · Cloison salle de bain</span></span></div></div>
+        <div class="lg"><div class="zone"><span class="rep">14h00</span><span class="corps"><span class="qui" style="display:block">M. Bernard</span><span class="det" style="display:block">Pose ITE · <span class="alerte">Pluie 70 %</span></span></span></div></div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille serre">
+      <h3>Déplacer le rendez-vous</h3>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <label><span class="etq">Jour</span><span class="champ" style="margin-top:6px">07/10/2026</span></label>
+        <label><span class="etq">Heure</span><span class="champ" style="margin-top:6px">14:00</span></label>
+      </div>
+      <div class="btn-plein" style="margin-top:8px"><span class="g">3</span>Déplacer</div>
+    </div>
+  </div>
+  <p class="note-maquette">La feuille déjà livrée pour l'accueil, telle quelle ; la base dit « Déjà pris à cette heure. » si besoin.</p>
+</div>
+
+<!-- ============ 4c. Prévenir ============ -->
+<div class="cadre">
+  <h2>4c · Aussitôt enregistré : « Prévenir ? »</h2>
+  <div class="tel">
+    <div class="contenu" style="gap:0">
+      <h1 class="titre">Planning</h1>
+      <h2 class="bt">Aujourd'hui <span class="nb">1</span></h2>
+      <div class="liste">
+        <div class="lg"><div class="zone"><span class="rep">8h30</span><span class="corps"><span class="qui" style="display:block">Mme Roux</span><span class="det" style="display:block">Fait · Cloison salle de bain</span></span></div></div>
+      </div>
+      <h2 class="bt" style="margin-top:26px">Demain <span class="nb">2</span></h2>
+      <div class="liste">
+        <div class="lg"><div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">M. Dupont</span><span class="det" style="display:block">Reprise plafond</span></span></div></div>
+        <div class="lg"><div class="zone"><span class="rep">14h00</span><span class="corps"><span class="qui" style="display:block">M. Bernard</span><span class="det" style="display:block">Pose ITE pignon</span></span></div></div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille serre">
+      <h3>Prévenir M. Bernard ?</h3>
+      <div class="msg">
+        <span class="t-sur">Décalage</span>
+        <p>Bonjour, je dois décaler notre rendez-vous du 6 octobre.</p>
+        <p class="nouv">Nouvelle date : mer. 7 octobre, 14h00</p>
+        <div class="deux-btn">
+          <div class="btn-plein" style="position:relative"><span class="g">4</span>SMS</div>
+          <div class="btn-contour">WhatsApp</div>
+        </div>
+      </div>
+      <div class="btn-texte">Pas besoin</div>
+    </div>
+  </div>
+  <p class="note-maquette">Le texte est prêt ; Gérard envoie lui-même dans son SMS (5e geste) ou touche « Pas besoin ». Compyo n'envoie rien.</p>
+</div>
+
+<!-- ============ 4d. Annuler ============ -->
+<div class="cadre">
+  <h2>4d · Annuler : d'abord la question</h2>
+  <div class="tel">
+    <div class="contenu" style="gap:0">
+      <h1 class="titre">Planning</h1>
+      <h2 class="bt">Demain <span class="nb">1</span></h2>
+      <div class="liste">
+        <div class="lg"><div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">M. Dupont</span><span class="det" style="display:block">Reprise plafond</span></span></div></div>
+      </div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille serre">
+      <h3>Annuler le rendez-vous ?</h3>
+      <p class="sous">Demain, 8h00 · M. Dupont</p>
+      <div class="btn-destructif" style="position:relative"><span class="g">3</span>Oui, annuler</div>
+      <div class="btn-contour">Non</div>
+    </div>
+  </div>
+  <p class="note-maquette">Puis la même feuille que 4c, avec le texte « annulation » ; sans projet ni numéro, elle ne s'ouvre pas ou demande le numéro.</p>
+</div>
+
+<!-- ============ 5. Deux personnes ============ -->
+<div class="cadre">
+  <h2>5 · Deux personnes : Gérard et Raph, même liste</h2>
+  <div class="tel">
+    <div class="contenu liste-ecran">
+      <h1 class="titre">Planning</h1>
+
+      <section class="bloc">
+        <h2 class="bt">Aujourd'hui <span class="nb">4</span></h2>
+        <div class="liste">
+          <div class="lg">
+            <div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">Mme Roux</span><span class="det" style="display:block">Cloison salle de bain</span></span></div>
+            <div class="fin"><span class="coche"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+          </div>
+          <div class="lg">
+            <div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">M. Dupont</span><span class="det" style="display:block"><b>Raph</b> · Reprise plafond</span></span></div>
+            <div class="fin"><span class="coche"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+          </div>
+          <div class="lg">
+            <div class="zone"><span class="rep">14h00</span><span class="corps"><span class="qui" style="display:block">M. Bernard</span><span class="det" style="display:block">Pose ITE · <span class="alerte">Pluie 70 %</span></span></span></div>
+            <div class="fin"><span class="coche"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+          </div>
+          <div class="lg">
+            <div class="zone"><span class="rep">16h00</span><span class="corps"><span class="qui" style="display:block">Mme Benali</span><span class="det" style="display:block"><b>Raph</b> · Métré combles</span></span></div>
+            <div class="fin"><span class="coche"><svg class="ico"><use href="#i-coche"/></svg></span></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h2 class="bt">Demain <span class="nb">2</span></h2>
+        <div class="liste">
+          <div class="lg"><div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">M. Martin</span><span class="det" style="display:block">Placo garage</span></span></div></div>
+          <div class="lg"><div class="zone"><span class="rep">8h00</span><span class="corps"><span class="qui" style="display:block">M. Dupont</span><span class="det" style="display:block"><b>Raph</b> · Reprise plafond</span></span></div></div>
+        </div>
+      </section>
+
+      <section class="bloc">
+        <h2 class="bt">Ensuite <span class="nb">1</span></h2>
+        <div class="liste">
+          <div class="lg"><div class="zone"><span class="rep deux"><small>jeu. 8</small><span>8h00</span></span><span class="corps"><span class="qui" style="display:block">M. Pinto</span><span class="det" style="display:block"><b>Raph</b> · Placo garage</span></span></div></div>
+        </div>
+      </section>
+    </div>
+
+    <div class="pied"><div class="btn-plein">Ajouter un rendez-vous</div></div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-maison"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dossier"/></svg>Projets</div>
+      <div class="onglet"><span class="btn-rond"><svg class="ico" style="width:30px;height:30px"><use href="#i-plus"/></svg></span>Nouveau</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-plus-plus"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Téléphone de Gérard : le prénom n'apparaît que sur les lignes de Raph ; 8 h pour deux est permis (chevauchement par personne).</p>
+</div>
+
+</body>
+</html>

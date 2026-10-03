@@ -54,6 +54,52 @@ export function avecLotParDefaut(ligne: LigneEditee, lots: LotDevis[]): LigneEdi
   return lots.length > 0 ? { ...ligne, lot_id: lots[lots.length - 1].id } : ligne;
 }
 
+// Refonte (03/10, duel F lot 3) — les deux gestes que partagent l'éditeur
+// complet et la feuille d'une ligne sur téléphone (components/devis/
+// FeuilleLigne.tsx) : changer une valeur, retirer une ligne. Une seule
+// implémentation, donc les mêmes règles partout : jamais de quantité ou de
+// prix négatif, total recalculé, ligne « heures minimum » tenue à jour.
+const avecMinimum = (lignes: LigneEditee[], tarifs?: TarifsEditeur | null) =>
+  tarifs ? reajusterMinimum(lignes, tarifs.heures_min_facturables) : lignes;
+
+export function lignesAvecValeur(
+  lignes: LigneEditee[],
+  cle: string,
+  cleChamp: keyof LigneDevisCalculee,
+  valeur: string | null,
+  tarifs?: TarifsEditeur | null
+): LigneEditee[] {
+  return avecMinimum(
+    lignes.map((ligne) => {
+      if (ligne.cle !== cle) return ligne;
+      // null = on retire complètement le champ (explication).
+      if (valeur === null) {
+        const copie = { ...ligne };
+        delete copie[cleChamp];
+        return copie;
+      }
+      if (cleChamp === "quantite" || cleChamp === "prix_unitaire") {
+        const nombre = Number(valeur);
+        // Jamais de quantité ou de prix négatif : la ligne "réduirait" le
+        // devis en silence.
+        const valeurSure = !Number.isFinite(nombre) || nombre < 0 ? 0 : nombre;
+        const majee = { ...ligne, [cleChamp]: valeurSure };
+        majee.total = Math.round(majee.quantite * majee.prix_unitaire * 100) / 100;
+        return majee;
+      }
+      return { ...ligne, [cleChamp]: valeur };
+    }),
+    tarifs
+  );
+}
+
+export function lignesSansLigne(lignes: LigneEditee[], cle: string, tarifs?: TarifsEditeur | null): LigneEditee[] {
+  return avecMinimum(
+    lignes.filter((l) => l.cle !== cle),
+    tarifs
+  );
+}
+
 function formatEuros(n: number) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 }
@@ -87,8 +133,7 @@ export function EditeurLignes({
   // heures réelles à chaque modification (voir lib/moteur-metier/
   // tempsMainOeuvre.ts) : sans ça, monter un poste de 0,5 h à 3 h laissait
   // le complément de 0,5 h, payé en trop par le client.
-  const avecMinimumAJour = (l: LigneEditee[]) =>
-    tarifs ? reajusterMinimum(l, tarifs.heures_min_facturables) : l;
+  const avecMinimumAJour = (l: LigneEditee[]) => avecMinimum(l, tarifs);
 
   // Heure ↔ jour sur une ligne de main-d'œuvre : le temps est conservé, le
   // prix unitaire devient le bon tarif. Passer « heure » en « jour » en
@@ -103,35 +148,11 @@ export function EditeurLignes({
 
   // ---- lignes ----------------------------------------------------------
   function modifier(cle: string, cleChamp: keyof LigneDevisCalculee, valeur: string | null) {
-    onChange(
-      avecMinimumAJour(lignes.map((ligne) => {
-        if (ligne.cle !== cle) return ligne;
-        // null = on retire complètement le champ (explication).
-        if (valeur === null) {
-          const copie = { ...ligne };
-          delete copie[cleChamp];
-          return copie;
-        }
-        if (cleChamp === "quantite" || cleChamp === "prix_unitaire") {
-          const nombre = Number(valeur);
-          // Jamais de quantité ou de prix négatif : la ligne "réduirait" le
-          // devis en silence.
-          const valeurSure = !Number.isFinite(nombre) || nombre < 0 ? 0 : nombre;
-          const majee = { ...ligne, [cleChamp]: valeurSure };
-          majee.total = Math.round(majee.quantite * majee.prix_unitaire * 100) / 100;
-          return majee;
-        }
-        return { ...ligne, [cleChamp]: valeur };
-      })),
-      lots
-    );
+    onChange(lignesAvecValeur(lignes, cle, cleChamp, valeur, tarifs), lots);
   }
 
   function supprimer(cle: string) {
-    onChange(
-      avecMinimumAJour(lignes.filter((l) => l.cle !== cle)),
-      lots
-    );
+    onChange(lignesSansLigne(lignes, cle, tarifs), lots);
   }
 
   function ajouter(lotId: string | null) {

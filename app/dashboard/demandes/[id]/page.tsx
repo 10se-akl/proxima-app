@@ -12,7 +12,7 @@ import { Field } from "@/components/ui/Input";
 import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PropositionUrgence } from "@/components/dashboard/PropositionUrgence";
-import { PhotosProjet } from "@/components/dashboard/PhotosProjet";
+import { ChampAppareil, EtatEnvoiPhotos, PhotosProjet, idChampAppareil, useEnvoiPhotos } from "@/components/dashboard/PhotosProjet";
 import type { TimelineItem } from "@/components/dashboard/Timeline";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { adresseEspaceDevis, dupliquerDevis as creerNouvelleVersion } from "@/lib/devis/actions";
@@ -174,6 +174,15 @@ export default function DetailDemandePage({
   // lui-même (voir lib/ai/client.ts) — inutile de payer un appel IA dont le
   // résultat est certain de ne jamais être affiché.
   const controleursIARef = useRef<Set<AbortController>>(new Set());
+
+  // Refonte (03/10, duel D lot 2) — l'envoi des photos est tenu ici, une
+  // seule fois pour la fiche : la tuile « Photo » (champ de l'appareil hors
+  // des feuilles) et la feuille « Photos » (galerie) le partagent, avec sa
+  // trace et son « Réessayer ».
+  const envoiPhotos = useEnvoiPhotos({
+    demandeId: params.id,
+    onChemins: (photos) => void surNouvellesPhotos(photos),
+  });
 
   useEffect(() => {
     return () => {
@@ -347,6 +356,19 @@ export default function DetailDemandePage({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cheminsPhotos]);
+
+  async function surNouvellesPhotos(photos: string[]) {
+    if (!demande) return;
+    setDemande({ ...demande, photos });
+    if (!demande.photos_ajoutees_le) {
+      await supabase
+        .from("demandes")
+        .update({ photos_ajoutees_le: new Date().toISOString() })
+        .eq("id", demande.id);
+    }
+    await signalerModification();
+    await chargerDonnees();
+  }
 
   // Marque le projet comme modifié depuis le dernier devis — utilisé pour
   // proposer (jamais imposer) une mise à jour du devis.
@@ -1151,6 +1173,7 @@ export default function DetailDemandePage({
               notes={notesVocales}
               telephoneClient={demande.telephone_client}
               masquerListe
+              demarrerAuMontage
               onNouvelleNote={async () => {
                 fermer();
                 await signalerModification();
@@ -1162,19 +1185,16 @@ export default function DetailDemandePage({
             <PhotosProjet
               demandeId={demande.id}
               chemins={demande.photos ?? []}
-              onChemins={async (photos) => {
-                setDemande({ ...demande, photos });
-                if (!demande.photos_ajoutees_le) {
-                  await supabase
-                    .from("demandes")
-                    .update({ photos_ajoutees_le: new Date().toISOString() })
-                    .eq("id", demande.id);
-                }
-                await signalerModification();
-                await chargerDonnees();
-              }}
+              onChemins={(photos) => void surNouvellesPhotos(photos)}
+              envoi={envoiPhotos}
             />
           ),
+          capture: {
+            idChamp: idChampAppareil(demande.id),
+            envoi: envoiPhotos.envoi,
+            champ: <ChampAppareil demandeId={demande.id} envoi={envoiPhotos} />,
+            etat: (surVoir) => <EtatEnvoiPhotos envoi={envoiPhotos} surVoir={surVoir} />,
+          },
           note: (fermer) => (
             <FormulaireNote
               projetIdFixe={demande.id}

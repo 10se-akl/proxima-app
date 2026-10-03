@@ -141,7 +141,10 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
       ton: "neutre",
       phrase: jours !== null && jours >= 0 ? `Chantier, jour ${jours + 1}.` : "Chantier en cours.",
       details,
-      principale: { id: "ajouter", libelle: "Ajouter une note ou des photos" },
+      // Refonte (03/10, duel D lot 2) — sur le chantier, l'action la plus
+      // probable est la photo : c'est la tuile « Photo » de la bande qui
+      // est pleine, pas un bouton d'ici (un seul plein par écran).
+      principale: null,
       // Sans passage prévu, le chantier touche peut-être à sa fin. Avec
       // l'alerte, son action tient lieu de bouton texte : « Terminer »
       // reste dans « … ».

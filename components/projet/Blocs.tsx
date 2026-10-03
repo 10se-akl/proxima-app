@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import type { EvenementPlanning, ImportanceNote, Note } from "@/types";
 import type { Action, IdAction, ProchaineAction } from "./prochaineAction";
 import { dateRdv } from "./prochaineAction";
-import { IconeCalendrier, IconeChevron, IconeCoche, IconeDocument, IconeEtincelle, IconePhoto, IconePlus } from "./icones";
+import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeDocument, IconeEtincelle, IconeMicro, IconePhoto } from "./icones";
 
 // ============================================================
 // Les blocs du « Point » (24/09) : Maintenant, À faire, À retenir, Dossier.
@@ -45,8 +45,65 @@ function Titre({ children, compte, action }: { children: ReactNode; compte?: num
   );
 }
 
-function Roue() {
-  return <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />;
+function Roue({ className = "h-3.5 w-3.5" }: { className?: string }) {
+  return <span className={`${className} shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin`} aria-hidden />;
+}
+
+// ------------------------------------------------------------ La bande
+
+/** Refonte (03/10, duel D lot 2) — Photo · Dicter · Note, sous
+ *  « Maintenant », à mi-hauteur de l'écran, sous le pouce : trois gestes
+ *  directs au lieu de « [+] puis choisir ». Elle remplace le « + Ajouter »
+ *  du Carnet et l'« Ajouter » d'À faire ; le [+] de la barre du bas reste
+ *  « Ajouter » (décision du 26/09).
+ *
+ *  « Photo » est une étiquette du champ de l'appareil, posé hors des
+ *  feuilles (voir PhotosProjet.tsx) : un appui ouvre l'appareil arrière.
+ *  Sur un chantier en cours, c'est l'action la plus probable : elle est le
+ *  bouton plein de l'écran (et « Maintenant » n'en a pas). */
+export function BandeAjout({
+  idChampPhoto,
+  photoPleine,
+  envoiPhotos,
+  surDicter,
+  surNote,
+}: {
+  idChampPhoto: string;
+  photoPleine: boolean;
+  envoiPhotos: boolean;
+  surDicter: () => void;
+  surNote: () => void;
+}) {
+  const tuile = `flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 rounded-2xl text-sm font-semibold motion-safe:transition-colors sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-5 ${FOCUS}`;
+  const contour = "bg-surface text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5";
+  const plein = "bg-ink text-paper active:bg-ink/80";
+  return (
+    <div role="group" aria-label="Ajouter au projet" className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
+      <label
+        htmlFor={idChampPhoto}
+        role="button"
+        tabIndex={0}
+        aria-disabled={envoiPhotos}
+        onKeyDown={(e) => {
+          if (e.key !== "Enter" && e.key !== " ") return;
+          e.preventDefault();
+          document.getElementById(idChampPhoto)?.click();
+        }}
+        className={`${tuile} ${photoPleine ? plein : contour} cursor-pointer ${envoiPhotos ? "pointer-events-none opacity-60" : ""}`}
+      >
+        {envoiPhotos ? <Roue className="h-6 w-6 sm:h-5 sm:w-5" /> : <IconePhoto className="h-6 w-6 sm:h-5 sm:w-5" />}
+        Photo
+      </label>
+      <button type="button" onClick={surDicter} className={`${tuile} ${contour}`}>
+        <IconeMicro className="h-6 w-6 sm:h-5 sm:w-5" />
+        Dicter
+      </button>
+      <button type="button" onClick={surNote} className={`${tuile} ${contour}`}>
+        <IconeCrayon className="h-6 w-6 sm:h-5 sm:w-5" />
+        Note
+      </button>
+    </div>
+  );
 }
 
 // ------------------------------------------------------------ Maintenant
@@ -243,14 +300,12 @@ export function AFaire({
   rdvAVenir,
   taches,
   surTerminer,
-  surAjouter,
   avantDeChiffrer,
   proposition,
 }: {
   rdvAVenir: EvenementPlanning[];
   taches: Note[];
   surTerminer: (id: string, terminee: boolean) => void;
-  surAjouter: () => void;
   /** Avant le devis seulement : ce que l'analyse et le métier conseillent
    *  de vérifier. Replié. */
   avantDeChiffrer: { infos: string[]; questions: string[]; checklist: string[] } | null;
@@ -277,24 +332,16 @@ export function AFaire({
   const total = rdvAVenir.length + taches.length;
   const nbConseils = avantDeChiffrer ? avantDeChiffrer.infos.length + avantDeChiffrer.questions.length + avantDeChiffrer.checklist.length : 0;
 
+  // Refonte (03/10, duel D lot 2) — un bloc vide ne s'affiche pas (règle
+  // 12), sur ordinateur non plus : son « Ajouter » est parti, on ajoute par
+  // la bande Photo · Dicter · Note ou par le [+].
+  if (total === 0 && nbConseils === 0 && !cochee && !proposition) return null;
+
   return (
-    // 27/09 — Vide, le bloc ne disait que « Rien en attente » : sur
-    // téléphone, il laisse la place au reste (ajouter passe par le « + »).
-    <section aria-label="À faire" className={`${BLOC} ${total === 0 && nbConseils === 0 && !cochee ? "hidden sm:block" : ""}`}>
-      <Titre
-        compte={total}
-        action={
-          <button type="button" onClick={surAjouter} className={`-my-2 -mr-3 ${BOUTON_TEXTE} no-underline`}>
-            <IconePlus className="h-5 w-5" /> Ajouter
-          </button>
-        }
-      >
-        À faire
-      </Titre>
+    <section aria-label="À faire" className={BLOC}>
+      <Titre compte={total}>À faire</Titre>
 
       {proposition}
-
-      {total === 0 && !proposition && !cochee && <p className="mt-2 text-base text-steel">Rien en attente.</p>}
 
       {total > 0 && (
         <ul className="mt-1 divide-y divide-ink/15">

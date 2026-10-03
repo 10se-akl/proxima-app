@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
-import { creerNote } from "@/lib/notes";
 import {
   assemblerTranscription,
   obtenirClasseReconnaissance,
@@ -12,15 +11,19 @@ import {
   type SpeechRecognitionInstance,
 } from "@/lib/dictee";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { BOUTON_CONTOUR, BOUTON_TEXTE } from "@/components/projet/Blocs";
 import type { NoteVocale } from "@/types";
+
+// La reconnaissance vocale sait aussi s'interrompre sans rien rendre
+// (abort) : c'est ce qu'il faut quand la feuille se ferme.
+type Reconnaissance = SpeechRecognitionInstance & { abort?: () => void };
 
 export function NotesVocales({
   demandeId,
   notes,
-  telephoneClient,
   onNouvelleNote,
   masquerListe = false,
+  demarrerAuMontage = false,
 }: {
   demandeId: string;
   notes: NoteVocale[];
@@ -29,6 +32,11 @@ export function NotesVocales({
   /** Fiche projet (24/09) : la dictée s’ouvre dans une feuille, les notes
    *  déjà enregistrées vivent dans le Carnet — pas besoin de les répéter. */
   masquerListe?: boolean;
+  /** Refonte (03/10, duel D lot 2) — l'écoute démarre dès l'ouverture de
+   *  la feuille (Dicter, parler, Terminé, Ajouter : trois gestes au lieu de
+   *  cinq), SAUF si un brouillon est retrouvé : il s'affiche, et rien ne
+   *  l'efface. */
+  demarrerAuMontage?: boolean;
 }) {
   const supabase = createClient();
   const [enregistrement, setEnregistrement] = useState(false);
@@ -36,11 +44,13 @@ export function NotesVocales({
   const [editionManuelle, setEditionManuelle] = useState(false);
   const [sauvegarde, setSauvegarde] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
+  const recognitionRef = useRef<Reconnaissance | null>(null);
   // 27/09 (Axel) — Toucher le texte arrête l'écoute : sinon chaque mot
   // entendu réécrivait le champ, et on ne pouvait pas corriger ni effacer.
   const ignorerResultats = useRef(false);
-
+  // Refonte (03/10) — dicter à nouveau ajoute à la suite du texte déjà là
+  // au lieu de l'effacer : un brouillon retrouvé ne se perd plus d'un appui.
+  const texteAvant = useRef("");
 
   const ClasseReconnaissance = obtenirClasseReconnaissance();
 
@@ -57,28 +67,63 @@ export function NotesVocales({
   const cleBrouillon = `compyo_brouillon_note_vocale_${demandeId}`;
   const [brouillonRestaure, setBrouillonRestaure] = useState(false);
 
+  /** Coupe le micro sans rien rendre : fermeture de la feuille, geste
+   *  retour, application quittée. */
+  function couper() {
+    const r = recognitionRef.current;
+    recognitionRef.current = null;
+    if (!r) return;
+    r.onresult = null;
+    r.onend = null;
+    r.onerror = null;
+    try {
+      if (r.abort) r.abort();
+      else r.stop();
+    } catch {
+      // Déjà arrêtée.
+    }
+  }
+
   useEffect(() => {
+    let restaure = false;
     try {
       const brouillon = window.localStorage.getItem(cleBrouillon);
       if (brouillon && brouillon.trim()) {
         setTranscription(brouillon);
         setEditionManuelle(true);
         setBrouillonRestaure(true);
+        restaure = true;
       }
     } catch {
       // localStorage indisponible (navigation privée, quota...) : le
       // filet de sécurité est simplement absent, jamais bloquant.
     }
+    // L'écoute ne démarre seule que s'il n'y a rien à retrouver.
+    if (!restaure && demarrerAuMontage) demarrer();
+
+    // Application quittée (appel, écran éteint) : le micro se coupe, le
+    // texte reste, l'écoute ne repart pas d'elle-même.
+    const surVisibilite = () => {
+      if (document.visibilityState === "hidden" && recognitionRef.current) {
+        couper();
+        setEnregistrement(false);
+      }
+    };
+    document.addEventListener("visibilitychange", surVisibilite);
+    return () => {
+      document.removeEventListener("visibilitychange", surVisibilite);
+      // Feuille fermée (✕, voile, geste retour) : le micro ne reste pas
+      // ouvert derrière.
+      couper();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Le texte est gardé à chaque mot. Il n'est effacé qu'explicitement
+  // (note enregistrée, champ vidé à la main) : jamais par un rendu.
   useEffect(() => {
     try {
-      if (transcription.trim()) {
-        window.localStorage.setItem(cleBrouillon, transcription);
-      } else {
-        window.localStorage.removeItem(cleBrouillon);
-      }
+      if (transcription.trim()) window.localStorage.setItem(cleBrouillon, transcription);
     } catch {
       // Idem — best effort, ne doit jamais faire planter la saisie.
     }
@@ -94,32 +139,28 @@ export function NotesVocales({
   }
 
   function demarrer() {
-    // Sprint Robustesse (30/08) — repéré en revue de régression : sans ce
-    // reset, le bandeau "Note non enregistrée retrouvée" restait affiché
-    // à tort au-dessus d'une toute nouvelle dictée, laissant croire que le
-    // nouveau texte était l'ancien brouillon restauré.
     setBrouillonRestaure(false);
+    setErreur(null);
     if (!ClasseReconnaissance) {
       // Pas de dictée sur ce navigateur : on ouvre directement la saisie
       // manuelle plutôt que de laisser un message d'erreur sans issue.
-      setErreur(null);
-      setTranscription("");
       setEditionManuelle(true);
       return;
     }
-    setErreur(null);
-    setTranscription("");
-    setEditionManuelle(false);
+    couper();
     ignorerResultats.current = false;
+    // Le texte déjà là est gardé : la dictée s'écrit à la suite.
+    texteAvant.current = transcription.trim();
 
-    const recognition = new ClasseReconnaissance();
+    const recognition: Reconnaissance = new ClasseReconnaissance();
     recognition.lang = "fr-FR";
     recognition.continuous = true;
     recognition.interimResults = true;
 
     recognition.onresult = (event) => {
       if (ignorerResultats.current) return;
-      setTranscription(assemblerTranscription(event.results));
+      const dicte = assemblerTranscription(event.results);
+      setTranscription([texteAvant.current, dicte].filter(Boolean).join(" "));
     };
     recognition.onend = () => setEnregistrement(false);
     recognition.onerror = (event) => {
@@ -129,7 +170,12 @@ export function NotesVocales({
       setErreur(messageErreurDictee(event?.error));
     };
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      setErreur(messageErreurDictee());
+      return;
+    }
     recognitionRef.current = recognition;
     setEnregistrement(true);
   }
@@ -140,20 +186,23 @@ export function NotesVocales({
   }
 
   function ecrireManuel() {
+    couper();
+    setEnregistrement(false);
     setBrouillonRestaure(false);
     setErreur(null);
-    setTranscription("");
     setEditionManuelle(true);
   }
 
   // Journal chantier vocal (06/09) — interprétation best-effort d'une note
   // déjà enregistrée avec succès. Ne doit JAMAIS faire échouer ou ralentir
-  // visiblement la sauvegarde de la note elle-même (voir l'appel plus bas,
-  // volontairement non "await"é dans le flux principal ni signalé par une
-  // erreur visible en cas d'échec) — un compte-rendu mal interprété reste
-  // quand même une note vocale correctement sauvegardée.
+  // visiblement la sauvegarde de la note elle-même.
   async function enregistrerNote() {
     if (!transcription.trim()) return;
+    if (enregistrement) {
+      ignorerResultats.current = true;
+      couper();
+      setEnregistrement(false);
+    }
     setSauvegarde(true);
     setErreur(null);
 
@@ -191,7 +240,7 @@ export function NotesVocales({
 
       if (error) {
         setSauvegarde(false);
-        setErreur("Impossible d'enregistrer la note. Votre texte est conservé — réessayez.");
+        setErreur("Pas enregistré. Gardé sur ce téléphone.");
         return;
       }
 
@@ -213,92 +262,87 @@ export function NotesVocales({
       setBrouillonRestaure(false);
       onNouvelleNote();
 
-      // (13/09) — Plus AUCUN appel IA ici. Chaque note vocale déclenchait
-      // auparavant une interprétation immédiate : quatre dictées sur un
-      // chantier = quatre appels facturés, et quatre notes "Tâches
-      // restantes" empilées, parfois identiques mot pour mot. L'extraction
-      // des tâches et la détection d'urgence se font désormais en UNE fois,
-      // quand l'artisan demande explicitement "Analyser avec l'IA" (voir
-      // app/api/ai/analyser-demande/route.ts) : moins cher, moins bruyant,
-      // et plus juste — l'IA voit alors toutes les notes ensemble, donc
-      // elle dédoublonne et retire ce qui a été fait entre-temps.
-      //
-      // La dictée elle-même reste évidemment intacte : la transcription est
-      // enregistrée telle quelle, immédiatement, sans dépendre de l'IA.
+      // (13/09) — Plus AUCUN appel IA ici : l'extraction des tâches et la
+      // détection d'urgence se font en une fois, quand l'artisan demande
+      // « Résumer mes notes avec l'IA » (app/api/ai/analyser-demande).
     } catch {
       setSauvegarde(false);
-      setErreur("Connexion perdue. Votre texte est conservé — réessayez dès que le réseau revient.");
+      setErreur("Pas de réseau. Gardé sur ce téléphone.");
     }
   }
 
+  const aDuTexte = transcription.trim().length > 0;
+  const montrerChamp = enregistrement || aDuTexte || editionManuelle;
+
   return (
     <div>
-      <div className="flex items-center gap-3 flex-wrap">
-        {!enregistrement ? (
-          <Button variant="ghost" onClick={demarrer}>
-            🎙 Dicter une note
-          </Button>
-        ) : (
-          <Button onClick={arreter} className="!bg-signal">
-            ⏹ Arrêter l&apos;enregistrement
-          </Button>
-        )}
-        {!enregistrement && !editionManuelle && (
-          <button
-            onClick={ecrireManuel}
-            className="text-xs text-ink/50 hover:text-ink underline transition-colors"
-          >
-            ✍️ Écrire à la place
-          </button>
-        )}
-        {enregistrement && (
-          <span className="text-xs text-signal animate-pulse">Écoute en cours…</span>
-        )}
-      </div>
-
-      {erreur && <p className="mt-2 text-sm text-signal">{erreur}</p>}
-
-      {brouillonRestaure && !erreur && (
-        <p className="mt-2 text-xs text-steel">
-          Note non enregistrée retrouvée — relisez-la avant de l&apos;ajouter.
+      {enregistrement && (
+        <p className="flex items-center gap-2 text-sm text-ink" aria-live="polite">
+          <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-signal-fonce motion-safe:animate-pulse dark:bg-signal-clair" />
+          J&apos;écoute… Parlez, le texte s&apos;écrit ici.
         </p>
       )}
 
-      {(transcription || editionManuelle) && (
-        <Card className="mt-3 p-4">
-          <p className="text-xs font-medium text-ink/50 uppercase tracking-wider mb-2">
-            {editionManuelle && !transcription
-              ? "Écrivez votre note"
-              : "Transcription — relisez et corrigez si besoin"}
-          </p>
-          <textarea
-            autoFocus={editionManuelle}
-            value={transcription}
-            onFocus={() => {
-              if (!enregistrement) return;
-              ignorerResultats.current = true;
-              arreter();
-            }}
-            onChange={(e) => {
-              setTranscription(e.target.value);
-              // Vidé pour être retapé : le champ reste là.
-              setEditionManuelle(true);
-            }}
-            rows={3}
-            placeholder={editionManuelle ? "Ex : deux chevrons à remplacer, client veut refaire l'isolation…" : undefined}
-            className="w-full text-sm text-ink/80 leading-relaxed rounded-xl border border-ink/10 bg-paper p-3 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
-          />
-          <Button
-            onClick={enregistrerNote}
-            disabled={sauvegarde || !transcription.trim()}
-            className="mt-3"
-          >
-            {sauvegarde ? "Enregistrement…" : "Ajouter cette note au projet"}
-          </Button>
-        </Card>
+      <div aria-live="polite">
+        {erreur && <p className="text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+        {brouillonRestaure && !erreur && <p className="text-sm text-steel">Retrouvé sur ce téléphone. Relisez avant d&apos;ajouter.</p>}
+      </div>
+
+      {montrerChamp && (
+        <textarea
+          aria-label="Texte de la note"
+          autoFocus={editionManuelle && !aDuTexte}
+          value={transcription}
+          onFocus={() => {
+            if (!enregistrement) return;
+            ignorerResultats.current = true;
+            arreter();
+          }}
+          onChange={(e) => {
+            setTranscription(e.target.value);
+            // Vidé pour être retapé : le champ reste là.
+            setEditionManuelle(true);
+            if (!e.target.value.trim()) effacerBrouillon();
+          }}
+          rows={4}
+          placeholder={editionManuelle ? "Ex : deux chevrons à remplacer…" : undefined}
+          className="mt-2 w-full resize-none rounded-2xl bg-surface p-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
+        />
       )}
 
-
+      {/* Un seul bouton plein : « Terminé » pendant l'écoute, « Ajouter au
+          projet » ensuite, « Dicter » quand il n'y a rien. */}
+      <div className="mt-3 flex flex-col gap-2">
+        {enregistrement ? (
+          <Button onClick={arreter} className="min-h-14 w-full">
+            Terminé
+          </Button>
+        ) : aDuTexte ? (
+          <>
+            <Button onClick={enregistrerNote} loading={sauvegarde} className="min-h-14 w-full">
+              Ajouter au projet
+            </Button>
+            {ClasseReconnaissance && (
+              <button type="button" onClick={demarrer} disabled={sauvegarde} className={BOUTON_CONTOUR}>
+                Dicter la suite
+              </button>
+            )}
+          </>
+        ) : (
+          <>
+            {ClasseReconnaissance && (
+              <Button onClick={demarrer} className="min-h-14 w-full">
+                {erreur ? "Réessayer" : "Dicter"}
+              </Button>
+            )}
+            {!editionManuelle && (
+              <button type="button" onClick={ecrireManuel} className={`self-center ${BOUTON_TEXTE}`}>
+                Écrire à la place
+              </button>
+            )}
+          </>
+        )}
+      </div>
 
       {!masquerListe && notes.length > 0 && (
         <div className="mt-4 flex flex-col gap-2">
@@ -325,19 +369,14 @@ function NoteVocaleItem({ note }: { note: NoteVocale }) {
       : note.transcription;
 
   return (
-    <div className="border-l-2 border-ink/10 pl-3">
-      <p className="text-sm text-ink/80 whitespace-pre-line">{texteAffiche}</p>
+    <div className="border-l-2 border-ink/15 pl-3">
+      <p className="whitespace-pre-line text-sm text-ink">{texteAffiche}</p>
       {estLongue && (
-        <button
-          onClick={() => setEtendue(!etendue)}
-          className="mt-1 text-xs text-ink/50 hover:text-ink underline transition-colors"
-        >
+        <button type="button" onClick={() => setEtendue(!etendue)} className={`-ml-3 ${BOUTON_TEXTE}`}>
           {etendue ? "Afficher moins" : "Afficher plus"}
         </button>
       )}
-      <p className="mt-1 text-xs text-ink/40 font-mono">
-        {new Date(note.created_at).toLocaleString("fr-FR")}
-      </p>
+      <p className="mt-1 font-mono text-xs tabular-nums text-steel">{new Date(note.created_at).toLocaleString("fr-FR")}</p>
     </div>
   );
 }

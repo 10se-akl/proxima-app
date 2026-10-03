@@ -6,12 +6,12 @@ import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { statutAffiche } from "@/lib/devis/statut";
 import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
 import type { Devis, EvenementPlanning, EvenementProjet, Note, NoteVocale, Priorite, Projet } from "@/types";
-import { AFaire, ARetenir, Dossier, Maintenant } from "./Blocs";
+import { AFaire, ARetenir, BandeAjout, Dossier, Maintenant } from "./Blocs";
 import { Carnet } from "./Carnet";
 import { construireCarnet } from "./entreesCarnet";
 import { EnTeteProjet, type EntreeMenu } from "./EnTeteProjet";
 import { Feuille } from "./Feuille";
-import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto, IconePlus } from "./icones";
+import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto } from "./icones";
 import { prochaineAction, type IdAction } from "./prochaineAction";
 import { Visionneuse } from "./Visionneuse";
 import { FeuilleMessageClient, tracerMessagePrepare, type DemandeMessage } from "./FeuilleMessageClient";
@@ -32,8 +32,9 @@ import { createClient } from "@/lib/supabase/client";
 // signé — un seul fil, le plus récent d'abord, les mois anciens repliés,
 // avec une recherche.
 //
-// Et un seul geste pour ajouter quoi que ce soit : le « + » de la barre
-// de navigation, qui sur cette page ajoute au projet.
+// Pour ajouter : la bande Photo · Dicter · Note sous « Maintenant »
+// (refonte 03/10, duel D lot 2), et le « + » de la barre de navigation,
+// qui sur cette page ajoute au projet.
 //
 // Ce composant ne parle pas à la base : la page lui donne les données, les
 // actions, et les formulaires existants (dictée, photos, note, factures)
@@ -53,8 +54,13 @@ export type RendusVueProjet = {
   /** La dictée (NotesVocales sans sa liste). `fermer` à appeler une fois
    *  la note enregistrée. */
   vocal: (fermer: () => void) => ReactNode;
-  /** Ajout et gestion des photos (PhotosProjet). */
+  /** Ajout et gestion des photos (PhotosProjet) : la feuille « Photos ». */
   photos: ReactNode;
+  /** Refonte (03/10, duel D lot 2) — la prise de vue directe : le champ de
+   *  l'appareil (à poser hors des feuilles), son identifiant (la tuile
+   *  « Photo » en est l'étiquette), l'envoi en cours, et la trace ou
+   *  l'erreur à montrer là où était le doigt. */
+  capture: { idChamp: string; envoi: boolean; champ: ReactNode; etat: (surVoir: () => void) => ReactNode };
   /** Une note ou un rappel (FormulaireNote). */
   note: (fermer: () => void) => ReactNode;
   /** Téléphone, adresse, type de chantier. */
@@ -258,33 +264,6 @@ export function VueProjet({
   const sousTitre = [typeChantier, projet.adresse_client].filter(Boolean).join(" · ");
   const statutDevis = devis ? statutAffiche(devis, projet.statut) : null;
 
-  // Tablette ou téléphone en paysage (27/09) : 48 px de haut au doigt
-  // (refonte 03/10, règle 17), icônes en encre (règle 9).
-  const barreAjout = (
-    <>
-      {/* Téléphone (27/09, Axel) : ajouter une note se fait là où on voit
-          les notes — le Carnet —, pas seulement par le [+] du bas. */}
-      <button
-        type="button"
-        onClick={() => setAjout("choix")}
-        className="inline-flex min-h-12 items-center gap-1.5 rounded-full px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hidden"
-      >
-        <IconePlus className="h-4 w-4" /> Ajouter
-      </button>
-      <div className="hidden items-center gap-1.5 sm:flex">
-        <button type="button" onClick={() => setAjout("vocal")} className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5">
-          <IconeMicro className="h-5 w-5 text-ink" /> Dicter
-        </button>
-        <button type="button" onClick={() => setPhotosOuvertes(true)} className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5">
-          <IconePhoto className="h-5 w-5 text-ink" /> Photos
-        </button>
-        <button type="button" onClick={() => setAjout("note")} className="inline-flex min-h-12 items-center gap-1.5 rounded-full bg-surface px-4 text-sm font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5">
-          <IconeCrayon className="h-5 w-5 text-ink" /> Note
-        </button>
-      </div>
-    </>
-  );
-
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 sm:px-8 sm:pb-16 sm:pt-8">
       <EnTeteProjet
@@ -333,7 +312,7 @@ export function VueProjet({
       {/* Téléphone : une colonne, dans l'ordre d'usage. Ordinateur : le
           Point et le Carnet à gauche, le mémo et le dossier à droite, qui
           restent sous les yeux pendant qu'on fait défiler le Carnet. */}
-      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_21rem] lg:grid-rows-[auto_auto_1fr] lg:gap-x-8 xl:grid-cols-[minmax(0,1fr)_23rem]">
+      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_21rem] lg:grid-rows-[auto_auto_auto_1fr] lg:gap-x-8 xl:grid-cols-[minmax(0,1fr)_23rem]">
         <div className="lg:col-start-1 lg:row-start-1">
           <Maintenant
             point={point}
@@ -349,11 +328,20 @@ export function VueProjet({
           />
         </div>
         <div className="lg:col-start-1 lg:row-start-2">
+          <BandeAjout
+            idChampPhoto={rendus.capture.idChamp}
+            photoPleine={projet.statut === "en_cours"}
+            envoiPhotos={rendus.capture.envoi}
+            surDicter={() => setAjout("vocal")}
+            surNote={() => setAjout("note")}
+          />
+          {rendus.capture.etat(() => setPhotosOuvertes(true))}
+        </div>
+        <div className="empty:hidden lg:col-start-1 lg:row-start-3">
           <AFaire
             rdvAVenir={rdvAVenir}
             taches={taches}
             surTerminer={surTerminerNote}
-            surAjouter={() => setAjout("note")}
             avantDeChiffrer={
               avantDevis
                 ? { infos: infosManquantes, questions: analyse?.questions_suggerees ?? [], checklist: checklistMetier ?? [] }
@@ -362,7 +350,7 @@ export function VueProjet({
             proposition={rendus.propositionTaches}
           />
         </div>
-        <div className="space-y-4 sm:space-y-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-3 lg:row-start-1 lg:self-start">
+        <div className="space-y-4 sm:space-y-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-4 lg:row-start-1 lg:self-start">
           <ARetenir
             memo={memo.valeur}
             surChangerMemo={memo.surChanger}
@@ -400,17 +388,20 @@ export function VueProjet({
             </div>
           )}
         </div>
-        <div className="pt-4 lg:col-start-1 lg:row-start-3 lg:pt-6">
+        <div className="pt-4 lg:col-start-1 lg:row-start-4 lg:pt-6">
           <Carnet
             entrees={entrees}
             urlsPhotos={urlsPhotos}
             surOuvrirPhoto={(chemins, index) => setVisionneuse({ chemins, index })}
             maintenant={maintenant}
-            barreAjout={barreAjout}
           />
         </div>
       </div>
 
+
+      {/* Hors de toute feuille : il doit encore exister quand l'appareil
+          photo rend la main (une feuille fermée n'existe plus). */}
+      {rendus.capture.champ}
 
       <Feuille
         ouverte={ajout !== null}

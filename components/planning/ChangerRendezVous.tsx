@@ -96,7 +96,13 @@ export function useChangerRendezVous(
       <FeuilleDeplacer
         evenement={
           mode === "deplacer"
-            ? { id: evenement.id, titre: evenement.titre, date_heure: evenement.date_heure, nomClient }
+            ? {
+                id: evenement.id,
+                titre: evenement.titre,
+                date_heure: evenement.date_heure,
+                nomClient,
+                duree_minutes: evenement.duree_minutes,
+              }
             : null
         }
         surFermer={() => setMode(null)}

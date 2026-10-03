@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/Button";
 import { GrilleAgenda } from "@/components/planning/GrilleAgenda";
 import { AgendaMobile } from "@/components/planning/AgendaMobile";
+import { PlanifierDepuisLien } from "@/components/planning/PlanifierDepuisLien";
 import { getOrganisationId } from "@/lib/organisation";
 import { recupererAlertesMeteoSemaine } from "@/lib/meteo";
 import {
@@ -21,7 +22,7 @@ const OFFSET_MAX = 104;
 export default async function PlanningPage({
   searchParams,
 }: {
-  searchParams: { semaine?: string; rdvCree?: string };
+  searchParams: { semaine?: string; rdvCree?: string; projetId?: string };
 }) {
   // Refonte (03/10, duel G lot 2) — le serveur tourne en UTC : « aujourd'hui »,
   // le lundi et minuit se calculaient à deux heures près l'été, et la
@@ -77,6 +78,19 @@ export default async function PlanningPage({
       return t >= f.debut.getTime() && t < f.fin.getTime();
     });
 
+  // ?projetId= (la fiche, À confirmer, la clôture…) : « Planifier » s'ouvre,
+  // déjà remplie pour ce projet (components/planning/PlanifierDepuisLien.tsx).
+  // Un identifiant qui n'a pas la forme d'un uuid n'interroge rien.
+  const idProjet = searchParams.projetId && /^[0-9a-f-]{36}$/i.test(searchParams.projetId) ? searchParams.projetId : null;
+  const { data: projetAPlanifier } = idProjet
+    ? await supabase
+        .from("demandes")
+        .select("id, nom_client, type_chantier")
+        .eq("id", idProjet)
+        .eq("organisation_id", organisationId)
+        .maybeSingle()
+    : { data: null };
+
   const alertesMeteoBrut = await recupererAlertesMeteoSemaine(parametres?.adresse);
   const alertesMeteo = Object.fromEntries(alertesMeteoBrut);
 
@@ -89,6 +103,8 @@ export default async function PlanningPage({
 
   return (
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-5xl">
+      <PlanifierDepuisLien projet={projetAPlanifier} />
+
       {searchParams.rdvCree === "1" && (
         <div className="mb-4 rounded-xl bg-succes/10 border border-succes/30 px-4 py-3 text-sm text-ink/80">
           ✓ Un rendez-vous a été ajouté au planning à partir du message du client.

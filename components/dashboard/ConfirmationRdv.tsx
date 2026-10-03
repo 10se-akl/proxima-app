@@ -132,7 +132,7 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
       // une validation quasi simultanée par deux membres de l'équipe.
       setErreur(
         error.code === "23P01"
-          ? "Ce créneau vient d'être pris par quelqu'un d'autre de votre équipe. Choisissez un autre horaire."
+          ? "Déjà pris à cette heure."
           : "Impossible d'enregistrer le rendez-vous. Réessayez."
       );
       return;

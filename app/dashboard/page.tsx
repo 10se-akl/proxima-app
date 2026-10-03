@@ -217,6 +217,28 @@ export default async function DashboardHome() {
   const finEstimee = (e: { type: string; date_heure: string; duree_minutes?: number | null }) =>
     Date.parse(e.date_heure) + (e.duree_minutes ?? (e.type === "rendez_vous" ? 60 : 15)) * 60000;
 
+  // ---- L'auteur (refonte 03/10 — duel C, lot 5) ----------------------------
+  // Un seul espace partagé (duel A) : dans « À régler » et « À suivre »,
+  // « · Lucas » quand la ligne vient d'un coéquipier. Les profils des
+  // membres se lisent entre eux (schema.sql, « un membre lit les profils de
+  // son organisation ») ; un ancien membre n'est plus lisible et n'affiche
+  // rien. Seul un compte d'équipe paie cette requête : un artisan seul n'a
+  // aucun autre auteur.
+  const autres = new Set<string>();
+  for (const x of [...notesAvecRappel, ...passesPlat, ...listeProjets, ...devisListPlat, ...facturesDues] as { artisan_id?: string | null }[]) {
+    if (x.artisan_id && x.artisan_id !== user?.id) autres.add(x.artisan_id);
+  }
+  const { data: auteurs } =
+    autres.size > 0
+      ? await supabase.from("profils").select("id, nom").in("id", Array.from(autres))
+      : { data: [] as { id: string; nom: string | null }[] };
+  const prenoms = new Map((auteurs ?? []).map((a) => [a.id as string, ((a.nom as string | null) ?? "").trim().split(/\s+/)[0]]));
+  /** Le détail d'une ligne, suivi du prénom de son auteur si ce n'est pas vous. */
+  const parAuteur = (detail: string | undefined, artisanId?: string | null): string | undefined => {
+    const prenom = artisanId && artisanId !== user?.id ? prenoms.get(artisanId) : undefined;
+    return prenom ? [detail, prenom].filter(Boolean).join(" · ") : detail;
+  };
+
   // ---- Derrière : passé d'une heure après sa fin, sans réponse ----------
   const evenementsDerriere = passesPlat.filter((e) => finEstimee(e) + MARGE_CONFIRMATION_MIN * 60000 < t);
   const idsDerriere = new Set(evenementsDerriere.map((e) => e.id));
@@ -274,7 +296,7 @@ export default async function DashboardHome() {
         id: n.id,
         date: n.rappel_a as string,
         principal: n.titre,
-        secondaire: [quand(n.rappel_a as string, maintenant), n.demandes?.nom_client].filter(Boolean).join(" · "),
+        secondaire: parAuteur([quand(n.rappel_a as string, maintenant), n.demandes?.nom_client].filter(Boolean).join(" · "), n.artisan_id),
         href: fiche(n.demande_id, "/dashboard/notes"),
       })),
     ...evenementsDerriere
@@ -288,7 +310,7 @@ export default async function DashboardHome() {
           id: e.id,
           date: e.date_heure,
           principal: client ?? e.titre,
-          secondaire: `${quand(e.date_heure, maintenant)} · ${client ? e.titre : rdv ? "Rendez-vous" : "Rappel"}`,
+          secondaire: parAuteur(`${quand(e.date_heure, maintenant)} · ${client ? e.titre : rdv ? "Rendez-vous" : "Rappel"}`, e.artisan_id),
           href: fiche(e.demande_id, "/dashboard/planning"),
           demandeId: e.demande_id,
         };
@@ -303,7 +325,7 @@ export default async function DashboardHome() {
         id: p.id,
         date: new Date(depuis).toISOString(),
         principal: p.nom_client,
-        secondaire: "Chantier terminé ?",
+        secondaire: parAuteur("Chantier terminé ?", p.artisan_id),
         href: `/dashboard/demandes/${p.id}`,
         demandeId: p.id,
       })),
@@ -364,7 +386,7 @@ export default async function DashboardHome() {
           id: p.id,
           jours: joursDepuis(p.created_at),
           principal: p.nom_client,
-          secondaire: nouveau ? "Nouveau projet à cadrer" : "Devis à préparer",
+          secondaire: parAuteur(nouveau ? "Nouveau projet à cadrer" : "Devis à préparer", p.artisan_id) as string,
           action: nouveau ? `Cadrer le projet ${p.nom_client}` : `Préparer le devis de ${p.nom_client}`,
           href: `/dashboard/demandes/${p.id}`,
         };
@@ -375,7 +397,7 @@ export default async function DashboardHome() {
       id: d.id,
       jours: d.jours,
       principal: d.nom,
-      secondaire: d.quoi,
+      secondaire: parAuteur(d.quoi, d.artisanId) as string,
       action: `${d.quoi === "Devis à relire" ? "Relire" : "Envoyer"} le devis ${d.nom}`,
       href: d.href,
     })),
@@ -388,7 +410,7 @@ export default async function DashboardHome() {
         id: l.id,
         jours: l.jours,
         principal: l.nom,
-        secondaire: l.quoi,
+        secondaire: parAuteur(l.quoi, l.artisanId) as string,
         action: `Relancer ${l.nom}`,
         href: l.href,
         relance: l.relance,

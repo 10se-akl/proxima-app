@@ -13,6 +13,7 @@ import {
 } from "./actionsEvenement";
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
+import { useChangerRendezVous } from "./ChangerRendezVous";
 
 // Plage par défaut : couvre une journée de travail classique sans obliger
 // à scroller pour un artisan qui n'a jamais de rendez-vous hors de ces
@@ -120,6 +121,11 @@ function BlocEvenement({
   const [messageOuvert, setMessageOuvert] = useState(false);
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState(false);
+  // Refonte (03/10, duel G lot 1) — « Annuler » annulait en un clic, sans un
+  // mot au client, et « Déplacer » n'existait pas ici : les deux passent
+  // maintenant par la même question et le même message que sur le
+  // téléphone (voir ChangerRendezVous.tsx).
+  const changer = useChangerRendezVous(evenement, () => setMenuOuvert(false));
 
   const date = new Date(evenement.date_heure);
   const minutesDepuisDebut = (date.getHours() - heureDebut) * 60 + date.getMinutes();
@@ -193,7 +199,6 @@ function BlocEvenement({
     router.refresh();
   }
   const basculerTermine = () => agir(() => changerStatutEvenement(supabase, evenement.id, termine ? "a_faire" : "termine"));
-  const annuler = () => agir(() => changerStatutEvenement(supabase, evenement.id, "annule"));
   function supprimer() {
     if (!window.confirm(`Supprimer "${evenement.titre}" ?`)) return;
     agir(() => supprimerEvenement(supabase, evenement.id));
@@ -275,6 +280,17 @@ function BlocEvenement({
                 → Ouvrir le projet
               </button>
             )}
+            {!annule && (
+              <button
+                onClick={() => {
+                  setMenuOuvert(false);
+                  changer.ouvrirDeplacer();
+                }}
+                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+              >
+                Déplacer
+              </button>
+            )}
             <button
               onClick={() => router.push(`/dashboard/planning/nouveau?eventId=${evenement.id}`)}
               className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
@@ -290,7 +306,10 @@ function BlocEvenement({
             </button>
             {!annule && (
               <button
-                onClick={annuler}
+                onClick={() => {
+                  setMenuOuvert(false);
+                  changer.ouvrirAnnuler();
+                }}
                 disabled={enCours}
                 className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
               >
@@ -312,6 +331,8 @@ function BlocEvenement({
           </div>
         </>
       )}
+
+      {changer.feuilles}
 
       {evenement.demande_id && (
         <FeuilleMessageClient

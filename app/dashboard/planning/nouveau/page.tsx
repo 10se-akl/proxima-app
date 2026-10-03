@@ -14,6 +14,7 @@ import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { TypeEvenement, Priorite } from "@/types";
 import { SquelettePage } from "@/components/ui/Skeleton";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
+import { chargerCreneauParDefaut, titreParDefaut } from "@/components/planning/creneau";
 
 const COULEUR_PRIORITE: Record<Priorite, string> = {
   urgent: "bg-[#C23B22]",
@@ -21,7 +22,7 @@ const COULEUR_PRIORITE: Record<Priorite, string> = {
   normal: "bg-[#2F8F5B]",
 };
 
-type ProjetLeger = { id: string; nom_client: string; priorite: Priorite };
+type ProjetLeger = { id: string; nom_client: string; priorite: Priorite; type_chantier: string | null };
 
 // Audit "vérification systématique" (10/09) — trouvé par un agent de
 // recherche : les deux endroits qui préremplissaient date/heure à partir
@@ -62,7 +63,12 @@ function NouvelEvenementForm() {
 
   const [type, setType] = useState<TypeEvenement>("rendez_vous");
   const [titre, setTitre] = useState("");
-  const [date, setDate] = useState("");
+  // Refonte (03/10, duel G) — `?date=AAAA-MM-JJ` : le jour touché sur le
+  // planning (« + » d'un jour vide, puis « Autre… »).
+  const [date, setDate] = useState(() => {
+    const d = searchParams.get("date");
+    return d && /^\d{4}-\d{2}-\d{2}$/.test(d) ? d : "";
+  });
   const [heure, setHeure] = useState("");
   const [dureeMinutes, setDureeMinutes] = useState(60);
   const [demandeId, setDemandeId] = useState(searchParams.get("projetId") ?? "");
@@ -91,11 +97,33 @@ function NouvelEvenementForm() {
       const organisationId = await getOrganisationId(supabase, user.id);
       const { data } = await supabase
         .from("demandes")
-        .select("id, nom_client, priorite")
+        .select("id, nom_client, priorite, type_chantier")
         .eq("organisation_id", organisationId)
         .neq("statut", "termine")
         .order("created_at", { ascending: false });
-      setProjets((data as ProjetLeger[]) ?? []);
+      const liste = (data as ProjetLeger[]) ?? [];
+
+      // Refonte (03/10, duel G lot 1) — `?projetId=` ne se contentait que de
+      // lier le projet : le titre, le jour et l'heure restaient vides, alors
+      // que trois portes mènent ici depuis un projet (À confirmer, clôture,
+      // confirmation de rendez-vous). On rejoue ce que fait le choix d'un
+      // projet dans la liste. Un projet terminé n'est pas dans la liste (un
+      // SAV après la clôture) : on le lit directement.
+      const projetParam = searchParams.get("projetId");
+      let depuisLien = projetParam ? liste.find((p) => p.id === projetParam) : undefined;
+      if (projetParam && !depuisLien && !eventId) {
+        const { data: unique } = await supabase
+          .from("demandes")
+          .select("id, nom_client, priorite, type_chantier")
+          .eq("id", projetParam)
+          .maybeSingle();
+        if (unique) {
+          depuisLien = unique as ProjetLeger;
+          liste.unshift(depuisLien);
+        }
+      }
+      setProjets(liste);
+      if (depuisLien && !eventId) await choisirProjet(depuisLien);
     }
     chargerProjets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -149,24 +177,19 @@ function NouvelEvenementForm() {
     setDemandeId(p.id);
     setSelecteurOuvert(false);
     if (!titre.trim()) {
-      setTitre(`Chantier ${p.nom_client}`);
+      // Le client et le type du chantier (« Chantier Dupont · Salle de bain »).
+      setTitre(titreParDefaut(p.nom_client, p.type_chantier));
     }
 
-    if (!date && !heure) {
-      const { data } = await supabase
-        .from("evenements_planning")
-        .select("date_heure")
-        .eq("demande_id", p.id)
-        .gte("date_heure", new Date().toISOString())
-        .order("date_heure", { ascending: true })
-        .limit(1)
-        .maybeSingle();
-
-      if (data?.date_heure) {
-        const d = new Date(data.date_heure);
-        setDate(dateLocaleAAAAMMJJ(d));
-        setHeure(d.toTimeString().slice(0, 5));
-      }
+    // Avant : la date du prochain rendez-vous du projet, c'est-à-dire un
+    // créneau déjà pris par ce même projet. Maintenant : demain, à l'heure
+    // et pour la durée du dernier rendez-vous du projet, sinon 8 h pour 1 h
+    // (voir components/planning/creneau.ts).
+    if (!enModeEdition) {
+      const c = await chargerCreneauParDefaut(supabase, p.id);
+      setDate((d) => d || c.jour);
+      setHeure((h) => h || c.heure);
+      setDureeMinutes((m) => (m === 60 ? c.duree : m));
     }
   }
 
@@ -282,11 +305,11 @@ function NouvelEvenementForm() {
         });
 
       if (conflit) {
-        setErreur(
-          `Créneau déjà pris : "${conflit.titre}" à ${new Date(
-            conflit.date_heure
-          ).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}. Choisissez un autre horaire.`
-        );
+        // Refonte (03/10, duel G lot 1) — le même mot partout (voir aussi
+        // FeuilleDeplacer) : on ne dit plus « par quelqu'un d'autre de votre
+        // équipe », ce qui laissait croire à un « Pour qui ? » qui n'existe
+        // pas. La protection est celle de l'entreprise entière.
+        setErreur("Déjà pris à cette heure.");
         setChargement(false);
         return;
       }
@@ -317,7 +340,7 @@ function NouvelEvenementForm() {
       // (exclusion_violation) dans ce cas précis, message aussi clair que
       // celui du contrôle côté client ci-dessus.
       if (error.code === "23P01") {
-        setErreur("Ce créneau vient d'être pris par quelqu'un d'autre de votre équipe. Choisissez un autre horaire.");
+        setErreur("Déjà pris à cette heure.");
         setChargement(false);
         return;
       }
@@ -572,7 +595,11 @@ function NouvelEvenementForm() {
             onChange={(e) => setNotes(e.target.value)}
           />
 
-          {erreur && <p className="text-sm text-signal">{erreur}</p>}
+          {erreur && (
+            <p aria-live="polite" className="text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+              {erreur}
+            </p>
+          )}
 
           <button
             type="submit"

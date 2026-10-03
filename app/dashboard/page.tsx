@@ -37,6 +37,8 @@ const HEURE_DU_SOIR = 17;
 // tâche ne passe « derrière » qu'une heure après sa fin estimée.
 const MARGE_CONFIRMATION_MIN = 60;
 const JOUR_MS = 86400000;
+// Un message partagé et jamais rangé reste visible une semaine.
+const JOURS_PARTAGE_VISIBLE = 7;
 
 // Sans ça, Next.js peut servir une version mise en cache de cette page en
 // revenant dessus après avoir changé d'onglet ou de page (cache de routeur
@@ -60,6 +62,17 @@ function quand(iso: string, maintenant: Date): string {
   if (ecart === 1) return `hier ${heureCourte(iso)}`;
   if (ecart < 7) return `${JOUR_SEMAINE.format(d)} ${heureCourte(iso)}`;
   return DATE_COURTE.format(d);
+}
+
+/** Le même, en cinq signes au plus, pour la colonne du repère : « 14h30 »,
+ *  « hier », « lun. », « 29/09 ». */
+function quandBref(iso: string, maintenant: Date): string {
+  const d = new Date(iso);
+  const ecart = Math.round((Date.parse(CLE_JOUR.format(maintenant)) - Date.parse(CLE_JOUR.format(d))) / JOUR_MS);
+  if (ecart <= 0) return heureCourte(iso);
+  if (ecart === 1) return "hier";
+  if (ecart < 7) return JOUR_SEMAINE.format(d);
+  return CLE_JOUR.format(d).slice(5).split("-").reverse().join("/");
 }
 
 export default async function DashboardHome() {
@@ -99,6 +112,7 @@ export default async function DashboardHome() {
     notesAvecRappel,
     { data: relancesBrut },
     { data: premierRdvDemainBrut },
+    { data: partagesBrut },
   ] = await Promise.all([
     supabase.from("profils").select("nom").eq("id", user?.id).single(),
     supabase.from("demandes").select("*").eq("organisation_id", organisationId),
@@ -172,6 +186,21 @@ export default async function DashboardHome() {
       .lt("date_heure", finDemainParis.toISOString())
       .order("date_heure", { ascending: true })
       .limit(1),
+    // Refonte (03/10 — duel E, lot 2) : les messages partagés depuis
+    // WhatsApp ou les SMS et jamais rangés. Créer un projet ou ajouter le
+    // message à un projet supprime la ligne (api/demandes/
+    // creer-depuis-brouillon et ajouter-note-depuis-partage) : ce qui reste
+    // a été abandonné en route (un appel, une coupure). Seul le compte qui
+    // a capté les voit (RLS inchangée) ; au-delà de 7 jours, ils sont
+    // masqués, pas supprimés.
+    user
+      ? supabase
+          .from("partages_entrants")
+          .select("id, texte, images, created_at")
+          .eq("artisan_id", user.id)
+          .gte("created_at", new Date(t - JOURS_PARTAGE_VISIBLE * JOUR_MS).toISOString())
+          .order("created_at", { ascending: false })
+      : Promise.resolve({ data: null }),
   ]);
 
   const devisListPlat = aplatirClient(devisList);
@@ -368,6 +397,22 @@ export default async function DashboardHome() {
     // Le plus ancien d'abord.
     .sort((a, b) => b.jours - a.jours)
     .map(({ jours, ...l }) => ({ ...l, repere: `${jours} j` }));
+  // Les messages reçus et pas rangés passent en tête : ils restent parmi
+  // les cinq lignes visibles, et la page de partage relance la recherche
+  // du client et l'IA.
+  const recus: LigneASuivre[] = (partagesBrut ?? []).map((p) => {
+    const apercu = (p.texte ?? "").split("\n").map((s: string) => s.trim()).find(Boolean);
+    return {
+      cle: `recu-${p.id}`,
+      id: p.id,
+      repere: quandBref(p.created_at, maintenant),
+      principal: apercu ?? (Array.isArray(p.images) && p.images.length > 0 ? "Photo partagée" : "Message partagé"),
+      secondaire: "Reçu · à ranger",
+      action: "Ranger le message reçu",
+      href: `/dashboard/demandes/partage/${p.id}`,
+    };
+  });
+  aSuivreTout.unshift(...recus);
 
   // ---- Maintenant ------------------------------------------------------------
   let action: ActionAccueil | null = null;

@@ -79,7 +79,10 @@ export async function POST(request: NextRequest) {
     const resultats = await Promise.allSettled(
       fichiers.map(async (fichier, index) => {
         const extension = fichier.type === "image/png" ? "png" : "jpg";
-        const chemin = `${user.id}/partage-${Date.now()}-${index}.${extension}`;
+        // Refonte (03/10) — rangée par entreprise, l'auteur en 2e segment
+        // (Module 47) : la photo reste lisible par l'équipe après le départ
+        // de celui qui l'a partagée, et par elle seule.
+        const chemin = `${organisationId}/${user.id}/partage-${Date.now()}-${index}.${extension}`;
         const octets = new Uint8Array(await fichier.arrayBuffer());
         const { error: erreurUpload } = await supabase.storage
           .from("photos")

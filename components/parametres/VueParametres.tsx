@@ -110,13 +110,16 @@ export function VueParametres({
       data: { user },
     } = await supabase.auth.getUser();
 
-    if (!user) {
+    if (!user || !organisationId) {
       setErreur("Session expirée, reconnectez-vous.");
       setEnvoiLogo(false);
       return;
     }
 
-    const chemin = `${user.id}/logo-${Date.now()}-${fichier.name}`;
+    // Refonte (03/10) — le logo appartient à l'entreprise, pas à la
+    // personne qui l'a envoyé : rangé sous {organisation}/ (Module 47), il
+    // reste lisible par toute l'équipe après le départ de son auteur.
+    const chemin = `${organisationId}/logo-${Date.now()}-${fichier.name}`;
     const { error } = await supabase.storage.from("logos").upload(chemin, fichier);
 
     setEnvoiLogo(false);
@@ -258,7 +261,9 @@ export function VueParametres({
                 <input
                   ref={logoInputRef}
                   type="file"
-                  accept="image/*"
+                  // Refonte (03/10) — les types que le dossier « logos »
+                  // accepte après le Module 50 (le SVG en est exclu).
+                  accept="image/png,image/jpeg,image/webp"
                   onChange={(e) => changerLogo(e.target.files?.[0] ?? null)}
                   className="hidden"
                   id="logo-input"

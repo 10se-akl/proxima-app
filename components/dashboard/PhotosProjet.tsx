@@ -94,7 +94,7 @@ export function PhotosProjet({
     const resultats = await Promise.all(
       fichiersOriginaux.map(async (fichierOriginal) => {
         const fichier = await compresserPhoto(fichierOriginal);
-        const chemin = `${user.id}/${demandeId}/${Date.now()}-${fichier.name}`;
+        const chemin = `${organisationId}/${user.id}/${demandeId}/${Date.now()}-${fichier.name}`;
         const { error } = await supabase.storage.from("photos").upload(chemin, fichier);
         return error ? null : chemin;
       })

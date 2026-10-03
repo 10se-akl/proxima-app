@@ -1,0 +1,360 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candidat D — Planning : une liste, décaler et annuler qui préviennent</title>
+<link rel="stylesheet" href="../_commun/maquette.css">
+<style>
+  /* Locale à cette maquette : uniquement les variables de la feuille commune. */
+  svg.ico { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .titre-maquette { flex-basis: 100%; font: 700 18px Manrope, sans-serif; }
+  .titre-maquette small { display: block; margin-top: 4px; font: 500 14px Inter; color: rgb(var(--c-steel)); }
+  .page { flex: 1; padding: 20px 16px 160px; }
+  .jour { display: flex; align-items: baseline; gap: 8px; margin-top: 22px; }
+  .jour .t-petit { font-size: 14px; }
+  .titre-page + .jour { margin-top: 18px; }
+  .liste { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .rdv { display: flex; min-height: 64px; background: rgb(var(--c-surface)); border-radius: 16px;
+         box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .rdv.meme { box-shadow: inset 5px 0 0 rgb(var(--c-ink)), inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .rdv .zone { flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; padding: 12px 16px; }
+  .heure { width: 54px; flex: none; font: 500 16px "IBM Plex Mono", monospace; font-variant-numeric: tabular-nums; }
+  .corps { flex: 1; min-width: 0; }
+  .corps b { display: block; font: 600 16px/1.3 Inter; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .corps small { display: block; font: 400 14px/1.3 Inter; color: rgb(var(--c-steel)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .corps em { display: block; font: 600 14px/1.3 Inter; font-style: normal; color: rgb(var(--c-signal-fonce)); }
+  .chev { width: 18px; height: 18px; flex: none; color: rgb(var(--c-steel)); }
+  .disque { flex: none; width: 36px; height: 36px; border-radius: 99px; background: rgb(var(--c-paper-warm));
+            display: grid; place-items: center; font: 600 14px Inter; }
+  .vide { margin-top: 10px; font: 400 16px Inter; color: rgb(var(--c-steel)); }
+
+  .bas { position: absolute; left: 0; right: 0; bottom: 72px; padding: 24px 16px 12px;
+         background: linear-gradient(to bottom, rgb(var(--c-paper) / 0), rgb(var(--c-paper)) 45%); }
+  .btn-encre { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); }
+  .btn-contour { background: transparent; color: rgb(var(--c-ink)); box-shadow: inset 0 0 0 1.5px rgb(var(--c-ink) / .6); }
+  .btn-danger { background: transparent; color: rgb(var(--c-signal-fonce)); box-shadow: inset 0 0 0 1.5px rgb(var(--c-signal-fonce) / .5); }
+  .btn.pet { font-size: 16px; min-height: 48px; }
+
+  .etiq { font: 600 14px Inter; margin-bottom: 6px; }
+  .champ { min-height: 48px; border-radius: 12px; background: rgb(var(--c-paper)); padding: 0 12px; display: flex; align-items: center;
+           font: 500 16px Inter; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .champ.mono { font-family: "IBM Plex Mono", monospace; }
+  .deux { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .puces { display: flex; gap: 8px; }
+  .puce { flex: 1; min-height: 48px; border-radius: 99px; display: flex; align-items: center; justify-content: center;
+          font: 600 15px Inter; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .4); }
+  .puce.on { background: rgb(var(--c-ink)); color: rgb(var(--c-paper)); box-shadow: none; }
+  .avis { display: flex; align-items: center; gap: 8px; font: 400 14px Inter; color: rgb(var(--c-steel)); }
+  .point { width: 8px; height: 8px; border-radius: 99px; background: rgb(var(--c-alerte-orange)); flex: none; }
+
+  .tuiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .tuile { min-height: 72px; border-radius: 16px; background: rgb(var(--c-surface)); display: flex; flex-direction: column;
+           align-items: center; justify-content: center; gap: 6px; font: 600 14px Inter; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+  .lig { min-height: 56px; display: flex; align-items: center; justify-content: space-between; font: 500 16px Inter;
+         border-bottom: 1px solid rgb(var(--c-gris-clair)); }
+  .liens { display: flex; justify-content: space-between; align-items: center; }
+  .lien { min-height: 48px; display: inline-flex; align-items: center; font: 600 16px Inter; text-decoration: underline;
+          text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  .lien.danger { color: rgb(var(--c-signal-fonce)); }
+  .msg { border-radius: 16px; background: rgb(var(--c-surface)); padding: 16px; box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15);
+         display: flex; flex-direction: column; gap: 10px; }
+  .msg p { font: 400 16px/1.4 Inter; }
+  .fiche-bloc { margin-top: 24px; border-radius: 16px; background: rgb(var(--c-surface)); padding: 20px;
+                box-shadow: inset 0 0 0 1px rgb(var(--c-ink) / .15); }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-8 9 8v10H3z"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 6h6l2 2h10v11H3z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-dots" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="19" cy="12" r="1.2"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z"/></symbol>
+  <symbol id="i-msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+</svg>
+
+<p class="titre-maquette">Candidat D — le planning sur téléphone
+  <small>Une liste « à venir ». Décaler et annuler proposent de prévenir. Deux personnes, sans colonne par personne.</small>
+</p>
+
+<!-- 1. VUE PAR DÉFAUT -->
+<div class="cadre">
+  <h2>1 · Vue par défaut</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">Planning</h1>
+
+      <div class="jour"><span class="t-grand">Aujourd'hui</span><span class="t-petit">jeudi 1 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h30</span><span class="corps"><b>SCI Les Jardins</b><small>Visite technique · Résidence des Tilleuls</small><em>Météo à risque</em></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">11h00</span><span class="corps"><b>Appel rapide</b><small>Rappel</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">14h30</span><span class="corps"><b>Dupont</b><small>Pose placo · 12 rue des Lilas</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+      </div>
+
+      <div class="jour"><span class="t-grand">Demain</span><span class="t-petit">vendredi 2 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">9h00</span><span class="corps"><b>Mme Garnier</b><small>Cloisons · 8 impasse du Four</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+      </div>
+
+      <div class="jour"><span class="t-grand">Lundi 5 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h00</span><span class="corps"><b>M. Roux</b><small>Réception · 3 rue Pasteur</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+      </div>
+    </div>
+
+    <div class="bas"><button class="btn btn-encre">Planifier un rendez-vous</button></div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Liste à venir : aujourd'hui, demain, la suite. Plus de bande de 7 jours.</p>
+</div>
+
+<!-- 2. CRÉATION DEPUIS UNE FICHE PROJET -->
+<div class="cadre">
+  <h2>2 · Planifier depuis la fiche projet</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">M. Martin</h1>
+      <p class="t-corps" style="color:rgb(var(--c-steel));margin-top:6px">Cloisons · chemin de Villeneuve</p>
+      <div class="fiche-bloc">
+        <div class="t-grand">Rendez-vous</div>
+        <p class="t-corps" style="margin-top:10px">Visite · jeu. 24 sept., 9h00</p>
+        <p class="t-corps" style="margin-top:4px;color:rgb(var(--c-steel))">Rien à venir.</p>
+        <button class="btn btn-encre" style="margin-top:16px">Planifier</button>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Planifier chez Martin</div>
+      <div><div class="etiq">Quoi</div><div class="champ">Chantier</div></div>
+      <div><div class="etiq">Jour</div>
+        <div class="puces"><span class="puce on">Demain</span><span class="puce">lun. 5</span><span class="puce">mar. 6</span><span class="puce">Autre…</span></div></div>
+      <div class="deux">
+        <div><div class="etiq">Heure</div><div class="champ mono">9h00</div></div>
+        <div><div class="etiq">Durée</div><div class="champ">1 h</div></div>
+      </div>
+      <div class="avis"><span class="point"></span>Même heure que Mme Garnier (9h00).</div>
+      <button class="btn btn-encre">Planifier demain à 9h00</button>
+    </div>
+  </div>
+  <p class="note-maquette">Tout est rempli d'avance (même heure que la dernière visite) : deux appuis. L'avertissement ne bloque pas.</p>
+</div>
+
+<!-- 3. APPUI SUR UN RENDEZ-VOUS -->
+<div class="cadre">
+  <h2>3 · Appui sur « Dupont 14h30 »</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">Planning</h1>
+      <div class="jour"><span class="t-grand">Aujourd'hui</span><span class="t-petit">jeudi 1 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h30</span><span class="corps"><b>SCI Les Jardins</b><small>Visite technique · Résidence des Tilleuls</small></span></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">14h30</span><span class="corps"><b>Dupont</b><small>Pose placo · 12 rue des Lilas</small></span></div></div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">14h30 · Dupont</div>
+      <div class="tuiles">
+        <div class="tuile"><svg class="ico"><use href="#i-phone"/></svg>Appeler</div>
+        <div class="tuile"><svg class="ico"><use href="#i-msg"/></svg>Message</div>
+        <div class="tuile"><svg class="ico"><use href="#i-pin"/></svg>Itinéraire</div>
+      </div>
+      <div>
+        <div class="lig"><span>Décaler</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        <div class="lig"><span>C'est fait</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+        <div class="lig" style="border-bottom:0"><span>Ouvrir le projet</span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+      </div>
+      <div class="liens"><span class="lien">Modifier</span><span class="lien danger">Annuler le rendez-vous</span></div>
+    </div>
+  </div>
+  <p class="note-maquette">« Décaler » remplace « Modifier ou déplacer ». « Supprimer » passe dans « Modifier ».</p>
+</div>
+
+<!-- 4. DÉCALER À DEMAIN -->
+<div class="cadre">
+  <h2>4 · Décaler à demain</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">Planning</h1>
+      <div class="jour"><span class="t-grand">Aujourd'hui</span><span class="t-petit">jeudi 1 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h30</span><span class="corps"><b>SCI Les Jardins</b><small>Visite technique · Résidence des Tilleuls</small></span></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">14h30</span><span class="corps"><b>Dupont</b><small>Pose placo · 12 rue des Lilas</small></span></div></div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Déplacer le rendez-vous</div>
+      <div><div class="etiq">Jour</div>
+        <div class="puces"><span class="puce on">Demain</span><span class="puce">lun. 5</span><span class="puce">mar. 6</span><span class="puce">Autre…</span></div></div>
+      <div><div class="etiq">Heure</div><div class="champ mono">14h30</div></div>
+      <button class="btn btn-encre">Déplacer à demain 14h30</button>
+    </div>
+  </div>
+  <p class="note-maquette">La feuille déjà livrée pour l'accueil, avec des puces au lieu du calendrier natif.</p>
+</div>
+
+<!-- 5. PRÉVENIR LE CLIENT -->
+<div class="cadre">
+  <h2>5 · Aussitôt après : prévenir Dupont</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">Planning</h1>
+      <div class="jour"><span class="t-grand">Aujourd'hui</span><span class="t-petit">jeudi 1 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h30</span><span class="corps"><b>SCI Les Jardins</b><small>Visite technique · Résidence des Tilleuls</small></span></div></div>
+      </div>
+      <div class="jour"><span class="t-grand">Demain</span><span class="t-petit">vendredi 2 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">9h00</span><span class="corps"><b>Mme Garnier</b><small>Cloisons · 8 impasse du Four</small></span></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">14h30</span><span class="corps"><b>Dupont</b><small>Pose placo · 12 rue des Lilas</small></span></div></div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Message à Dupont</div>
+      <div class="msg">
+        <div class="t-sur">Décalage</div>
+        <p>Bonjour, je dois décaler notre rendez-vous du 1 octobre. Je vous propose le 2 octobre à 14h30.</p>
+        <div class="deux"><button class="btn btn-encre pet">SMS</button><button class="btn btn-contour pet">WhatsApp</button></div>
+      </div>
+    </div>
+  </div>
+  <p class="note-maquette">S'ouvre seul, texte prêt, nouvelle date visible. Gérard appuie, l'envoi se fait dans son SMS.</p>
+</div>
+
+<!-- 6. ANNULER -->
+<div class="cadre">
+  <h2>6 · Annuler : la question d'abord</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">Planning</h1>
+      <div class="jour"><span class="t-grand">Aujourd'hui</span><span class="t-petit">jeudi 1 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h30</span><span class="corps"><b>SCI Les Jardins</b><small>Visite technique · Résidence des Tilleuls</small></span></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">14h30</span><span class="corps"><b>Dupont</b><small>Pose placo · 12 rue des Lilas</small></span></div></div>
+      </div>
+    </div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+    <div class="voile"></div>
+    <div class="feuille">
+      <div class="t-grand">Annuler ce rendez-vous ?</div>
+      <div>
+        <p class="t-corps">Dupont · aujourd'hui 14h30</p>
+        <p class="t-petit" style="font-size:14px;margin-top:4px">Vous pourrez ensuite prévenir Dupont.</p>
+      </div>
+      <button class="btn btn-danger">Oui, annuler</button>
+      <button class="btn btn-discret">Garder le rendez-vous</button>
+    </div>
+  </div>
+  <p class="note-maquette">Un bouton destructif en contour, jamais plein. Ensuite : la feuille de l'écran 5, avec le modèle « annulation ».</p>
+</div>
+
+<!-- 7. DEUX PERSONNES — BASE (compatible duel A) -->
+<div class="cadre">
+  <h2>7 · Gérard et Raph : le même planning</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">Planning</h1>
+      <div class="jour"><span class="t-grand">Aujourd'hui</span><span class="t-petit">jeudi 1 octobre</span></div>
+      <p class="vide">Rien de prévu.</p>
+      <div class="jour"><span class="t-grand">Demain</span><span class="t-petit">vendredi 2 octobre</span></div>
+      <div class="liste">
+        <div class="rdv meme"><div class="zone"><span class="heure">9h00</span><span class="corps"><b>Mme Garnier</b><small>Cloisons · 8 impasse du Four</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+        <div class="rdv meme"><div class="zone"><span class="heure">9h00</span><span class="corps"><b>M. Martin</b><small>Chantier · chemin de Villeneuve</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">14h30</span><span class="corps"><b>Dupont</b><small>Pose placo · 12 rue des Lilas</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+      </div>
+      <div class="jour"><span class="t-grand">Lundi 5 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h00</span><span class="corps"><b>M. Roux</b><small>Réception · 3 rue Pasteur</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+      </div>
+    </div>
+    <div class="bas"><button class="btn btn-encre">Planifier un rendez-vous</button></div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Deux chantiers à 9h00 sont permis et marqués d'un trait. Aucune colonne par personne, aucun rôle.</p>
+</div>
+
+<!-- 8. DEUX PERSONNES — VARIANTE À ARBITRER -->
+<div class="cadre">
+  <h2>8 · Variante « qui y va » (lot 5, à arbitrer avec le duel A)</h2>
+  <div class="tel">
+    <div class="page">
+      <h1 class="t-titre titre-page">Planning</h1>
+      <div class="jour"><span class="t-grand">Aujourd'hui</span><span class="t-petit">jeudi 1 octobre</span></div>
+      <p class="vide">Rien de prévu.</p>
+      <div class="jour"><span class="t-grand">Demain</span><span class="t-petit">vendredi 2 octobre</span></div>
+      <div class="liste">
+        <div class="rdv meme"><div class="zone"><span class="heure">9h00</span><span class="corps"><b>Mme Garnier</b><small>Cloisons · 8 impasse du Four</small></span><span class="disque" aria-label="Gérard">G</span></div></div>
+        <div class="rdv meme"><div class="zone"><span class="heure">9h00</span><span class="corps"><b>M. Martin</b><small>Chantier · chemin de Villeneuve</small></span><span class="disque" aria-label="Raph">R</span></div></div>
+        <div class="rdv"><div class="zone"><span class="heure">14h30</span><span class="corps"><b>Dupont</b><small>Pose placo · 12 rue des Lilas</small></span><span class="disque" aria-label="Gérard">G</span></div></div>
+      </div>
+      <div class="jour"><span class="t-grand">Lundi 5 octobre</span></div>
+      <div class="liste">
+        <div class="rdv"><div class="zone"><span class="heure">8h00</span><span class="corps"><b>M. Roux</b><small>Réception · 3 rue Pasteur</small></span><svg class="ico chev"><use href="#i-chev"/></svg></div></div>
+      </div>
+    </div>
+    <div class="bas"><button class="btn btn-encre">Planifier un rendez-vous</button></div>
+    <div class="barre">
+      <div class="onglet"><svg class="ico"><use href="#i-home"/></svg>Aujourd'hui</div>
+      <div class="onglet"><svg class="ico"><use href="#i-folder"/></svg>Projets</div>
+      <div class="btn-rond">+</div>
+      <div class="onglet actif"><svg class="ico"><use href="#i-cal"/></svg>Planning</div>
+      <div class="onglet"><svg class="ico"><use href="#i-dots"/></svg>Plus</div>
+    </div>
+  </div>
+  <p class="note-maquette">Une initiale, rien d'autre : ni filtre, ni couleur, ni droit. Frôle l'assignation écartée par le duel A.</p>
+</div>
+
+</body>
+</html>

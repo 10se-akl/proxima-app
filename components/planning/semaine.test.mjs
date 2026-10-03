@@ -18,6 +18,8 @@ import {
   jourSemaine,
   libelleChoix,
   libelleFenetre,
+  occupationEnConflit,
+  quandEnLettres,
   quoiDuRendezVous,
 } from "./semaine.ts";
 
@@ -133,6 +135,29 @@ test("quoiDuRendezVous : ne répète pas le client", () => {
   assert.equal(quoiDuRendezVous("Métré salle de bains", "M. Durand"), "Métré salle de bains");
   assert.equal(quoiDuRendezVous("Rappeler Durand", null), "Rappeler Durand");
   assert.equal(quoiDuRendezVous("Chantier SCI (Les Jardins)", "SCI (Les Jardins)"), "Chantier");
+});
+
+test("quandEnLettres : pour finir une phrase", () => {
+  assert.equal(quandEnLettres("2026-10-04", "2026-10-04"), "aujourd'hui");
+  assert.equal(quandEnLettres("2026-10-05", "2026-10-04"), "demain");
+  assert.equal(quandEnLettres("2026-10-07", "2026-10-04"), "mercredi 7");
+  assert.equal(quandEnLettres("2026-10-10", "2026-10-04"), "samedi 10");
+  assert.equal(quandEnLettres("2026-10-11", "2026-10-04"), "dimanche 11 octobre");
+});
+
+test("occupationEnConflit : le créneau déjà pris", () => {
+  const rdv = (id, iso, duree) => ({ id, date_heure: iso, duree_minutes: duree });
+  const existants = [rdv("a", "2026-10-05T06:00:00Z", 60), rdv("b", "2026-10-05T12:00:00Z", null)];
+  const debut = (iso) => new Date(iso);
+  assert.equal(occupationEnConflit(debut("2026-10-05T06:00:00Z"), 60, existants)?.id, "a");
+  // Juste après la fin de « a » : libre.
+  assert.equal(occupationEnConflit(debut("2026-10-05T07:00:00Z"), 60, existants), undefined);
+  // Un créneau qui déborde sur « a ».
+  assert.equal(occupationEnConflit(debut("2026-10-05T05:30:00Z"), 60, existants)?.id, "a");
+  // Sans durée, « b » compte pour 1 h.
+  assert.equal(occupationEnConflit(debut("2026-10-05T12:30:00Z"), 15, existants)?.id, "b");
+  // On ignore le rendez-vous qu'on déplace.
+  assert.equal(occupationEnConflit(debut("2026-10-05T06:00:00Z"), 60, existants, "a"), undefined);
 });
 
 test("creneauParDefaut : demain, l'heure du dernier rendez-vous, sinon 8 h pour 1 h", () => {

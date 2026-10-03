@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 import { IconeChevron, IconeCoche, IconePlus } from "@/components/projet/icones";
 import { ActionsRendezVous } from "./ActionsRendezVous";
+import { ChoisirChantier } from "./ChoisirChantier";
+import { FeuillePlanifier, TracePlanifie, type ProjetAPlanifier } from "./FeuillePlanifier";
 import type { EvenementAvecProjet } from "./actionsEvenement";
 import {
   aujourdhuiCle,
@@ -78,6 +81,12 @@ export function AgendaMobile({
   );
   const [ouvert, setOuvert] = useState<EvenementAvecProjet | null>(null);
   const [aPrevenir, setAPrevenir] = useState<EvenementAvecProjet | null>(null);
+  // Le « + » d'un jour vide : le chantier, puis « Planifier » déjà remplie
+  // pour ce jour (components/planning/FeuillePlanifier.tsx).
+  const router = useRouter();
+  const [jourAPlanifier, setJourAPlanifier] = useState<CleJour | null>(null);
+  const [projetChoisi, setProjetChoisi] = useState<ProjetAPlanifier | null>(null);
+  const [trace, setTrace] = useState<string | null>(null);
 
   const meteoDe = (e: EvenementAvecProjet) => {
     const m = meteoParJour?.[cleParis(e.date_heure)];
@@ -116,6 +125,8 @@ export function AgendaMobile({
         </Link>
       )}
 
+      <TracePlanifie texte={trace} />
+
       <div className="mt-3 flex flex-col gap-3">
         {groupes.map((g) => {
           const premier = g.cles[0];
@@ -149,7 +160,7 @@ export function AgendaMobile({
               </div>
 
               {vide ? (
-                <LigneVide jour={g.cles[0]} libelle={libelle} />
+                <LigneVide libelle={libelle} surPlanifier={() => setJourAPlanifier(g.cles[0])} />
               ) : (
                 <ul className="flex min-w-0 flex-col gap-2">
                   {g.evenements.map((e) => (
@@ -171,6 +182,26 @@ export function AgendaMobile({
 
       {ouvert && <ActionsRendezVous evenement={ouvert} meteo={meteoDe(ouvert)} surFermer={() => setOuvert(null)} />}
 
+      <ChoisirChantier
+        jour={projetChoisi ? null : jourAPlanifier}
+        surFermer={() => setJourAPlanifier(null)}
+        surChoisir={setProjetChoisi}
+      />
+      <FeuillePlanifier
+        projet={projetChoisi}
+        jourInitial={jourAPlanifier}
+        surFermer={() => {
+          setProjetChoisi(null);
+          setJourAPlanifier(null);
+        }}
+        surPlanifie={(t) => {
+          setTrace(t);
+          setProjetChoisi(null);
+          setJourAPlanifier(null);
+          router.refresh();
+        }}
+      />
+
       {aPrevenir?.demande_id && (
         <FeuilleMessageClient
           ouverte
@@ -184,18 +215,19 @@ export function AgendaMobile({
 }
 
 /** Un jour sans rien : une phrase et un « + ». Toute la ligne est la cible. */
-function LigneVide({ jour, libelle }: { jour: CleJour; libelle: string }) {
+function LigneVide({ libelle, surPlanifier }: { libelle: string; surPlanifier: () => void }) {
   return (
-    <Link
-      href={`/dashboard/planning/nouveau?date=${jour}`}
+    <button
+      type="button"
+      onClick={surPlanifier}
       aria-label={`Planifier le ${libelle}`}
-      className={`flex min-h-14 items-stretch overflow-hidden rounded-2xl ring-1 ring-ink/15 active:bg-ink/10 ${FOCUS}`}
+      className={`flex min-h-14 w-full items-stretch overflow-hidden rounded-2xl text-left ring-1 ring-ink/15 active:bg-ink/10 ${FOCUS}`}
     >
       <span className="flex min-w-0 flex-1 items-center px-4 text-base text-steel">Rien de prévu</span>
       <span className="grid w-14 shrink-0 place-items-center border-l border-ink/15 text-ink">
         <IconePlus className="h-5 w-5" />
       </span>
-    </Link>
+    </button>
   );
 }
 

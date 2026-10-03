@@ -128,6 +128,15 @@ export function libelleChoix(cle: CleJour, aujourdhui: CleJour): string {
   return `${c[0].toUpperCase()}${c.slice(1)} ${numeroDuJour(cle)}`;
 }
 
+/** « aujourd'hui », « demain », « lundi 5 » (dans la semaine), sinon « lundi 5 octobre ».
+ *  Pour finir une phrase : « Déplacer à demain », « Planifié : Dupont, demain ». */
+export function quandEnLettres(cle: CleJour, aujourdhui: CleJour): string {
+  if (cle === aujourdhui) return "aujourd'hui";
+  if (cle === ajouterJours(aujourdhui, 1)) return "demain";
+  const proche = cle > aujourdhui && cle <= ajouterJours(aujourdhui, 6);
+  return proche ? `${jourLong(cle)} ${numeroDuJour(cle)}` : jourEnLettres(cle);
+}
+
 /** « 5 – 11 octobre », ou « 28 septembre – 4 octobre » à cheval sur deux mois. */
 export function libelleFenetre(premier: CleJour, dernier: CleJour): string {
   return nomDuMois(premier) === nomDuMois(dernier)
@@ -223,6 +232,28 @@ export function quoiDuRendezVous(titre: string, nomClient?: string | null): stri
     .replace(/\s{2,}/g, " ")
     .trim();
   return sans || titre.trim();
+}
+
+// ---------------------------------------------------------------- le « déjà pris »
+
+export type Occupation = { id: string; date_heure: string; duree_minutes: number | null };
+
+/** Le rendez-vous qui gêne un créneau, s'il y en a un. Même règle que le
+ *  contrôle du formulaire : un rendez-vous sans durée compte pour 1 h. Ce
+ *  n'est qu'un avertissement avant de choisir : la base reste seule juge
+ *  (contrainte de non-chevauchement). */
+export function occupationEnConflit<O extends Occupation>(
+  debut: Date,
+  dureeMinutes: number,
+  existants: O[],
+  ignorer?: string
+): O | undefined {
+  const fin = debut.getTime() + dureeMinutes * 60000;
+  return existants.find((o) => {
+    if (o.id === ignorer) return false;
+    const d = Date.parse(o.date_heure);
+    return debut.getTime() < d + (o.duree_minutes ?? 60) * 60000 && fin > d;
+  });
 }
 
 // ---------------------------------------------------------------- les valeurs par défaut

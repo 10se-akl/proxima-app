@@ -359,6 +359,7 @@ export function DeuxSoirees({ entete }: { entete?: ReactNode }) {
   const avec = useRef<HTMLDivElement>(null);
   const avecDedans = useRef<HTMLDivElement>(null);
   const curseur = useRef<HTMLSpanElement>(null);
+  const invitation = useRef<HTMLDivElement>(null);
   const tire = useRef(false);
   const touche = useRef(false);
 
@@ -422,6 +423,8 @@ export function DeuxSoirees({ entete }: { entete?: ReactNode }) {
       fenetre.style.transform = `translate3d(${pourcent}%,0,0)`;
       dedans.style.transform = `translate3d(${-pourcent}%,0,0)`;
       if (curseur.current) curseur.current.style.transform = `scaleX(${t})`;
+      // L'invitation à descendre s'efface dès que la soirée bascule.
+      if (invitation.current) invitation.current.style.opacity = String(Math.max(0, 1 - t / 0.12));
     };
     const demander = () => {
       if (!image) image = requestAnimationFrame(placer);
@@ -492,6 +495,20 @@ export function DeuxSoirees({ entete }: { entete?: ReactNode }) {
               <span className="font-mono tabular-nums">19:04</span> · Avec<span className="hidden sm:inline"> Compyo</span>
             </p>
 
+            {/* Téléphone (04/10, retour d'Axel : « on ne sait pas si on doit
+                descendre ») : une invitation à faire défiler, posée sur la
+                table, qui s'efface dès que la soirée commence à basculer. */}
+            <div ref={invitation} aria-hidden className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center md:hidden">
+              <span className="v-invite-defile flex items-center gap-2.5 rounded-full bg-black/65 py-2 pl-4 pr-2 text-[14px] font-semibold text-white shadow-[0_12px_30px_-10px_rgb(0_0_0/0.75)] ring-1 ring-white/15 backdrop-blur-md">
+                Descendez pour passer à 19:04
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-signal">
+                  <svg viewBox="0 0 16 16" className="v-invite-fleche h-4 w-4" fill="none">
+                    <path d="M8 3v9M4 8.5l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </span>
+              </span>
+            </div>
+
             {/* Ordinateur : la séparation et sa poignée */}
             <div
               className="pointer-events-none absolute inset-y-0 w-[2px] -translate-x-1/2 bg-white/90 shadow-[0_0_12px_rgb(0_0_0/0.4)] max-md:hidden"
@@ -526,7 +543,7 @@ export function DeuxSoirees({ entete }: { entete?: ReactNode }) {
           <p className="mt-5 text-center text-[13.5px] text-steel max-md:hidden">Glissez la poignée pour comparer.</p>
 
           {/* Téléphone : où en est la soirée. Le trait se remplit en
-              descendant ; pas de mode d'emploi à lire. */}
+              descendant (l'invitation à descendre est sur la table). */}
           <div aria-hidden className="mx-5 mt-5 flex items-center gap-3 font-mono text-[11px] tabular-nums md:hidden">
             <span className="text-ink/50">21:47</span>
             <span className="relative h-[3px] flex-1 overflow-hidden rounded-full bg-ink/10">

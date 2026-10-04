@@ -970,3 +970,32 @@
     transform: translate3d(0, 0.45em, 0);
   }
 }
+
+/* L'invitation à descendre des deux soirées, sur téléphone (04/10) :
+   la flèche descend et remonte, la pastille respire à peine. */
+@media (prefers-reduced-motion: no-preference) {
+  .v-invite-fleche {
+    animation: v-invite-fleche 1.5s var(--v-ease-doux) infinite;
+  }
+  .v-invite-defile {
+    animation: v-invite-pastille 3s var(--v-ease-doux) infinite;
+  }
+}
+@keyframes v-invite-fleche {
+  0%,
+  100% {
+    transform: translate3d(0, -2px, 0);
+  }
+  50% {
+    transform: translate3d(0, 4px, 0);
+  }
+}
+@keyframes v-invite-pastille {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.04);
+  }
+}

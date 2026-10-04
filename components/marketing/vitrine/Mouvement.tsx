@@ -6,11 +6,11 @@ import { useEffect, useRef } from "react";
 // Le mouvement au défilement de la vitrine (04/10, demande d'Axel : « il y
 // a juste un fond noir, c'est vraiment un truc à améliorer »).
 //
-//   - FondVivant : derrière toute la page, trois halos de lumière
-//     (terracotta, bleu, ambre) qui glissent à mesure qu'on descend, un
-//     quadrillage de plan d'architecte à peine visible qui défile moins
-//     vite que la page, et un grain fin. En haut de l'écran, un filet
-//     terracotta dit où l'on en est.
+//   - FondVivant : derrière toute la page, trois halos de lumière qui
+//     glissent et changent de couleur à mesure qu'on descend, de la
+//     poussière de lumière qui monte à deux vitesses, un quadrillage de
+//     plan d'architecte qui défile moins vite que la page, et un grain
+//     fin. En haut de l'écran, un filet terracotta dit où l'on en est.
 //   - BandeMots : une bande de mots géants (Devis · Factures · …) qui
 //     glisse de côté pendant qu'on défile, la typographie de la pub.
 //
@@ -56,8 +56,10 @@ export function FondVivant() {
         <span className="v-tache v-tache-a" />
         <span className="v-tache v-tache-b" />
         <span className="v-tache v-tache-c" />
+        <span className="v-poussiere v-poussiere-a" />
+        <span className="v-poussiere v-poussiere-b" />
         <span className="v-plan" />
-        <span className="v-grain" />
+        <span className="v-fond-grain" />
       </div>
       <div ref={filet} aria-hidden className="v-progression" />
     </>

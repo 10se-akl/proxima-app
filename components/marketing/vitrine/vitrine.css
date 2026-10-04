@@ -780,11 +780,17 @@
 }
 
 /* ------------------------------------------------- fond vivant (04/10)
-   Mouvement.tsx. Derrière toute la page : trois halos de lumière qui
-   glissent avec le défilement (--v-p, de 0 en haut à 1 en bas) et
-   dérivent lentement d'eux-mêmes, un quadrillage de plan qui défile
-   moins vite que la page, et un grain fin. Le hero et la dernière section
-   gardent leur propre fond par-dessus. */
+   Mouvement.tsx. Derrière toute la page :
+   - trois halos de lumière qui glissent avec le défilement (--v-p, de 0
+     en haut à 1 en bas), dérivent lentement d'eux-mêmes et changent de
+     couleur en chemin (terracotta → violet, indigo → terracotta, ambre →
+     bleu) : deux couches par halo, la seconde apparaît pendant que la
+     première s'efface (seule l'opacité change, rien n'est repeint) ;
+   - deux voiles de poussière de lumière qui montent à deux vitesses : la
+     profondeur, et le prolongement des particules de l'en-tête ;
+   - un quadrillage de plan qui défile moins vite que la page, et un
+     grain fin.
+   Le hero et la dernière section gardent leur propre fond par-dessus. */
 .vitrine {
   position: relative;
   isolation: isolate;
@@ -801,19 +807,24 @@
   border-radius: 9999px;
   will-change: transform;
 }
-.v-tache::before {
+.v-tache::before,
+.v-tache::after {
   content: "";
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: inherit;
+}
+.v-tache::before {
+  opacity: calc(1 - var(--v-p, 0));
+}
+.v-tache::after {
+  opacity: var(--v-p, 0);
 }
 .v-tache-a {
   width: 75vmax;
   height: 75vmax;
   left: -25vmax;
   top: -20vmax;
-  background: radial-gradient(closest-side, rgb(201 107 74 / 0.16), transparent);
   transform: translate3d(calc(var(--v-p, 0) * 55vw), calc(var(--v-p, 0) * 45vh), 0);
 }
 .v-tache-b {
@@ -821,7 +832,6 @@
   height: 70vmax;
   right: -30vmax;
   top: 15vh;
-  background: radial-gradient(closest-side, rgb(59 130 246 / 0.1), transparent);
   transform: translate3d(calc(var(--v-p, 0) * -45vw), calc(var(--v-p, 0) * -25vh), 0);
 }
 .v-tache-c {
@@ -829,17 +839,71 @@
   height: 60vmax;
   left: 20vw;
   bottom: -40vmax;
-  background: radial-gradient(closest-side, rgb(217 134 26 / 0.1), transparent);
   transform: translate3d(calc(var(--v-p, 0) * -20vw), calc(var(--v-p, 0) * -55vh), 0);
 }
-.dark .v-tache-a {
+/* Mode clair : des teintes posées sur le crème, plus légères. */
+.v-tache-a::before {
   background: radial-gradient(closest-side, rgb(201 107 74 / 0.26), transparent);
 }
-.dark .v-tache-b {
-  background: radial-gradient(closest-side, rgb(99 102 241 / 0.2), transparent);
+.v-tache-a::after {
+  background: radial-gradient(closest-side, rgb(139 92 246 / 0.16), transparent);
 }
-.dark .v-tache-c {
-  background: radial-gradient(closest-side, rgb(217 134 26 / 0.14), transparent);
+.v-tache-b::before {
+  background: radial-gradient(closest-side, rgb(59 130 246 / 0.16), transparent);
+}
+.v-tache-b::after {
+  background: radial-gradient(closest-side, rgb(201 107 74 / 0.2), transparent);
+}
+.v-tache-c::before {
+  background: radial-gradient(closest-side, rgb(217 134 26 / 0.17), transparent);
+}
+.v-tache-c::after {
+  background: radial-gradient(closest-side, rgb(59 130 246 / 0.13), transparent);
+}
+/* Mode sombre : la lumière porte sur le bleu nuit. */
+.dark .v-tache-a::before {
+  background: radial-gradient(closest-side, rgb(201 107 74 / 0.44), transparent);
+}
+.dark .v-tache-a::after {
+  background: radial-gradient(closest-side, rgb(139 92 246 / 0.36), transparent);
+}
+.dark .v-tache-b::before {
+  background: radial-gradient(closest-side, rgb(99 102 241 / 0.34), transparent);
+}
+.dark .v-tache-b::after {
+  background: radial-gradient(closest-side, rgb(201 107 74 / 0.36), transparent);
+}
+.dark .v-tache-c::before {
+  background: radial-gradient(closest-side, rgb(217 134 26 / 0.26), transparent);
+}
+.dark .v-tache-c::after {
+  background: radial-gradient(closest-side, rgb(59 130 246 / 0.24), transparent);
+}
+.v-poussiere {
+  position: absolute;
+  inset: -70vh 0;
+  -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 50%, #000 30%, transparent 85%);
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 50%, #000 30%, transparent 85%);
+}
+.v-poussiere-a {
+  background-image: radial-gradient(circle, rgb(201 107 74 / 0.5) 1.2px, transparent 1.8px),
+    radial-gradient(circle, rgb(217 134 26 / 0.4) 1px, transparent 1.6px);
+  background-size: 140px 140px, 210px 210px;
+  background-position: 0 0, 60px 95px;
+  transform: translate3d(0, calc(var(--v-p, 0) * -45vh), 0);
+}
+.v-poussiere-b {
+  background-image: radial-gradient(circle, rgb(201 107 74 / 0.45) 2px, transparent 3px);
+  background-size: 260px 300px;
+  background-position: 120px 40px;
+  transform: translate3d(0, calc(var(--v-p, 0) * -110vh), 0);
+}
+.dark .v-poussiere-a {
+  background-image: radial-gradient(circle, rgb(255 214 190 / 0.55) 1.2px, transparent 1.8px),
+    radial-gradient(circle, rgb(255 170 112 / 0.4) 1px, transparent 1.6px);
+}
+.dark .v-poussiere-b {
+  background-image: radial-gradient(circle, rgb(255 190 150 / 0.4) 2px, transparent 3px);
 }
 .v-plan {
   position: absolute;
@@ -851,13 +915,35 @@
   mask-image: radial-gradient(ellipse 75% 55% at 50% 50%, #000 25%, transparent 78%);
   transform: translate3d(0, calc(var(--v-p, 0) * -36vh), 0);
 }
-.v-grain {
+/* Sur téléphone, l'écran est étroit et les images vont d'un bord à
+   l'autre : le fond ne se voit qu'entre deux sections. Il y est plus
+   présent — quadrillage plus serré, plus lisible, et des halos qui
+   bougent davantage pour un même défilement. */
+@media (max-width: 767px) {
+  .v-plan {
+    background-size: 48px 48px;
+    background-image: linear-gradient(rgb(var(--c-ink) / 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--c-ink) / 0.07) 1px, transparent 1px);
+    -webkit-mask-image: radial-gradient(ellipse 95% 70% at 50% 50%, #000 30%, transparent 85%);
+    mask-image: radial-gradient(ellipse 95% 70% at 50% 50%, #000 30%, transparent 85%);
+  }
+  .v-tache-a {
+    transform: translate3d(calc(var(--v-p, 0) * 80vw), calc(var(--v-p, 0) * 70vh), 0);
+  }
+  .v-tache-b {
+    transform: translate3d(calc(var(--v-p, 0) * -70vw), calc(var(--v-p, 0) * -40vh), 0);
+  }
+  .v-poussiere-a {
+    background-size: 110px 110px, 170px 170px;
+  }
+}
+.v-fond-grain {
   position: absolute;
   inset: 0;
   opacity: 0.05;
   background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
 }
-.dark .v-grain {
+.dark .v-fond-grain {
   opacity: 0.07;
 }
 .v-progression {
@@ -873,13 +959,16 @@
   transform: scaleX(var(--v-p, 0));
 }
 @media (prefers-reduced-motion: no-preference) {
-  .v-tache-a::before {
+  .v-tache-a::before,
+  .v-tache-a::after {
     animation: v-derive 23s var(--v-ease-doux) infinite alternate;
   }
-  .v-tache-b::before {
+  .v-tache-b::before,
+  .v-tache-b::after {
     animation: v-derive 29s var(--v-ease-doux) -9s infinite alternate-reverse;
   }
-  .v-tache-c::before {
+  .v-tache-c::before,
+  .v-tache-c::after {
     animation: v-derive 31s var(--v-ease-doux) -4s infinite alternate;
   }
 }
@@ -896,7 +985,8 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .v-tache,
-  .v-plan {
+  .v-plan,
+  .v-poussiere {
     transform: none;
   }
   .v-progression {
@@ -944,6 +1034,9 @@
 @media (max-width: 767px) {
   .v-bande {
     padding: 2rem 0;
+  }
+  .v-bande-piste {
+    font-size: 4.6rem;
   }
   .v-bande-creux {
     -webkit-text-stroke-width: 1px;

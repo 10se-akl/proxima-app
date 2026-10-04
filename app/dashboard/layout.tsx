@@ -8,6 +8,7 @@ import { IndiceDefilement } from "@/components/ui/IndiceDefilement";
 import { PopupRappel } from "@/components/notes/PopupRappel";
 import { lireMembership } from "@/lib/organisation";
 import { BandeauReseau } from "@/components/ui/BandeauReseau";
+import { LienPrecedent } from "@/components/navigation/LienPrecedent";
 
 export default async function DashboardLayout({
   children,
@@ -83,6 +84,7 @@ export default async function DashboardLayout({
           page de 144 px sur le côté au lieu d'être coupé par « … ». */}
       <main className="flex-1 min-w-0 min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0 bg-[radial-gradient(ellipse_1200px_700px_at_top_left,rgb(var(--c-signal-clair)/0.14),transparent_65%)]">
         <BandeauReseau />
+        <LienPrecedent />
         {children}
       </main>
       <BoutonRetour />

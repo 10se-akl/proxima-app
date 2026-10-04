@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   declencherInstallation,
   estDejaInstallee,
@@ -54,8 +55,9 @@ function texteInstallationManuelle(plateforme: "android" | "ios" | "desktop"): s
 // Carte discrète "Installer Compyo" — jamais une popup au chargement, et
 // jamais répétée toute seule. Deux façons de l'afficher :
 //
-// 1. AUTOMATIQUE, une seule fois par navigateur : 30 secondes après la
-//    toute première visite éligible, pour laisser à l'artisan le temps de
+// 1. AUTOMATIQUE, une seule fois par navigateur, et seulement dans
+//    l'application (04/10, jamais sur le site vitrine) : 30 secondes après
+//    la toute première visite éligible, pour laisser à l'artisan le temps de
 //    comprendre ce qu'est Compyo avant de lui proposer de l'installer.
 //    Que la réponse soit "Installer" ou "Plus tard" (ou même qu'il
 //    n'interagisse pas du tout), Compyo ne la reproposera plus jamais
@@ -122,13 +124,23 @@ export function InstallPWA() {
     };
     window.addEventListener("compyo:install-demande-manuelle", gererDemandeManuelle);
 
-    const retirerEcoutes = () => {
+    return () => {
       window.removeEventListener("compyo:install-prompt-pret", reevaluer);
       window.removeEventListener("compyo:install-terminee", reevaluer);
       window.removeEventListener("compyo:install-demande-manuelle", gererDemandeManuelle);
     };
+  }, []);
 
-    if (estDejaInstallee()) return retirerEcoutes;
+  // La proposition automatique (04/10, demande d'Axel) : seulement dans
+  // l'application. Sur le site vitrine, elle s'ajoutait à la barre
+  // « Rejoindre » en bas du téléphone et chargeait l'écran d'un visiteur
+  // qui n'a pas encore de compte. Le minuteur part quand on entre dans le
+  // tableau de bord ; la demande manuelle (« Installer l'application »)
+  // reste possible partout.
+  const chemin = usePathname();
+  const dansApp = chemin?.startsWith("/dashboard") ?? false;
+  useEffect(() => {
+    if (!dansApp || estDejaInstallee()) return;
 
     let dejaPropose = false;
     try {
@@ -153,10 +165,9 @@ export function InstallPWA() {
     }
 
     return () => {
-      retirerEcoutes();
       if (minuteur) clearTimeout(minuteur);
     };
-  }, []);
+  }, [dansApp]);
 
   // Sprint Robustesse (30/08) — expose l'état d'affichage de la carte via un
   // évènement custom global : tant qu'elle est visible, elle recouvre en

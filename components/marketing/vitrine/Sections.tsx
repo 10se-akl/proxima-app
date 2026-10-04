@@ -20,7 +20,10 @@ export function SectionDeuxSoirees() {
     <section
       id="deux-soirees"
       aria-labelledby="titre-soirees"
-      className="scroll-mt-16 px-5 pb-8 pt-24 max-md:px-0 max-md:pb-0 max-md:pt-6 sm:px-8 sm:pt-36"
+      // 04/10 — retirée du téléphone (demande d'Axel) : la bascule au
+      // défilement n'y était pas claire. Elle reste sur ordinateur, avec
+      // sa poignée.
+      className="scroll-mt-16 px-5 pb-8 pt-24 max-md:hidden sm:px-8 sm:pt-36"
     >
       <div className="mx-auto max-w-7xl">
         <DeuxSoirees

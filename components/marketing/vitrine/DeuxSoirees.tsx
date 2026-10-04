@@ -410,7 +410,9 @@ export function DeuxSoirees({ entete }: { entete?: ReactNode }) {
     const p = piste.current;
     const fenetre = avec.current;
     const dedans = avecDedans.current;
-    if (!telephone || !p || !fenetre || !dedans) return;
+    // 04/10 — la section est masquée sur téléphone (Sections.tsx) : rien
+    // à suivre tant qu'elle n'est pas affichée.
+    if (!telephone || !p || !fenetre || !dedans || p.offsetParent === null) return;
     let image = 0;
     const placer = () => {
       image = 0;

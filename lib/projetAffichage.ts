@@ -21,6 +21,21 @@ export const ETAPE_PROJET: Record<StatutProjet, { libelle: string; couleur: Coul
   termine: { libelle: "Terminé", couleur: "vert" },
 };
 
+// La colonne demandes.statut n'a pas de contrainte SQL (schema.sql) : les
+// tout premiers projets portent encore les anciennes valeurs « nouvelle »
+// et « analysee », d'avant le passage à sept étapes, et rien n'empêche une
+// valeur inconnue. ETAPE_PROJET[statut] seul renvoyait alors undefined, et
+// « .libelle » faisait tomber tout l'écran (04/10, l'accueil ne se
+// chargeait plus). On passe toujours par etapeDe.
+const ANCIENS_STATUTS: Record<string, StatutProjet> = { nouvelle: "nouveau", analysee: "analyse" };
+
+/** L'étape d'un statut, quel qu'il soit : jamais undefined. */
+export function etapeDe(statut: string | null | undefined): { libelle: string; couleur: CouleurPastille } {
+  if (statut && Object.prototype.hasOwnProperty.call(ETAPE_PROJET, statut)) return ETAPE_PROJET[statut as StatutProjet];
+  if (statut && Object.prototype.hasOwnProperty.call(ANCIENS_STATUTS, statut)) return ETAPE_PROJET[ANCIENS_STATUTS[statut]];
+  return { libelle: "En préparation", couleur: "bleu" };
+}
+
 /** « Lyon · 69003 » depuis une adresse postale, sinon son dernier morceau. */
 export function lieuDe(adresse: string | null): string | null {
   if (!adresse) return null;

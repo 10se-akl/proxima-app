@@ -4,7 +4,7 @@ import type { ElementJour } from "@/components/accueil/ListeAujourdhui";
 import type { ElementARegler } from "@/components/accueil/ARegler";
 import type { ChantierAccueil } from "@/components/accueil/ChantiersAccueil";
 import type { Projet } from "@/types";
-import { ETAPE_PROJET, lieuDe, prochainRendezVous, quoiDe } from "@/lib/projetAffichage";
+import { etapeDe, lieuDe, prochainRendezVous, quoiDe } from "@/lib/projetAffichage";
 import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation } from "@/lib/notes";
 import { aujourdhuiParis, minuitParis } from "@/lib/moisParis";
@@ -503,8 +503,8 @@ export default async function DashboardHome() {
       nom: p.nom_client,
       quoi: quoiDe(p),
       lieu: lieuDe(p.adresse_client),
-      etape: ETAPE_PROJET[p.statut].libelle,
-      couleur: ETAPE_PROJET[p.statut].couleur,
+      etape: etapeDe(p.statut).libelle,
+      couleur: etapeDe(p.statut).couleur,
       info: rdv ? prochainRendezVous(rdv, maintenant) : null,
       telephone: p.telephone_client,
       adresse: p.adresse_client,

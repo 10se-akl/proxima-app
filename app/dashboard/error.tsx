@@ -22,6 +22,9 @@ export default function ErreurTableauDeBord({
   return (
     <div className="max-w-2xl px-4 pt-5 sm:p-8">
       <EtatErreur message="Cet écran ne s'est pas chargé." onReessayer={reset} />
+      {/* 04/10 — le repère de l'erreur, à envoyer au support : il retrouve
+          la trace exacte dans les journaux Vercel. */}
+      {error.digest && <p className="mt-3 text-xs text-steel">Code : {error.digest}</p>}
     </div>
   );
 }

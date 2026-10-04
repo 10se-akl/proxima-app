@@ -1,7 +1,7 @@
 "use client";
 
 import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
-import { ETAPE_PROJET, lieuDe, quoiDe } from "@/lib/projetAffichage";
+import { etapeDe, lieuDe, quoiDe } from "@/lib/projetAffichage";
 import { LigneChantier } from "@/components/accueil/ChantiersAccueil";
 import type { Projet } from "@/types";
 
@@ -40,7 +40,7 @@ export function DemandeCard({
   /** « Rendez-vous demain à 9h ». */
   info?: string | null;
 }) {
-  const etape = ETAPE_PROJET[demande.statut];
+  const etape = etapeDe(demande.statut);
   const termine = demande.statut === "termine";
   return (
     <LigneChantier

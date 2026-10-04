@@ -5,6 +5,7 @@ import { SectionJournee } from "./SectionJournee";
 import { SectionMetiers } from "./SectionMetiers";
 import { SectionDeuxSoirees, SectionEnVrai, SectionSoiree } from "./Sections";
 import { Rythme } from "./Rythme";
+import { BandeMots, FondVivant } from "./Mouvement";
 import "./vitrine.css";
 
 // ============================================================
@@ -40,12 +41,16 @@ import "./vitrine.css";
 export function Accueil({ avis }: { avis?: ReactNode } = {}) {
   return (
     <div className="vitrine bg-paper text-ink">
+      {/* 04/10 — le fond qui vit au défilement, et le filet de progression. */}
+      <FondVivant />
       <Header ctaTelephone={false} />
       <main>
         <Hero />
         <SectionDeuxSoirees />
+        <BandeMots mots={["Devis", "Factures", "Planning", "Relances", "Photos", "Signature", "Notes vocales"]} />
         <SectionJournee />
         <SectionEnVrai />
+        <BandeMots sens={-1} mots={["Plaquiste", "Plombier", "Électricien", "Maçon", "Couvreur", "Carreleur", "Peintre", "Menuisier"]} />
         <SectionMetiers />
         {/* Reste invisible tant qu'il n'y a pas de fiche Google — voir
             components/marketing/AvisGoogle.tsx. */}

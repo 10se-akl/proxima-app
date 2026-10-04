@@ -685,7 +685,8 @@
    révèle ; Rythme.tsx pose [data-vu] quand l'élément arrive. Le masque ne
    s'applique qu'une fois la page prête ([data-anime] sur .vitrine) : sans
    JavaScript, tout est visible. */
-@media (max-width: 767px) and (prefers-reduced-motion: no-preference) {
+/* 04/10 — sur ordinateur aussi : la page entière vit au défilement. */
+@media (prefers-reduced-motion: no-preference) {
   .vitrine[data-anime] [data-revele] {
     transition:
       opacity 0.9s var(--v-ease) var(--d, 0s),
@@ -775,5 +776,197 @@
   }
   .v-hero-texte > p:first-child {
     display: none;
+  }
+}
+
+/* ------------------------------------------------- fond vivant (04/10)
+   Mouvement.tsx. Derrière toute la page : trois halos de lumière qui
+   glissent avec le défilement (--v-p, de 0 en haut à 1 en bas) et
+   dérivent lentement d'eux-mêmes, un quadrillage de plan qui défile
+   moins vite que la page, et un grain fin. Le hero et la dernière section
+   gardent leur propre fond par-dessus. */
+.vitrine {
+  position: relative;
+  isolation: isolate;
+}
+.v-fond-vivant {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+.v-tache {
+  position: absolute;
+  border-radius: 9999px;
+  will-change: transform;
+}
+.v-tache::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+}
+.v-tache-a {
+  width: 75vmax;
+  height: 75vmax;
+  left: -25vmax;
+  top: -20vmax;
+  background: radial-gradient(closest-side, rgb(201 107 74 / 0.16), transparent);
+  transform: translate3d(calc(var(--v-p, 0) * 55vw), calc(var(--v-p, 0) * 45vh), 0);
+}
+.v-tache-b {
+  width: 70vmax;
+  height: 70vmax;
+  right: -30vmax;
+  top: 15vh;
+  background: radial-gradient(closest-side, rgb(59 130 246 / 0.1), transparent);
+  transform: translate3d(calc(var(--v-p, 0) * -45vw), calc(var(--v-p, 0) * -25vh), 0);
+}
+.v-tache-c {
+  width: 60vmax;
+  height: 60vmax;
+  left: 20vw;
+  bottom: -40vmax;
+  background: radial-gradient(closest-side, rgb(217 134 26 / 0.1), transparent);
+  transform: translate3d(calc(var(--v-p, 0) * -20vw), calc(var(--v-p, 0) * -55vh), 0);
+}
+.dark .v-tache-a {
+  background: radial-gradient(closest-side, rgb(201 107 74 / 0.26), transparent);
+}
+.dark .v-tache-b {
+  background: radial-gradient(closest-side, rgb(99 102 241 / 0.2), transparent);
+}
+.dark .v-tache-c {
+  background: radial-gradient(closest-side, rgb(217 134 26 / 0.14), transparent);
+}
+.v-plan {
+  position: absolute;
+  inset: -40vh 0 -40vh 0;
+  background-image: linear-gradient(rgb(var(--c-ink) / 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--c-ink) / 0.05) 1px, transparent 1px);
+  background-size: 72px 72px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 50%, #000 25%, transparent 78%);
+  mask-image: radial-gradient(ellipse 75% 55% at 50% 50%, #000 25%, transparent 78%);
+  transform: translate3d(0, calc(var(--v-p, 0) * -36vh), 0);
+}
+.v-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='220' height='220'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.dark .v-grain {
+  opacity: 0.07;
+}
+.v-progression {
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  z-index: 60;
+  height: 3px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgb(201 107 74), rgb(232 197 182));
+  transform-origin: 0 50%;
+  transform: scaleX(var(--v-p, 0));
+}
+@media (prefers-reduced-motion: no-preference) {
+  .v-tache-a::before {
+    animation: v-derive 23s var(--v-ease-doux) infinite alternate;
+  }
+  .v-tache-b::before {
+    animation: v-derive 29s var(--v-ease-doux) -9s infinite alternate-reverse;
+  }
+  .v-tache-c::before {
+    animation: v-derive 31s var(--v-ease-doux) -4s infinite alternate;
+  }
+}
+@keyframes v-derive {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6vmax, -4vmax, 0) scale(1.08);
+  }
+  100% {
+    transform: translate3d(-5vmax, 5vmax, 0) scale(0.95);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-tache,
+  .v-plan {
+    transform: none;
+  }
+  .v-progression {
+    display: none;
+  }
+}
+
+/* ------------------------------------------------ bandes de mots (04/10)
+   Une rangée de mots géants qui glisse de côté au défilement (--v-bande,
+   de 0 quand elle entre par le bas à 1 quand elle sort par le haut ;
+   --v-sens : vers la gauche ou la droite). Un mot sur deux en creux. */
+.v-bande {
+  overflow: hidden;
+  padding: 3.5rem 0;
+  pointer-events: none;
+  user-select: none;
+}
+.v-bande-piste {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  font-size: clamp(3.4rem, 10.5vw, 9.5rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.045em;
+  transform: translate3d(calc(-22% + (0.5 - var(--v-bande, 0.5)) * 70vw * var(--v-sens, 1)), 0, 0);
+  will-change: transform;
+}
+.v-bande-plein {
+  color: rgb(var(--c-ink) / 0.92);
+}
+.v-bande-creux {
+  color: transparent;
+  -webkit-text-stroke: 1.5px rgb(var(--c-ink) / 0.32);
+}
+.v-bande-point {
+  display: inline-block;
+  width: 0.16em;
+  height: 0.16em;
+  margin: 0 0.42em;
+  border-radius: 9999px;
+  background: rgb(var(--c-signal));
+  vertical-align: 0.28em;
+}
+@media (max-width: 767px) {
+  .v-bande {
+    padding: 2rem 0;
+  }
+  .v-bande-creux {
+    -webkit-text-stroke-width: 1px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .v-bande-piste {
+    transform: translate3d(-22%, 0, 0);
+  }
+}
+
+/* -------------------------------------- titres qui se dévoilent (04/10)
+   Avec [data-revele], le titre d'une section sort de son masque, comme
+   les mots de la pub : il monte et se découvre de bas en haut, un temps
+   après son bloc. */
+@media (prefers-reduced-motion: no-preference) {
+  .vitrine[data-anime] [data-revele] h2 {
+    transition:
+      clip-path 1.25s var(--v-ease) calc(var(--d, 0s) + 0.08s),
+      transform 1.25s var(--v-ease) calc(var(--d, 0s) + 0.08s);
+  }
+  .vitrine[data-anime] [data-revele]:not([data-vu]) h2 {
+    clip-path: inset(0 0 100% 0);
+    transform: translate3d(0, 0.45em, 0);
   }
 }

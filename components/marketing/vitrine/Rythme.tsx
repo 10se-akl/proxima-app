@@ -23,18 +23,16 @@ import { CompyoMark } from "@/components/marketing/CompyoMark";
 // Rien de tout ça au-dessus de 768 px : l'ordinateur garde son en-tête.
 // ============================================================
 
-const TELEPHONE = "(max-width: 767px)";
-
 export function Rythme() {
   const barre = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const [connecte, setConnecte] = useState(false);
 
-  // Les apparitions.
+  // Les apparitions. 04/10 — sur ordinateur aussi : toute la vitrine vit
+  // au défilement (voir Mouvement.tsx).
   useEffect(() => {
     const racine = document.querySelector<HTMLElement>(".vitrine");
     if (!racine) return;
-    if (!window.matchMedia(TELEPHONE).matches) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     const elements = [...racine.querySelectorAll<HTMLElement>("[data-revele]")];

@@ -304,27 +304,35 @@ export function VueEspaceDevis({
       </Link>
 
       <div className={`mt-2 flex flex-wrap items-end justify-between gap-4 ${masqueTelephone}`}>
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="font-display text-2xl font-semibold">Devis n° {devis.numero}</h1>
-            <span className={`rounded-md px-2 py-0.5 text-[11px] font-medium ${statut.classe}`}>{statut.texte}</span>
-          </div>
-          <p className="mt-1 text-sm text-ink/55">
-            {projet.nom_client} · <span className="font-medium text-ink/80">{formatMontant(totalAffiche)} TTC</span>
-          </p>
-          {versions.length > 0 && (
-            <p className="mt-1 text-xs text-ink/45">
-              Autres versions :{" "}
-              {versions.map((v, i) => (
-                <span key={v.id}>
-                  {i > 0 && ", "}
-                  <Link href={adresseEspaceDevis(v.id)} className="underline-offset-2 hover:text-ink hover:underline">
-                    n° {v.numero}
-                  </Link>
-                </span>
-              ))}
+        {/* Refonte visuelle (04/10) : le numéro, le client et le total dans
+            une carte bleu nuit, comme l'en-tête des autres pages. */}
+        <div className="relative min-w-0 flex-1 overflow-hidden rounded-3xl bg-nuit px-6 py-5 text-white">
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgb(var(--c-signal)/0.32),transparent_55%)]"
+          />
+          <div className="relative">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="font-display text-2xl font-bold">Devis n° {devis.numero}</h1>
+              <span className="rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white">{statut.texte}</span>
+            </div>
+            <p className="mt-1 text-sm text-white/70">
+              {projet.nom_client} · <span className="font-semibold text-white">{formatMontant(totalAffiche)} TTC</span>
             </p>
-          )}
+            {versions.length > 0 && (
+              <p className="mt-1 text-xs text-white/60">
+                Autres versions :{" "}
+                {versions.map((v, i) => (
+                  <span key={v.id}>
+                    {i > 0 && ", "}
+                    <Link href={adresseEspaceDevis(v.id)} className="underline-offset-2 hover:text-white hover:underline">
+                      n° {v.numero}
+                    </Link>
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button

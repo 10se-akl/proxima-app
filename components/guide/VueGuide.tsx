@@ -2,6 +2,9 @@ import Link from "next/link";
 import { SECTIONS, lireCapture } from "@/lib/guide/contenu";
 import { CaptureAnnotee } from "./CaptureAnnotee";
 import { BoutonRevoirTuto } from "./BoutonRevoirTuto";
+import { EnTetePage } from "@/components/ui/EnTetePage";
+import { Pastille } from "@/components/ui/Pastille";
+import { IconeGuide } from "@/components/ui/Icones";
 
 // ============================================================
 // Le guide (27/09) — « comment l'utiliser, avec des flèches, des images »
@@ -15,16 +18,19 @@ import { BoutonRevoirTuto } from "./BoutonRevoirTuto";
 export function VueGuide() {
   return (
     <div className="mx-auto max-w-3xl px-4 pt-5 pb-12 sm:p-8">
-      <header id="sommaire" className="scroll-mt-16">
-        <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-steel">Guide</p>
-        <h1 className="mt-1 font-display text-[1.6rem] font-semibold leading-tight text-ink sm:text-3xl">
-          Compyo en {SECTIONS.length} moments
-        </h1>
-        <p className="mt-2 text-[15px] leading-relaxed text-ink/65">
-          Touchez un moment de votre journée pour voir comment faire, écran par écran.
-        </p>
-        <BoutonRevoirTuto />
-      </header>
+      <div id="sommaire" className="scroll-mt-16">
+        <EnTetePage
+          titre={`Compyo en ${SECTIONS.length} moments`}
+          sousTitre="Touchez un moment de votre journée pour voir comment faire, écran par écran."
+          icone={
+            <Pastille couleur="bleu" taille="grande">
+              <IconeGuide taille={24} />
+            </Pastille>
+          }
+        >
+          <BoutonRevoirTuto />
+        </EnTetePage>
+      </div>
 
       <nav aria-label="Sommaire du guide" className="mt-5">
         <ol className="grid gap-2 sm:grid-cols-2">

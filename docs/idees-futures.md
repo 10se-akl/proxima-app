@@ -114,3 +114,22 @@ Recherche approfondie sur Tolteck, Obat, Batappli, Costructor, et les nouveaux e
 - Gate sur les routes IA uniquement (jamais sur la lecture des données).
 - Système de code de parrainage + suivi des réductions actives.
 - Intégration Stripe (ou équivalent) — bloquée tant qu'il n'y a pas de structure juridique.
+
+## Météo du chantier sur l'accueil (04/10) — idée d'Axel, pas construite
+
+Vue sur une maquette d'accueil (« Météo à risque : 70 % de pluie aujourd'hui, pensez à prévenir vos clients »).
+
+**Ce qui existe déjà (06/09)**, dans `lib/meteo.ts` :
+- une alerte dans le **Planning** seulement, sur la semaine affichée ;
+- elle ne concerne que les chantiers d'extérieur (`TYPES_CHANTIER_METEO_SENSIBLES` : terrassement, maçonnerie, façade, toiture, charpente, aménagement extérieur, piscine) ;
+- seuils : 60 % de pluie ou 50 km/h de vent ;
+- la météo vient d'Open-Meteo (gratuit, sans clé) ;
+- elle est prise **à la ville du siège** de l'entreprise, pas à celle du chantier ;
+- un clic sur le rendez-vous permet de prévenir le client.
+
+Ce qui reste à faire :
+- **Sur l'accueil**, une carte seulement quand il y a un risque aujourd'hui ou demain : « Pluie demain sur 2 chantiers (Bron, Villeurbanne) ». Rien quand il fait beau, pour ne pas ajouter de bruit. On réutilise `recupererAlertesMeteoSemaine`, en croisant avec les rendez-vous du jour et du lendemain.
+- **À l'adresse du chantier** plutôt qu'au siège : un artisan qui travaille à 40 km n'a pas la même météo. `extraireVilleDepuisAdresse` sait déjà lire la ville d'une adresse de chantier. Il faut seulement géocoder chaque ville (le cache existe déjà) et garder le repli sur le siège.
+- **Le gel** (maçonnerie, enduits), en plus de la pluie et du vent : un seuil de température minimale à ajouter.
+- **Le geste** : « Prévenir le client », un message préparé que l'artisan relit et envoie lui-même (comme aujourd'hui dans le Planning), et « Déplacer » (la feuille qui existe déjà).
+- **Les seuils par métier** sont à revoir avec 2-3 artisans bêta : quelle pluie arrête vraiment un couvreur, un façadier ?

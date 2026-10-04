@@ -29,16 +29,18 @@ export const FOCUS =
 export const BOUTON_TEXTE = `inline-flex min-h-12 items-center justify-center gap-2 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-60 ${FOCUS}`;
 /** Bouton en contour (règle 6). */
 export const BOUTON_CONTOUR = `inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 ${FOCUS}`;
-/** Le bloc (règle 8) : même fond, même filet, même rayon que la ligne,
- *  sans ombre. */
-const BLOC = "rounded-2xl bg-surface p-5 ring-1 ring-ink/15 sm:p-6";
+/** Le bloc (règle 8) : même fond, même filet, sans ombre. Refonte
+ *  visuelle (04/10) : la carte de l'accueil, rayon plus grand. */
+const BLOC = "rounded-3xl bg-surface p-5 ring-1 ring-ink/10 sm:p-6";
 
 function Titre({ children, compte, action }: { children: ReactNode; compte?: number; action?: ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-3">
       <h2 className="font-display text-xl font-semibold text-ink">
         {children}
-        {compte !== undefined && compte > 0 && <span className="ml-2 font-sans text-sm font-normal tabular-nums text-steel">{compte}</span>}
+        {compte !== undefined && compte > 0 && (
+          <span className="ml-2 rounded-full bg-ink/[0.07] px-2 py-0.5 align-middle font-sans text-xs font-semibold tabular-nums text-steel">{compte}</span>
+        )}
       </h2>
       {action}
     </div>

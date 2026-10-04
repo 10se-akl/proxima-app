@@ -15,6 +15,9 @@ import {
   type FormulaireParametres,
 } from "@/lib/parametres";
 import { IconeChevron } from "@/components/projet/icones";
+import { EnTetePage } from "@/components/ui/EnTetePage";
+import { Pastille } from "@/components/ui/Pastille";
+import { IconeParametres } from "@/components/ui/Icones";
 import { Engagements } from "@/components/confiance/Engagements";
 import { effacerBrouillon, ecrireBrouillon, empreinte, lireBrouillon } from "@/lib/brouillonLocal";
 
@@ -230,8 +233,16 @@ export function VueParametres({
   );
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
-      <h1 className="font-display text-[1.6rem] font-semibold leading-tight text-ink sm:text-3xl">Paramètres</h1>
+    <div className="px-4 pt-4 pb-8 sm:p-8 max-w-2xl">
+      <EnTetePage
+        titre="Paramètres"
+        sousTitre="Votre entreprise, vos devis, votre équipe."
+        icone={
+          <Pastille couleur="signal" taille="grande">
+            <IconeParametres taille={24} />
+          </Pastille>
+        }
+      />
 
       {retrouve && (
         <div className="mt-4 rounded-xl bg-ink/[0.04] px-4 py-3 text-[13.5px] text-ink/75">

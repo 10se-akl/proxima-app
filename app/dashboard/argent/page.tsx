@@ -6,6 +6,7 @@ import { CLASSE_BOUTON_TEXTE, CLASSE_FIN_TEXTE, FinRelancer, LigneAccueil } from
 import { BlocDepliable } from "@/components/accueil/BlocDepliable";
 import { LienAncre } from "@/components/accueil/LienAncre";
 import { Pastille } from "@/components/ui/Pastille";
+import { EnTetePage } from "@/components/ui/EnTetePage";
 import { IconeCloche, IconeDocument, IconeEuro } from "@/components/projet/icones";
 
 // ============================================================
@@ -78,34 +79,38 @@ export default async function ArgentPage() {
   });
 
   return (
-    <div className="max-w-2xl px-4 pb-8 pt-5 sm:p-8">
-      <h1 className="font-display text-3xl font-semibold text-ink">Argent</h1>
-
-      {/* 1. Ce qui reste dû, maintenant. */}
-      {/* Refonte visuelle (04/10) : le montant dû dans une carte bleu nuit,
-          comme l'en-tête de l'accueil. */}
-      <section aria-label="À encaisser" className="mt-5 flex items-center gap-4 rounded-3xl bg-nuit px-5 py-5 text-white">
-        <Pastille couleur="violet" taille="grande">
-          <IconeEuro className="h-6 w-6" />
-        </Pastille>
-        {aEncaisser.nombre > 0 ? (
-          <div className="min-w-0">
-            <p className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-display text-3xl font-semibold tabular-nums">{euros(aEncaisser.total)}</span>
-              <span className="text-base text-white/70">à encaisser</span>
-            </p>
-            <Link
-              href="/dashboard/factures?statut=emise"
-              className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-white/70 underline decoration-white/30 underline-offset-4 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
-            >
-              {aEncaisser.nombre} {aEncaisser.nombre > 1 ? "factures émises" : "facture émise"}
-              {aEncaisser.enRetard > 0 && ` · ${aEncaisser.enRetard} après échéance`}
-            </Link>
-          </div>
-        ) : (
-          <p className="text-base text-white/70">Rien à encaisser.</p>
-        )}
-      </section>
+    <div className="max-w-2xl px-4 pb-8 pt-4 sm:p-8">
+      {/* Refonte visuelle (04/10) : l'en-tête bleu nuit, et dedans ce qui
+          reste dû, maintenant. */}
+      <EnTetePage
+        titre="Argent"
+        sousTitre="Ce qu'on vous doit, et ce qui reste à faire."
+        icone={
+          <Pastille couleur="violet" taille="grande">
+            <IconeEuro className="h-6 w-6" />
+          </Pastille>
+        }
+      >
+        <section aria-label="À encaisser" className="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15">
+          {aEncaisser.nombre > 0 ? (
+            <>
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-display text-3xl font-semibold tabular-nums">{euros(aEncaisser.total)}</span>
+                <span className="text-base text-white/70">à encaisser</span>
+              </p>
+              <Link
+                href="/dashboard/factures?statut=emise"
+                className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-white/70 underline decoration-white/30 underline-offset-4 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              >
+                {aEncaisser.nombre} {aEncaisser.nombre > 1 ? "factures émises" : "facture émise"}
+                {aEncaisser.enRetard > 0 && ` · ${aEncaisser.enRetard} après échéance`}
+              </Link>
+            </>
+          ) : (
+            <p className="text-base text-white/80">Rien à encaisser.</p>
+          )}
+        </section>
+      </EnTetePage>
 
       {/* 2. En attente du client, au complet. */}
       {enAttente.length > 0 && (

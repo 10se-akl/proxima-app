@@ -5,7 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
-import { IconeChevron, IconeCoche, IconePlus } from "@/components/projet/icones";
+import { IconeCalendrier, IconeChevron, IconeCloche, IconeCoche, IconePlus } from "@/components/projet/icones";
+import { Pastille } from "@/components/ui/Pastille";
 import { ActionsRendezVous } from "./ActionsRendezVous";
 import { ChoisirChantier } from "./ChoisirChantier";
 import { FeuillePlanifier, TracePlanifie, type ProjetAPlanifier } from "./FeuillePlanifier";
@@ -152,7 +153,7 @@ export function AgendaMobile({
                 <span className="text-sm font-semibold text-steel">{mot}</span>
                 <span
                   className={`font-display font-semibold tabular-nums ${fondu ? "text-base" : "text-xl"} ${
-                    estAujourdhui ? "rounded-xl bg-ink px-2 py-0.5 text-paper" : "text-ink"
+                    estAujourdhui ? "rounded-xl bg-signal px-2 py-0.5 text-white" : "text-ink"
                   }`}
                 >
                   {numero}
@@ -260,6 +261,11 @@ function LigneRendezVous({
           risque ? "pr-2" : "pr-4"
         }`}
       >
+        {/* Refonte visuelle (04/10) : bleu pour un rendez-vous, orange pour
+            un rappel, comme partout ailleurs. */}
+        <Pastille couleur={e.type === "rendez_vous" ? "bleu" : "orange"} variante="doux" taille="petite">
+          {e.type === "rendez_vous" ? <IconeCalendrier className="h-4 w-4" /> : <IconeCloche className="h-4 w-4" />}
+        </Pastille>
         <span className="min-w-0 flex-1">
           <span className={`block truncate text-base font-semibold text-ink ${fait ? "line-through" : ""}`}>{qui ?? e.titre}</span>
           <span className="block truncate text-sm text-steel">

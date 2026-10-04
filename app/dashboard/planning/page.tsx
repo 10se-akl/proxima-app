@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/Button";
+import { CLASSE_BOUTON_NUIT, CLASSE_BOUTON_NUIT_SECONDAIRE, EnTetePage } from "@/components/ui/EnTetePage";
+import { Pastille } from "@/components/ui/Pastille";
+import { IconeCalendrier, IconeChevron } from "@/components/projet/icones";
 import { GrilleAgenda } from "@/components/planning/GrilleAgenda";
 import { AgendaMobile } from "@/components/planning/AgendaMobile";
 import { PlanifierDepuisLien } from "@/components/planning/PlanifierDepuisLien";
@@ -111,46 +113,53 @@ export default async function PlanningPage({
         </div>
       )}
 
+      {/* Refonte visuelle (04/10) : l'en-tête bleu nuit. Sur ordinateur, la
+          semaine et ses flèches y vivent ; sur téléphone, les sept jours
+          glissants gardent leurs flèches juste en dessous. */}
+      <EnTetePage
+        titre="Planning"
+        sousTitre={<span className="hidden sm:inline">{libelleSemaine}</span>}
+        icone={
+          <Pastille couleur="bleu" taille="grande">
+            <IconeCalendrier className="h-6 w-6" />
+          </Pastille>
+        }
+        actions={
+          <>
+            <Link
+              href={`/dashboard/planning?semaine=${offset - 1}`}
+              aria-label="Semaine précédente"
+              className={`hidden sm:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
+            >
+              <IconeChevron className="h-5 w-5 rotate-180" />
+            </Link>
+            <Link href="/dashboard/planning" className={`hidden sm:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE}`}>
+              Aujourd&apos;hui
+            </Link>
+            <Link
+              href={`/dashboard/planning?semaine=${offset + 1}`}
+              aria-label="Semaine suivante"
+              className={`hidden sm:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
+            >
+              <IconeChevron className="h-5 w-5" />
+            </Link>
+            <Link href="/dashboard/planning/nouveau" className={CLASSE_BOUTON_NUIT}>
+              + Ajouter
+            </Link>
+          </>
+        }
+      />
+
       {/* Téléphone : la semaine en sept lignes (sept jours glissants à partir
           d'aujourd'hui). La grille de la semaine reste pour l'ordinateur. */}
       <div className="sm:hidden">
-        <div className="flex items-center justify-between gap-3">
-          <h1 className="font-display text-2xl font-semibold text-ink">Planning</h1>
-          <Link
-            href="/dashboard/planning/nouveau"
-            className="inline-flex min-h-12 items-center rounded-full px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
-          >
-            + Ajouter
-          </Link>
-        </div>
-        <div className="mt-2">
+        <div className="mt-3">
           <AgendaMobile key={offset} jours={joursGlissants} evenements={dans(glissante)} meteoParJour={alertesMeteo} offset={offset} />
         </div>
       </div>
 
       <div className="hidden sm:block">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-semibold">Planning</h1>
-          <p className="mt-1 text-sm text-ink/50">{libelleSemaine}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/dashboard/planning?semaine=${offset - 1}`}>
-            <Button variant="ghost">← Semaine préc.</Button>
-          </Link>
-          <Link href="/dashboard/planning">
-            <Button variant="ghost">Aujourd&apos;hui</Button>
-          </Link>
-          <Link href={`/dashboard/planning?semaine=${offset + 1}`}>
-            <Button variant="ghost">Semaine suiv. →</Button>
-          </Link>
-          <Link href="/dashboard/planning/nouveau">
-            <Button>+ Ajouter</Button>
-          </Link>
-        </div>
-      </div>
-
-      <div className="mt-6 flex items-center gap-4 text-xs text-ink/50">
+      <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink/60">
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-[#C23B22]" /> Urgent
         </span>

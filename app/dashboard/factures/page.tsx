@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { CLASSE_BOUTON_NUIT_SECONDAIRE } from "@/components/ui/EnTetePage";
 import { ListeFacturesRecherchable } from "@/components/dashboard/ListeFacturesRecherchable";
 import { getOrganisationId } from "@/lib/organisation";
 
@@ -27,22 +28,20 @@ export default async function FacturesPage({ searchParams }: { searchParams?: { 
   }));
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-4xl">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-2xl font-semibold">Factures</h1>
-        {factures.length > 0 && (
-          <a
-            href="/api/factures/export-comptable"
-            className="text-sm text-ink/60 underline decoration-ink/20 underline-offset-2 hover:text-signal hover:decoration-signal/40"
-          >
-            Export comptable (CSV)
-          </a>
-        )}
-      </div>
-
-      <div className="mt-5">
-        <ListeFacturesRecherchable factures={factures} filtreInitial={searchParams?.statut} />
-      </div>
+    <div className="px-4 pt-4 pb-8 sm:p-8 max-w-4xl">
+      {/* L'en-tête bleu nuit vit dans la liste : la recherche, les filtres
+          et l'export comptable y sont posés. */}
+      <ListeFacturesRecherchable
+        factures={factures}
+        filtreInitial={searchParams?.statut}
+        actions={
+          factures.length > 0 ? (
+            <a href="/api/factures/export-comptable" className={CLASSE_BOUTON_NUIT_SECONDAIRE}>
+              Export comptable (CSV)
+            </a>
+          ) : undefined
+        }
+      />
     </div>
   );
 }

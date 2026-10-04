@@ -30,6 +30,8 @@ export type ChantierAccueil = {
   /** URL signée de la première photo, valable une heure. */
   photo: string | null;
   urgent: boolean;
+  /** Un chantier terminé, montré en retrait (page Projets). */
+  estompe?: boolean;
 };
 
 const CIVILITES = new Set(["m", "m.", "mme", "mlle", "monsieur", "madame"]);
@@ -73,7 +75,8 @@ export function ChantiersAccueil({ chantiers, total }: { chantiers: ChantierAccu
   );
 }
 
-function LigneChantier({ c }: { c: ChantierAccueil }) {
+/** Une ligne de projet : l'accueil et la page Projets la partagent. */
+export function LigneChantier({ c }: { c: ChantierAccueil }) {
   const whatsapp = c.telephone ? numeroWhatsApp(c.telephone) : null;
   const tel = c.telephone ? numeroSms(c.telephone) : "";
   const etiquette = (
@@ -86,7 +89,7 @@ function LigneChantier({ c }: { c: ChantierAccueil }) {
   );
 
   return (
-    <li className="flex items-center gap-2 rounded-2xl bg-paper/70 p-2 ring-1 ring-ink/10 sm:gap-3">
+    <li className={`flex items-center gap-2 rounded-2xl bg-paper/70 p-2 ring-1 ring-ink/10 sm:gap-3 ${c.estompe ? "opacity-70" : ""}`}>
       <Link href={`/dashboard/demandes/${c.id}`} className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl ${FOCUS}`}>
         {c.photo ? (
           // Une miniature signée, déjà petite : pas besoin de next/image.

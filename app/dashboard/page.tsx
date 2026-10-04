@@ -3,9 +3,8 @@ import { VueAccueil, type ActionAccueil, type LigneASuivre } from "@/components/
 import type { ElementJour } from "@/components/accueil/ListeAujourdhui";
 import type { ElementARegler } from "@/components/accueil/ARegler";
 import type { ChantierAccueil } from "@/components/accueil/ChantiersAccueil";
-import type { CouleurPastille } from "@/components/ui/Pastille";
-import type { Projet, StatutProjet } from "@/types";
-import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
+import type { Projet } from "@/types";
+import { ETAPE_PROJET, lieuDe, prochainRendezVous, quoiDe } from "@/lib/projetAffichage";
 import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation } from "@/lib/notes";
 import { aujourdhuiParis, minuitParis } from "@/lib/moisParis";
@@ -67,39 +66,7 @@ function quand(iso: string, maintenant: Date): string {
   return DATE_COURTE.format(d);
 }
 
-/** Un moment à venir : « aujourd'hui à 14h », « demain à 9h »,
- *  « lun. à 14h », « 12 oct. à 14h ». */
-function quandAVenir(iso: string, maintenant: Date): string {
-  const d = new Date(iso);
-  const ecart = Math.round((Date.parse(CLE_JOUR.format(d)) - Date.parse(CLE_JOUR.format(maintenant))) / JOUR_MS);
-  if (ecart <= 0) return `aujourd'hui à ${heureCourte(iso)}`;
-  if (ecart === 1) return `demain à ${heureCourte(iso)}`;
-  if (ecart < 7) return `${JOUR_SEMAINE.format(d)} à ${heureCourte(iso)}`;
-  return `${DATE_COURTE.format(d)} à ${heureCourte(iso)}`;
-}
-
-// Refonte visuelle (04/10) — « Mes projets » : l'étape en mots de chantier
-// et sa couleur. Orange : ça attend l'artisan ; bleu : ça attend le
-// client ; violet : signé ; vert : le chantier tourne.
-const ETAPE_CHANTIER: Record<StatutProjet, { libelle: string; couleur: CouleurPastille }> = {
-  nouveau: { libelle: "À cadrer", couleur: "orange" },
-  analyse: { libelle: "Devis à préparer", couleur: "orange" },
-  devis_genere: { libelle: "Devis à relire", couleur: "orange" },
-  devis_envoye: { libelle: "Devis envoyé", couleur: "bleu" },
-  accepte: { libelle: "Accepté", couleur: "violet" },
-  en_cours: { libelle: "En cours", couleur: "vert" },
-  termine: { libelle: "Terminé", couleur: "vert" },
-};
 const CHANTIERS_VISIBLES = 5;
-
-/** « Lyon · 69003 » depuis une adresse postale, sinon son dernier morceau. */
-function lieuDe(adresse: string | null): string | null {
-  if (!adresse) return null;
-  const m = adresse.match(/(\d{5})\s+([^,\n]+)/);
-  if (m) return `${m[2].trim()} · ${m[1]}`;
-  const morceaux = adresse.split(",").map((x) => x.trim()).filter(Boolean);
-  return morceaux[morceaux.length - 1] ?? null;
-}
 
 /** Le même, en cinq signes au plus, pour la colonne du repère : « 14h30 »,
  *  « hier », « lun. », « 29/09 ». */
@@ -529,17 +496,16 @@ export default async function DashboardHome() {
     }
   }
   const chantiers: ChantierAccueil[] = visibles.map((p) => {
-    const type = LABEL_TYPE_CHANTIER[p.type_chantier];
     const rdv = prochainRdv.get(p.id);
     const photo = p.photos?.[0];
     return {
       id: p.id,
       nom: p.nom_client,
-      quoi: (type && p.type_chantier !== "autre" ? type : p.description?.trim().split(/[.,\n]/)[0]) || null,
+      quoi: quoiDe(p),
       lieu: lieuDe(p.adresse_client),
-      etape: ETAPE_CHANTIER[p.statut].libelle,
-      couleur: ETAPE_CHANTIER[p.statut].couleur,
-      info: rdv ? `Rendez-vous ${quandAVenir(rdv, maintenant)}` : null,
+      etape: ETAPE_PROJET[p.statut].libelle,
+      couleur: ETAPE_PROJET[p.statut].couleur,
+      info: rdv ? prochainRendezVous(rdv, maintenant) : null,
       telephone: p.telephone_client,
       adresse: p.adresse_client,
       photo: photo ? urlsPhotos.get(photo) ?? null : null,

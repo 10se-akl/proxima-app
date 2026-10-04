@@ -1,13 +1,28 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import { DemandeCard } from "@/components/dashboard/DemandeCard";
 import { IconeDossier } from "@/components/ui/Icones";
 import { BoutonCapture } from "@/components/accueil/BoutonCapture";
+import { CLASSE_CHAMP_NUIT, EnTetePage } from "@/components/ui/EnTetePage";
+import { Pastille } from "@/components/ui/Pastille";
 import type { Projet } from "@/types";
 
-export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
+export function ListeProjetsRecherchable({
+  projets,
+  photos = {},
+  infos = {},
+  astuce,
+}: {
+  projets: Projet[];
+  /** id du projet → URL signée de sa première photo. */
+  photos?: Record<string, string>;
+  /** id du projet → « Rendez-vous demain à 9h ». */
+  infos?: Record<string, string>;
+  /** Sous l'en-tête, avant la liste (l'astuce du partage). */
+  astuce?: ReactNode;
+}) {
   // Permet d'arriver ici avec une recherche déjà pré-remplie (ex : depuis
   // l'alerte "un projet existe déjà pour ce nom" à la création).
   const searchParams = useSearchParams();
@@ -41,20 +56,36 @@ export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
   // les autres : on cherche d'abord ce qui est en cours.
   const tries = [...filtres].sort((a, b) => Number(a.statut === "termine") - Number(b.statut === "termine"));
 
+  const enCours = projets.length - projetsTermines.length;
+
   return (
     <div>
-      <input
-        type="search"
-        value={recherche}
-        onChange={(e) => setRecherche(e.target.value)}
-        placeholder="Nom, téléphone, adresse…"
-        aria-label="Rechercher un projet"
-        className="w-full min-h-12 rounded-2xl border border-ink/15 bg-surface px-4 text-[15px] transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-      />
+      <EnTetePage
+        titre="Projets"
+        sousTitre={enCours === 0 ? "Aucun projet en cours" : enCours === 1 ? "1 projet en cours" : `${enCours} projets en cours`}
+        icone={
+          <Pastille couleur="signal" taille="grande">
+            <IconeDossier taille={24} />
+          </Pastille>
+        }
+      >
+        <input
+          type="search"
+          value={recherche}
+          onChange={(e) => setRecherche(e.target.value)}
+          placeholder="Nom, téléphone, adresse…"
+          aria-label="Rechercher un projet"
+          className={CLASSE_CHAMP_NUIT}
+        />
+      </EnTetePage>
 
-      <div className="mt-4 flex flex-col gap-2">
+      {astuce && <div className="mt-4">{astuce}</div>}
+
+      {/* Refonte visuelle (04/10) : la liste dans une carte, comme Devis et
+          Factures. */}
+      <ul className="mt-4 flex flex-col gap-2 rounded-3xl bg-surface p-2 ring-1 ring-ink/10 sm:p-3">
         {filtres.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
+          <li className="flex flex-col items-center gap-3 py-6 text-center">
             <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
               <IconeDossier taille={20} className="text-signal" />
             </span>
@@ -63,11 +94,11 @@ export function ListeProjetsRecherchable({ projets }: { projets: Projet[] }) {
             </p>
             {/* L'état vide ouvre la même feuille que le [+] de la navigation. */}
             {projets.length === 0 && <BoutonCapture />}
-          </div>
+          </li>
         ) : (
-          tries.map((p) => <DemandeCard key={p.id} demande={p} />)
+          tries.map((p) => <DemandeCard key={p.id} demande={p} photo={photos[p.id] ?? null} info={infos[p.id] ?? null} />)
         )}
-      </div>
+      </ul>
 
       {/* Tout en bas : l'historique ne se met jamais entre l'artisan et ses
           chantiers en cours. */}

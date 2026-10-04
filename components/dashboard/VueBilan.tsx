@@ -4,6 +4,10 @@ import type { DetailHeures } from "@/lib/bilan-mensuel";
 import { cle, decaler, libelle, memeMois, nomMois, type Mois } from "@/lib/moisParis";
 import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
 import { Card } from "@/components/ui/Card";
+import { CLASSE_BOUTON_NUIT_SECONDAIRE, EnTetePage } from "@/components/ui/EnTetePage";
+import { Pastille } from "@/components/ui/Pastille";
+import { IconeBilan } from "@/components/ui/Icones";
+import { IconeChevron } from "@/components/projet/icones";
 import { GraphiqueActivite } from "@/components/dashboard/GraphiqueActivite";
 
 // ============================================================
@@ -119,50 +123,40 @@ export function VueBilan({
   const chantiersChiffres = activite.chantiersTermines.filter((c) => c.parJour !== null);
 
   return (
-    <div className="mx-auto max-w-4xl p-5 sm:p-8">
-      {/* En-tête et navigation entre les mois */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-steel">Bilan</p>
-          <h1 className="mt-1 font-display text-2xl font-semibold capitalize sm:text-3xl">{libelle(mois)}</h1>
-          <p className="mt-1 text-sm text-ink/55">
-            {activite.enCours
-              ? `Mois en cours · chiffres au ${activite.jourCompare} ${nomMois(mois)}`
-              : "Mois terminé"}
-          </p>
-        </div>
-        <nav aria-label="Changer de mois" className="flex items-center gap-2">
-          <Link
-            href={`/dashboard/bilan?mois=${cle(precedent)}`}
-            className="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
-            aria-label={`Voir ${libelle(precedent)}`}
-          >
-            <span aria-hidden>‹</span>
-          </Link>
-          {activite.enCours ? (
-            <span
-              aria-disabled
-              className="grid h-11 w-11 place-items-center rounded-xl border border-ink/10 text-ink/20"
-            >
-              <span aria-hidden>›</span>
-              <span className="sr-only">Pas de mois suivant</span>
-            </span>
-          ) : (
-            <Link
-              href={`/dashboard/bilan?mois=${cle(suivant)}`}
-              className="grid h-11 w-11 place-items-center rounded-xl border border-ink/15 text-ink/70 transition-colors hover:border-ink/30 hover:text-ink"
-              aria-label={`Voir ${libelle(suivant)}`}
-            >
-              <span aria-hidden>›</span>
+    <div className="mx-auto max-w-4xl px-4 pt-4 pb-8 sm:p-8">
+      {/* En-tête et navigation entre les mois (refonte visuelle 04/10 :
+          l'en-tête bleu nuit). */}
+      <EnTetePage
+        titre={`Bilan · ${libelle(mois)}`}
+        sousTitre={activite.enCours ? `Mois en cours · chiffres au ${activite.jourCompare} ${nomMois(mois)}` : "Mois terminé"}
+        icone={
+          <Pastille couleur="signal" taille="grande">
+            <IconeBilan taille={24} />
+          </Pastille>
+        }
+        actions={
+          <nav aria-label="Changer de mois" className="flex items-center gap-2">
+            <Link href={`/dashboard/bilan?mois=${cle(precedent)}`} className={`${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`} aria-label={`Voir ${libelle(precedent)}`}>
+              <IconeChevron className="h-5 w-5 rotate-180" />
             </Link>
-          )}
-          {!memeMois(mois, courant) && (
-            <Link href="/dashboard/bilan" className="ml-1 inline-flex min-h-11 items-center text-xs text-ink/55 underline hover:text-ink">
-              Mois en cours
-            </Link>
-          )}
-        </nav>
-      </div>
+            {activite.enCours ? (
+              <span aria-disabled className={`${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3 opacity-40`}>
+                <IconeChevron className="h-5 w-5" />
+                <span className="sr-only">Pas de mois suivant</span>
+              </span>
+            ) : (
+              <Link href={`/dashboard/bilan?mois=${cle(suivant)}`} className={`${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`} aria-label={`Voir ${libelle(suivant)}`}>
+                <IconeChevron className="h-5 w-5" />
+              </Link>
+            )}
+            {!memeMois(mois, courant) && (
+              <Link href="/dashboard/bilan" className={CLASSE_BOUTON_NUIT_SECONDAIRE}>
+                Mois en cours
+              </Link>
+            )}
+          </nav>
+        }
+      />
 
       {/* Les quatre chiffres du mois */}
       <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">

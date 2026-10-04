@@ -8,6 +8,10 @@ import { listerNotesActivesOrganisation, marquerNoteTerminee } from "@/lib/notes
 import { NoteCard } from "@/components/notes/NoteCard";
 import { Button } from "@/components/ui/Button";
 import { IconeNote } from "@/components/ui/Icones";
+import { CLASSE_BOUTON_NUIT, EnTetePage, classePuceNuit } from "@/components/ui/EnTetePage";
+import { Pastille, type CouleurPastille } from "@/components/ui/Pastille";
+import { TitreBloc, CLASSE_CARTE_BLOC } from "@/components/accueil/Blocs";
+import { IconeCalendrier, IconeCloche, IconeCrayon } from "@/components/projet/icones";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { Note } from "@/types";
 import { SquelettePage } from "@/components/ui/Skeleton";
@@ -110,38 +114,42 @@ export default function NotesPage() {
 
   return (
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-3xl mx-auto">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-2xl font-semibold text-ink">Notes</h1>
-        <Link href="/dashboard/notes/nouvelle">
-          <Button>Nouvelle note</Button>
-        </Link>
-      </div>
-
-      {projetsPresents.length > 0 && (
-        // 27/09 — Une rangée qui défile : avec vingt chantiers, les
-        // pastilles ne remplissent plus l'écran sur quatre lignes.
-        <div className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
-          <button
-            onClick={() => setFiltreProjet("")}
-            className={`min-h-11 shrink-0 rounded-full px-4 text-[14px] font-medium transition-colors ${
-              filtreProjet === "" ? "bg-ink text-paper" : "bg-paper-warm text-ink/60 hover:text-ink"
-            }`}
-          >
-            Tous
-          </button>
-          {projetsPresents.map(([id, nom]) => (
-            <button
-              key={id}
-              onClick={() => setFiltreProjet(id)}
-              className={`min-h-11 shrink-0 whitespace-nowrap rounded-full px-4 text-[14px] font-medium transition-colors ${
-                filtreProjet === id ? "bg-ink text-paper" : "bg-paper-warm text-ink/60 hover:text-ink"
-              }`}
-            >
-              {nom}
+      {/* Refonte visuelle (04/10) : l'en-tête bleu nuit, les chantiers en
+          filtres dedans. */}
+      <EnTetePage
+        titre="Notes"
+        sousTitre={notes.length === 0 ? "Aucune note" : notes.length === 1 ? "1 note" : `${notes.length} notes`}
+        icone={
+          <Pastille couleur="orange" taille="grande">
+            <IconeCrayon className="h-6 w-6" />
+          </Pastille>
+        }
+        actions={
+          <Link href="/dashboard/notes/nouvelle" className={CLASSE_BOUTON_NUIT}>
+            Nouvelle note
+          </Link>
+        }
+      >
+        {projetsPresents.length > 0 && (
+          // 27/09 — Une rangée qui défile : avec vingt chantiers, les
+          // pastilles ne remplissent plus l'écran sur quatre lignes.
+          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+            <button type="button" onClick={() => setFiltreProjet("")} className={`shrink-0 ${classePuceNuit(filtreProjet === "")}`}>
+              Tous
             </button>
-          ))}
-        </div>
-      )}
+            {projetsPresents.map(([id, nom]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setFiltreProjet(id)}
+                className={`shrink-0 whitespace-nowrap ${classePuceNuit(filtreProjet === id)}`}
+              >
+                {nom}
+              </button>
+            ))}
+          </div>
+        )}
+      </EnTetePage>
 
       {notesFiltrees.length === 0 ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-10 text-center">
@@ -154,18 +162,18 @@ export default function NotesPage() {
           </Link>
         </div>
       ) : (
-        <div className="mt-8 flex flex-col gap-8">
+        <div>
           {enRetard.length > 0 && (
-            <GroupeNotes titre="En retard" notes={enRetard} onTerminer={terminer} accent />
+            <GroupeNotes titre="En retard" notes={enRetard} onTerminer={terminer} couleur="orange" icone={<IconeCloche className="h-4 w-4" />} />
           )}
           {aujourdhui.length > 0 && (
-            <GroupeNotes titre="Aujourd'hui" notes={aujourdhui} onTerminer={terminer} />
+            <GroupeNotes titre="Aujourd'hui" notes={aujourdhui} onTerminer={terminer} couleur="bleu" icone={<IconeCalendrier className="h-4 w-4" />} />
           )}
           {aVenir.length > 0 && (
-            <GroupeNotes titre="À venir" notes={aVenir} onTerminer={terminer} />
+            <GroupeNotes titre="À venir" notes={aVenir} onTerminer={terminer} couleur="violet" icone={<IconeCalendrier className="h-4 w-4" />} />
           )}
           {sansRappel.length > 0 && (
-            <GroupeNotes titre="Sans rappel" notes={sansRappel} onTerminer={terminer} />
+            <GroupeNotes titre="Sans rappel" notes={sansRappel} onTerminer={terminer} couleur="signal" icone={<IconeCrayon className="h-4 w-4" />} />
           )}
         </div>
       )}
@@ -173,31 +181,37 @@ export default function NotesPage() {
   );
 }
 
+/** Un groupe de notes : une carte, son titre et sa pastille (refonte
+ *  visuelle 04/10, comme les blocs de l'accueil). */
 function GroupeNotes({
   titre,
   notes,
   onTerminer,
-  accent,
+  couleur,
+  icone,
 }: {
   titre: string;
   notes: Note[];
   onTerminer: (id: string, terminee: boolean) => void;
-  accent?: boolean;
+  couleur: CouleurPastille;
+  icone: React.ReactNode;
 }) {
   return (
-    <div>
-      <p
-        className={`font-mono text-[11px] tracking-[0.2em] uppercase mb-3 ${
-          accent ? "text-signal" : "text-steel"
-        }`}
-      >
-        {titre}
-      </p>
-      <div className="flex flex-col gap-2.5">
+    <section aria-label={titre} className={CLASSE_CARTE_BLOC}>
+      <TitreBloc
+        titre={titre}
+        nombre={notes.length}
+        icone={
+          <Pastille couleur={couleur} variante="doux" taille="petite">
+            {icone}
+          </Pastille>
+        }
+      />
+      <div className="mt-2.5 flex flex-col gap-2">
         {notes.map((note) => (
-          <NoteCard key={note.id} note={note} onTerminer={onTerminer} />
+          <NoteCard key={note.id} note={note} onTerminer={onTerminer} className="!bg-paper/70 !ring-ink/10" />
         ))}
       </div>
-    </div>
+    </section>
   );
 }

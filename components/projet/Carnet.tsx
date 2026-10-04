@@ -15,6 +15,7 @@ import {
   IconeCalendrier,
   IconeChevron,
   IconeCoche,
+  IconeCrayon,
   IconeDocument,
   IconeEtincelle,
   IconeEuro,
@@ -24,6 +25,7 @@ import {
   IconePhoto,
   IconePoint,
 } from "./icones";
+import { Pastille } from "@/components/ui/Pastille";
 
 // ============================================================
 // Le Carnet (24/09) — voir entreesCarnet.ts pour la logique.
@@ -274,16 +276,22 @@ export function Carnet({
     });
 
   return (
-    <section aria-labelledby="titre-carnet">
-      <h2 id="titre-carnet" className="font-display text-xl font-semibold text-ink">
-        Carnet <span className="ml-2 font-sans text-sm font-normal tabular-nums text-steel">{entrees.length}</span>
+    // Refonte visuelle (04/10) : le Carnet dans une carte, comme les blocs
+    // de l'accueil.
+    <section aria-labelledby="titre-carnet" className="rounded-3xl bg-surface p-4 ring-1 ring-ink/10 sm:p-5">
+      <h2 id="titre-carnet" className="flex items-center gap-2.5 font-display text-xl font-semibold text-ink">
+        <Pastille couleur="signal" variante="doux" taille="petite">
+          <IconeCrayon className="h-4 w-4" />
+        </Pastille>
+        Carnet
+        <span className="rounded-full bg-ink/[0.07] px-2 py-0.5 font-sans text-xs font-semibold tabular-nums text-steel">{entrees.length}</span>
       </h2>
 
       {photos && photos.nombre > 0 && (
         <button
           type="button"
           onClick={photos.surOuvrir}
-          className={`mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-surface px-4 py-2 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${FOCUS}`}
+          className={`mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-paper/70 px-4 py-2 text-left ring-1 ring-ink/10 active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${FOCUS}`}
         >
           <IconePhoto className="h-5 w-5 shrink-0 text-ink" />
           <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">
@@ -312,7 +320,7 @@ export function Carnet({
               value={recherche}
               onChange={(ev) => setRecherche(ev.target.value)}
               placeholder="Chercher : mesure, code, fenêtre…"
-              className="min-h-12 w-full rounded-2xl bg-surface pl-10 pr-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
+              className="min-h-12 w-full rounded-2xl bg-paper/70 pl-10 pr-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
             />
           </label>
           <div role="group" aria-label="Filtrer le carnet" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

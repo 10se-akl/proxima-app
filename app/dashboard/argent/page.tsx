@@ -5,6 +5,8 @@ import { aplatirClient, calculerArgent, euros, JOURS_PAUSE_RELANCE, type LigneEn
 import { CLASSE_BOUTON_TEXTE, CLASSE_FIN_TEXTE, FinRelancer, LigneAccueil } from "@/components/accueil/Blocs";
 import { BlocDepliable } from "@/components/accueil/BlocDepliable";
 import { LienAncre } from "@/components/accueil/LienAncre";
+import { Pastille } from "@/components/ui/Pastille";
+import { IconeCloche, IconeDocument, IconeEuro } from "@/components/projet/icones";
 
 // ============================================================
 // Argent (refonte 03/10 — duel B, lot 2).
@@ -80,23 +82,28 @@ export default async function ArgentPage() {
       <h1 className="font-display text-3xl font-semibold text-ink">Argent</h1>
 
       {/* 1. Ce qui reste dû, maintenant. */}
-      <section aria-label="À encaisser" className="mt-5">
+      {/* Refonte visuelle (04/10) : le montant dû dans une carte bleu nuit,
+          comme l'en-tête de l'accueil. */}
+      <section aria-label="À encaisser" className="mt-5 flex items-center gap-4 rounded-3xl bg-nuit px-5 py-5 text-white">
+        <Pastille couleur="violet" taille="grande">
+          <IconeEuro className="h-6 w-6" />
+        </Pastille>
         {aEncaisser.nombre > 0 ? (
-          <>
+          <div className="min-w-0">
             <p className="flex flex-wrap items-baseline gap-x-2">
-              <span className="font-display text-3xl font-semibold tabular-nums text-ink">{euros(aEncaisser.total)}</span>
-              <span className="text-base text-steel">à encaisser</span>
+              <span className="font-display text-3xl font-semibold tabular-nums">{euros(aEncaisser.total)}</span>
+              <span className="text-base text-white/70">à encaisser</span>
             </p>
             <Link
               href="/dashboard/factures?statut=emise"
-              className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-steel underline decoration-ink/30 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+              className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-white/70 underline decoration-white/30 underline-offset-4 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               {aEncaisser.nombre} {aEncaisser.nombre > 1 ? "factures émises" : "facture émise"}
               {aEncaisser.enRetard > 0 && ` · ${aEncaisser.enRetard} après échéance`}
             </Link>
-          </>
+          </div>
         ) : (
-          <p className="text-base text-steel">Rien à encaisser.</p>
+          <p className="text-base text-white/70">Rien à encaisser.</p>
         )}
       </section>
 
@@ -104,6 +111,11 @@ export default async function ArgentPage() {
       {enAttente.length > 0 && (
         <BlocDepliable
           titre="En attente du client"
+          icone={
+            <Pastille couleur="orange" variante="doux" taille="petite">
+              <IconeCloche className="h-4 w-4" />
+            </Pastille>
+          }
           lignes={enAttente.map((l) => (
             <LigneAccueil
               key={l.id}
@@ -121,6 +133,11 @@ export default async function ArgentPage() {
       {devisAEnvoyer.length > 0 && (
         <BlocDepliable
           titre="Devis à envoyer"
+          icone={
+            <Pastille couleur="vert" variante="doux" taille="petite">
+              <IconeDocument className="h-4 w-4" />
+            </Pastille>
+          }
           lienTous="/dashboard/devis?statut=a_traiter"
           lignes={devisAEnvoyer.map((d) => (
             <LigneAccueil
@@ -141,6 +158,11 @@ export default async function ArgentPage() {
       {aFacturer.length > 0 && (
         <BlocDepliable
           titre="À facturer"
+          icone={
+            <Pastille couleur="violet" variante="doux" taille="petite">
+              <IconeEuro className="h-4 w-4" />
+            </Pastille>
+          }
           lignes={aFacturer.map((l) => (
             <LigneAccueil
               key={l.demandeId}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconeCoche } from "@/components/projet/icones";
 import { vibrer, vibrerEchec } from "@/lib/retour";
-import { CLASSE_BOUTON_TEXTE, CLASSE_FIN_TEXTE, LIGNES_MAX, TitreBloc } from "./Blocs";
+import { CLASSE_BOUTON_TEXTE, CLASSE_CARTE_BLOC, CLASSE_FIN_TEXTE, LIGNES_MAX, TitreBloc } from "./Blocs";
 
 // ============================================================
 // Fait, trace, repos (refonte 03/10 — duel C lot 4, duel H lot 3 ; règles
@@ -175,11 +175,13 @@ export function BlocAvecTrace({
   titre,
   lignes,
   lienTous,
+  icone,
 }: {
   bloc: BlocTrace;
   titre: string;
   lignes: ReactNode[];
   lienTous?: string;
+  icone?: ReactNode;
 }) {
   const { trace } = useTraceAccueil();
   const [ouvert, setOuvert] = useState(false);
@@ -195,8 +197,8 @@ export function BlocAvecTrace({
 
   const visibles = ouvert ? lignes : lignes.slice(0, LIGNES_MAX);
   return (
-    <section className="mt-7" aria-label={titre}>
-      <TitreBloc titre={titre} nombre={lignes.length} />
+    <section className={CLASSE_CARTE_BLOC} aria-label={titre}>
+      <TitreBloc titre={titre} nombre={lignes.length} icone={icone} />
       <div className="mt-2.5 flex flex-col gap-2">
         {avecTrace && <LigneTrace />}
         {visibles}

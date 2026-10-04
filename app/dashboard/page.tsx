@@ -2,7 +2,10 @@ import { createClient } from "@/lib/supabase/server";
 import { VueAccueil, type ActionAccueil, type LigneASuivre } from "@/components/accueil/VueAccueil";
 import type { ElementJour } from "@/components/accueil/ListeAujourdhui";
 import type { ElementARegler } from "@/components/accueil/ARegler";
-import type { Projet } from "@/types";
+import type { ChantierAccueil } from "@/components/accueil/ChantiersAccueil";
+import type { CouleurPastille } from "@/components/ui/Pastille";
+import type { Projet, StatutProjet } from "@/types";
+import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
 import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation } from "@/lib/notes";
 import { aujourdhuiParis, minuitParis } from "@/lib/moisParis";
@@ -62,6 +65,40 @@ function quand(iso: string, maintenant: Date): string {
   if (ecart === 1) return `hier ${heureCourte(iso)}`;
   if (ecart < 7) return `${JOUR_SEMAINE.format(d)} ${heureCourte(iso)}`;
   return DATE_COURTE.format(d);
+}
+
+/** Un moment à venir : « aujourd'hui à 14h », « demain à 9h »,
+ *  « lun. à 14h », « 12 oct. à 14h ». */
+function quandAVenir(iso: string, maintenant: Date): string {
+  const d = new Date(iso);
+  const ecart = Math.round((Date.parse(CLE_JOUR.format(d)) - Date.parse(CLE_JOUR.format(maintenant))) / JOUR_MS);
+  if (ecart <= 0) return `aujourd'hui à ${heureCourte(iso)}`;
+  if (ecart === 1) return `demain à ${heureCourte(iso)}`;
+  if (ecart < 7) return `${JOUR_SEMAINE.format(d)} à ${heureCourte(iso)}`;
+  return `${DATE_COURTE.format(d)} à ${heureCourte(iso)}`;
+}
+
+// Refonte visuelle (04/10) — « Mes projets » : l'étape en mots de chantier
+// et sa couleur. Orange : ça attend l'artisan ; bleu : ça attend le
+// client ; violet : signé ; vert : le chantier tourne.
+const ETAPE_CHANTIER: Record<StatutProjet, { libelle: string; couleur: CouleurPastille }> = {
+  nouveau: { libelle: "À cadrer", couleur: "orange" },
+  analyse: { libelle: "Devis à préparer", couleur: "orange" },
+  devis_genere: { libelle: "Devis à relire", couleur: "orange" },
+  devis_envoye: { libelle: "Devis envoyé", couleur: "bleu" },
+  accepte: { libelle: "Accepté", couleur: "violet" },
+  en_cours: { libelle: "En cours", couleur: "vert" },
+  termine: { libelle: "Terminé", couleur: "vert" },
+};
+const CHANTIERS_VISIBLES = 5;
+
+/** « Lyon · 69003 » depuis une adresse postale, sinon son dernier morceau. */
+function lieuDe(adresse: string | null): string | null {
+  if (!adresse) return null;
+  const m = adresse.match(/(\d{5})\s+([^,\n]+)/);
+  if (m) return `${m[2].trim()} · ${m[1]}`;
+  const morceaux = adresse.split(",").map((x) => x.trim()).filter(Boolean);
+  return morceaux[morceaux.length - 1] ?? null;
 }
 
 /** Le même, en cinq signes au plus, pour la colonne du repère : « 14h30 »,
@@ -145,12 +182,15 @@ export default async function DashboardHome() {
       .eq("organisation_id", organisationId)
       .eq("type", "rendez_vous")
       .eq("statut", "termine"),
+    // Refonte visuelle (04/10) : la date et le type en plus, pour le
+    // prochain rendez-vous de chaque projet dans « Mes projets ».
     supabase
       .from("evenements_planning")
-      .select("demande_id")
+      .select("demande_id, date_heure, type")
       .eq("organisation_id", organisationId)
       .neq("statut", "annule")
-      .gte("date_heure", maintenant.toISOString()),
+      .gte("date_heure", maintenant.toISOString())
+      .order("date_heure", { ascending: true }),
     // Journal chantier vocal (06/09) — second signal de clôture, et les
     // « Pas encore » (duel C, lot 3).
     supabase
@@ -459,6 +499,54 @@ export default async function DashboardHome() {
   const r = aplatirClient(premierRdvDemainBrut)[0];
   const demain = r ? [heureCourte(r.date_heure), r.demandes?.nom_client ?? r.titre, r.demandes?.adresse_client].filter(Boolean).join(" · ") : null;
 
+  // ---- Les compteurs et « Mes projets » (refonte visuelle 04/10) ---------
+  const compteurs = {
+    rdv: duJourPlat.filter((e) => e.type === "rendez_vous" && actif(e.demande_id)).length,
+    devis: argent.enAttente.filter((l) => l.genre === "devis").length,
+    factures: argent.aEncaisser.nombre,
+    facturesEnRetard: argent.aEncaisser.enRetard,
+    aRegler: aRegler.length,
+  };
+
+  const prochainRdv = new Map<string, string>();
+  for (const e of evenementsFutursBrut ?? []) {
+    if (e.type === "rendez_vous" && e.demande_id && !prochainRdv.has(e.demande_id)) prochainRdv.set(e.demande_id, e.date_heure);
+  }
+  const enCours = listeProjets
+    .filter((p) => p.statut !== "termine")
+    .sort((a, b) => Date.parse(b.derniere_modification_le ?? b.created_at) - Date.parse(a.derniere_modification_le ?? a.created_at));
+  const visibles = enCours.slice(0, CHANTIERS_VISIBLES);
+  // La première photo de chaque projet : un seul appel groupé pour les URLs
+  // signées (le stockage est privé). Un échec n'enlève que les photos.
+  const urlsPhotos = new Map<string, string>();
+  const chemins = visibles.map((p) => p.photos?.[0]).filter((c): c is string => typeof c === "string" && c.length > 0);
+  if (chemins.length > 0) {
+    try {
+      const { data } = await supabase.storage.from("photos").createSignedUrls(chemins, 3600);
+      for (const item of data ?? []) if (item.signedUrl && !item.error && item.path) urlsPhotos.set(item.path, item.signedUrl);
+    } catch (erreur) {
+      console.error("Accueil : miniatures indisponibles", erreur);
+    }
+  }
+  const chantiers: ChantierAccueil[] = visibles.map((p) => {
+    const type = LABEL_TYPE_CHANTIER[p.type_chantier];
+    const rdv = prochainRdv.get(p.id);
+    const photo = p.photos?.[0];
+    return {
+      id: p.id,
+      nom: p.nom_client,
+      quoi: (type && p.type_chantier !== "autre" ? type : p.description?.trim().split(/[.,\n]/)[0]) || null,
+      lieu: lieuDe(p.adresse_client),
+      etape: ETAPE_CHANTIER[p.statut].libelle,
+      couleur: ETAPE_CHANTIER[p.statut].couleur,
+      info: rdv ? `Rendez-vous ${quandAVenir(rdv, maintenant)}` : null,
+      telephone: p.telephone_client,
+      adresse: p.adresse_client,
+      photo: photo ? urlsPhotos.get(photo) ?? null : null,
+      urgent: p.priorite === "urgent",
+    };
+  });
+
   const premierPrenom = (profil?.nom ?? "").split(" ")[0];
   const dateDuJour = maintenant.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
 
@@ -466,6 +554,13 @@ export default async function DashboardHome() {
     <VueAccueil
       dateDuJour={dateDuJour}
       titre={premierProjet ? "Bienvenue sur Compyo." : `${estLeSoir ? "Bonsoir" : "Bonjour"} ${premierPrenom}`.trim()}
+      sousTitre={
+        premierProjet
+          ? "Votre premier projet commence ici."
+          : estLeSoir
+            ? "Voici où en est votre journée."
+            : "Voici ce qui vous attend aujourd'hui."
+      }
       premierProjet={premierProjet}
       maintenant={action}
       repos={estLeSoir && !premierProjet && rienDevantNiDerriere}
@@ -474,6 +569,9 @@ export default async function DashboardHome() {
       aujourdhui={aujourdhui}
       aRegler={aRegler}
       aSuivre={aSuivre}
+      compteurs={compteurs}
+      chantiers={chantiers}
+      nbChantiers={enCours.length}
     />
   );
 }

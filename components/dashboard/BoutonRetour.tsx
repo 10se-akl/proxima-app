@@ -61,7 +61,7 @@ export function BoutonRetour() {
         // affichée, on remonte le bouton au-dessus d'elle (9rem couvre
         // largement sa hauteur habituelle, marge de sécurité comprise) ;
         // "transition-all" déjà présent anime ce décalage en douceur.
-        className={`fixed right-5 z-40 hidden sm:flex items-center gap-2 rounded-full bg-anthracite text-white pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-ink hover:scale-[1.03] active:scale-[0.97] transition-all ${
+        className={`fixed right-5 z-40 hidden sm:flex items-center gap-2 rounded-full bg-nuit text-white ring-1 ring-white/10 pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-nuit/90 hover:scale-[1.03] active:scale-[0.97] transition-all ${
           carteInstallVisible
             ? "[bottom:calc(9rem+env(safe-area-inset-bottom))]"
             : "[bottom:calc(1.25rem+env(safe-area-inset-bottom))]"

@@ -7,6 +7,8 @@ import { changerStatutEvenement } from "@/components/planning/actionsEvenement";
 import { FeuilleDeplacer, type EvenementADeplacer } from "@/components/planning/FeuilleDeplacer";
 import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/FeuilleMessageClient";
 import { cloturerChantier, noterChantierPasTermine } from "@/components/dashboard/ConfirmerClotureProjet";
+import { Pastille } from "@/components/ui/Pastille";
+import { IconeCloche } from "@/components/projet/icones";
 import { LigneAccueil } from "./Blocs";
 import { BlocAvecTrace, FinCoche, FinMot, useTraceAccueil } from "./TraceAccueil";
 
@@ -149,6 +151,11 @@ export function ARegler({ elements }: { elements: ElementARegler[] }) {
       <BlocAvecTrace
         bloc="aregler"
         titre="À régler"
+        icone={
+          <Pastille couleur="orange" variante="doux" taille="petite">
+            <IconeCloche className="h-4 w-4" />
+          </Pastille>
+        }
         lignes={visibles.map((e) => {
           const reessayer = erreurs.get(e.cle);
           let fin;

@@ -46,6 +46,11 @@ const config: Config = {
         surface: "rgb(var(--c-surface) / <alpha-value>)",
         succes: "rgb(var(--c-succes) / <alpha-value>)",
         "alerte-orange": "rgb(var(--c-alerte-orange) / <alpha-value>)",
+        // Refonte visuelle (04/10) : le cadre bleu nuit de l'application et
+        // les pastilles d'icônes (voir app/globals.css).
+        nuit: "rgb(var(--c-nuit) / <alpha-value>)",
+        bleu: "rgb(var(--c-bleu) / <alpha-value>)",
+        violet: "rgb(var(--c-violet) / <alpha-value>)",
       },
       fontFamily: {
         display: ["Manrope", "ui-sans-serif", "system-ui"],

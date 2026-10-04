@@ -31,6 +31,15 @@
      (pas redéfinie dans .dark ci-dessous) plutôt qu'une surface neutre. */
   --c-succes: 47 143 91; /* vert — ex. message de succès */
   --c-alerte-orange: 217 134 26; /* orange — ex. "devis périmé" */
+  /* Refonte visuelle (04/10, maquette d'Axel) — le cadre de l'application
+     (barre latérale, bandeau du haut sur téléphone, en-tête de l'accueil)
+     est bleu nuit dans les deux modes ; "anthracite" reste au site
+     vitrine, qui ne change pas. Bleu et violet servent aux pastilles
+     d'icônes (une couleur par sorte de chose : rendez-vous, devis,
+     factures) — jamais au texte seul. */
+  --c-nuit: 15 23 42;
+  --c-bleu: 59 130 246;
+  --c-violet: 139 92 246;
 }
 
 .dark {
@@ -42,12 +51,17 @@
      ressemble à un mode sombre "café/atelier" plutôt qu'un gris-bleu de
      dashboard générique — sans toucher à --c-signal, qui reste la même
      couleur de marque dans les deux modes. */
-  --c-paper: 24 20 18; /* fond de page sombre, chaud plutôt que gris-bleu */
-  --c-paper-warm: 33 27 23;
-  --c-ink: 245 243 240; /* texte principal clair en mode sombre, légèrement chaud */
-  --c-steel: 168 156 145;
-  --c-gris-clair: 50 42 36;
-  --c-surface: 36 30 26; /* légèrement plus clair que le fond, relief inversé */
+  /* Refonte visuelle (04/10) — retour d'Axel, maquette à l'appui : le
+     sombre "café/atelier" laisse la place à un bleu nuit, plus net et plus
+     moderne, sur lequel le terracotta ressort mieux. Le site vitrine garde
+     le sien (.theme-sombre-fixe, plus bas). */
+  --c-paper: 13 22 38; /* fond de page bleu nuit */
+  --c-paper-warm: 18 29 49;
+  --c-ink: 241 245 249;
+  --c-steel: 148 163 189;
+  --c-gris-clair: 37 51 77;
+  --c-surface: 21 33 55; /* cartes, un cran plus clair que le fond */
+  --c-nuit: 10 17 31;
 }
 
 /* Audit sécurité/bugs (05/09) — 🟠 corrigé : l'accueil (LandingImmersive,

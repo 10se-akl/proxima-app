@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/client";
 import { marquerNoteTerminee } from "@/lib/notes";
 import { changerStatutEvenement } from "@/components/planning/actionsEvenement";
+import { Pastille } from "@/components/ui/Pastille";
+import { IconeCalendrier } from "@/components/projet/icones";
 import { LigneAccueil } from "./Blocs";
 import { BlocAvecTrace, FinCoche, FinMot, useTraceAccueil } from "./TraceAccueil";
 
@@ -51,6 +53,11 @@ export function ListeAujourdhui({ elements }: { elements: ElementJour[] }) {
     <BlocAvecTrace
       bloc="aujourdhui"
       titre="Aujourd'hui"
+      icone={
+        <Pastille couleur="bleu" variante="doux" taille="petite">
+          <IconeCalendrier className="h-4 w-4" />
+        </Pastille>
+      }
       lienTous="/dashboard/planning"
       lignes={visibles.map((e) => {
         const reessayer = erreurs.get(e.cle);

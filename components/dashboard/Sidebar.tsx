@@ -213,7 +213,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           (refonte 03/10 : l'avatar ouvre Paramètres, Guide, avis, thème,
           installation, déconnexion). pt safe-area : sous l'encoche en
           application installée. */}
-      <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between bg-anthracite text-white pl-4 pr-1 min-h-12 [padding-top:env(safe-area-inset-top)]">
+      <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between bg-nuit text-white pl-4 pr-1 min-h-12 [padding-top:env(safe-area-inset-top)]">
         <span className="flex items-center gap-2">
           <CompyoMark variante="blanc" taille={22} />
           <span className="font-display font-semibold">Compyo</span>
@@ -317,7 +317,11 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           27/09 — Sur écran tactile (tablette, téléphone en paysage), les
           petits liens montent à 44 px de haut ; à la souris, rien ne
           change. */}
-      <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-anthracite text-white min-h-screen flex-col justify-between">
+      {/* Refonte visuelle (04/10, maquette d'Axel) : bleu nuit, et la page
+          ouverte en pilule terracotta pleine — on la voit du premier coup
+          d'œil. « Nouveau projet » passe en bouton clair sur la nuit pour
+          ne pas lui faire concurrence. */}
+      <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-nuit text-white min-h-screen flex-col justify-between border-r border-white/5">
         <div>
           <div className="px-6 py-6 border-b border-white/10 flex items-center gap-2.5">
             <CompyoMark variante="blanc" taille={26} />
@@ -327,7 +331,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             <button
               type="button"
               onClick={() => setCaptureOuverte(true)}
-              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-xl bg-signal text-[15px] font-semibold text-white transition hover:brightness-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-xl bg-white/[0.08] text-[15px] font-semibold text-white ring-1 ring-white/15 transition hover:bg-white/[0.13] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
             >
               <IconePlus className="h-5 w-5" /> Nouveau projet
             </button>
@@ -340,15 +344,19 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   key={lien.href}
                   href={lien.href}
                   aria-current={actif ? "page" : undefined}
-                  className={`relative flex items-center gap-2.5 px-3 py-3 text-[15px] rounded-xl transition-colors ${
-                    actif ? "bg-white/10 text-white font-semibold" : "text-white/70 hover:text-white hover:bg-white/5"
+                  className={`relative flex items-center gap-3 px-3.5 py-3 text-[15px] rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+                    actif
+                      ? "bg-signal text-white font-semibold shadow-[0_10px_24px_-12px_rgb(var(--c-signal)/0.9)]"
+                      : "text-white/70 hover:text-white hover:bg-white/5"
                   }`}
                 >
-                  {actif && <span aria-hidden className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-r-full bg-white" />}
-                  <lien.Icone taille={18} />
+                  <lien.Icone taille={19} />
                   <span className="flex-1">{lien.label}</span>
                   {lien.href === "/dashboard" && nbEnRetard > 0 && (
-                    <span className="rounded-full bg-signal px-1.5 text-[11px] font-semibold text-white" aria-label={`${nbEnRetard} en retard`}>
+                    <span
+                      className={`rounded-full px-1.5 text-[11px] font-semibold ${actif ? "bg-white text-signal-fonce" : "bg-signal text-white"}`}
+                      aria-label={`${nbEnRetard} en retard`}
+                    >
                       {nbEnRetard}
                     </span>
                   )}
@@ -402,11 +410,11 @@ function OngletBas({
       href={href}
       aria-current={actif ? "page" : undefined}
       className={`relative flex min-h-[4rem] flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
-        actif ? "text-ink font-semibold" : "text-ink/55"
+        actif ? "text-signal font-semibold" : "text-ink/55"
       }`}
     >
       {/* L'onglet actif : un trait en plus de la couleur, jamais la couleur seule. */}
-      {actif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
+      {actif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-signal" />}
       <span className="relative">
         {icone}
         {pastille > 0 && (

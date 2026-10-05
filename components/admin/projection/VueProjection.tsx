@@ -189,6 +189,17 @@ export function VueProjection() {
                   <span className="block text-[11px] text-ink/50">dans ta poche</span>
                 </span>
               </span>
+              {/* 05/10 — ce que l'entreprise a fait en tout sur 10 ans. */}
+              <span className="mt-3 flex items-end justify-between gap-2 border-t border-ink/10 pt-3">
+                <span>
+                  <span className="block font-display text-base font-semibold tabular-nums">{compact(ps.caCumul[fin])}</span>
+                  <span className="block text-[11px] text-ink/50">chiffre d&apos;affaires en 10 ans</span>
+                </span>
+                <span className="text-right">
+                  <span className="block font-display text-base font-semibold tabular-nums">{compact(ps.resultatCumul[fin])}</span>
+                  <span className="block text-[11px] text-ink/50">bénéfice en 10 ans</span>
+                </span>
+              </span>
             </button>
           );
         })}
@@ -453,7 +464,7 @@ export function VueProjection() {
             <li>Bouche-à-oreille : chaque mois, 1,2 à 4,2 % des clients font venir un collègue (les artisans se parlent sur les chantiers et chez les négoces). Ton démarchage : 4 à 15 clients/mois pendant tes études, 6 à 25 à plein temps, et il double dès que les premiers clients restent (entre 20 et 150 clients).</li>
             <li>Effet boule de neige : plus il y a de clients, mieux chaque démarchage, chaque recherche Google et chaque publicité convertit (avis, artisans du coin qui l&apos;utilisent déjà) — jusqu&apos;à +60 % vers 500 clients, et Google jusqu&apos;à +50 % de plus vers 1 500.</li>
             <li>Réseaux sociaux (vidéos, pub en motion design) dès la bêta : 1 à 35 clients/mois une fois lancés (9 mois). Publicité dès le lancement payant : au moins 0 à 2 500 €/mois, puis 5 à 15 % du chiffre d&apos;affaires, 140 à 220 € par client au départ. Google monte en 3 ans jusqu&apos;à 3 à 30 clients/mois. Partenaires : 2 à 20 clients/mois, 60 € de commission.</li>
-            <li>Départs : 1,6 à 4 % des clients par mois, en baisse quand le produit mûrit. Plafond : la part de marché que chaque scénario peut tenir en France (2 500 à 24 000 entreprises sur 440 000) ; plus on s&apos;en approche, plus chaque client coûte d&apos;efforts, d&apos;où le plateau des dernières années. À l&apos;étranger, sans présence sur place, 40 % de cette part.</li>
+            <li>Départs : 1,6 à 4 % des clients par mois, en baisse quand le produit mûrit. Plafond : la part de marché que chaque scénario peut tenir en France (2 500 à 40 000 entreprises sur 440 000) ; plus on s&apos;en approche, plus chaque client coûte d&apos;efforts, d&apos;où le plateau des dernières années. À l&apos;étranger, sans présence sur place, 40 % de cette part.</li>
             <li>Étranger : Belgique, Suisse, Luxembourg dès 1 500 clients en France (25 000 €) ; Espagne et Italie dès 5 000 clients (120 000 €), seulement si la société a de quoi payer.</li>
             <li>Équipe (coût employeur/mois) : support 3 300 €, développeur 5 100 €, commercial et marketing 4 350 €, administratif 3 650 €, plus outils, recrutement et bureaux.</li>
             <li>Ton salaire à partir de 18 ans : 1 500 à 6 000 € net/mois selon le chiffre d&apos;affaires (coût ×1,8). Impôt sur les sociétés 15 % puis 25 %, environ 30 % sur les dividendes.</li>

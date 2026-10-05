@@ -56,13 +56,13 @@ export const SCENARIOS: Scenario[] = [
     id: "reussite", label: "Belle réussite", resume: "Le bouche-à-oreille démarre, la publicité rapporte, l'équipe grandit, la Belgique et la Suisse suivent.",
     fondEtud: 10, fondPlein: 16, seoMax: 15, bao: 3.0, partenaires: 8, partenairesDes: 24,
     pubPct: 10, pubDes: 0, cac: 160, churnDebut: 2.8, churnFin: 2.0, commerciaux: [1000, 2500, 5000],
-    social: 15, pubMin: 1000, capFrance: 14000,
+    social: 15, pubMin: 1000, capFrance: 18000,
   },
   {
     id: "meilleur", label: "Meilleur cas", resume: "Tout marche : Compyo devient une référence en France, puis en Espagne et en Italie.",
     fondEtud: 15, fondPlein: 25, seoMax: 30, bao: 4.2, partenaires: 20, partenairesDes: 18,
     pubPct: 15, pubDes: 0, cac: 140, churnDebut: 2.5, churnFin: 1.6, commerciaux: [700, 1800, 3500, 6000, 9000, 13000, 18000],
-    social: 35, pubMin: 2500, capFrance: 24000,
+    social: 35, pubMin: 2500, capFrance: 40000,
   },
 ];
 

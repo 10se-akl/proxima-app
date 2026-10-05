@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { PlanProduit } from "./PlanProduit";
 
 // ============================================================
 // Le mouvement au défilement de la vitrine (04/10, demande d'Axel : « il y
@@ -11,6 +12,8 @@ import { useEffect, useRef } from "react";
 //     poussière de lumière qui monte à deux vitesses, un quadrillage de
 //     plan d'architecte qui défile moins vite que la page, et un grain
 //     fin. En haut de l'écran, un filet terracotta dit où l'on en est.
+//     Par-dessus le quadrillage, le plan de l'application se construit à
+//     mesure qu'on descend (PlanProduit.tsx, 05/10).
 //   - BandeMots : une bande de mots géants (Devis · Factures · …) qui
 //     glisse de côté pendant qu'on défile, la typographie de la pub.
 //
@@ -59,6 +62,7 @@ export function FondVivant() {
         <span className="v-poussiere v-poussiere-a" />
         <span className="v-poussiere v-poussiere-b" />
         <span className="v-plan" />
+        <PlanProduit />
         <span className="v-fond-grain" />
       </div>
       <div ref={filet} aria-hidden className="v-progression" />

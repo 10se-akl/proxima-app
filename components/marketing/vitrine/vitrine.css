@@ -994,6 +994,80 @@
   }
 }
 
+/* --------------------------------------------- plan du produit (05/10)
+   PlanProduit.tsx : le plan de l'application, tracé dans le fond, qui se
+   construit au défilement. Chaque trait se dessine entre --a et
+   --a + --d (en avancement de page, --v-p), chaque surface se remplit à
+   partir de --b. Le plan est un peu penché, sur la droite de l'écran, et
+   remonte doucement pendant qu'on descend. */
+.v-plan-produit {
+  position: absolute;
+  top: 50%;
+  right: max(-2vw, calc(50vw - 740px));
+  height: min(90vh, 920px);
+  width: auto;
+  aspect-ratio: 420 / 880;
+  overflow: visible;
+  opacity: 0.6;
+  transform: translate3d(0, calc(-50% + (0.5 - var(--v-p, 0)) * 12vh), 0) rotate(-7deg);
+  will-change: transform;
+}
+.v-pp-trait {
+  fill: none;
+  stroke: rgb(var(--c-ink) / 0.42);
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: calc(1 - clamp(0, (var(--v-p, 0) - var(--a, 0)) / var(--d, 0.05), 1));
+}
+.v-pp-epais {
+  stroke-width: 2.4;
+}
+.v-pp-plein {
+  fill: var(--c);
+  fill-opacity: calc(clamp(0, (var(--v-p, 0) - var(--b, 0)) / 0.06, 1) * var(--o, 0.55));
+}
+.v-pp-texte {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  fill: rgb(var(--c-ink) / 0.6);
+  opacity: clamp(0, (var(--v-p, 0) - var(--b, 0)) / 0.04, 1);
+}
+.v-pp-cotes {
+  opacity: calc(1 - clamp(0, (var(--v-p, 0) - 0.86) / 0.06, 1));
+}
+.v-pp-titre {
+  opacity: calc(clamp(0, (var(--v-p, 0) - var(--b, 0)) / 0.04, 1) * (1 - clamp(0, (var(--v-p, 0) - 0.83) / 0.03, 1)));
+}
+.v-pp-fini {
+  fill: rgb(var(--c-signal));
+  font-weight: 600;
+}
+.dark .v-plan-produit {
+  opacity: 0.7;
+}
+@media (max-width: 767px) {
+  /* Téléphone : plus petit, à moitié sorti de l'écran à droite, plus
+     discret — il ne doit jamais gêner la lecture. */
+  .v-plan-produit {
+    right: -30vw;
+    height: 76vh;
+    opacity: 0.42;
+  }
+  .dark .v-plan-produit {
+    opacity: 0.5;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  /* Sans mouvement : le plan est montré fini, immobile. */
+  .v-plan-produit {
+    --v-p: 1;
+    transform: translate3d(0, -50%, 0) rotate(-7deg);
+  }
+}
+
 /* ------------------------------------------------ bandes de mots (04/10)
    Une rangée de mots géants qui glisse de côté au défilement (--v-bande,
    de 0 quand elle entre par le bas à 1 quand elle sort par le haut ;

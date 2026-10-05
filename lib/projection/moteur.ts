@@ -33,6 +33,10 @@ export type Scenario = {
   churnDebut: number; // % de clients qui partent chaque mois au début
   churnFin: number; // … une fois le produit mûr (4 ans)
   commerciaux: number[]; // seuils de clients pour embaucher chaque commercial
+  // 05/10 — ce qui fait décoller (ou non) dès le début, et où ça plafonne.
+  social: number; // clients/mois venus de TikTok, Instagram, Facebook (vidéos, pub motion), après 9 mois
+  pubMin: number; // budget publicitaire minimum par mois dès que la pub démarre (€)
+  capFrance: number; // clients au plus en France : la part de marché que le scénario peut tenir
 };
 
 export const SCENARIOS: Scenario[] = [
@@ -40,21 +44,25 @@ export const SCENARIOS: Scenario[] = [
     id: "pire", label: "Pire cas", resume: "Le marché suit mal : peu de bouche-à-oreille, pas de publicité, des départs fréquents.",
     fondEtud: 4, fondPlein: 6, seoMax: 3, bao: 1.2, partenaires: 0, partenairesDes: 999,
     pubPct: 0, pubDes: 999, cac: 220, churnDebut: 4.0, churnFin: 3.5, commerciaux: [],
+    social: 1, pubMin: 0, capFrance: 2500,
   },
   {
     id: "prudent", label: "Prudent", resume: "Ça prend doucement : un peu de publicité, quelques partenaires, un commercial à 1 500 clients.",
     fondEtud: 6, fondPlein: 10, seoMax: 6, bao: 2.0, partenaires: 2, partenairesDes: 36,
-    pubPct: 3, pubDes: 24, cac: 200, churnDebut: 3.2, churnFin: 2.7, commerciaux: [1500],
+    pubPct: 5, pubDes: 3, cac: 200, churnDebut: 3.2, churnFin: 2.7, commerciaux: [1500],
+    social: 5, pubMin: 300, capFrance: 5000,
   },
   {
     id: "reussite", label: "Belle réussite", resume: "Le bouche-à-oreille démarre, la publicité rapporte, l'équipe grandit, la Belgique et la Suisse suivent.",
     fondEtud: 10, fondPlein: 16, seoMax: 15, bao: 3.0, partenaires: 8, partenairesDes: 24,
-    pubPct: 8, pubDes: 12, cac: 180, churnDebut: 2.8, churnFin: 2.0, commerciaux: [1000, 2500, 5000],
+    pubPct: 10, pubDes: 0, cac: 160, churnDebut: 2.8, churnFin: 2.0, commerciaux: [1000, 2500, 5000],
+    social: 15, pubMin: 1000, capFrance: 14000,
   },
   {
     id: "meilleur", label: "Meilleur cas", resume: "Tout marche : Compyo devient une référence en France, puis en Espagne et en Italie.",
     fondEtud: 15, fondPlein: 25, seoMax: 30, bao: 4.2, partenaires: 20, partenairesDes: 18,
-    pubPct: 12, pubDes: 9, cac: 170, churnDebut: 2.5, churnFin: 1.6, commerciaux: [700, 1800, 3500, 6000, 9000, 13000, 18000],
+    pubPct: 15, pubDes: 0, cac: 140, churnDebut: 2.5, churnFin: 1.6, commerciaux: [700, 1800, 3500, 6000, 9000, 13000, 18000],
+    social: 35, pubMin: 2500, capFrance: 24000,
   },
 ];
 
@@ -259,7 +267,13 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
       for (const mk of actifs) {
         const depuis = (d - (lanceLe[mk.id] as number)) / 30.44;
         const base = clients[mk.id] + (mk.id === "fr" ? fondateurs : 0);
-        const place = Math.max(0, 1 - base / mk.cap);
+        // Le plafond : la part de marché que le scénario peut tenir. Plus on
+        // s'en approche, plus chaque nouveau client coûte d'efforts — c'est
+        // ce qui fait plafonner les dernières années.
+        // À l'étranger, sans présence sur place, la part tenable est plus
+        // petite qu'en France.
+        const cap = mk.cap * (sc.capFrance / 44000) * (mk.id === "fr" ? 1 : 0.4);
+        const place = Math.pow(Math.max(0, 1 - base / cap), 2);
         const caMk = clients[mk.id] * r.prix + (mk.id === "fr" ? fondateurs * PRIX_TESTEURS : 0);
         const elan = 1 + lissage((total - 20) / 130); // Axel se donne à fond dès que ça marche
         // 05/10 — l'effet boule de neige : plus Compyo a de clients tôt,
@@ -270,8 +284,9 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
         const preuve = 1 + 0.6 * lissage(total / 500);
         const bao = (sc.bao / 100) * facteurBao * base;
         const toi = mk.id === "fr" ? (m >= M18 && r.pleinTemps ? sc.fondPlein : sc.fondEtud) * elan * preuve : 0;
-        const internet = sc.seoMax * (lv.referencement ? 1 : 0.5) * mk.poids * lissage(depuis / 36) * (1 + 0.5 * lissage(total / 1500)) * preuve;
-        let budget = lv.publicite && m - L >= sc.pubDes ? (sc.pubPct / 100) * caMk : 0;
+        const social = mk.id === "fr" ? sc.social * lissage((m + 3) / 9) : sc.social * 0.3 * mk.poids * lissage(depuis / 12);
+        const internet = (sc.seoMax * (lv.referencement ? 1 : 0.5) * mk.poids * lissage(depuis / 36) * (1 + 0.5 * lissage(total / 1500)) + social) * preuve;
+        let budget = lv.publicite && m - L >= sc.pubDes ? Math.max((sc.pubPct / 100) * caMk, mk.id === "fr" ? sc.pubMin : 0) : 0;
         if (mk.id !== "fr" && depuis < 12) budget += (mk.lancement * 0.25) / 12; // campagne de lancement
         const cac = sc.cac * mk.cacX * Math.sqrt(1 + budget / 15000);
         const pub = budget > 0 ? (budget / cac) * preuve : 0;
@@ -292,7 +307,7 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
       const n = {
         bao: (sc.bao / 100) * facteurBao * beta,
         demarchage: sc.fondEtud * elan * BETA_FACILITE,
-        internet: sc.seoMax * (lv.referencement ? 1 : 0.5) * 0.3 * lissage(m / 12),
+        internet: sc.seoMax * (lv.referencement ? 1 : 0.5) * 0.3 * lissage(m / 12) + sc.social * lissage((m + 3) / 9) * BETA_FACILITE,
       };
       canaux.bao += n.bao * JOUR;
       canaux.demarchage += n.demarchage * JOUR;

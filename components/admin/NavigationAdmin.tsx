@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 // ne s'atteignait qu'en tapant son adresse.
 const PAGES = [
   { href: "/admin/statistiques", label: "Statistiques" },
+  { href: "/admin/projection", label: "Projection" },
   { href: "/admin/candidatures", label: "Candidatures" },
   { href: "/admin/retours", label: "Retours" },
   { href: "/admin/logs", label: "Journaux" },

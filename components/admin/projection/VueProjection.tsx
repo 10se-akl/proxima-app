@@ -449,9 +449,10 @@ export function VueProjection() {
       <div className="grid gap-5 md:grid-cols-2">
         <Bloc titre="Les hypothèses">
           <ul className="list-disc space-y-1.5 pl-4 text-sm text-ink/65">
-            <li>Avant tes 16 ans : 10 testeurs gratuits ; à 16 ans, SASU (225 €), 7 testeurs restent à 19 € à vie.</li>
-            <li>Bouche-à-oreille : 0,4 à 1,6 % des clients font venir un collègue chaque mois. Ton démarchage : 2 à 6 clients/mois pendant tes études, 3 à 12 à plein temps, et il double dès que les premiers clients restent (entre 20 et 150 clients).</li>
-            <li>Google monte en 3 ans jusqu&apos;à 3 à 30 clients/mois. Publicité : 0 à 12 % du chiffre d&apos;affaires, 170 à 220 € par client au départ. Partenaires : 2 à 20 clients/mois, 60 € de commission.</li>
+            <li>La bêta, gratuite, dès le premier mois : ton démarchage (4 à 15 artisans/mois, une fois et demie plus facile qu&apos;en payant), le bouche-à-oreille et un début de Google. À tes 16 ans, SASU (225 €) : 45 % des testeurs encore actifs passent à 19 €/mois à vie.</li>
+            <li>Bouche-à-oreille : chaque mois, 1,2 à 4,2 % des clients font venir un collègue (les artisans se parlent sur les chantiers et chez les négoces). Ton démarchage : 4 à 15 clients/mois pendant tes études, 6 à 25 à plein temps, et il double dès que les premiers clients restent (entre 20 et 150 clients).</li>
+            <li>Effet boule de neige : plus il y a de clients, mieux chaque démarchage, chaque recherche Google et chaque publicité convertit (avis, artisans du coin qui l&apos;utilisent déjà) — jusqu&apos;à +60 % vers 500 clients, et Google jusqu&apos;à +50 % de plus vers 1 500.</li>
+            <li>Google monte en 3 ans jusqu&apos;à 3 à 30 clients/mois (avant l&apos;effet boule de neige). Publicité : 0 à 12 % du chiffre d&apos;affaires, 170 à 220 € par client au départ. Partenaires : 2 à 20 clients/mois, 60 € de commission.</li>
             <li>Départs : 1,6 à 4 % des clients par mois, en baisse quand le produit mûrit. Marché : au plus 10 % des 440 000 entreprises du bâtiment en France.</li>
             <li>Étranger : Belgique, Suisse, Luxembourg dès 1 500 clients en France (25 000 €) ; Espagne et Italie dès 5 000 clients (120 000 €), seulement si la société a de quoi payer.</li>
             <li>Équipe (coût employeur/mois) : support 3 300 €, développeur 5 100 €, commercial et marketing 4 350 €, administratif 3 650 €, plus outils, recrutement et bureaux.</li>

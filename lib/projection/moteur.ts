@@ -38,22 +38,22 @@ export type Scenario = {
 export const SCENARIOS: Scenario[] = [
   {
     id: "pire", label: "Pire cas", resume: "Le marché suit mal : peu de bouche-à-oreille, pas de publicité, des départs fréquents.",
-    fondEtud: 2, fondPlein: 3, seoMax: 3, bao: 0.4, partenaires: 0, partenairesDes: 999,
+    fondEtud: 4, fondPlein: 6, seoMax: 3, bao: 1.2, partenaires: 0, partenairesDes: 999,
     pubPct: 0, pubDes: 999, cac: 220, churnDebut: 4.0, churnFin: 3.5, commerciaux: [],
   },
   {
     id: "prudent", label: "Prudent", resume: "Ça prend doucement : un peu de publicité, quelques partenaires, un commercial à 1 500 clients.",
-    fondEtud: 3, fondPlein: 5, seoMax: 5, bao: 0.6, partenaires: 2, partenairesDes: 36,
+    fondEtud: 6, fondPlein: 10, seoMax: 6, bao: 2.0, partenaires: 2, partenairesDes: 36,
     pubPct: 3, pubDes: 24, cac: 200, churnDebut: 3.2, churnFin: 2.7, commerciaux: [1500],
   },
   {
     id: "reussite", label: "Belle réussite", resume: "Le bouche-à-oreille démarre, la publicité rapporte, l'équipe grandit, la Belgique et la Suisse suivent.",
-    fondEtud: 4, fondPlein: 8, seoMax: 15, bao: 1.2, partenaires: 8, partenairesDes: 24,
+    fondEtud: 10, fondPlein: 16, seoMax: 15, bao: 3.0, partenaires: 8, partenairesDes: 24,
     pubPct: 8, pubDes: 12, cac: 180, churnDebut: 2.8, churnFin: 2.0, commerciaux: [1000, 2500, 5000],
   },
   {
     id: "meilleur", label: "Meilleur cas", resume: "Tout marche : Compyo devient une référence en France, puis en Espagne et en Italie.",
-    fondEtud: 6, fondPlein: 12, seoMax: 30, bao: 1.6, partenaires: 20, partenairesDes: 18,
+    fondEtud: 15, fondPlein: 25, seoMax: 30, bao: 4.2, partenaires: 20, partenairesDes: 18,
     pubPct: 12, pubDes: 9, cac: 170, churnDebut: 2.5, churnFin: 1.6, commerciaux: [700, 1800, 3500, 6000, 9000, 13000, 18000],
   },
 ];
@@ -108,7 +108,12 @@ const MARCHES: { id: IdMarche; nom: string; cap: number; lancement: number; seui
 ];
 const POSTES = { support: 3300, dev: 5100, commercial: 4350, marketing: 4350, admin: 3650 };
 const OUTILS = 150, RECRUTEMENT = 3000, LOCAUX = 450, PRODUCTIVITE_COMMERCIAL = 15;
-const TESTEURS = 10, CONVERTIS = 7, PRIX_TESTEURS = 19, RESERVE_MOIS = 3;
+// 05/10 (Axel : « après la bêta je pense déjà avoir des clients ») : la
+// bêta n'est plus un trou de six mois. Des artisans s'y inscrivent dès le
+// premier mois (démarchage, bouche-à-oreille, un peu de Google), plus
+// facilement qu'en payant (BETA_FACILITE), et au lancement payant une
+// part d'entre eux passe à l'abonnement au tarif fondateur (CONVERSION_BETA).
+const BETA_FACILITE = 1.5, CONVERSION_BETA = 0.45, PRIX_TESTEURS = 19, RESERVE_MOIS = 3;
 export const DEBUT = Date.UTC(2026, 10, 1); // 1er novembre 2026
 export const NB_JOURS = Math.round((Date.UTC(2036, 10, 1) - DEBUT) / 86400000); // jusqu'au 31 octobre 2036
 const JOUR = 12 / 365; // part d'un mois dans une journée
@@ -173,7 +178,7 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
 
   const clients: Record<IdMarche, number> = { fr: 0, franco: 0, sud: 0 };
   const lanceLe: Record<IdMarche, number | null> = { fr: null, franco: null, sud: null };
-  let fondateurs = 0, tresorerie = 0, poche = 0, caCumul = 0, resCumul = 0, effectifAvant = 0;
+  let fondateurs = 0, beta = 0, tresorerie = 0, poche = 0, caCumul = 0, resCumul = 0, effectifAvant = 0;
   let annee: Annee | null = null, salaireMois = 0, moisCourant = -1, resultatMois = 0, rentableNote = false;
 
   for (let d = 0; d < N; d++) {
@@ -198,8 +203,12 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
       resultatMois = 0;
       if (m === L) {
         lanceLe.fr = d;
-        fondateurs = CONVERTIS;
-        p.evenements.push({ jour: d, type: "lancement", texte: "Création de la SASU et premiers abonnements" });
+        fondateurs = beta * CONVERSION_BETA;
+        p.evenements.push({
+          jour: d,
+          type: "lancement",
+          texte: `Création de la SASU : ${Math.round(fondateurs)} testeurs de la bêta passent à l'abonnement`,
+        });
       }
       if (m === M18 && r.pleinTemps) p.evenements.push({ jour: d, type: "age", texte: "Tes 18 ans : à plein temps" });
     }
@@ -253,13 +262,19 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
         const place = Math.max(0, 1 - base / mk.cap);
         const caMk = clients[mk.id] * r.prix + (mk.id === "fr" ? fondateurs * PRIX_TESTEURS : 0);
         const elan = 1 + lissage((total - 20) / 130); // Axel se donne à fond dès que ça marche
+        // 05/10 — l'effet boule de neige : plus Compyo a de clients tôt,
+        // plus il en gagne ensuite. Avis Google, artisans du coin qui
+        // l'utilisent déjà, références à citer : chaque démarchage, chaque
+        // recherche et chaque publicité convertit mieux (jusqu'à +60 %
+        // vers 500 clients), et Google remonte avec les avis et les pages.
+        const preuve = 1 + 0.6 * lissage(total / 500);
         const bao = (sc.bao / 100) * facteurBao * base;
-        const toi = mk.id === "fr" ? (m >= M18 && r.pleinTemps ? sc.fondPlein : sc.fondEtud) * elan : 0;
-        const internet = sc.seoMax * (lv.referencement ? 1 : 0.5) * mk.poids * lissage(depuis / 36);
+        const toi = mk.id === "fr" ? (m >= M18 && r.pleinTemps ? sc.fondPlein : sc.fondEtud) * elan * preuve : 0;
+        const internet = sc.seoMax * (lv.referencement ? 1 : 0.5) * mk.poids * lissage(depuis / 36) * (1 + 0.5 * lissage(total / 1500)) * preuve;
         let budget = lv.publicite && m - L >= sc.pubDes ? (sc.pubPct / 100) * caMk : 0;
         if (mk.id !== "fr" && depuis < 12) budget += (mk.lancement * 0.25) / 12; // campagne de lancement
         const cac = sc.cac * mk.cacX * Math.sqrt(1 + budget / 15000);
-        const pub = budget > 0 ? budget / cac : 0;
+        const pub = budget > 0 ? (budget / cac) * preuve : 0;
         pubDepense += budget;
         const partenaires = lv.partenariats && mk.id === "fr" && m - L >= sc.partenairesDes ? sc.partenaires : 0;
         const comm = commercial * PRODUCTIVITE_COMMERCIAL * (mk.poids / poidsTotal);
@@ -270,6 +285,20 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
       }
       for (const mk of MARCHES) clients[mk.id] = clients[mk.id] * (1 - churnJour) + nouveaux[mk.id];
       fondateurs *= 1 - churnJour;
+    } else {
+      // La bêta, gratuite : on s'inscrit plus facilement, on part aussi
+      // plus facilement (rien n'est payé), Google commence à peine.
+      const elan = 1 + lissage((beta - 20) / 130);
+      const n = {
+        bao: (sc.bao / 100) * facteurBao * beta,
+        demarchage: sc.fondEtud * elan * BETA_FACILITE,
+        internet: sc.seoMax * (lv.referencement ? 1 : 0.5) * 0.3 * lissage(m / 12),
+      };
+      canaux.bao += n.bao * JOUR;
+      canaux.demarchage += n.demarchage * JOUR;
+      canaux.internet += n.internet * JOUR;
+      const departBeta = 1 - Math.pow(1 - (sc.churnDebut * 1.5) / 100, JOUR);
+      beta = beta * (1 - departBeta) + (n.bao + n.demarchage + n.internet) * JOUR;
     }
 
     const payants = lance ? clients.fr + clients.franco + clients.sud + fondateurs : 0;
@@ -279,8 +308,7 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
     // Charges du jour.
     const ch = chargesVides();
     if (!lance) {
-      const testeurs = Math.min(TESTEURS, Math.round(((m + 1) / 2) * TESTEURS));
-      ch.ia = (testeurs * 2 + 25) * JOUR;
+      ch.ia = (beta * 2 + 25) * JOUR;
     } else {
       const coutIA = 3 * Math.pow(1 - r.baisseIA / 100, (m - L) / 12);
       const parClient = coutIA + 0.015 * r.prix + 0.25 + 0.5 + 0.3 + (lv.factureElectronique ? 0.4 : 0);
@@ -344,7 +372,7 @@ export function projeter(sc: Scenario, r: Reglages): Projection {
 
     caCumul += caJour;
     resCumul += resultatJour;
-    p.clients[d] = payants;
+    p.clients[d] = lance ? payants : beta;
     p.etranger[d] = clients.franco + clients.sud;
     p.ca[d] = caJour;
     p.charges[d] = chargesJour;

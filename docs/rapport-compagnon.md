@@ -96,3 +96,9 @@ Les huit parcours ont été suivis dans le code, écran par écran (téléphone,
 ## 7. À faire par le fondateur
 
 Voir le rapport final de la session ; en bref : prévisualisation sur le Samsung, une note avec « Demain 8 h », un rendez-vous depuis une fiche avec « Prévenir », un partage WhatsApp d'un nouveau client puis d'un client connu, puis deux artisans sans aide.
+
+---
+
+## 8. Admin : la projection réglable (06/10)
+
+`/admin/projection` se règle maintenant de bout en bout : durée de 1 à 15 ans ; ton salaire (selon le chiffre d'affaires ou un montant fixe dès le mois choisi) ; tes recrutements à la main (aide, commercial, développeur, support) ; les événements ponctuels (dépense — par exemple 5 M€ au bout d'un an —, recette, levée de fonds avec la part cédée, prêt, choc sur l'acquisition) ; onze marchés du monde réglables un par un ; saisonnalité, inflation, hausse du prix, impôts ; chaque scénario champ par champ ; sauvegardes nommées. Une alerte dit quand la société n'a plus d'argent et combien il faudrait trouver. Nouveaux graphiques (trésorerie, clients par pays), tableau par mois, trimestre ou exercice, export CSV. Avec les réglages par défaut, les résultats sont ceux d'avant.

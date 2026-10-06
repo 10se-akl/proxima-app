@@ -19,7 +19,7 @@ const IMAGE_PARTAGE = {
   url: "/opengraph-image",
   width: 1200,
   height: 630,
-  alt: "Compyo — le compagnon administratif des artisans du bâtiment",
+  alt: "Compyo — le compagnon des artisans du bâtiment",
 };
 
 export function metaPage({

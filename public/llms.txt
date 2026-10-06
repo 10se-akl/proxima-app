@@ -1,6 +1,6 @@
 # Compyo
 
-> Compyo est le compagnon administratif des artisans du bâtiment en France. C'est une application web (téléphone, tablette, ordinateur) qui suit un chantier du premier message du client à la facture réglée : elle crée le projet à partir du message du client, range les notes vocales et les photos de chantier, prépare le devis avec les prix de l'artisan, fait signer le client en ligne, puis gère les factures, les relances et le planning. Compyo est adapté à 17 métiers du bâtiment et aux entreprises de rénovation. Il est en bêta privée gratuite, sur candidature.
+> Compyo est le compagnon des artisans du bâtiment en France. C'est une application web (téléphone, tablette, ordinateur) qui suit un chantier du premier message du client à la facture réglée : elle crée le projet à partir du message du client, range les notes vocales et les photos de chantier, prépare le devis avec les prix de l'artisan, fait signer le client en ligne, puis gère les factures, les relances et le planning. Compyo est adapté à 17 métiers du bâtiment et aux entreprises de rénovation. Il est en bêta privée gratuite, sur candidature.
 
 Compyo est développé par Axel Thfoin, développeur indépendant, seul sur le projet — ce n'est pas une entreprise avec une équipe commerciale ni une levée de fonds. Il n'y a pas encore de tarif public : pendant la bêta privée, Compyo est gratuit pour les artisans dont la candidature est acceptée (réponse sous 48 heures). Contact : proxima.saas@gmail.com.
 

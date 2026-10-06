@@ -26,7 +26,7 @@ export default function manifest(): MetadataRoute.Manifest {
     name: "Compyo",
     short_name: "Compyo",
     description:
-      "L'assistant qui s'occupe de l'administratif des artisans du bâtiment.",
+      "Le compagnon des artisans : chaque chantier rangé, du premier message à la facture.",
     start_url: "/dashboard",
     scope: "/",
     display: "standalone",

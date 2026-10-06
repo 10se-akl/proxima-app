@@ -136,10 +136,10 @@ export default function PageMetiers() {
               <span aria-current="page">Métiers</span>
             </nav>
             <h1 className="mt-7 max-w-4xl text-balance font-display text-[2.4rem] font-semibold leading-[1.0] tracking-[-0.03em] text-ink sm:text-6xl">
-              Un assistant administratif pour chaque métier du bâtiment.
+              Un compagnon pour chaque métier du bâtiment.
             </h1>
             <p className="mt-8 max-w-2xl text-[17px] leading-relaxed text-ink/75">
-              Compyo est le compagnon administratif des artisans du bâtiment : du premier message du client à la
+              Compyo est le compagnon des artisans du bâtiment : du premier message du client à la
               facture réglée, il crée le projet, range les notes et les photos, prépare le devis avec vos prix et suit la
               signature. Le fond est le même pour tous ; ce qui change d&apos;un métier à l&apos;autre, c&apos;est ce
               qu&apos;il faut vérifier avant de chiffrer, la TVA, la météo et le rythme des entretiens.

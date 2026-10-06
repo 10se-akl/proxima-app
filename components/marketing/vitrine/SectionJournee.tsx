@@ -41,7 +41,7 @@ const CHAPITRES: (InfosChapitre & {
     heure: "12:30",
     titre: "Le devis se construit.",
     duree: 8,
-    texte: "L'IA rédige les lignes, vos prix font les montants. Essayez de corriger.",
+    texte: "Compyo écrit les lignes, vos prix font les montants. Essayez de corriger.",
     soleil: ["55%", "-15%", 0.85],
     scene: <SceneDevis />,
   },

@@ -7,9 +7,9 @@ import { EnregistrerServiceWorker } from "@/components/pwa/EnregistrerServiceWor
 import { MesureAudience } from "@/components/MesureAudience";
 
 const URL_SITE = SITE_URL;
-const TITRE = "Compyo — L'assistant qui s'occupe de l'administratif des artisans";
+const TITRE = "Compyo — Le compagnon des artisans";
 const DESCRIPTION =
-  "Compyo centralise vos clients, vos chantiers, vos photos, vos notes vocales et vos rendez-vous, et vous aide à préparer vos devis. Bêta privée pour les artisans du bâtiment.";
+  "Du premier message du client à la facture, Compyo garde chaque chantier rangé : le projet, les notes, les photos, le planning, le devis et la facture, sans rien ressaisir. Bêta privée pour les artisans du bâtiment.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(URL_SITE),
@@ -140,7 +140,7 @@ const DONNEES_STRUCTUREES = {
       },
       email: "proxima.saas@gmail.com",
       description:
-        "Compyo édite un assistant administratif pour les artisans du bâtiment en France : du message du client à la facture réglée.",
+        "Compyo, le compagnon des artisans du bâtiment en France : du premier message du client à la facture réglée, chaque chantier reste rangé.",
       areaServed: { "@type": "Country", name: "France" },
       founder: { "@id": `${URL_SITE}/#fondateur` },
       sameAs: [],
@@ -166,7 +166,7 @@ const DONNEES_STRUCTUREES = {
       "@type": "SoftwareApplication",
       "@id": `${URL_SITE}/#logiciel`,
       name: "Compyo",
-      alternateName: "Compyo, le compagnon administratif des artisans du bâtiment",
+      alternateName: "Compyo, le compagnon des artisans du bâtiment",
       applicationCategory: "BusinessApplication",
       applicationSubCategory: "Logiciel de devis, factures et suivi de chantier pour artisans du bâtiment",
       operatingSystem: "Web, Android, iOS, Windows, macOS",

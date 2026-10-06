@@ -1166,3 +1166,30 @@
     transform: scale(1.04);
   }
 }
+
+/* ------------------------------------------------------------ le fil
+   Le fil d'un chantier (SectionFil.tsx, 06/10) : un trait terracotta qui
+   relie les étapes, de haut en bas sur téléphone, de gauche à droite à
+   partir de 1024 px. Un segment par étape (sauf la dernière) : le trait
+   ne traverse jamais un texte. */
+.v-fil-etape:not(:last-child)::before {
+  content: "";
+  position: absolute;
+  left: calc(1.25rem - 0.75px);
+  top: 2.75rem;
+  bottom: 0.25rem;
+  width: 1.5px;
+  border-radius: 9999px;
+  background: linear-gradient(to bottom, rgb(var(--c-signal) / 0.55), rgb(var(--c-signal) / 0.2));
+}
+@media (min-width: 1024px) {
+  .v-fil-etape:not(:last-child)::before {
+    left: 2.75rem;
+    right: -0.75rem;
+    top: calc(1.25rem - 0.75px);
+    bottom: auto;
+    width: auto;
+    height: 1.5px;
+    background: linear-gradient(to right, rgb(var(--c-signal) / 0.55), rgb(var(--c-signal) / 0.2));
+  }
+}

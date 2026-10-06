@@ -211,7 +211,7 @@ export function SceneDevis() {
         </div>
 
         <p className="mt-8 max-w-sm text-[15px] leading-relaxed text-ink/70 max-md:hidden">
-          <span className="font-medium text-ink">L&apos;IA écrit les lignes. Les prix, c&apos;est vous.</span>{" "}
+          <span className="font-medium text-ink">Compyo écrit les lignes. Les prix, c&apos;est vous.</span>{" "}
           Une journée compte 8&nbsp;heures, pas 24 : le calcul le sait.
         </p>
       </div>

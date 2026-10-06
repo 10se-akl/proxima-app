@@ -36,7 +36,7 @@ const THEMES: { id: string; titre: string; questions: Question[] }[] = [
       {
         question: "Qu'est-ce que Compyo ?",
         reponse:
-          "Compyo est le compagnon administratif des artisans du bâtiment. C'est une application web, utilisable sur téléphone, tablette et ordinateur, qui suit un chantier du premier message du client à la facture réglée : elle crée le projet, range les notes vocales et les photos, prépare le devis avec les prix de l'artisan, fait signer le client en ligne, puis s'occupe des factures, des relances et du planning.",
+          "Compyo est le compagnon des artisans du bâtiment. C'est une application web, utilisable sur téléphone, tablette et ordinateur, qui suit un chantier du premier message du client à la facture réglée : elle crée le projet, range les notes vocales et les photos, prépare le devis avec les prix de l'artisan, fait signer le client en ligne, puis s'occupe des factures, des relances et du planning.",
       },
       {
         question: "À qui s'adresse Compyo ?",

@@ -86,7 +86,7 @@ function Parcours() {
     },
     {
       n: "05",
-      titre: "Analyse IA",
+      titre: "Ce qu'il manque",
       texte:
         "Compyo fait la synthèse de vos notes et de vos photos, et repère ce qu'il manque encore pour finaliser le devis — une mesure, un choix de matériau, un accès à confirmer.",
     },
@@ -94,7 +94,7 @@ function Parcours() {
       n: "06",
       titre: "Préparation du devis",
       texte:
-        "L'IA propose les postes à partir de ce qui a été capturé. Mais c'est un moteur de calcul déterministe, pas l'IA, qui fixe les prix — jamais l'inverse. Un vrai garde-fou du produit, pas un argument marketing : vous gardez toujours la main sur les chiffres.",
+        "Compyo propose les postes à partir de ce qui a été capturé. Les prix, eux, viennent d'un calcul fixe fondé sur vos tarifs — jamais d'une estimation. Vous relisez chaque ligne : vous gardez toujours la main sur les chiffres.",
       accent: true,
     },
     {

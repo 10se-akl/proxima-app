@@ -7,7 +7,9 @@ import { FondParticules } from "./FondParticules";
 
 // ============================================================
 // Le hero (24/09). Un résultat, pas une technologie : le mot « IA »
-// n'apparaît pas ici. Trois temps, dans cet ordre, lisibles en cinq
+// n'apparaît pas ici. 06/10 — « Compyo, le compagnon des artisans » : la
+// promesse (le slogan) reste le titre, l'identité vient juste dessous, et
+// la phrase suivante dit la continuité (rien à ressaisir). Trois temps, dans cet ordre, lisibles en cinq
 // secondes :
 //   1. la promesse (le titre, immense) ;
 //   2. ce qu'est Compyo, en une phrase ;
@@ -78,18 +80,18 @@ export function Hero() {
             Vos soirées ne sont pas faites pour la paperasse.
           </h1>
           <p className="mt-9 max-w-xl text-balance font-display text-[1.35rem] font-medium leading-snug tracking-[-0.01em] text-ink max-md:mt-5 max-md:text-[1.2rem] max-md:text-white/90 sm:text-[1.7rem]">
-            Compyo est votre compagnon administratif.
+            Compyo, le compagnon des artisans.
           </p>
           <p className="mt-3 max-w-xl text-[1.05rem] leading-relaxed text-ink/60 max-md:mt-1.5 max-md:text-[15px] max-md:leading-snug max-md:text-white/60 sm:text-lg">
-            Du premier message du client à la facture réglée.
+            Du premier message du client à la facture, chaque chantier reste rangé. Rien à ressaisir.
           </p>
           <div className="mt-11 flex flex-wrap items-center gap-x-8 gap-y-5 max-md:hidden">
             <Link href="/demander-acces" className={CLASSE_CTA}>
               Rejoindre la bêta
             </Link>
-            <Link href="#journee" className="group inline-flex items-center gap-2 text-[15px] font-medium text-ink">
+            <Link href="#fil" className="group inline-flex items-center gap-2 text-[15px] font-medium text-ink">
               <span className="underline decoration-ink/25 underline-offset-8 transition-colors group-hover:decoration-ink">
-                Voir une journée
+                Voir comment
               </span>
               <span aria-hidden className="transition-transform duration-300 group-hover:translate-y-0.5">
                 ↓
@@ -120,7 +122,7 @@ export function Hero() {
             </Link>
             <div className="mt-3.5 flex items-center justify-between px-1">
               <p className="font-mono text-[10.5px] tracking-wide text-white/45">Sur candidature · réponse sous 48 h</p>
-              <Link href="#journee" className="inline-flex min-h-11 items-center gap-1.5 text-[13px] font-medium text-white/75">
+              <Link href="#fil" className="inline-flex min-h-11 items-center gap-1.5 text-[13px] font-medium text-white/75">
                 La suite
                 <svg viewBox="0 0 16 16" className="v-rebond h-3.5 w-3.5" fill="none" aria-hidden>
                   <path d="M8 3v10M3.5 8.5 8 13l4.5-4.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />

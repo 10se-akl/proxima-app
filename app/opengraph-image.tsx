@@ -124,7 +124,7 @@ export default function OpengraphImage() {
             marginTop: 36,
           }}
         >
-          Le compagnon administratif des artisans du bâtiment — bêta privée
+          Le compagnon des artisans du bâtiment — bêta privée
         </div>
       </div>
     ),

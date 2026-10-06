@@ -4,6 +4,7 @@ import { Hero } from "./Hero";
 import { SectionJournee } from "./SectionJournee";
 import { SectionMetiers } from "./SectionMetiers";
 import { SectionDeuxSoirees, SectionEnVrai, SectionSoiree } from "./Sections";
+import { SectionFil } from "./SectionFil";
 import { Rythme } from "./Rythme";
 import { BandeMots, FondVivant } from "./Mouvement";
 import "./vitrine.css";
@@ -12,8 +13,11 @@ import "./vitrine.css";
 // L'accueil (24/09) — l'histoire d'une journée d'artisan.
 //
 //   1. Hero            — la promesse : vos soirées ne sont pas faites
-//                        pour la paperasse ; un écran verrouillé à 19:04
-//                        où tout est déjà fait.
+//                        pour la paperasse ; Compyo, le compagnon des
+//                        artisans ; un écran verrouillé à 19:04 où tout
+//                        est déjà fait.
+//   1 bis. Le fil      — (06/10) huit étapes sur un même fil : ce qui est
+//                        dit une fois suit tout le chantier.
 //   2. Deux soirées    — la même table, 21:47 sans Compyo, 19:04 avec.
 //                        Le visiteur fait glisser la séparation.
 //   3. La journée      — six scènes, de 07:48 à 18:40, sur un seul
@@ -46,8 +50,9 @@ export function Accueil({ avis }: { avis?: ReactNode } = {}) {
       <Header ctaTelephone={false} />
       <main>
         <Hero />
+        <SectionFil />
         <SectionDeuxSoirees />
-        <BandeMots mots={["Devis", "Factures", "Planning", "Relances", "Photos", "Signature", "Notes vocales"]} />
+        <BandeMots mots={["Message", "Projet", "Visite", "Devis", "Signature", "Planning", "Chantier", "Facture"]} />
         <SectionJournee />
         <SectionEnVrai />
         <BandeMots sens={-1} mots={["Plaquiste", "Plombier", "Électricien", "Maçon", "Couvreur", "Carreleur", "Peintre", "Menuisier"]} />

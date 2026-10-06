@@ -19,9 +19,9 @@ import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 // 24/09 — Le titre et la description suivent le nouveau message de
 // l'accueil. Titre « absolu » : le gabarit « %s — Compyo » du layout
 // l'aurait doublé.
-const TITRE = "Compyo — Le compagnon administratif des artisans du bâtiment";
+const TITRE = "Compyo — Le compagnon des artisans";
 const DESCRIPTION =
-  "Vos soirées ne sont pas faites pour la paperasse. Compyo crée le projet, range notes et photos, prépare le devis avec vos prix. Bêta privée gratuite.";
+  "Vos soirées ne sont pas faites pour la paperasse. Du premier message du client à la facture, Compyo garde chaque chantier rangé, sans rien ressaisir. Bêta privée gratuite.";
 
 export const metadata: Metadata = metaPage({ titre: TITRE, description: DESCRIPTION, chemin: "/", titreAbsolu: true });
 

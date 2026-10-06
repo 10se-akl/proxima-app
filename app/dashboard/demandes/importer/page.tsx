@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
 import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
 import { ConfirmationRdv } from "@/components/dashboard/ConfirmationRdv";
 import {
@@ -216,16 +215,15 @@ export default function ImporterMessagePage() {
   // silencieux (même composant que le parcours de partage Android).
   if (correspondances.length > 0) {
     return (
-      <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
-        <Card className="p-6">
-          <CorrespondanceProjetExistant
-            correspondances={correspondances}
-            onChoisir={ajouterAuProjet}
-            onCreerNouveau={creerNouveauProjetQuandMeme}
-            enCours={attachementEnCours}
-            erreur={erreur}
-          />
-        </Card>
+      <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
+        <CorrespondanceProjetExistant
+          correspondances={correspondances}
+          onChoisir={ajouterAuProjet}
+          onCreerNouveau={creerNouveauProjetQuandMeme}
+          enCours={attachementEnCours}
+          erreur={erreur}
+          extrait={message}
+        />
       </div>
     );
   }
@@ -239,14 +237,14 @@ export default function ImporterMessagePage() {
         >
           ← Retour aux projets
         </Link>
-        <Card className="mt-6 p-6">
+        <div className="mt-4">
           <BrouillonProjetForm
             brouillon={brouillon}
             onValider={creerProjet}
             validationEnCours={creationEnCours}
             erreur={erreur}
           />
-        </Card>
+        </div>
       </div>
     );
   }
@@ -260,7 +258,7 @@ export default function ImporterMessagePage() {
       <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Coller un message</h1>
       <p className="mt-1 text-[15px] text-ink/65">Le message du client, tel quel.</p>
 
-      <Card className="mt-5 p-4 sm:p-6">
+      <div className="mt-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           {/* 27/09 — Un appui pour coller le message copié : avec des gants,
               l'appui long dans un champ puis « Coller » est un vrai effort.
@@ -300,13 +298,13 @@ export default function ImporterMessagePage() {
             className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:px-8"
           >
             {rechercheEnCours
-              ? "Recherche d'un projet en cours…"
+              ? "Un instant…"
               : chargement
-                ? "Analyse en cours…"
-                : "Préparer le brouillon"}
+                ? "Préparation du projet…"
+                : "Préparer le projet"}
           </button>
         </form>
-      </Card>
+      </div>
     </div>
   );
 }

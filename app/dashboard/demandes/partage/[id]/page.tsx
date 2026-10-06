@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
@@ -82,6 +81,9 @@ export default function RevuePartagePage() {
     };
   }
   const [texteEchec, setTexteEchec] = useState<string | null>(null);
+  // 06/10 — le message reçu, montré pendant la préparation et à côté du
+  // choix « C'est Martin » : on sait de quoi on parle sans changer d'écran.
+  const [texteMessage, setTexteMessage] = useState<string | null>(null);
 
   async function lancerAnalyseIA(texte: string) {
     setEtape("analyse");
@@ -96,7 +98,7 @@ export default function RevuePartagePage() {
       const donnees = await reponse.json();
 
       if (!reponse.ok) {
-        setErreur("L'IA n'a pas pu lire le message. Vérifiez et créez le projet.");
+        setErreur("Le message n'a pas pu être lu. Complétez, puis créez le projet.");
         setBrouillon(brouillonDeSecours(texte));
         setTexteEchec(texte);
         setEtape("erreur");
@@ -106,7 +108,7 @@ export default function RevuePartagePage() {
       setBrouillon(donnees.brouillon);
       setEtape("revue");
     } catch {
-      setErreur("L'IA n'a pas répondu. Vérifiez et créez le projet.");
+      setErreur("Pas de réponse pour l'instant. Complétez, puis créez le projet.");
       setBrouillon(brouillonDeSecours(texte));
       setTexteEchec(texte);
       setEtape("erreur");
@@ -169,6 +171,7 @@ export default function RevuePartagePage() {
       }
 
       setImages(imagesPartage);
+      setTexteMessage(partage.texte ?? null);
 
       // Pas de texte à analyser (photo(s) seule(s)) : le résultat du
       // matching (lancé en parallèle ci-dessus) ne s'applique pas — rien à
@@ -292,16 +295,14 @@ export default function RevuePartagePage() {
 
   // Sprint Robustesse (30/08) — priorité absolue à ne pas laisser cet écran
   // bloqué : voir le catch dans `charger`. `onReessayer` relance le même
-  // chargement (message partagé + matching + analyse IA).
+  // chargement (message partagé + matching + préparation).
   if (erreurChargement) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Card className="p-6">
-          <EtatErreur
-            message="Impossible de récupérer le message partagé. Vérifiez votre connexion et réessayez."
-            onReessayer={charger}
-          />
-        </Card>
+      <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
+        <EtatErreur
+          message="Le message partagé n'a pas pu être récupéré. Vérifiez la connexion et réessayez."
+          onReessayer={charger}
+        />
       </div>
     );
   }
@@ -320,61 +321,70 @@ export default function RevuePartagePage() {
   // silencieux (voir commentaire en tête de fichier).
   if (correspondances.length > 0) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-8">
-        <Card className="p-6">
-          <CorrespondanceProjetExistant
-            correspondances={correspondances}
-            onChoisir={ajouterAuProjet}
-            onCreerNouveau={creerNouveauProjetQuandMeme}
-            enCours={attachementEnCours}
-            erreur={erreur}
-          />
-        </Card>
+      <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
+        <CorrespondanceProjetExistant
+          correspondances={correspondances}
+          onChoisir={ajouterAuProjet}
+          onCreerNouveau={creerNouveauProjetQuandMeme}
+          enCours={attachementEnCours}
+          erreur={erreur}
+          extrait={texteMessage}
+        />
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8">
-      <Card className="p-6">
-        {(etape === "chargement" || etape === "analyse") && (
-          <div className="py-10 text-center">
-            <div className="inline-block h-6 w-6 animate-spin rounded-full border-2 border-signal border-t-transparent" />
-            <p className="mt-4 text-sm text-ink/60">
-              {etape === "analyse"
-                ? "L'IA prépare le brouillon…"
-                : "Récupération du message partagé…"}
-            </p>
-          </div>
-        )}
+    <div className="max-w-lg px-4 pb-8 pt-5 sm:max-w-2xl sm:p-8">
+      {/* 06/10 — pendant la préparation : le message lui-même, puis la
+          forme vide du récapitulatif (règle 11 : la forme, pas un mot). */}
+      {(etape === "chargement" || etape === "analyse") && (
+        <div aria-busy="true" aria-live="polite">
+          <h1 className="font-display text-3xl font-semibold text-ink">Message reçu.</h1>
+          <p className="mt-1 truncate text-base text-steel">
+            {etape === "analyse" ? "Le projet se prépare." : "Un instant."}
+          </p>
+          {texteMessage?.trim() && (
+            <blockquote className="mt-5 rounded-2xl bg-paper-warm px-4 py-3 text-base text-ink">
+              <p className="line-clamp-4 whitespace-pre-line">{texteMessage.trim()}</p>
+            </blockquote>
+          )}
+          <ul className="mt-5 divide-y divide-ink/15 rounded-2xl bg-surface px-4 ring-1 ring-ink/15" aria-hidden>
+            {[40, 32, 56, 28].map((l, i) => (
+              <li key={i} className="flex min-h-16 flex-col justify-center gap-2 py-2">
+                <span className="h-3 w-16 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+                <span className="h-4 rounded-full bg-ink/10 motion-safe:animate-pulse" style={{ width: `${l}%` }} />
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
-        {etape === "erreur" && !brouillon && (
-          <div className="py-10 text-center space-y-4">
-            <p className="text-sm text-signal">{erreur}</p>
-            <Button onClick={() => router.replace("/dashboard/demandes/nouvelle")}>
-              Créer le projet manuellement
-            </Button>
-          </div>
-        )}
+      {etape === "erreur" && !brouillon && (
+        <div className="py-10 text-center space-y-4">
+          <p className="text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>
+          <Button onClick={() => router.replace("/dashboard/demandes/nouvelle")}>Créer le projet à la main</Button>
+        </div>
+      )}
 
-        {brouillon && texteEchec && etape === "erreur" && (
-          <button
-            type="button"
-            onClick={() => lancerAnalyseIA(texteEchec)}
-            className="mb-4 min-h-12 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60"
-          >
-            Réessayer avec l&apos;IA
-          </button>
-        )}
-        {brouillon && (etape === "revue" || etape === "creation" || etape === "erreur") && (
-          <BrouillonProjetForm
-            brouillon={brouillon}
-            onValider={creerProjet}
-            validationEnCours={etape === "creation"}
-            erreur={erreur}
-          />
-        )}
-      </Card>
+      {brouillon && (etape === "revue" || etape === "creation" || etape === "erreur") && (
+        <BrouillonProjetForm
+          brouillon={brouillon}
+          onValider={creerProjet}
+          validationEnCours={etape === "creation"}
+          erreur={erreur}
+          titre={etape === "erreur" ? "Nouveau projet" : undefined}
+        />
+      )}
+      {brouillon && texteEchec && etape === "erreur" && (
+        <button
+          type="button"
+          onClick={() => lancerAnalyseIA(texteEchec)}
+          className="mt-3 inline-flex min-h-12 items-center text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+        >
+          Relire le message automatiquement
+        </button>
+      )}
     </div>
   );
 }

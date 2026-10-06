@@ -79,8 +79,9 @@ export function FeuillePlanifier({
   /** Le jour touché (« + » d'un jour) ; sinon demain. */
   jourInitial?: CleJour | null;
   surFermer: () => void;
-  /** Appelé une fois l'écriture lue : la phrase de la trace. */
-  surPlanifie: (trace: string) => void;
+  /** Appelé une fois l'écriture lue : la phrase de la trace, et l'instant
+   *  du rendez-vous (pour proposer de prévenir le client, depuis la fiche). */
+  surPlanifie: (trace: string, debut: string) => void;
 }) {
   const [supabase] = useState(() => createClient());
   const defaut = creneauParDefaut(null);
@@ -179,7 +180,7 @@ export function FeuillePlanifier({
         titre: "Rendez-vous planifié",
         detail: `${jourEnLettres(jour)} à ${heureEnLettres(debut)}`,
       });
-      surPlanifie(`Planifié : ${projet.nom_client}, ${quand} ${resume}`);
+      surPlanifie(`Planifié : ${projet.nom_client}, ${quand} ${resume}`, debut.toISOString());
     } catch {
       vibrerEchec();
       setErreur("Pas enregistré. Réessayez.");

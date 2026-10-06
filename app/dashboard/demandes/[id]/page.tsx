@@ -403,6 +403,24 @@ export default function DetailDemandePage({
       .eq("id", params.id);
   }
 
+  // 06/10 — après une action courante (rendez-vous planifié depuis la
+  // fiche), seulement ce qui a changé : les rendez-vous et le carnet, pas
+  // les dix requêtes de chargerDonnees().
+  async function rechargerPlanningEtCarnet() {
+    try {
+      const [{ data: rdvData }, { data: evenementsData }] = await Promise.all([
+        supabase.from("evenements_planning").select("*").eq("demande_id", params.id).order("date_heure", { ascending: true }),
+        supabase.from("evenements_projet").select("*").eq("demande_id", params.id).order("created_at", { ascending: true }),
+      ]);
+      if (rdvData) setRendezVous(rdvData as EvenementPlanning[]);
+      if (evenementsData) setEvenementsProjet(evenementsData as EvenementProjet[]);
+      setMaintenant(new Date());
+    } catch {
+      // Le rendez-vous est déjà écrit ; la fiche se mettra à jour au
+      // prochain chargement.
+    }
+  }
+
   async function terminerNote(noteId: string, terminee: boolean) {
     // termine_le aussi : c'est la date sous laquelle la tâche faite apparaît
     // dans le Carnet (« Aujourd'hui », pas le jour de sa création).
@@ -1197,7 +1215,7 @@ export default function DetailDemandePage({
           surEnregistrer: enregistrerNotes,
           enregistre: notesEnregistrees,
         }}
-        lienPlanifier={`/dashboard/planning/nouveau?projetId=${demande.id}`}
+        surRdvPlanifie={() => void rechargerPlanningEtCarnet()}
         rendus={{
           vocal: (fermer) => (
             <NotesVocales

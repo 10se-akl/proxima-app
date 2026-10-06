@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { statutAffiche } from "@/lib/devis/statut";
 import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
@@ -15,7 +14,10 @@ import { IconeCalendrier, IconeCrayon, IconeMicro, IconePhoto } from "./icones";
 import { prochaineAction, type IdAction } from "./prochaineAction";
 import { Visionneuse } from "./Visionneuse";
 import { FeuilleMessageClient, tracerMessagePrepare, type DemandeMessage } from "./FeuilleMessageClient";
-import { accuse as accuse_, ouvrirMessage, type CleMessage, type Signature } from "@/lib/messagesClient";
+import { accuse as accuse_, ouvrirMessage, rappelRdv, type CleMessage, type Signature } from "@/lib/messagesClient";
+import { FeuillePlanifier } from "@/components/planning/FeuillePlanifier";
+import { BOUTON_CONTOUR, FOCUS } from "./Blocs";
+import { IconeCoche } from "./icones";
 import { createClient } from "@/lib/supabase/client";
 
 // ============================================================
@@ -99,7 +101,7 @@ export function VueProjet({
   surMarquerVisite,
   surPreparerReponse,
   memo,
-  lienPlanifier,
+  surRdvPlanifie,
   rendus,
   signature,
   resteAFacturer = null,
@@ -133,7 +135,9 @@ export function VueProjet({
   surMarquerVisite: () => void;
   surPreparerReponse: () => void;
   memo: { valeur: string; surChanger: (v: string) => void; surEnregistrer: () => void; enregistre: boolean };
-  lienPlanifier: string;
+  /** 06/10 — un rendez-vous vient d'être planifié depuis la fiche : la page
+   *  relit les rendez-vous et le carnet du projet (rien d'autre). */
+  surRdvPlanifie?: () => void;
   rendus: RendusVueProjet;
 }) {
   const [ajout, setAjout] = useState<ModeAjout | null>(null);
@@ -159,6 +163,12 @@ export function VueProjet({
   // (aucune action ne le rouvre) : une question avant, depuis « Maintenant »
   // comme depuis « … ». Règle 6 de docs/langage-interface.md.
   const [confirmerFin, setConfirmerFin] = useState(false);
+  // 06/10 (« le compagnon ») — planifier un rendez-vous ne quitte plus la
+  // fiche : la feuille « Quand ? » du planning s'ouvre ici, déjà remplie
+  // (demain, à l'heure habituelle du projet). Une fois écrit, la fiche le
+  // dit et propose de prévenir le client — rien ne part tout seul.
+  const [planifierOuvert, setPlanifierOuvert] = useState(false);
+  const [planifie, setPlanifie] = useState<{ trace: string; debut: string } | null>(null);
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
     const cle = p.get("message") as CleMessage | null;
@@ -296,6 +306,7 @@ export function VueProjet({
 
   const agir = (id: IdAction) => {
     if (id === "ajouter") return setAjout("choix");
+    if (id === "planifier") return setPlanifierOuvert(true);
     if (id === "terminer") return setConfirmerFin(true);
     if (id === "accuse_sms") return envoyerAccuse("sms");
     if (id === "accuse_whatsapp") return envoyerAccuse("whatsapp");
@@ -317,7 +328,7 @@ export function VueProjet({
     { type: "priorite", valeur: projet.priorite ?? "normal", surChoisir: surChangerPriorite },
     { type: "separateur" },
     ...point.dansMenu.map((a) => ({ type: "action" as const, libelle: a.libelle, surChoisir: () => agir(a.id) })),
-    { type: "lien", libelle: "Planifier un rendez-vous", href: lienPlanifier },
+    { type: "action", libelle: "Planifier un rendez-vous", surChoisir: () => setPlanifierOuvert(true) },
     ...(!projet.visite_le ? [{ type: "action" as const, libelle: "Marquer la visite effectuée", surChoisir: surMarquerVisite }] : []),
     ...(peutAnalyser && !analyseAJour ? [{ type: "action" as const, libelle: "Résumer mes notes avec l'IA", surChoisir: () => surAction("analyser") }] : []),
     ...(!devis ? [{ type: "action" as const, libelle: "Faire le devis moi-même", surChoisir: () => surAction("devis_express") }] : []),
@@ -393,6 +404,21 @@ export function VueProjet({
             surNote={() => setAjout("note")}
           />
           {rendus.capture.etat(() => setPhotosOuvertes(true))}
+          {planifie && (
+            <RdvPlanifie
+              trace={planifie.trace}
+              telephone={projet.telephone_client}
+              nomClient={projet.nom_client}
+              surPrevenir={(canal) => {
+                const texte = rappelRdv({ dateRdv: planifie.debut, adresse: projet.adresse_client, signature });
+                if (projet.telephone_client && ouvrirMessage(canal, projet.telephone_client, texte)) {
+                  tracerMessagePrepare(createClient(), { demandeId: projet.id, cle: "rappelRdv", canal });
+                  setPlanifie(null);
+                }
+              }}
+              surFermer={() => setPlanifie(null)}
+            />
+          )}
         </div>
         <div className="empty:hidden lg:col-start-1 lg:row-start-3">
           <AFaire
@@ -454,7 +480,7 @@ export function VueProjet({
 
       <Feuille
         ouverte={ajout !== null}
-        titre={ajout === "vocal" ? "Dicter une note" : ajout === "note" ? "Note ou rappel" : "Ajouter au projet"}
+        titre={ajout === "vocal" ? "Dicter une note" : ajout === "note" ? "Note" : "Ajouter au projet"}
         surFermer={() => setAjout(null)}
       >
         {ajout === "choix" && (
@@ -479,8 +505,12 @@ export function VueProjet({
                 </span>
               </button>
             ))}
-            <Link
-              href={lienPlanifier}
+            <button
+              type="button"
+              onClick={() => {
+                setAjout(null);
+                setPlanifierOuvert(true);
+              }}
               className="flex min-h-16 flex-col items-start gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
             >
               <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink/10 text-ink">
@@ -488,14 +518,24 @@ export function VueProjet({
               </span>
               <span>
                 <span className="block text-base font-semibold text-ink">Rendez-vous</span>
-                <span className="block text-sm text-steel">Dans le planning</span>
+                <span className="block text-sm text-steel">Demain, déjà rempli</span>
               </span>
-            </Link>
+            </button>
           </div>
         )}
         {ajout === "vocal" && rendus.vocal(() => setAjout(null))}
         {ajout === "note" && rendus.note(() => setAjout(null))}
       </Feuille>
+
+      <FeuillePlanifier
+        projet={planifierOuvert ? { id: projet.id, nom_client: projet.nom_client, type_chantier: projet.type_chantier } : null}
+        surFermer={() => setPlanifierOuvert(false)}
+        surPlanifie={(trace, debut) => {
+          setPlanifierOuvert(false);
+          setPlanifie({ trace, debut });
+          surRdvPlanifie?.();
+        }}
+      />
 
       <Feuille ouverte={photosOuvertes} titre={`Photos du projet · ${photos.length}`} surFermer={() => setPhotosOuvertes(false)} large>
         {rendus.photos}
@@ -566,6 +606,51 @@ export function VueProjet({
           </button>
         </div>
       </Feuille>
+    </div>
+  );
+}
+
+/** 06/10 — juste après « Planifier » depuis la fiche : la trace du
+ *  rendez-vous, et « Prévenir » le client, texte prêt dans ses SMS ou son
+ *  WhatsApp. L'artisan envoie lui-même ; « Plus tard » referme sans rien
+ *  écrire. */
+export function RdvPlanifie({
+  trace,
+  telephone,
+  nomClient,
+  surPrevenir,
+  surFermer,
+}: {
+  trace: string;
+  telephone: string | null;
+  nomClient: string;
+  surPrevenir: (canal: "sms" | "whatsapp") => void;
+  surFermer: () => void;
+}) {
+  return (
+    <div aria-live="polite" className="mt-3 rounded-2xl bg-succes/10 p-4">
+      <p className="flex items-center gap-3 text-sm text-ink">
+        <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
+          <IconeCoche className="h-4 w-4" />
+        </span>
+        <span className="min-w-0 truncate">{trace.replace(`${nomClient}, `, "")}</span>
+      </p>
+      {telephone ? (
+        <>
+          <p className="mt-3 truncate text-base font-semibold text-ink">Prévenir {nomClient} ?</p>
+          <div className="mt-2 grid grid-cols-[1fr_1fr_auto] gap-2">
+            <button type="button" onClick={() => surPrevenir("sms")} className={`${BOUTON_CONTOUR} min-h-12 bg-surface`}>
+              SMS
+            </button>
+            <button type="button" onClick={() => surPrevenir("whatsapp")} className={`${BOUTON_CONTOUR} min-h-12 bg-surface`}>
+              WhatsApp
+            </button>
+            <button type="button" onClick={surFermer} className={`min-h-12 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 ${FOCUS}`}>
+              Plus tard
+            </button>
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }

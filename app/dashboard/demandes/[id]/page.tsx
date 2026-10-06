@@ -391,7 +391,7 @@ export default function DetailDemandePage({
         .eq("id", demande.id);
     }
     await signalerModification();
-    await chargerDonnees();
+    await rafraichir({ projet: true });
   }
 
   // Marque le projet comme modifié depuis le dernier devis — utilisé pour
@@ -403,23 +403,37 @@ export default function DetailDemandePage({
       .eq("id", params.id);
   }
 
-  // 06/10 — après une action courante (rendez-vous planifié depuis la
-  // fiche), seulement ce qui a changé : les rendez-vous et le carnet, pas
-  // les dix requêtes de chargerDonnees().
-  async function rechargerPlanningEtCarnet() {
+  // 06/10 (« le compagnon ») — après une action courante (photo, mémo,
+  // note dictée, priorité, infos, rendez-vous), on ne relit que ce qui a
+  // changé, au lieu des dix requêtes de chargerDonnees() (et de l'URL
+  // signée du logo). Sur un réseau de chantier, c'est la différence entre
+  // une fiche qui répond tout de suite et une fiche qui « mouline ».
+  // Un échec de lecture ne casse rien : ce qui est écrit est écrit, la
+  // fiche se mettra à jour au prochain chargement complet.
+  async function rafraichir(parties: { projet?: boolean; vocales?: boolean; planning?: boolean }) {
     try {
-      const [{ data: rdvData }, { data: evenementsData }] = await Promise.all([
-        supabase.from("evenements_planning").select("*").eq("demande_id", params.id).order("date_heure", { ascending: true }),
+      const [projetLu, vocalesLues, planningLu, carnetLu] = await Promise.all([
+        parties.projet ? supabase.from("demandes").select("*").eq("id", params.id).maybeSingle() : null,
+        parties.vocales
+          ? supabase.from("notes_vocales").select("*").eq("demande_id", params.id).order("created_at", { ascending: false })
+          : null,
+        parties.planning
+          ? supabase.from("evenements_planning").select("*").eq("demande_id", params.id).order("date_heure", { ascending: true })
+          : null,
+        // Le carnet, toujours : chaque action courante y écrit une ligne.
         supabase.from("evenements_projet").select("*").eq("demande_id", params.id).order("created_at", { ascending: true }),
       ]);
-      if (rdvData) setRendezVous(rdvData as EvenementPlanning[]);
-      if (evenementsData) setEvenementsProjet(evenementsData as EvenementProjet[]);
+      if (projetLu?.data) setDemande(projetLu.data as Projet);
+      if (vocalesLues?.data) setNotesVocales(vocalesLues.data as NoteVocale[]);
+      if (planningLu?.data) setRendezVous(planningLu.data as EvenementPlanning[]);
+      if (carnetLu.data) setEvenementsProjet(carnetLu.data as EvenementProjet[]);
       setMaintenant(new Date());
     } catch {
-      // Le rendez-vous est déjà écrit ; la fiche se mettra à jour au
-      // prochain chargement.
+      // Voir ci-dessus : rien à afficher.
     }
   }
+
+  const rechargerPlanningEtCarnet = () => rafraichir({ planning: true });
 
   async function terminerNote(noteId: string, terminee: boolean) {
     // termine_le aussi : c'est la date sous laquelle la tâche faite apparaît
@@ -847,7 +861,7 @@ export default function DetailDemandePage({
         type: "priorite_changee",
         titre: `Priorité changée : ${labels[priorite]}`,
       });
-      await chargerDonnees();
+      await rafraichir({});
     }
   }
 
@@ -1001,7 +1015,7 @@ export default function DetailDemandePage({
       });
     }
     setDemande({ ...demande, notes: notesLocales });
-    await chargerDonnees();
+    await rafraichir({ projet: true });
   }
 
   // Informations complémentaires (facultatives, ajoutées après coup)
@@ -1052,7 +1066,7 @@ export default function DetailDemandePage({
         titre: "Informations complétées",
       });
     }
-    await chargerDonnees();
+    await rafraichir({ projet: true });
     return true;
   }
 
@@ -1227,7 +1241,7 @@ export default function DetailDemandePage({
               onNouvelleNote={async () => {
                 fermer();
                 await signalerModification();
-                await chargerDonnees();
+                await rafraichir({ projet: true, vocales: true });
               }}
             />
           ),

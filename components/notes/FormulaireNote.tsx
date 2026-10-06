@@ -10,7 +10,6 @@ import { demanderAbonnementSiNecessaire } from "@/lib/pwa/notifications";
 import {
   assemblerTranscription,
   obtenirClasseReconnaissance,
-  titreDepuisTexte,
   messageErreurDictee,
   type SpeechRecognitionInstance,
 } from "@/lib/dictee";
@@ -70,15 +69,24 @@ function rappelsProposes(maintenant: Date): { cle: Exclude<Rappel, "aucun" | "au
   return liste;
 }
 
-/** La première phrase (ou ligne) fait le titre ; le texte entier reste en
- *  description dès qu'il dit plus que le titre. */
+/** La première ligne fait le titre (coupée à un mot près au-delà de 80
+ *  caractères) ; le texte entier reste en description dès qu'il dit plus
+ *  que le titre. Pas de coupe au premier point : « Appeler M. Dupont »
+ *  doit rester entier. */
 export function decouperNote(texte: string): { titre: string; description: string | null } {
   const propre = texte.trim();
-  const premiereLigne = propre.split(/\n/)[0] ?? "";
-  const titre = titreDepuisTexte(premiereLigne, 80);
-  const sansPoint = (s: string) => s.replace(/[.!?…\s]+$/, "");
-  const description = sansPoint(propre) === sansPoint(titre) ? null : propre;
-  return { titre, description };
+  const premiereLigne = (propre.split(/\n/)[0] ?? "").trim();
+  let titre = premiereLigne.replace(/[.!…\s]+$/, "");
+  if (titre.length > 80) {
+    // Titre coupé : la description garde tout le texte.
+    const coupe = titre.slice(0, 80);
+    const espace = coupe.lastIndexOf(" ");
+    titre = `${(espace > 30 ? coupe.slice(0, espace) : coupe).trim()}…`;
+    return { titre, description: propre };
+  }
+  // Sinon, la description est ce qui suit la première ligne.
+  const suite = propre.split(/\n/).slice(1).join("\n").trim();
+  return { titre, description: suite || null };
 }
 
 const FOCUS =

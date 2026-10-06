@@ -280,7 +280,7 @@ function LigneTache({ note, surCocher }: { note: Note; surCocher: () => void }) 
         <span className="block truncate text-sm text-steel">
           {enRetard ? <span className="font-semibold text-signal-fonce dark:text-signal-clair">Retard</span> : "Rappel"}
           {" · "}
-          {formatRappel.format(new Date(note.rappel_a)).replace(":", " h ")}
+          {formatRappel.format(new Date(note.rappel_a)).replace(":", " h ").replace(/ h 00$/, " h")}
         </span>
       )}
     </>

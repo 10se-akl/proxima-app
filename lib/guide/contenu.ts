@@ -57,7 +57,7 @@ export const SECTIONS: SectionGuide[] = [
         capture: "nouveau-coller",
         alt: "L'écran « Coller un message », avec le champ du message.",
         texte:
-          "① « Coller le message copié », puis ② « Préparer le brouillon ». L'IA remplit le nom, le téléphone et la demande : vous relisez avant de créer le projet.",
+          "① « Coller le message copié », puis ② « Préparer le projet ». Compyo remplit le nom, le téléphone et la demande : vous relisez avant de créer le projet.",
       },
     ],
     astuce:
@@ -78,7 +78,7 @@ export const SECTIONS: SectionGuide[] = [
         capture: "fiche-ajouter",
         alt: "La fenêtre « Ajouter au projet » : dicter, photos, note, rendez-vous.",
         texte:
-          "« Ajouter » (dans le projet, ou le + du bas) : ① dicter une note, ② prendre ou choisir des photos, ③ écrire une note avec un rappel.",
+          "Sous le pouce, dans chaque projet : ① Photo, ② Dicter, ③ Note (avec un rappel en un appui). Le + du bas ajoute aussi un rendez-vous, sans quitter le projet.",
       },
       {
         capture: "fiche-dicter",
@@ -91,13 +91,13 @@ export const SECTIONS: SectionGuide[] = [
   {
     id: "devis",
     titre: "Faire le devis",
-    resume: "L'IA écrit les lignes, les prix viennent de vos tarifs.",
+    resume: "Compyo écrit les lignes, les prix viennent de vos tarifs.",
     etapes: [
       {
         capture: "devis-ia",
         alt: "La carte « Maintenant » d'un nouveau projet et le bouton pour préparer le devis.",
         texte:
-          "Dans le projet, « Préparer le devis avec l'IA » : elle écrit les lignes à partir de vos notes et de vos photos. Les prix viennent de vos tarifs, jamais de l'IA.",
+          "Dans le projet, « Préparer le devis » : Compyo écrit les lignes à partir de vos notes et de vos photos. Les prix viennent de vos tarifs, jamais d'une estimation.",
       },
       {
         capture: "devis-lignes",
@@ -138,7 +138,7 @@ export const SECTIONS: SectionGuide[] = [
         capture: "devis-relance",
         alt: "La carte « Maintenant » d'un devis sans réponse, avec le bouton de relance.",
         texte:
-          "Pas de réponse après quelques jours ? Le projet vous propose de relancer : l'IA prépare le message, vous le relisez avant de l'envoyer.",
+          "Pas de réponse après quelques jours ? « Préparer une relance » : le message est prêt, vous le relisez avant de l'envoyer.",
       },
     ],
   },

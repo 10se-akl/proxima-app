@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import type { EvenementPlanning, ImportanceNote, Note } from "@/types";
 import type { Action, IdAction, ProchaineAction } from "./prochaineAction";
 import { dateRdv } from "./prochaineAction";
-import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeDocument, IconeEtincelle, IconeMicro, IconePhoto } from "./icones";
+import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeDocument, IconeMicro, IconePhoto } from "./icones";
 
 // ============================================================
 // Les blocs du « Point » (24/09) : Maintenant, À faire, À retenir, Dossier.
@@ -116,14 +116,14 @@ const CE_QUE_FAIT_L_IA: Partial<Record<IdAction, string>> = {
   generer_devis: "Vous relisez avant l'envoi.",
   mettre_a_jour_devis: "Vous relisez avant l'envoi.",
   relancer: "Vous relisez avant l'envoi.",
-  analyser: "L'IA résume vos notes.",
+  analyser: "Vos notes, en quelques lignes.",
 };
 
-/** Le libellé d'une action, avec l'étincelle quand c'est l'IA. */
-function LibelleAction({ libelle, ia }: { libelle: string; ia?: boolean }) {
+/** Le libellé d'une action. 06/10 — plus d'étincelle « IA » : le bouton
+ *  dit ce qu'on obtient, pas comment. */
+function LibelleAction({ libelle }: { libelle: string; ia?: boolean }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
-      {ia && <IconeEtincelle className="h-5 w-5 shrink-0" />}
       <span className="truncate">{libelle}</span>
     </span>
   );

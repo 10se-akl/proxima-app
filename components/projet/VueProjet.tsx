@@ -330,7 +330,7 @@ export function VueProjet({
     ...point.dansMenu.map((a) => ({ type: "action" as const, libelle: a.libelle, surChoisir: () => agir(a.id) })),
     { type: "action", libelle: "Planifier un rendez-vous", surChoisir: () => setPlanifierOuvert(true) },
     ...(!projet.visite_le ? [{ type: "action" as const, libelle: "Marquer la visite effectuée", surChoisir: surMarquerVisite }] : []),
-    ...(peutAnalyser && !analyseAJour ? [{ type: "action" as const, libelle: "Résumer mes notes avec l'IA", surChoisir: () => surAction("analyser") }] : []),
+    ...(peutAnalyser && !analyseAJour ? [{ type: "action" as const, libelle: "Résumer mes notes", surChoisir: () => surAction("analyser") }] : []),
     ...(!devis ? [{ type: "action" as const, libelle: "Faire le devis moi-même", surChoisir: () => surAction("devis_express") }] : []),
     ...(!memoOuvert
       ? [{ type: "action" as const, libelle: "Écrire à retenir", surChoisir: () => { setMemoOuvert(true); setMemoDemande(true); } }]

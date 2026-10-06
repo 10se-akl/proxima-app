@@ -487,7 +487,7 @@ export default function DetailDemandePage({
         artisanId,
         organisationId,
         type: "analyse_ia",
-        titre: demande?.questions_manquantes ? "Résumé mis à jour par l'IA" : "Projet analysé avec l'IA",
+        titre: demande?.questions_manquantes ? "Résumé mis à jour" : "Notes résumées",
       });
 
       // Signal de clôture consommé par le tableau de bord (voir
@@ -533,7 +533,7 @@ export default function DetailDemandePage({
             organisationId,
             type: "priorite_changee",
             titre: "Priorité changée : Urgent",
-            detail: "Détecté automatiquement par l'IA lors de l'analyse (mode auto activé dans vos réglages).",
+            detail: "Repéré dans vos notes (réglage « décider seul » activé).",
           });
         } else {
           setUrgenceProposee(true);
@@ -1304,7 +1304,7 @@ export default function DetailDemandePage({
           ) : null,
           propositionUrgence:
             urgenceProposee && artisanId && organisationId ? (
-              <div className="mt-4">
+              <div>
                 <PropositionUrgence
                   demandeId={params.id}
                   artisanId={artisanId}
@@ -1322,7 +1322,9 @@ export default function DetailDemandePage({
           propositionTaches:
             tachesProposees && tachesProposees.length > 0 ? (
               <div className="mt-3 rounded-2xl bg-paper-warm p-4">
-                <p className="text-base font-semibold text-ink">L&apos;IA a repéré ces tâches. Les ajouter ?</p>
+                <p className="text-base font-semibold text-ink">
+                  {tachesProposees.length} tâche{tachesProposees.length > 1 ? "s" : ""} repérée{tachesProposees.length > 1 ? "s" : ""} dans vos notes. Les ajouter ?
+                </p>
                 <ul className="mt-2 space-y-1 text-base text-ink">
                   {tachesProposees.map((t) => (
                     <li key={t}>· {t}</li>
@@ -1406,7 +1408,7 @@ export default function DetailDemandePage({
           Refonte (03/10, duel D lot 1) — on y arrive par « Message ›
           Écrire avec l'IA » ou par « Relancer avec l'IA » ; plus de
           copier-coller (« Copier » reste, en bouton texte). */}
-      <Feuille ouverte={feuilleReponse} titre="Écrire avec l'IA" surFermer={() => setFeuilleReponse(false)}>
+      <Feuille ouverte={feuilleReponse} titre={genreReponse === "relanceDevis" ? "Relance préparée" : "Message préparé"} surFermer={() => setFeuilleReponse(false)}>
         {chargementReponse && !brouillonReponse && (
           <div aria-busy="true" aria-label="Rédaction en cours">
             <Skeleton className="h-44 rounded-2xl" />

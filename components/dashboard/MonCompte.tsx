@@ -266,7 +266,7 @@ export function MonCompte() {
       </Card>
 
       <Card className="p-6">
-        <h2 className="text-sm font-semibold text-ink/70 mb-2">Automatisations IA</h2>
+        <h2 className="text-sm font-semibold text-ink/70 mb-2">Ce que Compyo peut faire seul</h2>
         <p className="text-sm text-ink/60 mb-4">
           Quand vous dictez un compte-rendu vocal sur un projet et que l&apos;IA y détecte une
           urgence, elle vous demande normalement confirmation avant de passer le projet en

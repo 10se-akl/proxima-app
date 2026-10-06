@@ -15,7 +15,7 @@ import {
   type Suggestion,
 } from "@/lib/messagesClient";
 import { Feuille } from "./Feuille";
-import { IconeChevron, IconeEtincelle } from "./icones";
+import { IconeChevron } from "./icones";
 
 // ============================================================
 // « Message au client » (26/09 — « moins mais mieux », lot D).
@@ -202,8 +202,7 @@ export function FeuilleMessageClient({
           onClick={surEcrireAvecIA}
           className="mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-surface px-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
         >
-          <IconeEtincelle className="h-5 w-5 shrink-0 text-ink" />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">Écrire avec l&apos;IA</span>
+          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">Un message sur mesure</span>
           <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
         </button>
       )}

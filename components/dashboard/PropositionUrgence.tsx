@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { BOUTON_CONTOUR, BOUTON_TEXTE } from "@/components/projet/Blocs";
 
 // ============================================================
 // Proposition de passage en urgent (Module 38, supabase/schema.sql).
@@ -59,8 +58,8 @@ export function PropositionUrgence({
         titre: "Priorité changée : Urgent",
         detail:
           reponse === "auto"
-            ? "Urgence détectée par l'IA lors de l'analyse — mode auto activé à votre demande."
-            : "Urgence détectée par l'IA lors de l'analyse, confirmée par vous.",
+            ? "Repéré dans vos notes — passé en urgent sans demander, à votre demande."
+            : "Repéré dans vos notes, confirmé par vous.",
       });
       if (reponse === "auto") {
         await supabase.from("profils").update({ urgence_auto_ia: true }).eq("id", artisanId);
@@ -72,31 +71,27 @@ export function PropositionUrgence({
   }
 
   return (
-    <Card className="mt-3 p-4 border-signal/30">
-      <p className="text-xs font-medium text-signal uppercase tracking-wider mb-2">
-        Urgence détectée
+    <div className="mt-4 border-t border-ink/15 pt-3">
+      <p className="flex items-center gap-2 text-base font-semibold text-ink">
+        <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
+        <span className="truncate">Ça a l&apos;air urgent, d&apos;après vos notes.</span>
       </p>
-      <p className="text-sm text-ink/80">
-        Vos notes laissent penser que ce chantier doit être traité en priorité. Voulez-vous passer ce
-        projet en urgent ?
-      </p>
-      <div className="mt-3 flex flex-col gap-2">
-        <div className="flex gap-3">
-          <Button onClick={() => repondre("oui")} disabled={enCours}>
-            Oui, passer en urgent
-          </Button>
-          <Button variant="ghost" onClick={() => repondre("non")} disabled={enCours}>
-            Non
-          </Button>
-        </div>
-        <button
-          onClick={() => repondre("auto")}
-          disabled={enCours}
-          className="text-left text-xs text-ink/50 hover:text-ink underline transition-colors disabled:opacity-50"
-        >
-          Laisser l&apos;IA faire ce choix seule la prochaine fois
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => repondre("oui")} disabled={enCours} className={BOUTON_CONTOUR}>
+          Passer en urgent
+        </button>
+        <button type="button" onClick={() => repondre("non")} disabled={enCours} className={BOUTON_TEXTE}>
+          Non
         </button>
       </div>
-    </Card>
+      <button
+        type="button"
+        onClick={() => repondre("auto")}
+        disabled={enCours}
+        className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-steel underline decoration-ink/30 underline-offset-4 disabled:opacity-60"
+      >
+        La prochaine fois, passer en urgent sans demander
+      </button>
+    </div>
   );
 }

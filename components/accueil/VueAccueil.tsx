@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { IconeCoche, IconeEtincelle } from "@/components/projet/icones";
+import { IconeCoche, IconeHorloge } from "@/components/projet/icones";
 import { Pastille } from "@/components/ui/Pastille";
 import { FinRelancer, LigneAccueil } from "./Blocs";
 import { BlocDepliable } from "./BlocDepliable";
@@ -125,7 +125,7 @@ export function VueAccueil({
                 titre="À suivre"
                 icone={
                   <Pastille couleur="signal" variante="doux" taille="petite">
-                    <IconeEtincelle className="h-4 w-4" />
+                    <IconeHorloge className="h-4 w-4" />
                   </Pastille>
                 }
                 lignes={aSuivre.map((l) => (

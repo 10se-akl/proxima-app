@@ -35,9 +35,10 @@ export type IdAction =
   | "accuse_sms"
   | "accuse_whatsapp";
 
-// 27/09 — `ia` : l'action appelle l'IA. Retour d'Axel : « l'IA, faut
-// savoir où elle est ». Chaque bouton IA porte le même signal (l'étincelle
-// et « avec l'IA »), et le bouton principal dit ce qu'elle va faire.
+// 27/09 — `ia` : l'action appelle l'IA. 06/10 (« le compagnon ») — le
+// bouton dit le résultat (« Préparer le devis »), plus la technologie :
+// l'étincelle et « avec l'IA » sont retirés. Ce qui reste, sous le bouton,
+// c'est la promesse de contrôle : « Vous relisez avant l'envoi. »
 export type Action = { id: IdAction; libelle: string; ia?: boolean };
 
 // Refonte (03/10, duel D lot 1) — « Maintenant » montre au plus un bouton
@@ -228,7 +229,7 @@ function selonEtat(e: EtatProjet): ProchaineAction {
   // --- Un devis existe (pas encore signé)
   if (e.devis && !engage) {
     const alerte = devisChange && e.devis.statut !== "brouillon"
-      ? { texte: "Changé depuis ce devis.", action: { id: "mettre_a_jour_devis" as const, libelle: "Mettre à jour avec l'IA", ia: true } }
+      ? { texte: "Changé depuis ce devis.", action: { id: "mettre_a_jour_devis" as const, libelle: "Mettre à jour le devis", ia: true } }
       : undefined;
 
     if (e.devis.statut === "refuse") {
@@ -237,7 +238,7 @@ function selonEtat(e: EtatProjet): ProchaineAction {
         phrase: "Devis refusé.",
         details,
         principale: { id: "dupliquer_devis", libelle: "Repartir de ce devis" },
-        secondaire: { id: "generer_devis", libelle: "Nouveau devis avec l'IA", ia: true },
+        secondaire: { id: "generer_devis", libelle: "Préparer un nouveau devis", ia: true },
         dansMenu: [],
       };
     }
@@ -269,7 +270,7 @@ function selonEtat(e: EtatProjet): ProchaineAction {
       ton: sansReponse ? "attention" : "attente",
       phrase: sansReponse ? "Devis sans réponse." : "Devis envoyé.",
       details: [...(jours !== null ? [`Envoyé ${depuis(jours)}`] : ["En attente du client"]), ...details],
-      principale: sansReponse ? { id: "relancer", libelle: "Relancer avec l'IA", ia: true } : { id: "ouvrir_devis", libelle: "Voir le devis" },
+      principale: sansReponse ? { id: "relancer", libelle: "Préparer une relance", ia: true } : { id: "ouvrir_devis", libelle: "Voir le devis" },
       // « Voir le devis » reste aussi à un appui sur la ligne du devis.
       secondaire: sansReponse && !alerte ? { id: "ouvrir_devis", libelle: "Voir le devis" } : null,
       dansMenu: [],
@@ -287,7 +288,7 @@ function selonEtat(e: EtatProjet): ProchaineAction {
     ton: "neutre",
     phrase: e.prochainRdv ? "Visite prévue." : "Pas encore chiffré.",
     details: precisions,
-    principale: { id: "generer_devis", libelle: "Préparer le devis avec l'IA", ia: true },
+    principale: { id: "generer_devis", libelle: "Préparer le devis", ia: true },
     secondaire: null,
     dansMenu: [],
   };

@@ -117,3 +117,9 @@ export const IconePoint = (p: P) => (
     <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none" />
   </Svg>
 );
+export const IconeHorloge = (p: P) => (
+  <Svg {...p}>
+    <circle cx="12" cy="12" r="8.5" />
+    <path d="M12 7.5V12l3 2" />
+  </Svg>
+);

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Feuille } from "@/components/projet/Feuille";
-import { IconeChevron, IconeCrayon, IconeDocument, IconeEtincelle, IconePhoto } from "@/components/projet/icones";
+import { IconeChevron, IconeCrayon, IconeDocument, IconePhoto } from "@/components/projet/icones";
 import { IconeNote } from "@/components/ui/Icones";
 
 // ============================================================
@@ -26,22 +26,24 @@ import { IconeNote } from "@/components/ui/Icones";
 // chemin le plus rapide et ne passe pas par ici.
 // ============================================================
 
+// 06/10 (« le compagnon ») — plus de pastille « IA » : chaque ligne dit ce
+// qu'on obtient. Le champ `ia` reste, pour mémoire de ce qui appelle l'IA.
 type Choix = { href: string; libelle: string; detail: string; icone: React.ReactNode; ia: boolean };
 
 const CHOIX: Choix[] = [
   {
     href: "/dashboard/demandes/importer",
     libelle: "Coller un message",
-    detail: "Le SMS ou le WhatsApp du client : l'IA prépare le projet.",
+    detail: "Le SMS ou le WhatsApp du client devient un projet.",
     icone: <IconeDocument className="h-6 w-6" />,
-    ia: true,
+    ia: false,
   },
   {
     href: "/dashboard/demandes/importer-capture",
     libelle: "Photo ou capture",
-    detail: "Une capture d'écran de la conversation : l'IA la lit pour vous.",
+    detail: "Une capture d'écran de la conversation suffit.",
     icone: <IconePhoto className="h-6 w-6" />,
-    ia: true,
+    ia: false,
   },
   {
     href: "/dashboard/demandes/nouvelle",
@@ -71,11 +73,6 @@ function LigneChoix({ c, surFermer }: { c: Choix; surFermer: () => void }) {
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-2 text-base font-semibold text-ink">
           {c.libelle}
-          {c.ia && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-ink/[0.06] px-2 py-0.5 text-xs font-semibold text-ink">
-              <IconeEtincelle className="h-3 w-3" /> IA
-            </span>
-          )}
         </span>
         <span className="mt-0.5 block text-sm leading-snug text-steel">{c.detail}</span>
       </span>

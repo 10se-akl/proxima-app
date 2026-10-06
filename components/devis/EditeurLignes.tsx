@@ -236,7 +236,7 @@ export function EditeurLignes({
               méritent vraiment une relecture attentive. */}
           {!ligne.manuelle && (
             <span
-              title="Poste généré par l'IA — à relire"
+              title="Ligne proposée — à relire"
               className="mt-1.5 shrink-0 rounded-md bg-signal/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-signal"
             >
               IA

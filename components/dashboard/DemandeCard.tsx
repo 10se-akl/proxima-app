@@ -7,7 +7,7 @@ import type { Projet } from "@/types";
 
 export const LABEL_STATUT: Record<Projet["statut"], string> = {
   nouveau: "Nouveau",
-  analyse: "Analysé par l'IA",
+  analyse: "Notes résumées",
   devis_genere: "Devis généré",
   devis_envoye: "Devis envoyé",
   accepte: "Accepté",

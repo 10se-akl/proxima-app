@@ -142,9 +142,23 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
   };
 }
 
+const formatJourCourt = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short" });
+const formatHeure = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", minute: "2-digit" });
+
+/** 06/10 — le prochain passage tient sur la ligne à 360 px : « demain
+ *  8 h », « jeu. 14 h 30 » dans la semaine, la date complète au-delà. */
+export function passageCourt(iso: string, maintenant: Date): string {
+  const jours = -joursDepuis(iso, maintenant);
+  const heure = formatHeure.format(new Date(iso)).replace(":", " h ").replace(/ h 00$/, " h");
+  if (jours === 0) return `aujourd'hui ${heure}`;
+  if (jours === 1) return `demain ${heure}`;
+  if (jours > 1 && jours < 7) return `${formatJourCourt.format(new Date(iso))} ${heure}`;
+  return dateRdv(iso);
+}
+
 function selonEtat(e: EtatProjet): ProchaineAction {
   const details: string[] = [];
-  if (e.prochainRdv) details.push(`Prochain passage : ${dateRdv(e.prochainRdv.date_heure)}`);
+  if (e.prochainRdv) details.push(`Prochain passage : ${passageCourt(e.prochainRdv.date_heure, e.maintenant)}`);
   if (e.nbTaches > 0) details.push(`${e.nbTaches} chose${e.nbTaches > 1 ? "s" : ""} à faire`);
 
   const engage = e.statut === "accepte" || e.statut === "en_cours" || e.statut === "termine";

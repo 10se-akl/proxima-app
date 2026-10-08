@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { revenir, useLibelleRetour } from "@/components/navigation/LienPrecedent";
 import type { Priorite, StatutProjet } from "@/types";
 import { IconeLieu, IconeLoupe, IconeMessage, IconePoints, IconeRetour, IconeTelephone } from "./icones";
 
@@ -173,6 +175,13 @@ export function EnTeteProjet({
   entreesMenu: EntreeMenu[];
 }) {
   const etape = Math.max(0, ETAPES.findIndex((e) => e.statuts.includes(statut)));
+  const router = useRouter();
+  // 08/10 (passe de finition) — on ouvre la fiche depuis l'accueil, le
+  // planning, Argent, les notes… et « ‹ Projets » menait toujours à la
+  // liste. Le lien dit maintenant d'où l'on vient et y ramène ; d'ailleurs
+  // (lien direct, notification), il reste « ‹ Projets ».
+  const libelleRetour = useLibelleRetour();
+  const classeRetour = `-ml-2 inline-flex min-h-12 items-center gap-1 rounded-xl pl-1 pr-3 text-base text-steel active:bg-ink/10 ${FOCUS}`;
   // Refonte visuelle (04/10) : les trois gestes sont posés sur la carte
   // bleu nuit, en verre clair.
   const tuile = `flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-white/10 px-2 py-2 text-sm font-semibold text-white ring-1 ring-white/15 active:bg-white/20 motion-safe:transition-colors sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white`;
@@ -180,12 +189,15 @@ export function EnTeteProjet({
   return (
     <header>
       <div className="flex items-center justify-between gap-3">
-        <Link
-          href="/dashboard/demandes"
-          className={`-ml-2 inline-flex min-h-12 items-center gap-1 rounded-xl pl-1 pr-3 text-base text-steel ${FOCUS}`}
-        >
-          <IconeRetour className="h-5 w-5" /> Projets
-        </Link>
+        {libelleRetour ? (
+          <button type="button" onClick={() => revenir(router)} className={classeRetour}>
+            <IconeRetour className="h-5 w-5" /> {libelleRetour}
+          </button>
+        ) : (
+          <Link href="/dashboard/demandes" className={classeRetour}>
+            <IconeRetour className="h-5 w-5" /> Projets
+          </Link>
+        )}
         <div className="-mr-2 flex items-center">
           {surChercher && (
             <button

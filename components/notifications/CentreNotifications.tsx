@@ -4,9 +4,27 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
-import { listerNotesActivesOrganisation, marquerNoteTerminee, COULEUR_POINT_IMPORTANCE } from "@/lib/notes";
+import { listerNotesActivesOrganisation, marquerNoteTerminee } from "@/lib/notes";
 import { IconeCloche } from "@/components/ui/Icones";
-import type { Note } from "@/types";
+import { IconeCoche } from "@/components/projet/icones";
+import type { ImportanceNote, Note } from "@/types";
+
+// Le point d'importance, en tokens : seul ce qui presse se signale (comme
+// « À faire » sur la fiche projet).
+const POINT_IMPORTANCE: Partial<Record<ImportanceNote, string>> = {
+  rouge: "bg-signal-fonce dark:bg-signal-clair",
+  orange: "bg-alerte-orange",
+};
+
+const formatRappel = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
+const quandRappel = (iso: string) => formatRappel.format(new Date(iso)).replace(":", " h ").replace(/ h 00$/, " h");
 
 // ============================================================
 // Centre de notifications (point du brief "Notifications intelligentes") :
@@ -26,6 +44,9 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
   const [chargement, setChargement] = useState(true);
   // Sprint Robustesse (30/08) — voir `terminer()` ci-dessous.
   const [erreurTerminer, setErreurTerminer] = useState<string | null>(null);
+  // 08/10 — la dernière note cochée, le temps de pouvoir revenir en
+  // arrière (la trace « Fait : … · Annuler », sans minuteur).
+  const [cochee, setCochee] = useState<Note | null>(null);
 
   // 27/09 — Sans réseau (ou session à renouveler), la lecture s'arrêtait en
   // silence : le panneau restait sur « Chargement… » pour toujours. On le
@@ -68,12 +89,15 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
     return () => document.removeEventListener("mousedown", surClicExterieur);
   }, [ouvert]);
 
-  async function terminer(noteId: string) {
+  async function terminer(note: Note) {
+    const noteId = note.id;
     // Optimiste : disparaît immédiatement de la liste, cohérent avec "Une
     // fois la note terminée : elle disparaît automatiquement" (point 6).
     const noteRetiree = notes.find((n) => n.id === noteId);
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
     setErreurTerminer(null);
+    setCochee(note);
+    navigator.vibrate?.(12);
     // Sprint Robustesse (30/08) — le retrait optimiste ci-dessus n'attendait
     // jamais le résultat de `marquerNoteTerminee` : sur échec (réseau,
     // session expirée), la note disparaissait de l'écran alors qu'elle
@@ -85,7 +109,21 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
       if (noteRetiree) {
         setNotes((prev) => [...prev, noteRetiree]);
       }
-      setErreurTerminer("Impossible de marquer cette note comme terminée. Réessayez.");
+      setCochee(null);
+      navigator.vibrate?.([12, 60, 12]);
+      setErreurTerminer("Pas enregistré. Réessayez.");
+    }
+  }
+
+  async function annuler() {
+    if (!cochee) return;
+    const note = cochee;
+    setCochee(null);
+    setNotes((prev) => (prev.some((n) => n.id === note.id) ? prev : [...prev, note]));
+    const reussi = await marquerNoteTerminee(supabase, note.id, false);
+    if (!reussi) {
+      setNotes((prev) => prev.filter((n) => n.id !== note.id));
+      setErreurTerminer("Pas enregistré. Réessayez.");
     }
   }
 
@@ -115,67 +153,89 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
         // en "right-0" s'ouvre donc vers la GAUCHE du bouton, c'est-à-dire
         // hors de l'écran, puisque le bouton est déjà collé au bord gauche.
         // "left-0" ouvre vers la droite, dans la zone de contenu visible.
+        //
+        // 08/10 (passe de finition) — le panneau suit le langage : 16 px
+        // pour ce qu'on lit, l'heure du rappel sous chaque ligne, une
+        // coche de 48 px avec la trace « Fait : … · Annuler », un squelette
+        // au lieu de « Chargement… », et plus d'emoji.
         <div
-          className={`absolute z-30 max-h-96 overflow-y-auto rounded-xl border border-ink/10 bg-surface shadow-lg shadow-ink/10 ${
-            vers === "bas" ? "right-0 top-full mt-2 w-[min(20rem,calc(100vw-2rem))]" : "left-0 bottom-full mb-2 w-80"
+          className={`absolute z-30 max-h-[28rem] overflow-y-auto rounded-2xl bg-surface shadow-lg shadow-ink/10 ring-1 ring-ink/15 ${
+            vers === "bas" ? "right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))]" : "left-0 bottom-full mb-2 w-[22rem]"
           }`}
         >
-          <p className="px-4 pt-3.5 pb-2 font-mono text-[10px] tracking-[0.2em] uppercase text-steel">
-            Notifications
-          </p>
-          {erreurTerminer && (
-            <p className="px-4 pb-2 text-xs text-signal">{erreurTerminer}</p>
-          )}
+          <p className="px-4 pb-1 pt-4 font-display text-xl font-semibold text-ink">Rappels</p>
           {chargement ? (
-            <p className="px-4 pb-4 text-xs text-ink/40">Chargement…</p>
+            <div className="flex flex-col gap-3 px-4 pb-4 pt-2" aria-hidden>
+              <div className="h-4 w-3/4 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+              <div className="h-4 w-1/2 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+            </div>
           ) : erreurChargement ? (
             <div className="flex items-center justify-between gap-3 px-4 pb-3">
-              <p className="text-xs text-ink/60">Rappels indisponibles pour le moment.</p>
+              <p className="min-w-0 truncate text-sm text-steel">Rappels indisponibles.</p>
               <button
                 type="button"
                 onClick={charger}
-                className="min-h-11 shrink-0 rounded-lg px-2 text-xs font-medium text-ink underline underline-offset-2"
+                className="min-h-12 shrink-0 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
               >
                 Réessayer
               </button>
             </div>
-          ) : notes.length === 0 ? (
-            <p className="px-4 pb-4 text-xs text-ink/40">Rien en attente. 👍</p>
+          ) : notes.length === 0 && !cochee ? (
+            <p className="px-4 pb-4 pt-1 text-base text-steel">Rien en attente.</p>
           ) : (
-            <div className="pb-2">
-              {[...enRetard, ...aVenir].map((note) => (
-                <div
-                  key={note.id}
-                  className="px-4 py-2.5 flex items-start gap-2.5 hover:bg-ink/[0.03] transition-colors"
-                >
-                  <span
-                    className={`mt-1.5 w-1.5 h-1.5 rounded-full shrink-0 ${COULEUR_POINT_IMPORTANCE[note.importance]}`}
-                  />
-                  <Link
-                    href={note.demande_id ? `/dashboard/demandes/${note.demande_id}` : "/dashboard/notes"}
-                    onClick={() => setOuvert(false)}
-                    className="min-w-0 flex-1"
-                  >
-                    <p className="text-xs text-ink/80 leading-snug">{note.titre}</p>
-                    {note.demandes?.nom_client && (
-                      <p className="text-[11px] text-ink/40">{note.demandes.nom_client}</p>
-                    )}
-                  </Link>
-                  <button
-                    onClick={() => terminer(note.id)}
-                    title="Marquer comme terminé"
-                    aria-label="Marquer comme terminé"
-                    // 27/09 — 44 × 44 pour le doigt (le « ✓ » faisait 8 px de
-                    // large, collé au lien de la note). Marges négatives : la
-                    // ligne garde sa hauteur.
-                    className="-my-2.5 -mr-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-ink/30 hover:text-ink transition-colors text-xs"
-                  >
-                    ✓
-                  </button>
-                </div>
-              ))}
-            </div>
+            <ul className="px-1 pb-2">
+              {[...enRetard, ...aVenir].map((note) => {
+                const retard = Boolean(note.rappel_a && new Date(note.rappel_a).getTime() < maintenant);
+                const point = POINT_IMPORTANCE[note.importance];
+                return (
+                  <li key={note.id} className="flex items-center gap-1">
+                    {/* Un rond de 24 px dans une cible de 48. */}
+                    <button
+                      type="button"
+                      onClick={() => terminer(note)}
+                      aria-label={`Fait : ${note.titre}`}
+                      className="group grid h-12 w-12 shrink-0 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                    >
+                      <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-ink/40 text-transparent motion-safe:transition-colors group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes">
+                        <IconeCoche className="h-3.5 w-3.5" />
+                      </span>
+                    </button>
+                    <Link
+                      href={note.demande_id ? `/dashboard/demandes/${note.demande_id}` : "/dashboard/notes"}
+                      onClick={() => setOuvert(false)}
+                      className="flex min-h-14 min-w-0 flex-1 flex-col justify-center rounded-xl pr-3 active:bg-ink/10 sm:hover:bg-ink/5"
+                    >
+                      <span className="flex min-w-0 items-center gap-2">
+                        {point && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${point}`} />}
+                        <span className="truncate text-base text-ink">{note.titre}</span>
+                      </span>
+                      <span className="block truncate text-sm text-steel">
+                        {retard ? <span className="font-semibold text-signal-fonce dark:text-signal-clair">Retard</span> : "Rappel"}
+                        {note.rappel_a && ` · ${quandRappel(note.rappel_a)}`}
+                        {note.demandes?.nom_client && ` · ${note.demandes.nom_client}`}
+                      </span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
           )}
+          <div aria-live="polite">
+            {cochee && (
+              <div className="mx-3 mb-3 flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
+                <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
+                <p className="min-w-0 flex-1 truncate">Fait : {cochee.titre}</p>
+                <button
+                  type="button"
+                  onClick={annuler}
+                  className="inline-flex min-h-12 shrink-0 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+                >
+                  Annuler
+                </button>
+              </div>
+            )}
+            {erreurTerminer && <p className="px-4 pb-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreurTerminer}</p>}
+          </div>
           {/* Refonte (03/10 — duel B, lot 3) : sans « Plus », c'est la porte
               de toutes les notes. Elle passe de 12 px de texte pâle à une
               vraie cible de 48 px. */}

@@ -1,54 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { COULEUR_POINT_IMPORTANCE } from "@/lib/notes";
-import { Card } from "@/components/ui/Card";
-import type { Note } from "@/types";
+import { IconeCoche } from "@/components/projet/icones";
+import type { ImportanceNote, Note } from "@/types";
 
 // ============================================================
-// Carte de note — le composant central du point 5 du brief ("je ne veux
-// PAS une simple liste. Chaque note est une vraie carte."). RÉUTILISÉE
-// telle quelle sur les 3 endroits qui affichent des notes (page Notes,
-// section Notes de la fiche projet, section Rappels d'Aujourd'hui) —
-// c'est la garantie visuelle que "aucun doublon" (point 8) ne dérive pas
-// en plusieurs présentations différentes de la même donnée au fil du
-// temps.
+// Une note dans la page Notes.
 //
-// Couleurs volontairement sobres : un point coloré discret (voir
-// COULEUR_POINT_IMPORTANCE, lib/notes/index.ts), fond clair uniforme,
-// jamais de grande carte rouge flashy — demande explicite d'Axel,
-// "Compyo doit rester élégant".
-//
-// `afficherProjet` masque la ligne "Projet : X" quand la carte est déjà
-// affichée DANS la fiche du projet concerné (redondant à cet endroit
-// précis) — l'affiche partout ailleurs (page Notes, Aujourd'hui, centre
-// de notifications).
+// 08/10 (passe de finition) — la même ligne que « À faire » sur la fiche
+// projet : un rond à cocher de 48 px à gauche, le titre en 16 px, le
+// détail sur une ligne (l'heure du rappel, le client), et toute la ligne
+// ouvre le projet. Avant : une carte en 12 px, « ✓ Marquer comme
+// terminé » et « Voir le projet » en petits liens pâles, « Projet X » ou
+// « Note générale » écrits en toutes lettres. Le groupe (« En retard »,
+// « Aujourd'hui »…) dit déjà quand : la ligne ne le répète pas.
 // ============================================================
 
-function formaterRappel(rappelA: string): { texte: string; enRetard: boolean } {
-  const date = new Date(rappelA);
-  const maintenant = new Date();
-  const enRetard = date.getTime() < maintenant.getTime();
+// Le point d'importance, en tokens : seul ce qui presse se signale.
+const POINT_IMPORTANCE: Partial<Record<ImportanceNote, string>> = {
+  rouge: "bg-signal-fonce dark:bg-signal-clair",
+  orange: "bg-alerte-orange",
+};
 
-  const debutAujourdhui = new Date();
-  debutAujourdhui.setHours(0, 0, 0, 0);
-  const debutDemain = new Date(debutAujourdhui);
-  debutDemain.setDate(debutDemain.getDate() + 1);
-  const debutApresDemain = new Date(debutDemain);
-  debutApresDemain.setDate(debutApresDemain.getDate() + 1);
+const FOCUS =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
 
-  const heure = date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+const formatRappel = new Intl.DateTimeFormat("fr-FR", {
+  timeZone: "Europe/Paris",
+  weekday: "short",
+  day: "numeric",
+  month: "short",
+  hour: "numeric",
+  minute: "2-digit",
+});
 
-  if (date >= debutAujourdhui && date < debutDemain) {
-    return { texte: `Rappel aujourd'hui ${heure}`, enRetard };
-  }
-  if (date >= debutDemain && date < debutApresDemain) {
-    return { texte: `Rappel demain ${heure}`, enRetard };
-  }
-  return {
-    texte: `Rappel ${date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })} ${heure}`,
-    enRetard,
-  };
+function quandRappel(iso: string): string {
+  return formatRappel.format(new Date(iso)).replace(":", " h ").replace(/ h 00$/, " h");
 }
 
 export function NoteCard({
@@ -62,78 +49,59 @@ export function NoteCard({
   onTerminer?: (noteId: string, terminee: boolean) => void;
   className?: string;
 }) {
-  const rappel = note.rappel_a ? formaterRappel(note.rappel_a) : null;
   const estTerminee = note.statut === "terminee";
-  const nomProjet = note.demandes?.nom_client;
+  const nomProjet = afficherProjet ? note.demandes?.nom_client : null;
+  const point = POINT_IMPORTANCE[note.importance];
+  const detail = [note.rappel_a ? quandRappel(note.rappel_a) : null, nomProjet].filter(Boolean).join(" · ");
 
-  const contenu = (
+  const texte = (
     <>
-      <div className="flex items-start gap-2.5">
-        <span
-          className={`mt-1.5 w-2 h-2 rounded-full shrink-0 ${COULEUR_POINT_IMPORTANCE[note.importance]}`}
-          aria-hidden="true"
-        />
-        <div className="min-w-0 flex-1">
-          <p
-            className={`text-sm font-medium text-ink ${estTerminee ? "line-through text-ink/40" : ""}`}
-          >
-            {note.titre}
-          </p>
-          {(afficherProjet && nomProjet) || rappel || estTerminee ? (
-            <p className="mt-0.5 text-xs text-ink/45 flex flex-wrap items-center gap-x-1.5">
-              {afficherProjet && (
-                <span>{nomProjet ? `Projet ${nomProjet}` : "Note générale"}</span>
-              )}
-              {afficherProjet && rappel && <span aria-hidden="true">·</span>}
-              {rappel && (
-                <span className={rappel.enRetard && !estTerminee ? "text-signal font-medium" : ""}>
-                  {rappel.enRetard && !estTerminee ? "En retard — " : ""}
-                  {rappel.texte}
-                </span>
-              )}
-              {estTerminee && (
-                <span className="rounded-full bg-ink/5 px-2 py-0.5 text-[10px] font-medium text-ink/50">
-                  Terminée
-                </span>
-              )}
-            </p>
-          ) : null}
-        </div>
-      </div>
-
-      {note.description && (
-        <>
-          <div className="my-2.5 border-t border-ink/[0.06]" />
-          <p className="text-xs text-ink/60 leading-relaxed whitespace-pre-wrap">
-            {note.description}
-          </p>
-        </>
-      )}
+      <span className="flex min-w-0 items-center gap-2">
+        {point && !estTerminee && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${point}`} />}
+        <span className={`truncate text-base text-ink ${estTerminee ? "line-through" : ""}`}>{note.titre}</span>
+      </span>
+      {detail && <span className="block truncate text-sm text-steel">{detail}</span>}
+      {note.description && <span className="mt-0.5 line-clamp-2 whitespace-pre-line text-sm text-steel">{note.description}</span>}
     </>
   );
+  const classeTexte = "flex min-h-14 min-w-0 flex-1 flex-col justify-center py-1.5 pr-3";
 
   return (
-    <Card className={`p-4 ${className}`}>
-      {contenu}
-      <div className="mt-3 flex items-center gap-3">
-        {onTerminer && (
-          <button
-            type="button"
-            onClick={() => onTerminer(note.id, !estTerminee)}
-            className="text-xs font-medium text-ink/50 hover:text-ink transition-colors"
+    <div className={`flex items-center gap-1 rounded-2xl bg-paper/70 ring-1 ring-ink/10 ${className}`}>
+      {onTerminer ? (
+        // Un rond de 24 px dans une cible de 48.
+        <button
+          type="button"
+          onClick={() => {
+            if (!estTerminee) navigator.vibrate?.(12);
+            onTerminer(note.id, !estTerminee);
+          }}
+          aria-label={estTerminee ? `Pas fait : ${note.titre}` : `Fait : ${note.titre}`}
+          className={`group grid h-12 w-12 shrink-0 place-items-center self-start rounded-full mt-1 ${FOCUS}`}
+        >
+          <span
+            className={`grid h-6 w-6 place-items-center rounded-full border-2 motion-safe:transition-colors ${
+              estTerminee
+                ? "border-succes bg-succes text-white"
+                : "border-ink/40 text-transparent group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes"
+            }`}
           >
-            {estTerminee ? "↺ Réactiver" : "✓ Marquer comme terminé"}
-          </button>
-        )}
-        {note.demande_id && (
-          <Link
-            href={`/dashboard/demandes/${note.demande_id}`}
-            className="text-xs text-ink/40 hover:text-ink underline underline-offset-2 transition-colors"
-          >
-            Voir le projet
-          </Link>
-        )}
-      </div>
-    </Card>
+            <IconeCoche className="h-3.5 w-3.5" />
+          </span>
+        </button>
+      ) : (
+        <span className="w-4 shrink-0" />
+      )}
+      {note.demande_id ? (
+        <Link
+          href={`/dashboard/demandes/${note.demande_id}`}
+          className={`${classeTexte} rounded-xl active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${FOCUS}`}
+        >
+          {texte}
+        </Link>
+      ) : (
+        <div className={classeTexte}>{texte}</div>
+      )}
+    </div>
   );
 }

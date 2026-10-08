@@ -1072,17 +1072,15 @@ export default function DetailDemandePage({
 
   if (introuvable) {
     return (
-      <div className="p-8 max-w-lg">
-        <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-2">Projet</p>
-        <h1 className="font-display text-xl font-semibold">Projet introuvable</h1>
-        <p className="mt-2 text-sm text-ink/60">
-          Ce projet n&apos;existe pas, a été supprimé, ou n&apos;appartient pas à votre organisation.
-        </p>
+      // 08/10 (passe de finition) — une phrase et une action (règle 12).
+      <div className="max-w-lg px-4 pt-8 pb-8 sm:p-8">
+        <h1 className="font-display text-xl font-semibold text-ink">Projet introuvable.</h1>
+        <p className="mt-1 text-base text-steel">Supprimé, ou d&apos;une autre équipe.</p>
         <Link
           href="/dashboard/demandes"
-          className="mt-4 inline-flex text-sm text-signal underline underline-offset-2 hover:text-signal-fonce"
+          className="mt-4 inline-flex min-h-12 items-center rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
         >
-          ← Retour à la liste des projets
+          Voir les projets
         </Link>
       </div>
     );

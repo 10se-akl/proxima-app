@@ -220,6 +220,11 @@ function Entree({
 
 export const ID_RECHERCHE_CARNET = "recherche-carnet";
 
+/** 08/10 (passe de finition) — en dessous, la recherche et les filtres
+ *  n'apparaissent pas : cinq entrées se lisent d'un coup d'œil. C'est aussi
+ *  le seuil de la loupe de l'en-tête (VueProjet). */
+export const SEUIL_RECHERCHE_CARNET = 6;
+
 export function Carnet({
   entrees,
   urlsPhotos,
@@ -235,11 +240,28 @@ export function Carnet({
   photos?: { nombre: number; vignettes: string[]; surOuvrir: () => void };
 }) {
   const [recherche, setRecherche] = useState("");
-  const [filtre, setFiltre] = useState<FiltreCarnet>("tout");
+  const [choixFiltre, setFiltre] = useState<FiltreCarnet>("tout");
 
-  const visibles = useMemo(() => filtrerCarnet(entrees, filtre, recherche), [entrees, filtre, recherche]);
+  // « Photos » compte les photos, pas les envois : le même nombre que la
+  // ligne « Photos · N ».
+  const compte = (f: FiltreCarnet) => {
+    const liste = filtrerCarnet(entrees, f, "");
+    return f === "photos" ? liste.reduce((n, e) => n + (e.photos?.length ?? 0), 0) : liste.length;
+  };
+  // Un filtre vide ne s'affiche pas ; « Photos » non plus quand la ligne
+  // « Photos · N », juste au-dessus, les montre déjà. Un filtre ou une
+  // recherche qui n'est plus à l'écran ne s'applique plus.
+  const avecRecherche = entrees.length >= SEUIL_RECHERCHE_CARNET;
+  const filtres = FILTRES.map((f) => ({ ...f, n: compte(f.cle) })).filter(
+    (f) => f.cle === "tout" || (f.n > 0 && !(f.cle === "photos" && photos && photos.nombre > 0))
+  );
+  const avecFiltres = avecRecherche && filtres.length > 2;
+  const filtre = avecFiltres && filtres.some((f) => f.cle === choixFiltre) ? choixFiltre : "tout";
+  const texteCherche = avecRecherche ? recherche : "";
+
+  const visibles = useMemo(() => filtrerCarnet(entrees, filtre, texteCherche), [entrees, filtre, texteCherche]);
   const periodes = useMemo(() => grouperParPeriode(visibles, maintenant), [visibles, maintenant]);
-  const mots = useMemo(() => normaliser(recherche).split(/\s+/).filter(Boolean), [recherche]);
+  const mots = useMemo(() => normaliser(texteCherche).split(/\s+/).filter(Boolean), [texteCherche]);
 
   // 27/09 — Demande d'Axel : tout replié à l'ouverture, pour que la fiche
   // reste propre ; chaque période s'ouvre d'un appui et montre son
@@ -259,12 +281,6 @@ export function Carnet({
     if (premiere) setOuvertes((o) => (o.has(premiere.cle) ? o : new Set(o).add(premiere.cle)));
   }, [entrees, maintenant]);
 
-  // « Photos » compte les photos, pas les envois : le même nombre que la
-  // ligne « Photos · N ».
-  const compte = (f: FiltreCarnet) => {
-    const liste = filtrerCarnet(entrees, f, "");
-    return f === "photos" ? liste.reduce((n, e) => n + (e.photos?.length ?? 0), 0) : liste.length;
-  };
   const cherche = mots.length > 0;
 
   const basculer = (cle: string) =>
@@ -309,7 +325,7 @@ export function Carnet({
         </button>
       )}
 
-      {entrees.length > 0 && (
+      {avecRecherche && (
         <div className="mt-3 flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <label className="relative block flex-1">
             <span className="sr-only">Chercher dans le carnet</span>
@@ -323,27 +339,27 @@ export function Carnet({
               className="min-h-12 w-full rounded-2xl bg-paper/70 pl-10 pr-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
             />
           </label>
-          <div role="group" aria-label="Filtrer le carnet" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {FILTRES.map((f) => {
-              const n = compte(f.cle);
-              const actif = filtre === f.cle;
-              return (
-                <button
-                  key={f.cle}
-                  type="button"
-                  aria-pressed={actif}
-                  onClick={() => setFiltre(f.cle)}
-                  disabled={n === 0 && f.cle !== "tout"}
-                  className={`min-h-12 shrink-0 rounded-full px-4 text-sm font-semibold disabled:opacity-60 ${FOCUS} ${
-                    actif ? "bg-ink text-paper" : "text-ink active:bg-ink/10 sm:hover:bg-ink/5"
-                  }`}
-                >
-                  {f.libelle}
-                  <span className={`ml-1.5 font-normal tabular-nums ${actif ? "text-paper" : "text-steel"}`}>{n}</span>
-                </button>
-              );
-            })}
-          </div>
+          {avecFiltres && (
+            <div role="group" aria-label="Filtrer le carnet" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {filtres.map((f) => {
+                const actif = filtre === f.cle;
+                return (
+                  <button
+                    key={f.cle}
+                    type="button"
+                    aria-pressed={actif}
+                    onClick={() => setFiltre(f.cle)}
+                    className={`min-h-12 shrink-0 rounded-full px-4 text-sm font-semibold ${FOCUS} ${
+                      actif ? "bg-ink text-paper" : "text-ink active:bg-ink/10 sm:hover:bg-ink/5"
+                    }`}
+                  >
+                    {f.libelle}
+                    <span className={`ml-1.5 font-normal tabular-nums ${actif ? "text-paper" : "text-steel"}`}>{f.n}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -365,7 +381,7 @@ export function Carnet({
                 className="group flex min-h-12 w-full items-center gap-2 py-3 text-left focus-visible:outline-none"
               >
                 <IconeChevron className={`h-5 w-5 shrink-0 text-steel motion-safe:transition-transform ${ouverte ? "rotate-90" : ""} ${cherche ? "opacity-0" : ""}`} />
-                <span className="shrink-0 font-mono text-xs uppercase tracking-[0.16em] text-ink group-focus-visible:underline">{p.libelle}</span>
+                <span className="shrink-0 text-base font-semibold text-ink group-focus-visible:underline">{p.libelle}</span>
                 <span className="min-w-0 truncate text-sm text-steel">{ouverte ? `${p.entrees.length}` : resumePeriode(p.entrees)}</span>
               </button>
               {ouverte && (

@@ -77,7 +77,6 @@ export type EtatProjet = {
   demarreLe: string | null;
   termineLe: string | null;
   prochainRdv: { date_heure: string; titre: string } | null;
-  nbTaches: number;
   nbInfosManquantes: number;
   peutAnalyser: boolean;
   analyseAJour: boolean;
@@ -157,9 +156,11 @@ export function passageCourt(iso: string, maintenant: Date): string {
 }
 
 function selonEtat(e: EtatProjet): ProchaineAction {
+  // 08/10 (passe de finition) — plus de « 3 choses à faire » ici : le bloc
+  // « À faire 3 » est juste dessous, et ce détail coupait la ligne du
+  // prochain passage.
   const details: string[] = [];
   if (e.prochainRdv) details.push(`Prochain passage : ${passageCourt(e.prochainRdv.date_heure, e.maintenant)}`);
-  if (e.nbTaches > 0) details.push(`${e.nbTaches} chose${e.nbTaches > 1 ? "s" : ""} à faire`);
 
   const engage = e.statut === "accepte" || e.statut === "en_cours" || e.statut === "termine";
   const devisChange =
@@ -191,10 +192,7 @@ function selonEtat(e: EtatProjet): ProchaineAction {
     return {
       ton: "succes",
       phrase: e.resteAFacturer === 0 ? "Tout est facturé." : "Chantier terminé.",
-      details: [
-        ...(e.termineLe ? [`Le ${formatDate.format(new Date(e.termineLe))}`] : []),
-        ...(e.nbTaches > 0 ? [`${e.nbTaches} chose${e.nbTaches > 1 ? "s" : ""} encore à faire`] : []),
-      ],
+      details: e.termineLe ? [`Le ${formatDate.format(new Date(e.termineLe))}`] : [],
       principale: e.resteAFacturer == null && e.devis && e.devis.statut === "envoye" ? { id: "facturation", libelle: "Voir la facturation" } : null,
       secondaire: null,
       dansMenu: [],
@@ -285,8 +283,9 @@ function selonEtat(e: EtatProjet): ProchaineAction {
       phrase: sansReponse ? "Devis sans réponse." : "Devis envoyé.",
       details: [...(jours !== null ? [`Envoyé ${depuis(jours)}`] : ["En attente du client"]), ...details],
       principale: sansReponse ? { id: "relancer", libelle: "Préparer une relance", ia: true } : { id: "ouvrir_devis", libelle: "Voir le devis" },
-      // « Voir le devis » reste aussi à un appui sur la ligne du devis.
-      secondaire: sansReponse && !alerte ? { id: "ouvrir_devis", libelle: "Voir le devis" } : null,
+      // 08/10 — plus de « Voir le devis » en bouton texte sous la relance :
+      // la ligne du devis, dans Argent, l'ouvre déjà d'un appui.
+      secondaire: null,
       dansMenu: [],
       alerte,
     };

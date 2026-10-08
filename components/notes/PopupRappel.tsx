@@ -128,32 +128,34 @@ export function FenetreRappel({
             aria-hidden="true"
           />
           <div className="min-w-0 flex-1">
-            <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-1.5">Rappel</p>
-            <p className="font-display text-lg font-semibold text-ink leading-snug">{note.titre}</p>
-            {note.demandes?.nom_client && (
-              <p className="mt-1 text-sm text-ink/50">Projet : {note.demandes.nom_client}</p>
-            )}
+            {/* 08/10 (passe de finition) — le langage de l'application : un
+                surtitre en acier, le rappel en titre de feuille, le client
+                en détail, sans « Projet : ». */}
+            <p className="mb-1 text-sm text-steel">
+              Rappel{note.demandes?.nom_client ? ` · ${note.demandes.nom_client}` : ""}
+            </p>
+            <p className="font-display text-xl font-semibold text-ink">{note.titre}</p>
             {note.description && (
-              <p className="mt-2.5 text-sm text-ink/70 leading-relaxed whitespace-pre-wrap">
-                {note.description}
-              </p>
+              <p className="mt-2 whitespace-pre-wrap text-base text-ink">{note.description}</p>
             )}
           </div>
         </div>
 
         {reste > 0 && (
-          <p className="mt-4 text-xs text-ink/40">
-            +{reste} autre{reste > 1 ? "s" : ""} rappel{reste > 1 ? "s" : ""} en
-            attente.
+          <p className="mt-4 text-sm text-steel">
+            Puis {reste} autre{reste > 1 ? "s" : ""} rappel{reste > 1 ? "s" : ""}.
           </p>
         )}
 
         <div className="mt-5 grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={surFait}
+            onClick={() => {
+              navigator.vibrate?.(12);
+              surFait();
+            }}
             disabled={enCours}
-            className="min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+            className="min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
           >
             C&apos;est fait
           </button>
@@ -161,7 +163,7 @@ export function FenetreRappel({
             type="button"
             onClick={surPlusTard}
             disabled={enCours}
-            className="min-h-14 rounded-2xl text-[16px] font-medium text-ink ring-1 ring-ink/15 transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+            className="min-h-14 rounded-2xl text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
           >
             Plus tard
           </button>

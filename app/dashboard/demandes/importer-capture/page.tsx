@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
@@ -255,12 +254,8 @@ export default function ImporterCapturePage() {
 
   return (
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-3xl">
-      <Link href="/dashboard/demandes" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors">
-        ← Retour aux projets
-      </Link>
-
-      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Photos ou captures</h1>
-      <p className="mt-1 text-[15px] text-ink/65">Une capture par conversation. Rien n&apos;est enregistré avant que vous confirmiez.</p>
+      <h1 className="font-display text-2xl font-semibold text-ink">Photos ou captures</h1>
+      <p className="mt-1 text-base text-steel">Une capture par conversation. Rien n&apos;est enregistré avant que vous confirmiez.</p>
 
       {lignes.length === 0 && !importTermine && (
         <Card className="mt-5 p-4 sm:mt-8 sm:p-6">

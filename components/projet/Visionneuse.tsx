@@ -60,7 +60,7 @@ export function Visionneuse({
       }}
     >
       <div className="flex items-center justify-between px-4 py-3 [padding-top:calc(0.75rem+env(safe-area-inset-top))]">
-        <p className="font-mono text-[13px] tabular-nums text-white/70">
+        <p className="font-mono text-sm tabular-nums text-white/70">
           {index + 1} / {chemins.length}
         </p>
         <button
@@ -68,7 +68,7 @@ export function Visionneuse({
           type="button"
           onClick={surFermer}
           aria-label="Fermer"
-          className="grid h-10 w-10 place-items-center rounded-full bg-white/10 hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          className="grid h-12 w-12 place-items-center rounded-full bg-white/10 active:bg-white/25 sm:hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           <IconeFermer className="h-5 w-5" />
         </button>
@@ -78,7 +78,8 @@ export function Visionneuse({
           // eslint-disable-next-line @next/next/no-img-element
           <img src={url} alt={`Photo ${index + 1} du projet`} className="max-h-full max-w-full select-none object-contain" draggable={false} />
         ) : (
-          <p className="text-white/60">Chargement…</p>
+          // 08/10 — une roue, pas un mot (règle 11).
+          <span role="status" aria-label="Chargement" className="h-8 w-8 rounded-full border-2 border-white/60 border-t-transparent motion-safe:animate-spin" />
         )}
         {chemins.length > 1 && (
           <>
@@ -86,7 +87,7 @@ export function Visionneuse({
               type="button"
               onClick={() => aller(-1)}
               aria-label="Photo précédente"
-              className="absolute left-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-white/20 sm:grid"
+              className="absolute left-3 top-1/2 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-white/20 sm:grid"
             >
               <IconeRetour className="h-5 w-5" />
             </button>
@@ -94,7 +95,7 @@ export function Visionneuse({
               type="button"
               onClick={() => aller(1)}
               aria-label="Photo suivante"
-              className="absolute right-3 top-1/2 hidden h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-white/20 sm:grid"
+              className="absolute right-3 top-1/2 hidden h-12 w-12 -translate-y-1/2 place-items-center rounded-full bg-white/10 hover:bg-white/20 sm:grid"
             >
               <IconeChevron className="h-5 w-5" />
             </button>

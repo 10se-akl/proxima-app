@@ -520,13 +520,7 @@ export default async function DashboardHome() {
     <VueAccueil
       dateDuJour={dateDuJour}
       titre={premierProjet ? "Bienvenue sur Compyo." : `${estLeSoir ? "Bonsoir" : "Bonjour"} ${premierPrenom}`.trim()}
-      sousTitre={
-        premierProjet
-          ? "Votre premier projet commence ici."
-          : estLeSoir
-            ? "Voici où en est votre journée."
-            : "Voici ce qui vous attend aujourd'hui."
-      }
+      sousTitre={premierProjet ? "Votre premier projet commence ici." : undefined}
       premierProjet={premierProjet}
       maintenant={action}
       repos={estLeSoir && !premierProjet && rienDevantNiDerriere}

@@ -73,7 +73,7 @@ export function VueAccueil({
 }: {
   dateDuJour: string;
   titre: string;
-  sousTitre: string;
+  sousTitre?: string;
   premierProjet: boolean;
   maintenant: ActionAccueil | null;
   /** Dès 17 h, plus rien devant ni derrière : « Tout est réglé. ». */

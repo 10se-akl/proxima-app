@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { BrouillonProjetForm } from "@/components/dashboard/BrouillonProjet";
 import { ConfirmationRdv } from "@/components/dashboard/ConfirmationRdv";
 import {
@@ -231,32 +230,20 @@ export default function ImporterMessagePage() {
   if (brouillon) {
     return (
       <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
-        <Link
-          href="/dashboard/demandes"
-          className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors"
-        >
-          ← Retour aux projets
-        </Link>
-        <div className="mt-4">
-          <BrouillonProjetForm
-            brouillon={brouillon}
-            onValider={creerProjet}
-            validationEnCours={creationEnCours}
-            erreur={erreur}
-          />
-        </div>
+        <BrouillonProjetForm
+          brouillon={brouillon}
+          onValider={creerProjet}
+          validationEnCours={creationEnCours}
+          erreur={erreur}
+        />
       </div>
     );
   }
 
   return (
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
-      <Link href="/dashboard/demandes" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors">
-        ← Retour aux projets
-      </Link>
-
-      <h1 className="mt-4 font-display text-2xl font-semibold text-ink">Coller un message</h1>
-      <p className="mt-1 text-[15px] text-ink/65">Le message du client, tel quel.</p>
+      <h1 className="font-display text-2xl font-semibold text-ink">Coller un message</h1>
+      <p className="mt-1 text-base text-steel">Le message du client, tel quel.</p>
 
       <div className="mt-5">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

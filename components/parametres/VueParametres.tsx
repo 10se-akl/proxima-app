@@ -225,7 +225,7 @@ export function VueParametres({
       <button
         type="submit"
         disabled={enregistrement}
-        className="min-h-12 self-start rounded-xl bg-ink px-6 text-[15px] font-semibold text-paper transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+        className="min-h-12 self-start rounded-xl bg-ink px-6 text-base font-semibold text-paper active:bg-ink/80 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
       >
         {enregistrement ? "Enregistrement…" : "Enregistrer"}
       </button>
@@ -245,7 +245,7 @@ export function VueParametres({
       />
 
       {retrouve && (
-        <div className="mt-4 rounded-xl bg-ink/[0.04] px-4 py-3 text-[13.5px] text-ink/75">
+        <div className="mt-4 rounded-xl bg-ink/[0.04] px-4 py-3 text-sm text-ink">
           <p>Des modifications non enregistrées ont été retrouvées.</p>
           {erreur && !ouvert && <p className="mt-1 text-signal-fonce dark:text-signal-clair">{erreur}</p>}
           <div className="mt-1 flex flex-wrap gap-x-5">
@@ -264,7 +264,7 @@ export function VueParametres({
                 setForm(enregistre);
                 setRetrouve(null);
               }}
-              className="inline-flex min-h-11 items-center text-ink/60 underline underline-offset-4"
+              className="inline-flex min-h-12 items-center text-ink underline decoration-ink/30 underline-offset-4"
             >
               Les oublier
             </button>
@@ -288,7 +288,7 @@ export function VueParametres({
                   className="w-16 h-16 rounded-xl object-contain border border-ink/10 bg-surface"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-xl grid place-items-center border border-dashed border-ink/15 text-[10px] text-ink/30 text-center">
+                <div className="w-16 h-16 rounded-xl grid place-items-center border border-dashed border-ink/15 text-xs text-steel text-center">
                   Aucun logo
                 </div>
               )}
@@ -309,7 +309,7 @@ export function VueParametres({
                 >
                   {envoiLogo ? "Envoi…" : logoUrl ? "Changer le logo" : "Ajouter un logo"}
                 </label>
-                <p className="mt-1.5 text-[11px] text-ink/40">Affiché en haut de chaque devis exporté.</p>
+                <p className="mt-1.5 text-sm text-steel">Affiché en haut de chaque devis exporté.</p>
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
@@ -346,7 +346,7 @@ export function VueParametres({
           "Mentions légales",
           manques.mentions,
           <>
-            <p className="text-xs text-ink/50 mb-4">Imprimées sur chaque devis et chaque facture. À remplir une seule fois.</p>
+            <p className="text-sm text-steel mb-4">Imprimées sur chaque devis et chaque facture. À remplir une seule fois.</p>
             <div className="grid sm:grid-cols-2 gap-5">
               <Field
                 label="Forme juridique"
@@ -395,7 +395,7 @@ export function VueParametres({
                 placeholder="FR00000000000"
               />
               <div className="flex items-end pb-2.5">
-                <label className="flex min-h-12 items-center gap-2 text-sm text-ink/70">
+                <label className="flex min-h-12 items-center gap-2 text-base text-ink">
                   <input
                     type="checkbox"
                     checked={form.mention_tva_non_applicable}
@@ -421,14 +421,14 @@ export function VueParametres({
               </div>
             </div>
             {estEntrepreneurIndividuel(form.forme_juridique) && (
-              <p className="mt-3 text-xs text-ink/50">
+              <p className="mt-3 text-sm text-steel">
                 Entrepreneur individuel : la mention « EI » sera ajoutée automatiquement à côté de
                 votre nom, comme la loi l&apos;exige.
               </p>
             )}
 
-            <h3 className="mt-7 text-sm font-semibold text-ink/70 mb-1">Médiateur de la consommation</h3>
-            <p className="text-xs text-ink/50 mb-4">
+            <h3 className="mt-7 text-base font-semibold text-ink mb-1">Médiateur de la consommation</h3>
+            <p className="text-sm text-steel mb-4">
               Obligatoire dès que vous travaillez pour des particuliers : vous devez adhérer à un
               médiateur et l&apos;indiquer sur vos devis. Si ce n&apos;est pas encore fait, votre
               fédération professionnelle peut vous en indiquer un.
@@ -455,7 +455,7 @@ export function VueParametres({
           "Assurances",
           manques.assurances,
           <>
-            <p className="text-xs text-ink/50 mb-4">
+            <p className="text-sm text-steel mb-4">
               Obligatoires sur vos devis et vos factures — avec l&apos;assureur <em>et</em> la zone
               couverte. Leur absence est la mention la plus sanctionnée du bâtiment.
             </p>
@@ -536,7 +536,7 @@ export function VueParametres({
           "Tarifs",
           0,
           <>
-            <p className="text-xs text-ink/50 mb-4">
+            <p className="text-sm text-steel mb-4">
               Utilisés pour calculer chaque devis, sans IA. Le coût journalier ne s&apos;applique
               qu&apos;au-delà d&apos;une journée de travail sur un même poste ; laissez-le vide pour
               toujours facturer à l&apos;heure.
@@ -555,7 +555,7 @@ export function VueParametres({
                   disabled={form.mention_tva_non_applicable}
                 />
                 {form.mention_tva_non_applicable && (
-                  <p className="mt-1.5 text-xs text-ink/50">
+                  <p className="mt-1.5 text-sm text-steel">
                     Franchise en base de TVA : vos devis et factures sont sans TVA.
                   </p>
                 )}
@@ -621,7 +621,7 @@ export function VueParametres({
           "Conditions générales",
           0,
           <>
-            <p className="text-xs text-ink/50 mb-4">
+            <p className="text-sm text-steel mb-4">
               Chaque nouveau devis part avec ces valeurs — vous pouvez toujours les changer devis par devis.
             </p>
             <div className="grid sm:grid-cols-2 gap-5">
@@ -685,7 +685,7 @@ export function VueParametres({
 function ValeurFigee({ libelle, valeur }: { libelle: string; valeur: string }) {
   return (
     <div>
-      <p className="mb-1.5 block text-xs font-medium text-ink/70">{libelle}</p>
+      <p className="mb-1.5 block text-sm text-steel">{libelle}</p>
       <p className="flex min-h-12 items-center break-all rounded-xl bg-ink/[0.04] px-3 font-mono text-sm text-ink">
         {valeur}
       </p>
@@ -719,22 +719,22 @@ function GroupeReplie({
           aria-controls={`groupe-${id}`}
           className="flex w-full min-h-14 items-center gap-3 px-4 text-left transition-colors hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 sm:px-5"
         >
-          <span className="min-w-0 flex-1 text-[16px] font-medium text-ink">{titre}</span>
+          <span className="min-w-0 flex-1 text-base font-semibold text-ink">{titre}</span>
           {/* Texte à l'encre (contraste suffisant en clair comme en sombre),
               la couleur passe par le fond et la pastille. */}
           {manque !== null &&
             (manque === 0 ? (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-succes/12 px-2.5 py-1 text-[12.5px] font-medium text-ink/80">
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-succes/12 px-2.5 py-1 text-sm text-ink">
                 <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-succes" />
                 Complet
               </span>
             ) : (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-alerte-orange/15 px-2.5 py-1 text-[12.5px] font-medium text-ink/80">
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-alerte-orange/15 px-2.5 py-1 text-sm text-ink">
                 <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-alerte-orange" />
                 {manque} à compléter
               </span>
             ))}
-          <IconeChevron className={`h-4 w-4 shrink-0 text-ink/40 motion-safe:transition-transform ${ouvert ? "rotate-90" : ""}`} />
+          <IconeChevron className={`h-4 w-4 shrink-0 text-steel motion-safe:transition-transform ${ouvert ? "rotate-90" : ""}`} />
         </button>
       </h2>
       {ouvert && (

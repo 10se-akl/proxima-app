@@ -6,7 +6,7 @@ import { statutAffiche } from "@/lib/devis/statut";
 import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
 import type { Devis, EvenementPlanning, EvenementProjet, Note, NoteVocale, Priorite, Projet } from "@/types";
 import { AFaire, ARetenir, Argent, BandeAjout, ListeConseils, Maintenant } from "./Blocs";
-import { Carnet, ID_RECHERCHE_CARNET } from "./Carnet";
+import { Carnet, ID_RECHERCHE_CARNET, SEUIL_RECHERCHE_CARNET } from "./Carnet";
 import { construireCarnet } from "./entreesCarnet";
 import { EnTeteProjet, type EntreeMenu } from "./EnTeteProjet";
 import { Feuille } from "./Feuille";
@@ -282,8 +282,6 @@ export function VueProjet({
     demarreLe: projet.demarre_le,
     termineLe: projet.termine_le,
     prochainRdv: rdvAVenir[0] ?? null,
-    // Le même nombre que l'en-tête « À faire » : tâches et rendez-vous.
-    nbTaches: taches.length + rdvAVenir.length,
     nbInfosManquantes: avantDevis ? infosManquantes.length : 0,
     peutAnalyser,
     analyseAJour,
@@ -336,7 +334,7 @@ export function VueProjet({
       ? [{ type: "action" as const, libelle: "Écrire à retenir", surChoisir: () => { setMemoOuvert(true); setMemoDemande(true); } }]
       : []),
     ...(projet.statut !== "termine"
-      ? [{ type: "separateur" as const }, { type: "action" as const, libelle: "Marquer le projet comme terminé", surChoisir: () => setConfirmerFin(true), attention: true }]
+      ? [{ type: "separateur" as const }, { type: "action" as const, libelle: projet.statut === "en_cours" ? "Terminer le chantier" : "Terminer le projet", surChoisir: () => setConfirmerFin(true), attention: true }]
       : []),
   ];
 
@@ -363,7 +361,7 @@ export function VueProjet({
         statut={projet.statut}
         entreesMenu={menu}
         surChercher={
-          entrees.length > 5
+          entrees.length >= SEUIL_RECHERCHE_CARNET
             ? () => {
                 const champ = document.getElementById(ID_RECHERCHE_CARNET) as HTMLInputElement | null;
                 champ?.scrollIntoView({ behavior: "smooth", block: "center" });

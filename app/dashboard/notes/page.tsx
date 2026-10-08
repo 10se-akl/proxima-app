@@ -11,7 +11,7 @@ import { IconeNote } from "@/components/ui/Icones";
 import { CLASSE_BOUTON_NUIT, EnTetePage, classePuceNuit } from "@/components/ui/EnTetePage";
 import { Pastille, type CouleurPastille } from "@/components/ui/Pastille";
 import { TitreBloc, CLASSE_CARTE_BLOC } from "@/components/accueil/Blocs";
-import { IconeCalendrier, IconeCloche, IconeCrayon } from "@/components/projet/icones";
+import { IconeCalendrier, IconeCloche, IconeCoche, IconeCrayon } from "@/components/projet/icones";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { Note } from "@/types";
 import { SquelettePage } from "@/components/ui/Skeleton";
@@ -35,6 +35,11 @@ export default function NotesPage() {
   // restait à true, aucun message, aucune action possible pour l'artisan).
   const [erreurChargement, setErreurChargement] = useState(false);
   const [filtreProjet, setFiltreProjet] = useState<string>("");
+  // 08/10 (passe de finition) — la note cochée devient une trace « Fait :
+  // … · Annuler » à sa place, dans son groupe, jusqu'au geste suivant
+  // (règle 16) ; un échec la remet dans la liste (règle 13).
+  const [cochee, setCochee] = useState<{ note: Note; groupe: string } | null>(null);
+  const [erreurTerminer, setErreurTerminer] = useState<string | null>(null);
 
   async function charger() {
     setChargement(true);
@@ -72,10 +77,46 @@ export default function NotesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function terminer(noteId: string, terminee: boolean) {
+  async function terminer(noteId: string, terminee: boolean, groupe: string) {
+    const note = notes.find((n) => n.id === noteId);
     setNotes((prev) => prev.filter((n) => n.id !== noteId));
-    await marquerNoteTerminee(supabase, noteId, terminee);
+    setErreurTerminer(null);
+    if (note) setCochee({ note, groupe });
+    const reussi = await marquerNoteTerminee(supabase, noteId, terminee);
+    if (!reussi && note) {
+      setNotes((prev) => (prev.some((n) => n.id === note.id) ? prev : [...prev, note]));
+      setCochee(null);
+      navigator.vibrate?.([12, 60, 12]);
+      setErreurTerminer("Pas enregistré. Réessayez.");
+    }
   }
+
+  async function annuler() {
+    if (!cochee) return;
+    const { note } = cochee;
+    setCochee(null);
+    setNotes((prev) => (prev.some((n) => n.id === note.id) ? prev : [...prev, note]));
+    const reussi = await marquerNoteTerminee(supabase, note.id, false);
+    if (!reussi) {
+      setNotes((prev) => prev.filter((n) => n.id !== note.id));
+      setErreurTerminer("Pas enregistré. Réessayez.");
+    }
+  }
+
+  const trace = (groupe: string) =>
+    cochee?.groupe === groupe ? (
+      <div className="flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
+        <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
+        <p className="min-w-0 flex-1 truncate">Fait : {cochee.note.titre}</p>
+        <button
+          type="button"
+          onClick={annuler}
+          className="inline-flex min-h-12 shrink-0 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+        >
+          Annuler
+        </button>
+      </div>
+    ) : null;
 
   const projetsPresents = Array.from(
     new Map(
@@ -151,29 +192,33 @@ export default function NotesPage() {
         )}
       </EnTetePage>
 
-      {notesFiltrees.length === 0 ? (
+      <div aria-live="polite">
+        {erreurTerminer && <p className="mt-4 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreurTerminer}</p>}
+      </div>
+
+      {notesFiltrees.length === 0 && !cochee ? (
         <div className="mt-10 flex flex-col items-center gap-3 py-10 text-center">
           <span className="flex items-center justify-center w-12 h-12 rounded-full bg-signal/10">
             <IconeNote taille={22} className="text-signal" />
           </span>
-          <p className="text-sm text-ink/50">Aucune note pour l&apos;instant.</p>
+          <p className="text-base text-steel">Aucune note.</p>
           <Link href="/dashboard/notes/nouvelle">
             <Button variant="ghost">Créer votre première note</Button>
           </Link>
         </div>
       ) : (
         <div>
-          {enRetard.length > 0 && (
-            <GroupeNotes titre="En retard" notes={enRetard} onTerminer={terminer} couleur="orange" icone={<IconeCloche className="h-4 w-4" />} />
+          {(enRetard.length > 0 || cochee?.groupe === "En retard") && (
+            <GroupeNotes titre="En retard" notes={enRetard} onTerminer={terminer} trace={trace("En retard")} couleur="orange" icone={<IconeCloche className="h-4 w-4" />} />
           )}
-          {aujourdhui.length > 0 && (
-            <GroupeNotes titre="Aujourd'hui" notes={aujourdhui} onTerminer={terminer} couleur="bleu" icone={<IconeCalendrier className="h-4 w-4" />} />
+          {(aujourdhui.length > 0 || cochee?.groupe === "Aujourd'hui") && (
+            <GroupeNotes titre="Aujourd'hui" notes={aujourdhui} onTerminer={terminer} trace={trace("Aujourd'hui")} couleur="bleu" icone={<IconeCalendrier className="h-4 w-4" />} />
           )}
-          {aVenir.length > 0 && (
-            <GroupeNotes titre="À venir" notes={aVenir} onTerminer={terminer} couleur="violet" icone={<IconeCalendrier className="h-4 w-4" />} />
+          {(aVenir.length > 0 || cochee?.groupe === "À venir") && (
+            <GroupeNotes titre="À venir" notes={aVenir} onTerminer={terminer} trace={trace("À venir")} couleur="violet" icone={<IconeCalendrier className="h-4 w-4" />} />
           )}
-          {sansRappel.length > 0 && (
-            <GroupeNotes titre="Sans rappel" notes={sansRappel} onTerminer={terminer} couleur="signal" icone={<IconeCrayon className="h-4 w-4" />} />
+          {(sansRappel.length > 0 || cochee?.groupe === "Sans rappel") && (
+            <GroupeNotes titre="Sans rappel" notes={sansRappel} onTerminer={terminer} trace={trace("Sans rappel")} couleur="signal" icone={<IconeCrayon className="h-4 w-4" />} />
           )}
         </div>
       )}
@@ -187,12 +232,15 @@ function GroupeNotes({
   titre,
   notes,
   onTerminer,
+  trace,
   couleur,
   icone,
 }: {
   titre: string;
   notes: Note[];
-  onTerminer: (id: string, terminee: boolean) => void;
+  onTerminer: (id: string, terminee: boolean, groupe: string) => void;
+  /** « Fait : … · Annuler », quand la note cochée était dans ce groupe. */
+  trace: React.ReactNode;
   couleur: CouleurPastille;
   icone: React.ReactNode;
 }) {
@@ -209,8 +257,9 @@ function GroupeNotes({
       />
       <div className="mt-2.5 flex flex-col gap-2">
         {notes.map((note) => (
-          <NoteCard key={note.id} note={note} onTerminer={onTerminer} className="!bg-paper/70 !ring-ink/10" />
+          <NoteCard key={note.id} note={note} onTerminer={(id, terminee) => onTerminer(id, terminee, titre)} />
         ))}
+        {trace}
       </div>
     </section>
   );

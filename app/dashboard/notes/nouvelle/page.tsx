@@ -2,11 +2,11 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { FormulaireNote } from "@/components/notes/FormulaireNote";
 import { EtatErreur } from "@/components/ui/EtatErreur";
+import { SquelettePage } from "@/components/ui/Skeleton";
 
 type ProjetLeger = { id: string; nom_client: string };
 
@@ -74,7 +74,7 @@ function NouvelleNoteForm() {
   }, []);
 
   if (chargement) {
-    return <div className="p-8 text-sm text-ink/50">Chargement…</div>;
+    return <SquelettePage lignes={2} />;
   }
 
   // Sprint Robustesse (30/08) — voir le catch dans `charger` ci-dessus.
@@ -84,10 +84,7 @@ function NouvelleNoteForm() {
 
   return (
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg mx-auto">
-      <Link href="/dashboard/notes" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink transition-colors">
-        ← Retour aux notes
-      </Link>
-      <h1 className="mt-4 mb-6 font-display text-2xl font-semibold text-ink">Nouvelle note</h1>
+      <h1 className="mb-6 font-display text-2xl font-semibold text-ink">Nouvelle note</h1>
       <FormulaireNote projetIdFixe={projetIdFixe} nomProjetFixe={nomProjetFixe} projets={projets} />
     </div>
   );

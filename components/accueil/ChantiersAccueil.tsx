@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { CLASSE_ETIQUETTE, Pastille, type CouleurPastille } from "@/components/ui/Pastille";
 import { IconeDossier } from "@/components/ui/Icones";
-import { IconeChevron, IconeLieu, IconeMessage, IconeTelephone } from "@/components/projet/icones";
+import { IconeCalendrier, IconeChevron, IconeLieu, IconeMessage, IconeTelephone } from "@/components/projet/icones";
 import { numeroSms, numeroWhatsApp } from "@/lib/messagesClient";
 import { CLASSE_CARTE_BLOC, TitreBloc } from "./Blocs";
 
@@ -48,6 +48,12 @@ function initiales(nom: string): string {
 
 const FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink";
 
+/** « Rendez-vous aujourd'hui à 14h » devient « auj. 14h » : sur téléphone,
+ *  l'heure doit tenir à côté de l'étape. */
+function infoCourte(info: string): string {
+  return info.replace(/^Rendez-vous /, "").replace(/^aujourd'hui/, "auj.").replace(" à ", " ");
+}
+
 export function ChantiersAccueil({ chantiers, total }: { chantiers: ChantierAccueil[]; total: number }) {
   if (chantiers.length === 0) return null;
   return (
@@ -79,13 +85,16 @@ export function ChantiersAccueil({ chantiers, total }: { chantiers: ChantierAccu
 export function LigneChantier({ c }: { c: ChantierAccueil }) {
   const whatsapp = c.telephone ? numeroWhatsApp(c.telephone) : null;
   const tel = c.telephone ? numeroSms(c.telephone) : "";
-  const etiquette = (
-    <span className="flex flex-wrap items-center gap-1.5">
-      <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${CLASSE_ETIQUETTE[c.couleur]}`}>{c.etape}</span>
+  // 08/10 (passe de finition) — quoi et où sur une seule ligne : la ligne
+  // passe de quatre étages à trois.
+  const detail = [c.quoi, c.lieu].filter(Boolean).join(" · ");
+  const pastilles = (
+    <>
+      <span className={`inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${CLASSE_ETIQUETTE[c.couleur]}`}>{c.etape}</span>
       {c.urgent && (
-        <span className="inline-flex rounded-full bg-signal/15 px-2.5 py-0.5 text-xs font-semibold text-signal-fonce dark:text-signal-clair">Urgent</span>
+        <span className="inline-flex shrink-0 rounded-full bg-signal/15 px-2.5 py-0.5 text-xs font-semibold text-signal-fonce dark:text-signal-clair">Urgent</span>
       )}
-    </span>
+    </>
   );
 
   return (
@@ -105,13 +114,26 @@ export function LigneChantier({ c }: { c: ChantierAccueil }) {
         )}
         <span className="min-w-0 flex-1">
           <span className="block truncate text-base font-semibold text-ink">{c.nom}</span>
-          {c.quoi && <span className="block truncate text-sm text-steel">{c.quoi}</span>}
-          {c.lieu && <span className="block truncate text-sm font-medium text-ink/80">{c.lieu}</span>}
-          <span className="mt-1 block md:hidden">{etiquette}</span>
-        </span>
-        <span className="hidden w-40 shrink-0 md:block">
-          {etiquette}
-          {c.info && <span className="mt-1 block text-sm leading-snug text-steel">{c.info}</span>}
+          {detail && <span className="block truncate text-sm text-steel">{detail}</span>}
+          {/* 08/10 — l'étape et le prochain rendez-vous (« demain 9h »)
+              sous le nom, à toutes les largeurs. Avant, à partir de la
+              tablette, ils partaient dans une colonne de 160 px qui
+              écrasait le nom (« Mme D… » sur l'accueil en 1280 px, plus
+              rien du tout en 768) ; et sur téléphone, le rendez-vous ne
+              s'affichait pas. À côté d'« Urgent », sur téléphone, il
+              n'aurait plus la place. */}
+          <span className="mt-1 flex min-w-0 items-center gap-1.5">
+            {pastilles}
+            {c.info && (
+              <span className={`ml-0.5 min-w-0 items-center gap-1 text-sm text-steel ${c.urgent ? "hidden sm:flex" : "flex"}`}>
+                <IconeCalendrier className="h-3.5 w-3.5 shrink-0" />
+                <span className="truncate">
+                  <span className="sr-only">Rendez-vous </span>
+                  {infoCourte(c.info)}
+                </span>
+              </span>
+            )}
+          </span>
         </span>
       </Link>
       {/* Largeur fixe à partir de la tablette : les colonnes restent

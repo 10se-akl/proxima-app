@@ -17,7 +17,9 @@ export function EnTeteAccueil({
 }: {
   dateDuJour: string;
   titre: string;
-  sousTitre: string;
+  /** 08/10 — seulement quand il dit quelque chose (« Votre premier projet
+   *  commence ici. ») ; « Voici ce qui vous attend » ne disait rien. */
+  sousTitre?: string;
   /** Maintenant, « Tout est réglé. », ou l'invitation au premier projet. */
   children?: ReactNode;
 }) {
@@ -33,7 +35,7 @@ export function EnTeteAccueil({
           <h1 className="mt-1 font-display text-3xl font-bold leading-tight sm:text-4xl">
             {titre} <span aria-hidden>👋</span>
           </h1>
-          <p className="mt-2 text-base text-white/70">{sousTitre}</p>
+          {sousTitre && <p className="mt-2 text-base text-white/70">{sousTitre}</p>}
         </div>
         {children && <div className="mt-5 min-w-0 lg:mt-0">{children}</div>}
       </div>

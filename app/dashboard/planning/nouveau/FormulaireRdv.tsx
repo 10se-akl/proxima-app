@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
@@ -15,11 +14,12 @@ import type { TypeEvenement, Priorite } from "@/types";
 import { SquelettePage } from "@/components/ui/Skeleton";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 import { chargerCreneauParDefaut, titreParDefaut } from "@/components/planning/creneau";
+import { cheminPrecedent, revenir } from "@/components/navigation/LienPrecedent";
 
 const COULEUR_PRIORITE: Record<Priorite, string> = {
-  urgent: "bg-[#C23B22]",
-  important: "bg-[#D9861A]",
-  normal: "bg-[#2F8F5B]",
+  urgent: "bg-signal-fonce dark:bg-signal-clair",
+  important: "bg-alerte-orange",
+  normal: "bg-succes",
 };
 
 type ProjetLeger = { id: string; nom_client: string; priorite: Priorite; type_chantier: string | null };
@@ -390,6 +390,18 @@ function NouvelEvenementForm() {
       return;
     }
 
+    quitter();
+  }
+
+  // 08/10 (passe de finition) — ouvert depuis la fiche d'un projet (« À
+  // faire »), on y revient : elle relit ses données en s'ouvrant. Sinon,
+  // le planning, comme avant.
+  function quitter() {
+    const precedent = cheminPrecedent();
+    if (precedent && /^\/dashboard\/demandes\/[0-9a-f-]{36}$/i.test(precedent)) {
+      revenir(router);
+      return;
+    }
     router.push("/dashboard/planning");
     router.refresh();
   }
@@ -400,11 +412,7 @@ function NouvelEvenementForm() {
 
   return (
     <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg">
-      <Link href="/dashboard/planning" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink">
-        ← Retour au planning
-      </Link>
-
-      <h1 className="mt-4 font-display text-2xl font-semibold">
+      <h1 className="font-display text-2xl font-semibold text-ink">
         {enModeEdition ? "Modifier l'événement" : "Ajouter au planning"}
       </h1>
 
@@ -431,10 +439,9 @@ function NouvelEvenementForm() {
             <button
               type="button"
               onClick={() => setType("rendez_vous")}
-              className={`flex-1 rounded-xl px-4 py-2.5 text-sm border transition-all duration-150 ${
-                type === "rendez_vous"
-                  ? "bg-ink text-paper border-ink"
-                  : "border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink"
+              aria-pressed={type === "rendez_vous"}
+              className={`min-h-12 flex-1 rounded-xl px-4 text-base font-semibold motion-safe:transition-colors ${
+                type === "rendez_vous" ? "bg-ink text-paper" : "text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5"
               }`}
             >
               Rendez-vous
@@ -442,10 +449,9 @@ function NouvelEvenementForm() {
             <button
               type="button"
               onClick={() => setType("tache")}
-              className={`flex-1 rounded-xl px-4 py-2.5 text-sm border transition-all duration-150 ${
-                type === "tache"
-                  ? "bg-ink text-paper border-ink"
-                  : "border-ink/15 text-ink/60 hover:border-ink/30 hover:text-ink"
+              aria-pressed={type === "tache"}
+              className={`min-h-12 flex-1 rounded-xl px-4 text-base font-semibold motion-safe:transition-colors ${
+                type === "tache" ? "bg-ink text-paper" : "text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5"
               }`}
             >
               Tâche
@@ -453,9 +459,7 @@ function NouvelEvenementForm() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-ink/70 mb-1.5">
-              Projet lié (optionnel)
-            </label>
+            <p className="mb-1.5 block text-sm text-steel">Chantier (facultatif)</p>
 
             {projetSelectionne && (
               <div className="flex items-center gap-2 mb-2">
@@ -463,13 +467,13 @@ function NouvelEvenementForm() {
                   className={`w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_PRIORITE[projetSelectionne.priorite]}`}
                 />
                 <Avatar nom={projetSelectionne.nom_client || "?"} taille={22} />
-                <span className="text-sm text-ink/80">{projetSelectionne.nom_client}</span>
+                <span className="min-w-0 truncate text-base text-ink">{projetSelectionne.nom_client}</span>
                 <button
                   type="button"
                   onClick={() => setDemandeId("")}
-                  className="text-xs text-ink/40 hover:text-ink underline ml-1"
+                  className="inline-flex min-h-12 shrink-0 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
                 >
-                  retirer
+                  Retirer
                 </button>
               </div>
             )}
@@ -483,16 +487,16 @@ function NouvelEvenementForm() {
             </Button>
 
             {selecteurOuvert && (
-              <div className="mt-2 rounded-xl border border-ink/10 max-h-52 overflow-y-auto overflow-hidden">
+              <div className="mt-2 max-h-64 overflow-y-auto rounded-xl ring-1 ring-inset ring-ink/15">
                 {projets.length === 0 && (
-                  <p className="p-3 text-xs text-ink/40">Aucun projet actif.</p>
+                  <p className="p-3 text-base text-steel">Aucun projet en cours.</p>
                 )}
                 {projets.map((p) => (
                   <button
                     key={p.id}
                     type="button"
                     onClick={() => choisirProjet(p)}
-                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left transition-colors hover:bg-paper border-b border-ink/5 last:border-b-0"
+                    className="flex min-h-12 w-full items-center gap-2.5 border-b border-ink/15 px-3 text-left text-base text-ink last:border-b-0 active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5"
                   >
                     <span
                       className={`w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_PRIORITE[p.priorite]}`}
@@ -538,7 +542,7 @@ function NouvelEvenementForm() {
               est toujours écrite. */}
           {type === "rendez_vous" && (
             <fieldset>
-              <legend className="block text-xs font-medium text-ink/70 mb-1.5">Durée</legend>
+              <legend className="mb-1.5 block text-sm text-steel">Durée</legend>
               <div className="flex flex-wrap gap-2">
                 {[
                   { minutes: 30, libelle: "30 min" },
@@ -552,8 +556,8 @@ function NouvelEvenementForm() {
                     type="button"
                     aria-pressed={dureeMinutes === d.minutes}
                     onClick={() => setDureeMinutes(d.minutes)}
-                    className={`min-h-11 rounded-full px-4 text-[14px] font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
-                      dureeMinutes === d.minutes ? "bg-ink text-paper" : "text-ink/75 ring-1 ring-ink/15 hover:text-ink"
+                    className={`min-h-12 rounded-full px-4 text-base font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                      dureeMinutes === d.minutes ? "bg-ink text-paper" : "text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5"
                     }`}
                   >
                     {d.libelle}
@@ -566,11 +570,11 @@ function NouvelEvenementForm() {
                   aria-label="15 minutes de moins"
                   onClick={() => setDureeMinutes((m) => Math.max(15, m - 15))}
                   disabled={dureeMinutes <= 15}
-                  className="grid h-11 w-11 place-items-center rounded-full text-xl text-ink ring-1 ring-ink/15 transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+                  className="grid h-12 w-12 place-items-center rounded-full text-xl text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
                 >
                   −
                 </button>
-                <span className="min-w-[5.5rem] text-center text-[15px] font-medium tabular-nums text-ink" aria-live="polite">
+                <span className="min-w-[5.5rem] text-center font-mono text-base tabular-nums text-ink" aria-live="polite">
                   {dureeMinutes >= 60
                     ? `${Math.floor(dureeMinutes / 60)} h${dureeMinutes % 60 ? ` ${String(dureeMinutes % 60).padStart(2, "0")}` : ""}`
                     : `${dureeMinutes} min`}
@@ -580,7 +584,7 @@ function NouvelEvenementForm() {
                   aria-label="15 minutes de plus"
                   onClick={() => setDureeMinutes((m) => Math.min(1440, m + 15))}
                   disabled={dureeMinutes >= 1440}
-                  className="grid h-11 w-11 place-items-center rounded-full text-xl text-ink ring-1 ring-ink/15 transition-colors disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+                  className="grid h-12 w-12 place-items-center rounded-full text-xl text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
                 >
                   +
                 </button>
@@ -604,7 +608,7 @@ function NouvelEvenementForm() {
           <button
             type="submit"
             disabled={chargement}
-            className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:px-8"
+            className="w-full min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:w-auto sm:px-8"
           >
             {chargement
               ? "Enregistrement…"
@@ -623,8 +627,7 @@ function NouvelEvenementForm() {
           ouverte
           surFermer={() => {
             setPrevenir(null);
-            router.push("/dashboard/planning");
-            router.refresh();
+            quitter();
           }}
           demandeId={prevenir.demandeId}
           demande={{ cle: "decalage", ancienneDate: prevenir.ancienneDate, nouvelleDate: prevenir.nouvelleDate }}

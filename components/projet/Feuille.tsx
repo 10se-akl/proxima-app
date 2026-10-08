@@ -128,7 +128,7 @@ export function Feuille({
         <div className="flex items-center justify-between gap-3 border-b border-ink/[0.07] px-5 py-3.5">
           {/* La poignée, sur téléphone */}
           <span aria-hidden className="absolute left-1/2 top-1.5 h-1 w-9 -translate-x-1/2 rounded-full bg-ink/15 sm:hidden" />
-          <h2 id={idTitre} className="font-display text-[17px] font-semibold text-ink">
+          <h2 id={idTitre} className="font-display text-xl font-semibold text-ink">
             {titre}
           </h2>
           <button
@@ -136,9 +136,9 @@ export function Feuille({
             data-fermer
             onClick={surFermer}
             aria-label="Fermer"
-            className="-mr-2 grid h-12 w-12 shrink-0 place-items-center rounded-full text-ink/55 transition hover:bg-ink/5 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
+            className="-mr-2 grid h-12 w-12 shrink-0 place-items-center rounded-full text-steel active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 sm:hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
           >
-            <IconeFermer className="h-4 w-4" />
+            <IconeFermer className="h-5 w-5" />
           </button>
         </div>
         <div className="overflow-y-auto px-5 py-5 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">{children}</div>

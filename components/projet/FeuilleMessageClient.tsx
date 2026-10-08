@@ -245,7 +245,7 @@ export function ContenuMessageClient({
           setErreurNumero(!ok);
         }}
       >
-        <label className="block text-[15px] font-medium text-ink" htmlFor="telephone-client">
+        <label className="block text-base font-semibold text-ink" htmlFor="telephone-client">
           Numéro du client
         </label>
         <input
@@ -256,30 +256,31 @@ export function ContenuMessageClient({
           value={saisie}
           onChange={(e) => setSaisie(e.target.value)}
           placeholder="06 12 34 56 78"
-          className="mt-2 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-4 text-[17px] text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+          className="mt-2 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-4 font-mono text-base tabular-nums text-ink placeholder:text-steel focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15"
         />
-        {erreurNumero && <p className="mt-2 text-[14px] text-signal-fonce dark:text-signal-clair">Numéro incomplet ou non enregistré.</p>}
+        {erreurNumero && <p className="mt-2 text-sm font-semibold text-signal-fonce dark:text-signal-clair">Numéro incomplet ou non enregistré.</p>}
         <button
           type="submit"
           disabled={enregistrement}
-          className="mt-4 w-full min-h-12 rounded-xl bg-ink text-[16px] font-semibold text-paper disabled:opacity-50"
+          className="mt-4 inline-flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60"
         >
-          {enregistrement ? "…" : "Enregistrer"}
+          {enregistrement && <span aria-hidden className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" />}
+          Enregistrer
         </button>
       </form>
     );
   }
 
   if (suggestions.length === 0) {
-    return <p className="text-[15px] text-ink/60">Rien à envoyer pour l&apos;instant.</p>;
+    return <p className="text-base text-steel">Rien à envoyer pour l&apos;instant.</p>;
   }
 
   return (
     <ul className="flex flex-col gap-3">
-      {suggestions.map((s) => (
+      {suggestions.map((s, rang) => (
         <li key={s.cle} className="rounded-2xl bg-surface p-4 ring-1 ring-ink/10">
-          <p className="text-[12.5px] font-medium uppercase tracking-wide text-steel">{LIBELLES[s.cle]}</p>
-          <p className="mt-1 text-[15px] leading-snug text-ink">
+          <p className="text-sm text-steel">{LIBELLES[s.cle]}</p>
+          <p className="mt-1 text-base text-ink">
             {/* À l'écran seulement : « 1 250,00 € » ne se coupe pas en fin de ligne. */}
             {premierePhrase(s.texte, s.cle === "decalage" && demande?.nouvelleDate ? 2 : 1).replace(/(\d) (?=\d{3}\b|€)/g, "$1\u00a0")}
           </p>
@@ -291,8 +292,13 @@ export function ContenuMessageClient({
                 onClick={() => {
                   if (ouvrirMessage(canal, ctx.telephone as string, s.texte)) surPrepare(s, canal);
                 }}
-                className={`min-h-12 rounded-xl text-[15px] font-semibold transition motion-safe:active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 ${
-                  canal === "sms" ? "bg-ink text-paper" : "text-ink ring-1 ring-ink/15"
+                // 08/10 (passe de finition) — un seul bouton plein (règle
+                // 5) : le SMS du premier message, le plus probable. Les
+                // autres sont en contour.
+                className={`min-h-12 rounded-xl text-base font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                  canal === "sms" && rang === 0
+                    ? "bg-ink text-paper active:bg-ink/80"
+                    : "text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
                 }`}
               >
                 {canal === "sms" ? "SMS" : "WhatsApp"}

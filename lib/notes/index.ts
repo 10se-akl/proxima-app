@@ -191,9 +191,9 @@ export const LABEL_IMPORTANCE: Record<ImportanceNote, string> = {
 // Couleurs sobres (demande explicite d'Axel : "pas de grosses cartes
 // rouges flashy") — un point coloré discret, jamais un fond plein.
 export const COULEUR_POINT_IMPORTANCE: Record<ImportanceNote, string> = {
-  verte: "bg-[#2F8F5B]",
-  orange: "bg-[#D9861A]",
-  rouge: "bg-[#C23B22]",
+  verte: "bg-succes",
+  orange: "bg-alerte-orange",
+  rouge: "bg-signal-fonce dark:bg-signal-clair",
 };
 
 // Rappel client récurrent (06/09) — audit métier : un paysagiste (taille

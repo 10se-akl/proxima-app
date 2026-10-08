@@ -252,7 +252,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               <span className="grid h-14 w-14 -mt-6 place-items-center rounded-full bg-signal text-white shadow-[0_10px_24px_-10px_rgb(var(--c-signal)/0.9)] ring-4 ring-surface transition-transform motion-safe:group-active:scale-95 group-focus-visible:ring-signal/40">
                 <IconePlus className="h-7 w-7" />
               </span>
-              <span className="text-[11px] font-medium text-ink/70">{libelleCapture ?? "Nouveau"}</span>
+              <span className="text-xs text-steel">{libelleCapture ?? "Nouveau"}</span>
             </button>
           </li>
           <li>
@@ -277,13 +277,13 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                 onClick={() => setPlusOuvert(true)}
                 aria-haspopup="dialog"
                 aria-expanded={plusOuvert}
-                className={`relative flex min-h-[4rem] w-full flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
-                  plusActif ? "text-ink font-semibold" : "text-ink/55"
+                className={`relative flex min-h-[4rem] w-full flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${
+                  plusActif ? "text-ink font-semibold" : "text-steel"
                 }`}
               >
                 {plusActif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
                 <IconePoints className="h-[22px] w-[22px]" />
-                <span className="text-[11px]">Plus</span>
+                <span className="text-xs">Plus</span>
               </button>
             )}
           </li>
@@ -298,7 +298,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                 href={l.href}
                 onClick={() => setPlusOuvert(false)}
                 aria-current={estActif(pathname, l.href) ? "page" : undefined}
-                className="flex min-h-14 items-center gap-3.5 border-b border-ink/[0.06] text-[16px] text-ink"
+                className="flex min-h-14 items-center gap-3.5 border-b border-ink/15 text-base text-ink active:bg-ink/10"
               >
                 <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/[0.06] text-ink/70">
                   <l.Icone taille={19} />
@@ -409,8 +409,8 @@ function OngletBas({
     <Link
       href={href}
       aria-current={actif ? "page" : undefined}
-      className={`relative flex min-h-[4rem] flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 ${
-        actif ? "text-signal font-semibold" : "text-ink/55"
+      className={`relative flex min-h-[4rem] flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${
+        actif ? "text-signal-fonce font-semibold dark:text-signal-clair" : "text-steel"
       }`}
     >
       {/* L'onglet actif : un trait en plus de la couleur, jamais la couleur seule. */}
@@ -419,14 +419,14 @@ function OngletBas({
         {icone}
         {pastille > 0 && (
           <span
-            className="absolute -right-2.5 -top-1.5 min-w-[1.1rem] rounded-full bg-signal px-1 text-center text-[10.5px] font-semibold leading-[1.1rem] text-white"
+            className="absolute -right-2.5 -top-1.5 min-w-[1.25rem] rounded-full bg-signal-fonce px-1 text-center text-xs font-semibold leading-5 text-white"
             aria-label={`${pastille} en retard`}
           >
             {pastille}
           </span>
         )}
       </span>
-      <span className="text-[11px]">{label}</span>
+      <span className="text-xs">{label}</span>
     </Link>
   );
 }

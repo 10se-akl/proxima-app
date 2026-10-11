@@ -7,6 +7,7 @@ import { SectionDeuxSoirees, SectionEnVrai, SectionSoiree } from "./Sections";
 import { SectionFil } from "./SectionFil";
 import { Rythme } from "./Rythme";
 import { BandeMots, FondVivant } from "./Mouvement";
+import { Showreel } from "./showreel/Showreel";
 import "./vitrine.css";
 
 // ============================================================
@@ -50,6 +51,8 @@ export function Accueil({ avis }: { avis?: ReactNode } = {}) {
       <Header ctaTelephone={false} />
       <main>
         <Hero />
+        {/* 11/10 — le film : le défilement le fait avancer, plan par plan. */}
+        <Showreel />
         <SectionFil />
         <SectionDeuxSoirees />
         <BandeMots mots={["Message", "Projet", "Visite", "Devis", "Signature", "Planning", "Chantier", "Facture"]} />

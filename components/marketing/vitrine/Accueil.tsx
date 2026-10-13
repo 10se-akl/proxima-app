@@ -3,7 +3,7 @@ import { Header, Footer } from "@/components/marketing/Cadre";
 import { Hero } from "./Hero";
 import { SectionJournee } from "./SectionJournee";
 import { SectionMetiers } from "./SectionMetiers";
-import { SectionDeuxSoirees, SectionEnVrai, SectionSoiree } from "./Sections";
+import { SectionEnVrai, SectionSoiree } from "./Sections";
 import { SectionFil } from "./SectionFil";
 import { Rythme } from "./Rythme";
 import { BandeMots, FondVivant } from "./Mouvement";
@@ -19,8 +19,10 @@ import "./vitrine.css";
 //                        est déjà fait.
 //   1 bis. Le fil      — (06/10) huit étapes sur un même fil : ce qui est
 //                        dit une fois suit tout le chantier.
-//   2. Deux soirées    — la même table, 21:47 sans Compyo, 19:04 avec.
-//                        Le visiteur fait glisser la séparation.
+//   2. Le film         — (11/10) seize secondes de Compyo ; il se lance
+//                        seul quand il arrive à l'écran (13/10). La table
+//                        « 21:47 sans Compyo / 19:04 avec » est retirée
+//                        (13/10, demande d'Axel).
 //   3. La journée      — six scènes, de 07:48 à 18:40, sur un seul
 //                        chantier. Trois se manipulent (le devis, la
 //                        signature, le planning).
@@ -51,10 +53,9 @@ export function Accueil({ avis }: { avis?: ReactNode } = {}) {
       <Header ctaTelephone={false} />
       <main>
         <Hero />
-        {/* 11/10 — le film : le défilement le fait avancer, plan par plan. */}
+        {/* 11/10 — le film ; 13/10 : il se lance seul quand on arrive dessus. */}
         <Showreel />
         <SectionFil />
-        <SectionDeuxSoirees />
         <BandeMots mots={["Message", "Projet", "Visite", "Devis", "Signature", "Planning", "Chantier", "Facture"]} />
         <SectionJournee />
         <SectionEnVrai />

@@ -1,47 +1,17 @@
 import Link from "next/link";
 import { VideoDemo } from "@/components/marketing/VideoDemo";
-import { DeuxSoirees } from "./DeuxSoirees";
 import { CadrePhoto } from "./CadrePhoto";
 import { PHOTOS } from "./photos";
 import { Engagements } from "@/components/confiance/Engagements";
 
 // ============================================================
-// Les sections courtes de l'accueil (24/09) : la comparaison des deux
-// soirées, la démonstration filmée, et la dernière section, « 19:04 ».
+// Les sections courtes de l'accueil (24/09) : la démonstration filmée,
+// et la dernière section, « 19:04 ». (La comparaison des deux soirées a
+// été retirée le 13/10.)
 // ============================================================
 
 function Surtitre({ children }: { children: React.ReactNode }) {
   return <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-steel">{children}</p>;
-}
-
-export function SectionDeuxSoirees() {
-  // Sur téléphone, le titre voyage avec la table épinglée (DeuxSoirees).
-  return (
-    <section
-      id="deux-soirees"
-      aria-labelledby="titre-soirees"
-      // 04/10 — retirée du téléphone (demande d'Axel) : la bascule au
-      // défilement n'y était pas claire. Elle reste sur ordinateur, avec
-      // sa poignée.
-      className="scroll-mt-16 px-5 pb-8 pt-24 max-md:hidden sm:px-8 sm:pt-36"
-    >
-      <div className="mx-auto max-w-7xl">
-        <DeuxSoirees
-          entete={
-            <>
-              <Surtitre>Le soir</Surtitre>
-              <h2
-                id="titre-soirees"
-                className="mt-6 max-w-4xl text-balance font-display text-[2.6rem] font-semibold leading-[1] tracking-[-0.035em] text-ink max-md:mt-3 max-md:text-[2.3rem] sm:text-7xl"
-              >
-                Même journée. Deux soirées.
-              </h2>
-            </>
-          }
-        />
-      </div>
-    </section>
-  );
 }
 
 const DESCRIPTION_DEMO =

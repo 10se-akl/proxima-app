@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { Film } from "./Film";
 import { DUREE, rendre } from "./scenes";
 
@@ -8,17 +8,56 @@ import { DUREE, rendre } from "./scenes";
 // Le film Compyo sur la vitrine (11/10, référence d'Axel : un montage de
 // motion design, et « un fond qui se crée quand tu défiles »).
 //
-// La section est haute de plusieurs écrans ; l'ordinateur reste fixe au
-// milieu et c'est le défilement qui fait avancer le film, plan par plan
-// (grille, COMPYO, « Vos soirées à vous », le bilan qui compte, les
-// messages qui se rangent, le devis validé, les chantiers réunis, le
-// logo). On peut revenir en arrière, s'arrêter sur un plan.
+// Les plans : la grille, COMPYO, « Vos soirées à vous », le bilan qui
+// compte, les messages qui se rangent, le devis validé, les chantiers
+// réunis, le logo.
 //
-// Avec « réduire les animations » : pas de défilement piloté, la section
-// fait un écran et montre la fin du film.
+// 13/10 (retour d'Axel : « il faut descendre pour que la vidéo se
+// construise, on ne comprend pas forcément qu'il faut dérouler ») — le
+// défilement ne pilote plus le film. Il se lance seul, une fois, quand
+// il est bien à l'écran ; il se met en pause s'il sort de l'écran et
+// reprend quand on y revient. Un bouton Pause · Lecture · Revoir, et le
+// temps qui avance. La section ne fait plus qu'un écran.
+//
+// Avec « réduire les animations » : la fin du film, immobile ; « Revoir »
+// le joue quand même, puisque c'est demandé.
 // ============================================================
 
 const FIN_FIXE = 15.6;
+const FIN = DUREE * 0.999;
+
+type Etat = "attente" | "lecture" | "pause" | "fini";
+
+function mmss(t: number): string {
+  const s = t >= FIN ? DUREE : Math.min(DUREE, Math.floor(t));
+  return `00:${String(s).padStart(2, "0")}`;
+}
+
+function IconeLecture() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden fill="currentColor">
+      <path d="M8 5.5v13a1 1 0 0 0 1.5.86l10.4-6.5a1 1 0 0 0 0-1.72L9.5 4.64A1 1 0 0 0 8 5.5z" />
+    </svg>
+  );
+}
+
+function IconePause() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden fill="currentColor">
+      <rect x="6" y="5" width="4" height="14" rx="1" />
+      <rect x="14" y="5" width="4" height="14" rx="1" />
+    </svg>
+  );
+}
+
+function IconeRevoir() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 12a8 8 0 1 0 2.4-5.7" />
+      <path d="M4 4v4.5h4.5" />
+    </svg>
+  );
+}
 
 /** L'ordinateur portable qui porte l'écran. */
 export function Portable({ children }: { children: ReactNode }) {
@@ -59,73 +98,120 @@ export function Showreel() {
   const section = useRef<HTMLElement>(null);
   const scene = useRef<HTMLDivElement>(null);
   const barre = useRef<HTMLSpanElement>(null);
-  const invite = useRef<HTMLParagraphElement>(null);
+  const horloge = useRef<HTMLSpanElement>(null);
+  const temps = useRef(0);
+  const [etat, setEtat] = useState<Etat>("attente");
+  const etatRef = useRef<Etat>("attente");
+  // Une pause faite par le visiteur ne reprend jamais toute seule ; celle
+  // qui vient de la sortie de l'écran, si.
+  const pauseAuto = useRef(false);
 
-  useEffect(() => {
-    const el = section.current;
-    const sc = scene.current;
-    if (!el || !sc) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      el.dataset.immobile = "1";
-      rendre(sc, FIN_FIXE);
-      return;
-    }
-    let image = 0;
-    let visible = false;
-    const maj = () => {
-      image = 0;
-      const r = el.getBoundingClientRect();
-      const course = r.height - window.innerHeight;
-      const k = course > 0 ? Math.min(1, Math.max(0, -r.top / course)) : 0;
-      rendre(sc, k * DUREE * 0.999);
-      if (barre.current) barre.current.style.transform = `scaleX(${k})`;
-      if (invite.current) invite.current.style.opacity = String(Math.max(0, 1 - k / 0.06));
-    };
-    const demander = () => {
-      if (visible && !image) image = requestAnimationFrame(maj);
-    };
-    const obs = new IntersectionObserver(([e]) => {
-      visible = e.isIntersecting;
-      demander();
-    });
-    obs.observe(el);
-    window.addEventListener("scroll", demander, { passive: true });
-    window.addEventListener("resize", demander);
-    maj();
-    return () => {
-      cancelAnimationFrame(image);
-      obs.disconnect();
-      window.removeEventListener("scroll", demander);
-      window.removeEventListener("resize", demander);
-    };
+  const changer = useCallback((e: Etat) => {
+    etatRef.current = e;
+    setEtat(e);
   }, []);
 
+  const dessiner = useCallback((t: number) => {
+    if (scene.current) rendre(scene.current, t);
+    if (barre.current) barre.current.style.transform = `scaleX(${Math.min(1, t / DUREE)})`;
+    if (horloge.current) horloge.current.textContent = mmss(t);
+  }, []);
+
+  // Au départ : le premier plan, ou la fin si l'artisan a demandé moins
+  // d'animations.
+  useEffect(() => {
+    const el = section.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      temps.current = FIN;
+      if (scene.current) rendre(scene.current, FIN_FIXE);
+      if (barre.current) barre.current.style.transform = "scaleX(1)";
+      if (horloge.current) horloge.current.textContent = mmss(DUREE);
+      changer("fini");
+      return;
+    }
+    dessiner(0);
+    const obs = new IntersectionObserver(
+      ([e]) => {
+        const bienVisible = e.isIntersecting && e.intersectionRatio >= 0.5;
+        const etatActuel = etatRef.current;
+        if (bienVisible && (etatActuel === "attente" || (etatActuel === "pause" && pauseAuto.current))) {
+          pauseAuto.current = false;
+          changer("lecture");
+        } else if (!e.isIntersecting && etatActuel === "lecture") {
+          pauseAuto.current = true;
+          changer("pause");
+        }
+      },
+      { threshold: [0, 0.5] }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [changer, dessiner]);
+
+  // La lecture : le temps avance avec l'horloge de l'écran.
+  useEffect(() => {
+    if (etat !== "lecture") return;
+    let image = 0;
+    let avant = performance.now();
+    const pas = (maintenant: number) => {
+      temps.current = Math.min(FIN, temps.current + (maintenant - avant) / 1000);
+      avant = maintenant;
+      dessiner(temps.current);
+      if (temps.current >= FIN) {
+        changer("fini");
+        return;
+      }
+      image = requestAnimationFrame(pas);
+    };
+    image = requestAnimationFrame(pas);
+    return () => cancelAnimationFrame(image);
+  }, [etat, changer, dessiner]);
+
+  const surBouton = () => {
+    pauseAuto.current = false;
+    if (etat === "lecture") return changer("pause");
+    if (etat === "fini") {
+      temps.current = 0;
+      dessiner(0);
+    }
+    changer("lecture");
+  };
+
+  const bouton =
+    etat === "lecture"
+      ? { libelle: "Pause", icone: <IconePause /> }
+      : etat === "fini"
+        ? { libelle: "Revoir", icone: <IconeRevoir /> }
+        : { libelle: "Lecture", icone: <IconeLecture /> };
+
   return (
-    <section
-      ref={section}
-      aria-label="Compyo en seize secondes"
-      className="v-showreel relative h-[560vh] max-md:h-[420vh] data-[immobile='1']:h-auto"
-    >
+    <section ref={section} aria-label="Compyo en seize secondes" className="v-showreel relative px-4 pb-16 pt-24 sm:px-8 sm:pb-24 sm:pt-28">
       <p className="sr-only">
         Un court film : une grille de plan, le nom Compyo, « Vos soirées à vous », un bilan du mois qui se remplit, des
         messages de clients qui se rangent en projets, un devis validé d&apos;un geste, tous les chantiers réunis en un
         seul endroit, et le logo Compyo.
       </p>
-      <div className="sticky top-0 flex h-[100svh] flex-col items-center justify-center px-4 pt-16 sm:px-8">
-        <div className="w-[min(1120px,92vw,calc((100svh-12rem)*1.55))]">
-          <Portable>
-            <EcranFilm scene={scene} />
-          </Portable>
-          <div className="mx-auto mt-8 flex max-w-md items-center gap-3 font-mono text-[11px] tabular-nums text-steel">
-            <span>00:00</span>
+      <div className="mx-auto w-[min(1120px,92vw,calc((100svh-10rem)*1.55))]">
+        <Portable>
+          <EcranFilm scene={scene} />
+        </Portable>
+        <div className="mx-auto mt-8 flex max-w-lg items-center gap-4">
+          <button
+            type="button"
+            onClick={surBouton}
+            className="inline-flex min-h-12 shrink-0 items-center gap-2 rounded-full px-5 text-[15px] font-semibold text-ink ring-1 ring-inset ring-ink/25 transition-colors hover:bg-ink/5 active:bg-ink/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+          >
+            {bouton.icone}
+            {bouton.libelle}
+          </button>
+          <div className="flex min-w-0 flex-1 items-center gap-3 font-mono text-[11px] tabular-nums text-steel" aria-hidden>
+            <span ref={horloge}>00:00</span>
             <span className="relative h-[3px] flex-1 overflow-hidden rounded-full bg-ink/10">
               <span ref={barre} className="absolute inset-0 origin-left scale-x-0 rounded-full bg-signal" />
             </span>
             <span className="text-signal">00:16</span>
           </div>
-          <p ref={invite} className="mt-4 text-center text-[14px] font-medium text-steel">
-            Faites défiler : le film avance avec vous ↓
-          </p>
         </div>
       </div>
     </section>

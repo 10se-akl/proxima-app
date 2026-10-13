@@ -1,350 +1,518 @@
 {
- "nouveau-plus": {
-  "largeur": 390,
-  "hauteur": 844,
-  "cibles": [
-   {
-    "x": 156,
-    "y": 780,
-    "w": 78,
-    "h": 64
-   }
-  ]
- },
- "nouveau-choix": {
-  "largeur": 390,
-  "hauteur": 422,
-  "cibles": [
-   {
-    "x": 20,
-    "y": 97,
-    "w": 350,
-    "h": 89
-   },
-   {
-    "x": 20,
-    "y": 196,
-    "w": 350,
-    "h": 108
-   },
-   {
-    "x": 20,
-    "y": 314,
-    "w": 350,
-    "h": 89
-   }
-  ]
- },
- "nouveau-coller": {
-  "largeur": 390,
-  "hauteur": 454,
-  "cibles": [
-   {
-    "x": 33,
-    "y": 112,
-    "w": 324,
-    "h": 56
-   },
-   {
-    "x": 33,
-    "y": 382,
-    "w": 324,
-    "h": 56
-   }
-  ]
- },
- "fiche-haut": {
-  "largeur": 390,
-  "hauteur": 413,
-  "cibles": [
-   {
-    "x": 16,
-    "y": 89,
-    "w": 114,
-    "h": 68
-   },
-   {
-    "x": 138,
-    "y": 89,
-    "w": 114,
-    "h": 68
-   },
-   {
-    "x": 260,
-    "y": 89,
-    "w": 114,
-    "h": 68
-   }
-  ]
- },
- "fiche-ajouter": {
-  "largeur": 390,
-  "hauteur": 389,
-  "cibles": [
-   {
-    "x": 20,
-    "y": 97,
-    "w": 169,
-    "h": 130
-   },
-   {
-    "x": 201,
-    "y": 97,
-    "w": 169,
-    "h": 130
-   },
-   {
-    "x": 20,
-    "y": 239,
-    "w": 169,
-    "h": 130
-   }
-  ]
- },
- "fiche-dicter": {
-  "largeur": 390,
-  "hauteur": 405,
-  "cibles": [
-   {
-    "x": 37,
-    "y": 324,
-    "w": 222,
-    "h": 44
-   }
-  ]
- },
- "devis-ia": {
-  "largeur": 390,
-  "hauteur": 332,
-  "cibles": [
-   {
-    "x": 36,
-    "y": 100,
-    "w": 318,
-    "h": 48
-   }
-  ]
- },
- "devis-score": {
-  "largeur": 390,
-  "hauteur": 365,
-  "cibles": [
-   {
-    "x": 37,
-    "y": 251,
-    "w": 316,
-    "h": 92
-   }
-  ]
- },
- "devis-lignes": {
-  "largeur": 390,
-  "hauteur": 844,
-  "cibles": [
-   {
-    "x": 86,
-    "y": 342,
-    "w": 194,
-    "h": 34
-   },
-   {
-    "x": 41,
-    "y": 688,
-    "w": 308,
-    "h": 56
-   }
-  ]
- },
- "devis-envoyer": {
-  "largeur": 390,
-  "hauteur": 330,
-  "cibles": [
-   {
-    "x": 41,
-    "y": 134,
-    "w": 154,
-    "h": 44
-   }
-  ]
- },
- "devis-partager": {
-  "largeur": 390,
-  "hauteur": 298,
-  "cibles": [
-   {
-    "x": 41,
-    "y": 178,
-    "w": 268,
-    "h": 44
-   }
-  ]
- },
- "devis-reponse": {
-  "largeur": 390,
-  "hauteur": 256,
-  "cibles": [
-   {
-    "x": 41,
-    "y": 86,
-    "w": 112,
-    "h": 46
-   },
-   {
-    "x": 161,
-    "y": 86,
-    "w": 89,
-    "h": 46
-   }
-  ]
- },
- "devis-relance": {
-  "largeur": 390,
-  "hauteur": 274,
-  "cibles": [
-   {
-    "x": 36,
-    "y": 100,
-    "w": 318,
-    "h": 48
-   }
-  ]
- },
- "facture-creer": {
-  "largeur": 390,
-  "hauteur": 240,
-  "cibles": [
-   {
-    "x": 41,
-    "y": 114,
-    "w": 181,
-    "h": 46
-   },
-   {
-    "x": 41,
-    "y": 172,
-    "w": 156,
-    "h": 46
-   }
-  ]
- },
- "facture-payee": {
-  "largeur": 390,
-  "hauteur": 354,
-  "cibles": [
-   {
-    "x": 146,
-    "y": 127,
-    "w": 86,
-    "h": 16
-   }
-  ]
- },
- "planning-semaine": {
-  "largeur": 390,
-  "hauteur": 472,
-  "cibles": [
-   {
-    "x": 325,
-    "y": 76,
-    "w": 49,
-    "h": 60
-   },
-   {
-    "x": 16,
-    "y": 192,
-    "w": 358,
-    "h": 91
-   }
-  ]
- },
- "planning-meteo": {
-  "largeur": 390,
-  "hauteur": 487,
-  "cibles": [
-   {
-    "x": 139,
-    "y": 97,
-    "w": 111,
-    "h": 72
-   }
-  ]
- },
- "planning-duree": {
-  "largeur": 390,
-  "hauteur": 464,
-  "cibles": [
-   {
-    "x": 33,
-    "y": 40,
-    "w": 168,
-    "h": 46
-   },
-   {
-    "x": 33,
-    "y": 402,
-    "w": 44,
-    "h": 44
-   }
-  ]
- },
- "journee-maintenant": {
-  "largeur": 390,
-  "hauteur": 253,
-  "cibles": [
-   {
-    "x": 16,
-    "y": 88,
-    "w": 358,
-    "h": 96
-   }
-  ]
- },
- "journee-rappel": {
-  "largeur": 390,
-  "hauteur": 326,
-  "cibles": [
-   {
-    "x": 25,
-    "y": 245,
-    "w": 166,
-    "h": 56
-   },
-   {
-    "x": 199,
-    "y": 245,
-    "w": 166,
-    "h": 56
-   }
-  ]
- },
- "journee-soir": {
-  "largeur": 390,
-  "hauteur": 380,
-  "cibles": [
-   {
-    "x": 217,
-    "y": 175,
-    "w": 54,
-    "h": 48
-   },
-   {
-    "x": 280,
-    "y": 175,
-    "w": 78,
-    "h": 48
-   }
-  ]
- },
- "demarrer-parametres": {
-  "largeur": 390,
-  "hauteur": 547,
-  "cibles": [
-   {
-    "x": 16,
-    "y": 129,
-    "w": 358,
-    "h": 56
-   }
-  ]
- }
+  "nouveau-plus": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 156,
+          "y": 780,
+          "w": 78,
+          "h": 64
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 1000,
+      "hauteur": 540,
+      "cibles": [
+        {
+          "x": 12,
+          "y": 91,
+          "w": 215,
+          "h": 48
+        }
+      ]
+    }
+  },
+  "nouveau-choix": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 20,
+          "y": 430,
+          "w": 350,
+          "h": 89
+        },
+        {
+          "x": 20,
+          "y": 528,
+          "w": 350,
+          "h": 89
+        },
+        {
+          "x": 20,
+          "y": 627,
+          "w": 350,
+          "h": 89
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 568,
+      "hauteur": 530,
+      "cibles": [
+        {
+          "x": 48,
+          "y": 125,
+          "w": 472,
+          "h": 76
+        },
+        {
+          "x": 48,
+          "y": 211,
+          "w": 472,
+          "h": 76
+        },
+        {
+          "x": 48,
+          "y": 297,
+          "w": 472,
+          "h": 76
+        }
+      ]
+    }
+  },
+  "nouveau-coller": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 16,
+          "y": 148,
+          "w": 358,
+          "h": 56
+        },
+        {
+          "x": 16,
+          "y": 418,
+          "w": 358,
+          "h": 56
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 820,
+      "hauteur": 470,
+      "cibles": [
+        {
+          "x": 106,
+          "y": 112,
+          "w": 608,
+          "h": 56
+        },
+        {
+          "x": 106,
+          "y": 382,
+          "w": 608,
+          "h": 56
+        }
+      ]
+    }
+  },
+  "fiche-haut": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 312,
+      "cibles": [
+        {
+          "x": 36,
+          "y": 160,
+          "w": 101,
+          "h": 68
+        },
+        {
+          "x": 145,
+          "y": 160,
+          "w": 101,
+          "h": 68
+        },
+        {
+          "x": 253,
+          "y": 160,
+          "w": 101,
+          "h": 68
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 1016,
+      "hauteur": 316,
+      "cibles": [
+        {
+          "x": 48,
+          "y": 172,
+          "w": 113,
+          "h": 48
+        },
+        {
+          "x": 169,
+          "y": 172,
+          "w": 122,
+          "h": 48
+        },
+        {
+          "x": 299,
+          "y": 172,
+          "w": 120,
+          "h": 48
+        }
+      ]
+    }
+  },
+  "fiche-ajouter": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 196,
+      "cibles": [
+        {
+          "x": 16,
+          "y": 122,
+          "w": 114,
+          "h": 60
+        },
+        {
+          "x": 138,
+          "y": 122,
+          "w": 114,
+          "h": 60
+        },
+        {
+          "x": 260,
+          "y": 122,
+          "w": 114,
+          "h": 60
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 616,
+      "hauteur": 208,
+      "cibles": [
+        {
+          "x": 20,
+          "y": 140,
+          "w": 107,
+          "h": 48
+        },
+        {
+          "x": 135,
+          "y": 140,
+          "w": 109,
+          "h": 48
+        },
+        {
+          "x": 252,
+          "y": 140,
+          "w": 100,
+          "h": 48
+        }
+      ]
+    }
+  },
+  "fiche-note": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 20,
+          "y": 568,
+          "w": 119,
+          "h": 48
+        },
+        {
+          "x": 20,
+          "y": 768,
+          "w": 350,
+          "h": 56
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 568,
+      "hauteur": 553,
+      "cibles": [
+        {
+          "x": 48,
+          "y": 305,
+          "w": 119,
+          "h": 48
+        },
+        {
+          "x": 48,
+          "y": 449,
+          "w": 472,
+          "h": 56
+        }
+      ]
+    }
+  },
+  "devis-ia": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 196,
+      "cibles": [
+        {
+          "x": 36,
+          "y": 78,
+          "w": 318,
+          "h": 56
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 616,
+      "hauteur": 212,
+      "cibles": [
+        {
+          "x": 44,
+          "y": 88,
+          "w": 170,
+          "h": 56
+        }
+      ]
+    }
+  },
+  "devis-relance": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 220,
+      "cibles": [
+        {
+          "x": 36,
+          "y": 102,
+          "w": 318,
+          "h": 56
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 616,
+      "hauteur": 236,
+      "cibles": [
+        {
+          "x": 44,
+          "y": 112,
+          "w": 201,
+          "h": 56
+        }
+      ]
+    }
+  },
+  "planning-semaine": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 76,
+          "y": 192,
+          "w": 298,
+          "h": 68
+        },
+        {
+          "x": 76,
+          "y": 124,
+          "w": 298,
+          "h": 56
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 900,
+      "hauteur": 640,
+      "cibles": [
+        {
+          "x": 225,
+          "y": 147,
+          "w": 122,
+          "h": 208
+        }
+      ]
+    }
+  },
+  "planning-planifier": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 20,
+          "y": 637,
+          "w": 76,
+          "h": 48
+        },
+        {
+          "x": 20,
+          "y": 768,
+          "w": 350,
+          "h": 56
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 568,
+      "hauteur": 798,
+      "cibles": [
+        {
+          "x": 48,
+          "y": 597,
+          "w": 76,
+          "h": 48
+        },
+        {
+          "x": 48,
+          "y": 694,
+          "w": 472,
+          "h": 56
+        }
+      ]
+    }
+  },
+  "planning-meteo": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 88,
+      "cibles": [
+        {
+          "x": 302,
+          "y": 10,
+          "w": 72,
+          "h": 68
+        }
+      ]
+    }
+  },
+  "journee-maintenant": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 36,
+          "y": 170,
+          "w": 237,
+          "h": 102
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 1040,
+      "hauteur": 560,
+      "cibles": [
+        {
+          "x": 560,
+          "y": 64,
+          "w": 335,
+          "h": 102
+        }
+      ]
+    }
+  },
+  "journee-rappel": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 266,
+      "cibles": [
+        {
+          "x": 25,
+          "y": 185,
+          "w": 166,
+          "h": 56
+        },
+        {
+          "x": 199,
+          "y": 185,
+          "w": 166,
+          "h": 56
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 448,
+      "hauteur": 306,
+      "cibles": [
+        {
+          "x": 57,
+          "y": 193,
+          "w": 163,
+          "h": 56
+        },
+        {
+          "x": 228,
+          "y": 193,
+          "w": 163,
+          "h": 56
+        }
+      ]
+    }
+  },
+  "journee-aregler": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 484,
+      "cibles": [
+        {
+          "x": 200,
+          "y": 320,
+          "w": 51,
+          "h": 68
+        },
+        {
+          "x": 251,
+          "y": 320,
+          "w": 111,
+          "h": 68
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 432,
+      "hauteur": 492,
+      "cibles": [
+        {
+          "x": 238,
+          "y": 316,
+          "w": 51,
+          "h": 68
+        },
+        {
+          "x": 289,
+          "y": 316,
+          "w": 111,
+          "h": 68
+        }
+      ]
+    }
+  },
+  "demarrer-parametres": {
+    "telephone": {
+      "largeur": 390,
+      "hauteur": 844,
+      "cibles": [
+        {
+          "x": 338,
+          "y": 0,
+          "w": 48,
+          "h": 48
+        }
+      ]
+    },
+    "ordinateur": {
+      "largeur": 1280,
+      "hauteur": 760,
+      "cibles": [
+        {
+          "x": 24,
+          "y": 781,
+          "w": 76,
+          "h": 20
+        }
+      ]
+    }
+  }
 }

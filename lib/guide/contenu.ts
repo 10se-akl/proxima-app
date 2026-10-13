@@ -7,20 +7,32 @@ import captures from "./captures.json";
 // toucher entourés (flèche s'il n'y en a qu'un, numéros ①②③ sinon), une
 // ou deux phrases.
 //
+// 13/10 — refait pour l'application d'aujourd'hui (les captures dataient
+// d'avant la refonte du 04/10), en deux versions : téléphone et
+// ordinateur, chacune avec sa capture et, quand le geste diffère, son
+// texte (« Touchez + en bas » / « Cliquez sur Nouveau projet »). Une
+// étape sans capture (l'éditeur de devis, la facturation) n'a que son
+// texte : mieux vaut pas d'image qu'une image fausse.
+//
 // Les captures (public/guide/*.webp) et la position des boutons
-// (captures.json) sont produites ensemble, depuis l'application elle-même
-// au format téléphone : si un écran change, on les refait ensemble.
+// (captures.json) se refont ensemble, depuis les bancs d'essai locaux :
+//   node refonte-maquettes/outils/captures-guide.mjs   (guide.json)
+//   python refonte-maquettes/outils/guide-webp.py
 // ============================================================
 
 export type Cible = { x: number; y: number; w: number; h: number };
 export type Capture = { largeur: number; hauteur: number; cibles: Cible[] };
 export type IdCapture = keyof typeof captures;
+export type Appareil = "telephone" | "ordinateur";
 
 export type EtapeGuide = {
-  capture: IdCapture;
+  /** Sans capture : l'étape n'a que son texte. */
+  capture?: IdCapture;
   /** Ce que l'on voit, pour un lecteur d'écran. */
-  alt: string;
+  alt?: string;
   texte: string;
+  /** Sur ordinateur, quand le geste diffère. */
+  texteOrdinateur?: string;
 };
 
 export type SectionGuide = {
@@ -32,8 +44,10 @@ export type SectionGuide = {
   lien?: { href: string; libelle: string };
 };
 
-export function lireCapture(id: IdCapture): Capture {
-  return captures[id] as Capture;
+/** La capture d'une étape pour un appareil, ou null s'il n'y en a pas. */
+export function lireCapture(id: IdCapture, appareil: Appareil): Capture | null {
+  const pour = (captures as Record<string, Partial<Record<Appareil, Capture>>>)[id];
+  return pour?.[appareil] ?? null;
 }
 
 export const SECTIONS: SectionGuide[] = [
@@ -44,12 +58,13 @@ export const SECTIONS: SectionGuide[] = [
     etapes: [
       {
         capture: "nouveau-plus",
-        alt: "L'accueil de Compyo, avec le bouton + au centre de la barre du bas.",
+        alt: "L'accueil de Compyo et le bouton pour créer un projet.",
         texte: "Touchez + en bas de l'écran.",
+        texteOrdinateur: "Cliquez sur « Nouveau projet », en haut à gauche.",
       },
       {
         capture: "nouveau-choix",
-        alt: "La fenêtre « Nouveau projet » et ses trois choix.",
+        alt: "La fenêtre « Nouveau projet » et ses choix.",
         texte:
           "Choisissez ce que vous avez : ① le SMS ou le WhatsApp du client à coller, ② une capture d'écran de la conversation, ③ ou écrivez vous-même.",
       },
@@ -61,7 +76,7 @@ export const SECTIONS: SectionGuide[] = [
       },
     ],
     astuce:
-      "Encore plus rapide depuis WhatsApp : restez appuyé sur le message du client, « Partager », puis choisissez Compyo.",
+      "Encore plus rapide sur Android, depuis WhatsApp : restez appuyé sur le message du client, « Partager », puis choisissez Compyo.",
   },
   {
     id: "chantier",
@@ -76,15 +91,15 @@ export const SECTIONS: SectionGuide[] = [
       },
       {
         capture: "fiche-ajouter",
-        alt: "La fenêtre « Ajouter au projet » : dicter, photos, note, rendez-vous.",
+        alt: "La carte « Maintenant » d'un chantier, puis les boutons Photo, Dicter et Note.",
         texte:
-          "Sous le pouce, dans chaque projet : ① Photo, ② Dicter, ③ Note (avec un rappel en un appui). Le + du bas ajoute aussi un rendez-vous, sans quitter le projet.",
+          "Dans chaque projet : ① une photo, ② une note dictée, ③ une note écrite. Tout se range dans le Carnet du projet, plus bas sur la page.",
       },
       {
-        capture: "fiche-dicter",
-        alt: "La fenêtre « Dicter une note », avec le texte dicté.",
-        texte:
-          "Pour dicter : parlez, relisez, corrigez si besoin, puis « Ajouter cette note au projet ». Tout se range dans le Carnet du projet.",
+        capture: "fiche-note",
+        alt: "La fenêtre « Note » : le texte, le rappel et le bouton Enregistrer.",
+        texte: "Écrivez ce qu'il ne faut pas oublier, choisissez en un appui ① quand Compyo vous le rappelle, puis ② « Enregistrer ».",
+        texteOrdinateur: "Écrivez ce qu'il ne faut pas oublier, choisissez en un clic ① quand Compyo vous le rappelle, puis ② « Enregistrer ».",
       },
     ],
   },
@@ -97,21 +112,20 @@ export const SECTIONS: SectionGuide[] = [
         capture: "devis-ia",
         alt: "La carte « Maintenant » d'un nouveau projet et le bouton pour préparer le devis.",
         texte:
-          "Dans le projet, « Préparer le devis » : Compyo écrit les lignes à partir de vos notes et de vos photos. Les prix viennent de vos tarifs, jamais d'une estimation.",
+          "Dans le projet, « Préparer le devis » : Compyo écrit les lignes à partir de la demande, de vos notes et de vos photos. Les prix viennent de vos tarifs, jamais d'une estimation.",
       },
       {
-        capture: "devis-lignes",
-        alt: "Les lignes du devis, modifiables, et le bouton pour valider.",
         texte:
-          "Relisez : ① chaque ligne se modifie d'un appui (texte, quantité, prix). ② Quand tout est bon : « Valider ce devis ».",
+          "Relisez chaque ligne : touchez-la pour changer ce qui est fait, la quantité ou le prix. Quand tout est bon : « Valider le devis ».",
+        texteOrdinateur:
+          "Relisez chaque ligne et changez directement ce qui est fait, la quantité ou le prix. Quand tout est bon : « Valider sans l'envoyer ».",
       },
       {
-        capture: "devis-score",
-        alt: "Le haut du devis et le résumé « points à vérifier ».",
         texte:
-          "Avant d'envoyer, Compyo vous signale ce qui manque sur le document (assurance, mentions obligatoires). Vous restez libre de l'envoyer tel quel.",
+          "Avant l'envoi, Compyo signale ce qui manque sur le document (assurance, mentions obligatoires) et vous laisse le compléter sur place.",
       },
     ],
+    astuce: "Pour une petite intervention chiffrée sur place : « … » dans le projet, puis « Faire le devis moi-même ».",
   },
   {
     id: "envoyer",
@@ -119,20 +133,12 @@ export const SECTIONS: SectionGuide[] = [
     resume: "Votre client le lit et le signe sur son téléphone.",
     etapes: [
       {
-        capture: "devis-envoyer",
-        alt: "La carte « Prêt à partir » et le bouton « Envoyer par WhatsApp ».",
-        texte: "« Envoyer par WhatsApp » : le devis est figé, et le message avec le lien de signature s'ouvre dans WhatsApp. C'est vous qui appuyez sur envoyer.",
-      },
-      {
-        capture: "devis-partager",
-        alt: "La carte « En attente de la réponse du client » et le bouton de partage.",
         texte:
-          "« Partager » : envoyez le lien par SMS, WhatsApp ou mail. Quand votre client signe en ligne, Compyo le voit tout seul.",
+          "« Envoyer par WhatsApp » (ou par SMS) : le devis est figé, et le message avec le lien de signature s'ouvre dans votre messagerie. C'est vous qui appuyez sur envoyer.",
       },
       {
-        capture: "devis-reponse",
-        alt: "La carte « Le client a répondu ? » avec les boutons Accepté et Refusé.",
-        texte: "Il vous a répondu de vive voix ? Notez-le : ① accepté, ② refusé.",
+        texte:
+          "Votre client signe en ligne : Compyo le voit tout seul. Il vous a répondu de vive voix ? Notez-le dans le devis : « Accepté » ou « Refusé ».",
       },
       {
         capture: "devis-relance",
@@ -148,18 +154,14 @@ export const SECTIONS: SectionGuide[] = [
     resume: "Acompte, solde, paiement : tout part du devis signé.",
     etapes: [
       {
-        capture: "facture-creer",
-        alt: "La partie « Facturation » d'un projet et ses deux boutons.",
         texte:
-          "Devis accepté : dans le projet, ① une facture d'acompte (le montant signé est déjà rempli), ou ② la facture de solde, qui déduit les acomptes.",
+          "Devis signé : dans le projet, partie Argent, « Facture d'acompte » (le montant signé est déjà rempli) ou « Facture de solde », qui déduit les acomptes. Une facture numérotée est définitive : Compyo vous le redemande avant de la créer.",
       },
       {
-        capture: "facture-payee",
-        alt: "Une facture d'acompte émise, avec le lien « Marquer payée ».",
-        texte:
-          "Le client a payé ? « Marquer payée ». Ce qui reste à encaisser s'affiche dans Argent, en bas de l'écran.",
+        texte: "Le client a payé ? « Marquer payée ». Ce qui reste à encaisser s'affiche dans Argent.",
       },
     ],
+    astuce: "Pour créer une facture, votre SIRET doit être rempli : Paramètres, puis « Mentions légales ».",
   },
   {
     id: "planning",
@@ -168,21 +170,21 @@ export const SECTIONS: SectionGuide[] = [
     etapes: [
       {
         capture: "planning-semaine",
-        alt: "Le planning de la semaine, jour par jour, et les rendez-vous du jour.",
+        alt: "Le planning des sept prochains jours, jour par jour.",
         texte:
-          "① Touchez un jour pour voir ses rendez-vous, ② puis un rendez-vous pour appeler, prévenir le client ou noter « C'est fait ».",
+          "Vos sept prochains jours : ① touchez un rendez-vous pour l'ouvrir (appeler, prévenir le client, noter « Fait »), ② un jour libre pour y planifier quelque chose.",
+        texteOrdinateur: "Votre semaine en grille : cliquez sur un rendez-vous pour l'ouvrir.",
       },
       {
-        capture: "planning-duree",
-        alt: "Le formulaire d'un nouveau rendez-vous : chantier, date, heure, durée.",
+        capture: "planning-planifier",
+        alt: "La fenêtre « Quand ? » : les jours, le moment, et le bouton Planifier.",
         texte:
-          "Pour ajouter un rendez-vous : « + Ajouter » dans le Planning. ① Choisissez le chantier, ② réglez la durée au quart d'heure près.",
+          "Depuis un projet : « … » puis « Planifier un rendez-vous ». Choisissez le jour, ① le moment (matin, après-midi, journée ou une heure précise), puis ② « Planifier ». Compyo propose ensuite de prévenir le client.",
       },
       {
         capture: "planning-meteo",
         alt: "Un rendez-vous avec une alerte météo et le bouton « Prévenir ».",
-        texte:
-          "Pluie ou vent annoncés sur un chantier extérieur ? « Prévenir » prépare le message pour votre client.",
+        texte: "Pluie ou vent annoncés sur un chantier extérieur ? « Prévenir » prépare le message pour votre client.",
       },
     ],
   },
@@ -193,9 +195,9 @@ export const SECTIONS: SectionGuide[] = [
     etapes: [
       {
         capture: "journee-maintenant",
-        alt: "L'accueil : la carte « Maintenant », puis « Aujourd'hui » et « À régler ».",
+        alt: "L'accueil : la carte « Maintenant », puis les chiffres du jour.",
         texte:
-          "Chaque jour, l'accueil vous dit quoi faire maintenant. Dessous : ce qui vous attend aujourd'hui, puis ce qui reste « À régler » d'un geste.",
+          "Chaque jour, l'accueil vous dit quoi faire maintenant, avec l'itinéraire en un appui. Dessous : vos chiffres du jour, ce qui vous attend aujourd'hui et ce qui reste à régler.",
       },
       {
         capture: "journee-rappel",
@@ -203,10 +205,10 @@ export const SECTIONS: SectionGuide[] = [
         texte: "À l'heure d'un rappel : ① « C'est fait », ou ② « Plus tard » : il reste dans votre journée.",
       },
       {
-        capture: "journee-soir",
-        alt: "Le bloc « À régler » : une ligne avec ✓ et « Demain ».",
+        capture: "journee-aregler",
+        alt: "Le bloc « À régler » : un chantier terminé ? Oui ou Pas encore.",
         texte:
-          "Ce qui est passé sans réponse attend dans « À régler » : ① fait, ou ② demain (un rendez-vous : « Pas fait », pour le déplacer et prévenir le client). Le soir, quand tout est réglé, l'écran vous le dit.",
+          "Ce qui est passé sans réponse attend dans « À régler » : vous répondez d'un geste, par exemple ① oui, le chantier est terminé, ou ② pas encore. Le soir, quand tout est réglé, l'écran vous le dit.",
       },
     ],
   },
@@ -219,9 +221,11 @@ export const SECTIONS: SectionGuide[] = [
         capture: "demarrer-parametres",
         alt: "La page Paramètres et ce qui reste à compléter.",
         texte:
-          "Complétez vos paramètres une fois (entreprise, assurances, tarifs) : vos devis et vos factures en ont besoin. Ce qui manque est signalé. Sur téléphone, ils sont derrière vos initiales, en haut à droite.",
+          "Complétez une fois vos paramètres (entreprise, mentions légales, assurances, tarifs) : vos devis et vos factures en ont besoin, et ce qui manque est signalé. Ils sont derrière vos initiales, en haut à droite.",
+        texteOrdinateur:
+          "Complétez une fois vos paramètres (entreprise, mentions légales, assurances, tarifs) : vos devis et vos factures en ont besoin, et ce qui manque est signalé. Ils sont en bas de la barre de gauche.",
       },
     ],
-    lien: { href: "/installer", libelle: "Installer Compyo sur votre téléphone" },
+    lien: { href: "/installer", libelle: "Installer Compyo" },
   },
 ];

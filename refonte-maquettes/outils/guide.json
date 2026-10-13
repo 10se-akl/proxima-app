@@ -1,0 +1,638 @@
+[
+  {
+    "id": "nouveau-plus",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "cibles": [
+        {
+          "css": "nav[data-barre-bas] button[aria-label='Nouveau projet']"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "w": 1000,
+        "h": 540
+      },
+      "cibles": [
+        {
+          "texte": "Nouveau projet",
+          "parmi": "aside button"
+        }
+      ]
+    }
+  },
+  {
+    "id": "nouveau-choix",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "gestes": [
+        {
+          "js": "window.dispatchEvent(new CustomEvent('compyo:ouvrir-capture'))",
+          "attente": 1200
+        }
+      ],
+      "cibles": [
+        {
+          "texte": "Coller un message",
+          "parmi": ".feuille-panneau a"
+        },
+        {
+          "texte": "Photo ou capture",
+          "parmi": ".feuille-panneau a"
+        },
+        {
+          "texte": "Écrire moi-même",
+          "parmi": ".feuille-panneau a"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "gestes": [
+        {
+          "js": "window.dispatchEvent(new CustomEvent('compyo:ouvrir-capture'))",
+          "attente": 1200
+        }
+      ],
+      "clip": {
+        "zone": [
+          {
+            "css": ".feuille-panneau"
+          }
+        ],
+        "marge": 28
+      },
+      "cibles": [
+        {
+          "texte": "Coller un message",
+          "parmi": ".feuille-panneau a"
+        },
+        {
+          "texte": "Photo ou capture",
+          "parmi": ".feuille-panneau a"
+        },
+        {
+          "texte": "Écrire moi-même",
+          "parmi": ".feuille-panneau a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "nouveau-coller",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=importer",
+      "cibles": [
+        {
+          "texte": "Coller le message copié"
+        },
+        {
+          "texte": "Préparer le projet"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=importer",
+      "clip": {
+        "zone": [
+          {
+            "css": "main h1"
+          },
+          {
+            "texte": "Préparer le projet"
+          }
+        ],
+        "marge": 32,
+        "minLargeur": 820
+      },
+      "cibles": [
+        {
+          "texte": "Coller le message copié"
+        },
+        {
+          "texte": "Préparer le projet"
+        }
+      ]
+    }
+  },
+  {
+    "id": "fiche-haut",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "clip": {
+        "zone": [
+          {
+            "css": "main header"
+          }
+        ],
+        "marge": 12,
+        "pleineLargeur": true
+      },
+      "cibles": [
+        {
+          "texte": "Appeler",
+          "parmi": "main header a, main header button"
+        },
+        {
+          "texte": "Message",
+          "parmi": "main header a, main header button"
+        },
+        {
+          "texte": "Itinéraire",
+          "parmi": "main header a, main header button"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "clip": {
+        "zone": [
+          {
+            "css": "main header"
+          }
+        ],
+        "marge": 20
+      },
+      "cibles": [
+        {
+          "texte": "Appeler",
+          "parmi": "main header a, main header button"
+        },
+        {
+          "texte": "Message",
+          "parmi": "main header a, main header button"
+        },
+        {
+          "texte": "Itinéraire",
+          "parmi": "main header a, main header button"
+        }
+      ]
+    }
+  },
+  {
+    "id": "fiche-ajouter",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "defiler": {
+        "css": "section[aria-labelledby='titre-maintenant']"
+      },
+      "clip": {
+        "zone": [
+          {
+            "css": "section[aria-labelledby='titre-maintenant']"
+          },
+          {
+            "css": "[aria-label='Ajouter au projet']"
+          }
+        ],
+        "marge": 14,
+        "pleineLargeur": true
+      },
+      "cibles": [
+        {
+          "texte": "Photo",
+          "parmi": "[aria-label='Ajouter au projet'] label"
+        },
+        {
+          "texte": "Dicter",
+          "parmi": "[aria-label='Ajouter au projet'] button"
+        },
+        {
+          "texte": "Note",
+          "parmi": "[aria-label='Ajouter au projet'] button"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "clip": {
+        "zone": [
+          {
+            "css": "section[aria-labelledby='titre-maintenant']"
+          },
+          {
+            "css": "[aria-label='Ajouter au projet']"
+          }
+        ],
+        "marge": 20
+      },
+      "cibles": [
+        {
+          "texte": "Photo",
+          "parmi": "[aria-label='Ajouter au projet'] label"
+        },
+        {
+          "texte": "Dicter",
+          "parmi": "[aria-label='Ajouter au projet'] button"
+        },
+        {
+          "texte": "Note",
+          "parmi": "[aria-label='Ajouter au projet'] button"
+        }
+      ]
+    }
+  },
+  {
+    "id": "fiche-note",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "gestes": [
+        {
+          "cliquer": {
+            "texte": "Note",
+            "parmi": "[aria-label='Ajouter au projet'] button"
+          },
+          "attente": 1200
+        }
+      ],
+      "cibles": [
+        {
+          "texte": "Demain 8 h",
+          "parmi": ".feuille-panneau button"
+        },
+        {
+          "texte": "Enregistrer",
+          "parmi": ".feuille-panneau button"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "gestes": [
+        {
+          "cliquer": {
+            "texte": "Note",
+            "parmi": "[aria-label='Ajouter au projet'] button"
+          },
+          "attente": 1200
+        }
+      ],
+      "clip": {
+        "zone": [
+          {
+            "css": ".feuille-panneau"
+          }
+        ],
+        "marge": 28
+      },
+      "cibles": [
+        {
+          "texte": "Demain 8 h",
+          "parmi": ".feuille-panneau button"
+        },
+        {
+          "texte": "Enregistrer",
+          "parmi": ".feuille-panneau button"
+        }
+      ]
+    }
+  },
+  {
+    "id": "devis-ia",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-nouveau",
+      "defiler": {
+        "css": "section[aria-labelledby='titre-maintenant']"
+      },
+      "clip": {
+        "zone": [
+          {
+            "css": "section[aria-labelledby='titre-maintenant']"
+          }
+        ],
+        "marge": 14,
+        "pleineLargeur": true
+      },
+      "cibles": [
+        {
+          "texte": "Préparer le devis"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-nouveau",
+      "clip": {
+        "zone": [
+          {
+            "css": "section[aria-labelledby='titre-maintenant']"
+          }
+        ],
+        "marge": 20
+      },
+      "cibles": [
+        {
+          "texte": "Préparer le devis"
+        }
+      ]
+    }
+  },
+  {
+    "id": "devis-relance",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-devis",
+      "defiler": {
+        "css": "section[aria-labelledby='titre-maintenant']"
+      },
+      "clip": {
+        "zone": [
+          {
+            "css": "section[aria-labelledby='titre-maintenant']"
+          }
+        ],
+        "marge": 14,
+        "pleineLargeur": true
+      },
+      "cibles": [
+        {
+          "texte": "Préparer une relance"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-devis",
+      "clip": {
+        "zone": [
+          {
+            "css": "section[aria-labelledby='titre-maintenant']"
+          }
+        ],
+        "marge": 20
+      },
+      "cibles": [
+        {
+          "texte": "Préparer une relance"
+        }
+      ]
+    }
+  },
+  {
+    "id": "planning-semaine",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=planning",
+      "cibles": [
+        {
+          "texte": "Famille Bernard-Lefèvre",
+          "parmi": "main button"
+        },
+        {
+          "css": "main button[aria-label^='Planifier le']"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=planning-grille",
+      "clip": {
+        "x": 240,
+        "y": 0,
+        "w": 900,
+        "h": 640
+      },
+      "cibles": [
+        {
+          "texte": "Pose meubles",
+          "parmi": "main div, main button, main a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "planning-planifier",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "gestes": [
+        {
+          "cliquer": {
+            "css": "button[aria-label=\"Plus d'actions\"]"
+          },
+          "attente": 700
+        },
+        {
+          "cliquer": {
+            "texte": "Planifier un rendez-vous",
+            "parmi": "[role=menuitem], button"
+          },
+          "attente": 1200
+        }
+      ],
+      "cibles": [
+        {
+          "texte": "Matin",
+          "parmi": ".feuille-panneau button"
+        },
+        {
+          "texte": "Planifier",
+          "parmi": ".feuille-panneau button"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=fiche-chantier",
+      "gestes": [
+        {
+          "cliquer": {
+            "css": "button[aria-label=\"Plus d'actions\"]"
+          },
+          "attente": 700
+        },
+        {
+          "cliquer": {
+            "texte": "Planifier un rendez-vous",
+            "parmi": "[role=menuitem], button"
+          },
+          "attente": 1200
+        }
+      ],
+      "clip": {
+        "zone": [
+          {
+            "css": ".feuille-panneau"
+          }
+        ],
+        "marge": 28
+      },
+      "cibles": [
+        {
+          "texte": "Matin",
+          "parmi": ".feuille-panneau button"
+        },
+        {
+          "texte": "Planifier",
+          "parmi": ".feuille-panneau button"
+        }
+      ]
+    }
+  },
+  {
+    "id": "planning-meteo",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=planning",
+      "clip": {
+        "zone": [
+          {
+            "texte": "SCI Les Tilleuls",
+            "parmi": "main button"
+          }
+        ],
+        "marge": 10,
+        "pleineLargeur": true
+      },
+      "cibles": [
+        {
+          "texte": "Prévenir",
+          "parmi": "main button"
+        }
+      ]
+    }
+  },
+  {
+    "id": "journee-maintenant",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "cibles": [
+        {
+          "texte": "Maintenant",
+          "parmi": "main a"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "clip": {
+        "x": 240,
+        "y": 0,
+        "w": 1040,
+        "h": 560
+      },
+      "cibles": [
+        {
+          "texte": "Maintenant",
+          "parmi": "main a"
+        }
+      ]
+    }
+  },
+  {
+    "id": "journee-rappel",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=notes&rappel=1",
+      "clip": {
+        "zone": [
+          {
+            "css": "[role=alertdialog] > div"
+          }
+        ],
+        "marge": 24,
+        "pleineLargeur": true
+      },
+      "cibles": [
+        {
+          "texte": "C'est fait"
+        },
+        {
+          "texte": "Plus tard"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=notes&rappel=1",
+      "clip": {
+        "zone": [
+          {
+            "css": "[role=alertdialog] > div"
+          }
+        ],
+        "marge": 32
+      },
+      "cibles": [
+        {
+          "texte": "C'est fait"
+        },
+        {
+          "texte": "Plus tard"
+        }
+      ]
+    }
+  },
+  {
+    "id": "journee-aregler",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "defiler": {
+        "css": "#a-regler"
+      },
+      "clip": {
+        "zone": [
+          {
+            "css": "#a-regler"
+          }
+        ],
+        "marge": 8,
+        "pleineLargeur": true
+      },
+      "cibles": [
+        {
+          "texte": "Oui",
+          "parmi": "#a-regler button"
+        },
+        {
+          "texte": "Pas encore",
+          "parmi": "#a-regler button"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-accueil",
+      "defiler": {
+        "css": "#a-regler"
+      },
+      "clip": {
+        "zone": [
+          {
+            "css": "#a-regler"
+          }
+        ],
+        "marge": 16
+      },
+      "cibles": [
+        {
+          "texte": "Oui",
+          "parmi": "#a-regler button"
+        },
+        {
+          "texte": "Pas encore",
+          "parmi": "#a-regler button"
+        }
+      ]
+    }
+  },
+  {
+    "id": "demarrer-parametres",
+    "telephone": {
+      "url": "http://localhost:3000/apercu-polish?ecran=parametres",
+      "cibles": [
+        {
+          "css": "button[aria-label='Compte']"
+        }
+      ]
+    },
+    "ordinateur": {
+      "url": "http://localhost:3000/apercu-polish?ecran=parametres",
+      "clip": {
+        "x": 0,
+        "y": 0,
+        "w": 1280,
+        "h": 760
+      },
+      "cibles": [
+        {
+          "texte": "Paramètres",
+          "parmi": "aside a"
+        }
+      ]
+    }
+  }
+]

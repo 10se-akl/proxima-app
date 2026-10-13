@@ -134,7 +134,11 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
   return (
     <div ref={conteneurRef} className="relative">
       <button
-        onClick={() => setOuvert((v) => !v)}
+        onClick={() => {
+          // 13/10 — un rappel créé il y a une minute doit y être.
+          if (!ouvert) charger();
+          setOuvert((v) => !v);
+        }}
         title="Notifications"
         aria-label="Notifications"
         className={`relative grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors ${

@@ -34,6 +34,7 @@ export function PopupRappel() {
   const organisationIdRef = useRef<string | null>(null);
   const [file, setFile] = useState<Note[]>([]);
   const [enCours, setEnCours] = useState(false);
+  const [erreur, setErreur] = useState(false);
 
   const verifier = useCallback(async () => {
     if (!organisationIdRef.current) {
@@ -78,9 +79,20 @@ export function PopupRappel() {
   // garde l'ancien comportement : la note reste dans la journée.
   async function fermer(note: Note, fait: boolean) {
     setEnCours(true);
-    await Promise.all([marquerNoteVue(supabase, note.id), fait ? marquerNoteTerminee(supabase, note.id, true) : null]);
-    setFile((prev) => prev.filter((n) => n.id !== note.id));
+    setErreur(false);
+    const [vue, terminee] = await Promise.all([
+      marquerNoteVue(supabase, note.id),
+      fait ? marquerNoteTerminee(supabase, note.id, true) : Promise.resolve(true),
+    ]);
     setEnCours(false);
+    // 13/10 — sans réseau, la fenêtre se fermait puis le même rappel
+    // revenait vingt secondes plus tard, sans explication.
+    if (vue === false || terminee === false) {
+      navigator.vibrate?.([12, 60, 12]);
+      setErreur(true);
+      return;
+    }
+    setFile((prev) => prev.filter((n) => n.id !== note.id));
     router.refresh();
   }
 
@@ -93,6 +105,7 @@ export function PopupRappel() {
       note={note}
       reste={file.length - 1}
       enCours={enCours}
+      erreur={erreur}
       surFait={() => fermer(note, true)}
       surPlusTard={() => fermer(note, false)}
     />
@@ -104,6 +117,7 @@ export function FenetreRappel({
   note,
   reste,
   enCours,
+  erreur = false,
   surFait,
   surPlusTard,
 }: {
@@ -111,6 +125,8 @@ export function FenetreRappel({
   /** Les autres rappels en attente après celui-ci. */
   reste: number;
   enCours: boolean;
+  /** Le dernier geste n'a pas été enregistré. */
+  erreur?: boolean;
   surFait: () => void;
   surPlusTard: () => void;
 }) {
@@ -144,6 +160,12 @@ export function FenetreRappel({
         {reste > 0 && (
           <p className="mt-4 text-sm text-steel">
             Puis {reste} autre{reste > 1 ? "s" : ""} rappel{reste > 1 ? "s" : ""}.
+          </p>
+        )}
+
+        {erreur && (
+          <p aria-live="polite" className="mt-4 text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+            Pas enregistré. Réessayez.
           </p>
         )}
 

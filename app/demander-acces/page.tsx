@@ -54,6 +54,9 @@ function DemanderAccesForm() {
   const [envoi, setEnvoi] = useState(false);
   const [envoye, setEnvoye] = useState(false);
   const [erreur, setErreur] = useState<string | null>(null);
+  // 13/10 — « Réessayer » seulement quand renvoyer la même chose peut
+  // marcher (réseau, serveur) ; pas pour une erreur de saisie.
+  const [reessayable, setReessayable] = useState(false);
 
   function update(field: keyof typeof form) {
     return (
@@ -72,6 +75,7 @@ function DemanderAccesForm() {
   // la saisie). Même pattern que components/carte-mentale/CarteMentale.tsx.
   async function envoyerCandidature() {
     setErreur(null);
+    setReessayable(false);
     setCompteExistant(false);
 
     // Vérifiées ici pour une réponse immédiate, et de nouveau côté serveur
@@ -103,6 +107,7 @@ function DemanderAccesForm() {
           setCompteExistant(true);
           return;
         }
+        setReessayable(res.status >= 500);
         setErreur(data?.error ?? "L'envoi a échoué. Réessayez dans un instant.");
         return;
       }
@@ -123,6 +128,7 @@ function DemanderAccesForm() {
       }
       setEnvoye(true);
     } catch {
+      setReessayable(true);
       setErreur("Connexion impossible. Vérifiez votre réseau et réessayez.");
     } finally {
       if (!redirection) setEnvoi(false);
@@ -326,7 +332,7 @@ function DemanderAccesForm() {
               </p>
             )}
 
-            {erreur && <ErreurInline message={erreur} onReessayer={envoyerCandidature} />}
+            {erreur && <ErreurInline message={erreur} onReessayer={reessayable ? envoyerCandidature : undefined} />}
 
             <p className="text-xs text-ink/50 -mt-1">
               En envoyant ce formulaire, vous acceptez nos{" "}

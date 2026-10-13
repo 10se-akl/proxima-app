@@ -26,7 +26,7 @@ export function ActionsCandidature({ candidature }: { candidature: Candidature }
     const confirme = window.confirm(
       action === "accepter"
         ? avecCompte
-          ? `Accepter ${nom} ? Son compte est ouvert immédiatement : il se connecte avec le mot de passe qu'il a choisi, et reçoit un email de confirmation.`
+          ? `Accepter ${nom} ? Son compte est ouvert immédiatement : il se connecte avec le mot de passe qu'il a choisi. Un email de confirmation part si l'envoi d'emails est configuré (sinon, tu le préviens toi-même).`
           : `Accepter ${nom} ? Un compte Compyo sera créé et un email d'invitation lui sera envoyé immédiatement.`
         : avecCompte
           ? `Refuser ${nom} ? Son compte sera supprimé. Cette action est définitive.`
@@ -51,7 +51,14 @@ export function ActionsCandidature({ candidature }: { candidature: Candidature }
       setErreur(data?.error ?? "Action impossible. Réessayez.");
       return;
     }
-    if (data?.info) setInfo(data.info);
+    // 13/10 — après router.refresh(), la carte change de liste (« En
+    // attente » → « Traitées ») et ce composant est remonté à neuf : le
+    // message était perdu avant d'être lu. On l'affiche d'abord, dans une
+    // fenêtre qu'il faut fermer.
+    if (data?.info) {
+      setInfo(data.info);
+      window.alert(data.info);
+    }
 
     router.refresh();
   }

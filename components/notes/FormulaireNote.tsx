@@ -202,6 +202,10 @@ export function FormulaireNote({
     recognition.continuous = true;
     recognition.interimResults = false;
     let texteFinal = "";
+    // 13/10 — ce qui était déjà écrit (ou le brouillon retrouvé) reste : la
+    // dictée s'ajoute à la suite au lieu de le remplacer.
+    const dejaEcrit = texte.trim();
+    const ajouter = (dicte: string) => setTexte(dejaEcrit ? `${dejaEcrit}\n${dicte}` : dicte);
     recognition.onresult = (event) => {
       texteFinal = assemblerTranscription(event.results);
     };
@@ -222,18 +226,18 @@ export function FormulaireNote({
           // rien de ce qui est dit ne se perd (27/09).
           const titre = String(data.titre ?? "").trim();
           const suite = data.description?.trim() || (texteDicte !== titre ? texteDicte : "");
-          setTexte([titre, suite].filter(Boolean).join("\n"));
+          ajouter([titre, suite].filter(Boolean).join("\n"));
           if (data.importance === "orange" || data.importance === "rouge") setImportance(data.importance);
           if (data.demandeIdSuggere && !projetIdFixe) {
             setDemandeId(data.demandeIdSuggere);
             setProjetSuggereNom(data.nomClientSuggere ?? null);
           }
         } else {
-          setTexte(texteDicte);
+          ajouter(texteDicte);
         }
       } catch {
         // Hors réseau : le texte dicté tel quel, à relire.
-        setTexte(texteDicte);
+        ajouter(texteDicte);
       } finally {
         setDicteeEnCours(false);
       }

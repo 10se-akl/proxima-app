@@ -124,7 +124,7 @@ export async function preparerBrouillonDepuisTexte(
         : "absent",
     },
     resume: {
-      valeur: extrait.resume?.valeur?.trim() || "À préciser avec l'artisan.",
+      valeur: extrait.resume?.valeur?.trim() || "À préciser avec le client.",
       confiance: extrait.resume?.valeur?.trim() ? niveauValide(extrait.resume?.confiance) : "absent",
     },
     priorite: {

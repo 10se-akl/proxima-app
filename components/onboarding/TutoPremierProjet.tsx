@@ -75,7 +75,7 @@ export function TutoPremierProjet() {
     } catch {
       // Sans conséquence : au pire, le tuto se rejoue une fois.
     }
-    window.dispatchEvent(new Event("compyo:tuto-termine"));
+    window.dispatchEvent(new CustomEvent("compyo:tuto-termine", { detail: { capture: ouvrirCapture } }));
     // Le vrai premier projet, tout de suite : la même feuille que le [+].
     if (ouvrirCapture) setTimeout(() => window.dispatchEvent(new Event("compyo:ouvrir-capture")), 250);
   }

@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Complétez d'abord vos informations d'entreprise (Paramètres → Informations légales) avant de créer une facture.",
+          "Complétez d'abord vos informations d'entreprise (Paramètres → Mentions légales) avant de créer une facture.",
       },
       { status: 400 }
     );
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
   // document non conforme sans que l'artisan ne le sache.
   if (!parametres.siret?.trim()) {
     return NextResponse.json(
-      { error: "Renseignez votre SIRET dans Paramètres → Informations légales avant de créer une facture." },
+      { error: "Renseignez votre SIRET dans Paramètres → Mentions légales avant de créer une facture." },
       { status: 400 }
     );
   }

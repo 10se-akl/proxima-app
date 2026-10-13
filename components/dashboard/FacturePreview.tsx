@@ -169,9 +169,10 @@ export function FacturePreview({
 
         {!estAvoir && (
           <p className="px-5 py-3 border-t border-ink/10 text-[10.5px] text-ink/40 leading-relaxed">
-            En cas de retard de paiement, une pénalité au taux d&apos;intérêt légal en vigueur majoré de 10 points est
-            exigible de plein droit, ainsi qu&apos;une indemnité forfaitaire pour frais de recouvrement de 40 €
-            (articles L441-10 et D441-5 du Code de commerce). Pas d&apos;escompte pour paiement anticipé.
+            En cas de retard de paiement, des pénalités au taux de refinancement de la Banque centrale européenne
+            majoré de 10 points sont exigibles de plein droit (article L441-10 du Code de commerce) ; pour un client
+            professionnel, s&apos;y ajoute une indemnité forfaitaire pour frais de recouvrement de 40 € (article
+            D441-5). Pas d&apos;escompte pour paiement anticipé.
           </p>
         )}
       </div>

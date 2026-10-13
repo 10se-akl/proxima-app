@@ -40,6 +40,7 @@ export function FeuilleLigne({
   ligne,
   tarifs,
   surFermer,
+  surDescription,
   surQuantite,
   surPrix,
   surRetirer,
@@ -47,6 +48,10 @@ export function FeuilleLigne({
   ligne: LigneEditee | null;
   tarifs?: TarifsEditeur | null;
   surFermer: () => void;
+  /** 13/10 — le texte de la ligne se corrige ici aussi : une ligne de
+   *  devis express arrivait vide, et la validation demandait une
+   *  description qu'on ne pouvait écrire nulle part sur téléphone. */
+  surDescription: (cle: string, valeur: string) => void;
   surQuantite: (cle: string, valeur: number) => void;
   surPrix: (cle: string, valeur: number) => void;
   surRetirer: (cle: string) => void;
@@ -61,6 +66,7 @@ export function FeuilleLigne({
           ligne={ligne}
           tarifs={tarifs}
           surFermer={surFermer}
+          surDescription={surDescription}
           surQuantite={surQuantite}
           surPrix={surPrix}
           surRetirer={surRetirer}
@@ -74,6 +80,7 @@ function ContenuLigne({
   ligne,
   tarifs,
   surFermer,
+  surDescription,
   surQuantite,
   surPrix,
   surRetirer,
@@ -81,10 +88,12 @@ function ContenuLigne({
   ligne: LigneEditee;
   tarifs?: TarifsEditeur | null;
   surFermer: () => void;
+  surDescription: (cle: string, valeur: string) => void;
   surQuantite: (cle: string, valeur: number) => void;
   surPrix: (cle: string, valeur: number) => void;
   surRetirer: (cle: string) => void;
 }) {
+  const idDescription = useId();
   const idQuantite = useId();
   const idPrix = useId();
   const [texteQuantite, setTexteQuantite] = useState(() => texteDepuisNombre(ligne.quantite));
@@ -121,6 +130,20 @@ function ContenuLigne({
         <p className="text-base text-steel">Calculée pour atteindre votre minimum d&apos;heures.</p>
       ) : (
         <>
+          <div className="mb-4">
+            <label htmlFor={idDescription} className="text-sm text-steel">
+              Ce qui est fait
+            </label>
+            <textarea
+              id={idDescription}
+              value={ligne.description}
+              onChange={(e) => surDescription(ligne.cle, e.target.value)}
+              autoFocus={!ligne.description.trim()}
+              rows={2}
+              placeholder="Ex : Remplacement du siphon"
+              className="mt-1 w-full resize-none rounded-2xl bg-paper px-4 py-3 text-base text-ink ring-1 ring-inset ring-ink/30 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
+            />
+          </div>
           <div>
             <label htmlFor={idQuantite} className="text-sm text-steel">
               Quantité

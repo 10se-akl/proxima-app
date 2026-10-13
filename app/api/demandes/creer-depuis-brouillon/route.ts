@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
   // plutôt que de bloquer la création (principe de friction minimale
   // demandé : le bouton de validation ne doit jamais être bloqué).
   const nomClient = brouillon.nomClient?.valeur?.trim() || "Client à identifier";
-  const resume = brouillon.resume?.valeur?.trim() || "Projet créé depuis un partage — à compléter.";
+  const resume = brouillon.resume?.valeur?.trim() || "Demande à préciser avec le client.";
   const telephoneClient = brouillon.telephoneClient?.valeur?.trim() || null;
   const adresseClient = brouillon.adresseClient?.valeur?.trim() || null;
 
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     artisanId: user.id,
     organisationId,
     type: "message_importe",
-    titre: "Premier contact — projet créé depuis un partage",
+    titre: "Premier contact",
     detail: resume,
   });
 

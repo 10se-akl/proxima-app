@@ -11,6 +11,7 @@ import {
   marquerInstallationDejaProposee,
 } from "@/lib/pwa/installPrompt";
 import { tutoDejaVu } from "@/components/onboarding/TutoPremierProjet";
+import { detecterPlateforme, installationBloqueeParAndroid } from "@/lib/pwa/plateforme";
 
 // ============================================================
 // Premier lancement — proposer d'installer Compyo sur le téléphone, une
@@ -31,6 +32,8 @@ const CLE_ONBOARDING_VU = "compyo-onboarding-vu";
 export function PremierLancement() {
   const [visible, setVisible] = useState(false);
   const [modeIOS, setModeIOS] = useState(false);
+  const [ordinateur, setOrdinateur] = useState(false);
+  const [bloqueAndroid, setBloqueAndroid] = useState(false);
   const [installationEnCours, setInstallationEnCours] = useState(false);
 
   useEffect(() => {
@@ -49,13 +52,22 @@ export function PremierLancement() {
     if (!dejaVu) {
       const afficher = () => {
         setModeIOS(estIOS());
+        setOrdinateur(detecterPlateforme() === "desktop");
+        setBloqueAndroid(installationBloqueeParAndroid());
         setVisible(true);
       };
       // 03/10 — jamais par-dessus le mini-tuto : on attend sa fin.
+      // 13/10 — et pas non plus par-dessus son premier vrai projet : si le
+      // tuto se termine sur « À moi : mon premier projet », la question
+      // attend la prochaine ouverture de l'application.
+      const apresTuto = (e: Event) => {
+        if ((e as CustomEvent<{ capture?: boolean }>).detail?.capture) return;
+        afficher();
+      };
       if (tutoDejaVu()) afficher();
       else {
-        window.addEventListener("compyo:tuto-termine", afficher, { once: true });
-        return () => window.removeEventListener("compyo:tuto-termine", afficher);
+        window.addEventListener("compyo:tuto-termine", apresTuto, { once: true });
+        return () => window.removeEventListener("compyo:tuto-termine", apresTuto);
       }
     }
   }, []);
@@ -97,17 +109,33 @@ export function PremierLancement() {
         className="onboarding-entree w-full rounded-t-3xl bg-surface p-6 shadow-xl shadow-ink/20 ring-1 ring-ink/10 [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-3xl sm:p-8"
       >
         <h2 id="titre-premier-lancement" className="font-display text-xl font-semibold text-ink">
-          Compyo sur votre téléphone
+          {ordinateur ? "Compyo sur votre ordinateur" : "Compyo sur votre téléphone"}
         </h2>
         <p className="mt-2 text-base text-steel">
-          {modeIOS
-            ? "Appuyez sur Partager, puis « Sur l'écran d'accueil » : Compyo s'ouvre ensuite d'un geste."
-            : "Installez Compyo : il s'ouvre ensuite d'un geste, comme une application."}
+          {bloqueAndroid
+            ? "Sur ce téléphone, Compyo s'installe depuis Chrome : ouvrez cette page dans Chrome, puis « Installer »."
+            : modeIOS
+              ? "Appuyez sur Partager, puis « Sur l'écran d'accueil » : Compyo s'ouvre ensuite d'un geste."
+              : ordinateur
+                ? "Installez Compyo : il s'ouvre ensuite d'un clic, dans sa propre fenêtre."
+                : "Installez Compyo : il s'ouvre ensuite d'un geste, comme une application."}
         </p>
         <div className="mt-6 flex flex-col gap-2">
-          <Button onClick={installer} loading={installationEnCours} className="min-h-14 w-full">
-            {modeIOS ? "J'ai compris" : "Installer Compyo"}
-          </Button>
+          {bloqueAndroid ? (
+            <Button
+              onClick={() => {
+                terminer();
+                window.location.href = "/installer";
+              }}
+              className="min-h-14 w-full"
+            >
+              Voir comment faire
+            </Button>
+          ) : (
+            <Button onClick={installer} loading={installationEnCours} className="min-h-14 w-full">
+              {modeIOS ? "J'ai compris" : "Installer Compyo"}
+            </Button>
+          )}
           <Button variant="ghost" onClick={terminer} className="w-full">
             Continuer dans le navigateur
           </Button>

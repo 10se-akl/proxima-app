@@ -32,8 +32,11 @@ function PavéSignature({ canvasRef }: { canvasRef: React.RefObject<HTMLCanvasEl
   const dessineRef = useRef(false);
 
   function position(e: React.PointerEvent<HTMLCanvasElement>) {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    const canvas = e.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const echelleX = rect.width > 0 ? canvas.width / rect.width : 1;
+    const echelleY = rect.height > 0 ? canvas.height / rect.height : 1;
+    return { x: (e.clientX - rect.left) * echelleX, y: (e.clientY - rect.top) * echelleY };
   }
 
   function demarrer(e: React.PointerEvent<HTMLCanvasElement>) {
@@ -53,7 +56,7 @@ function PavéSignature({ canvasRef }: { canvasRef: React.RefObject<HTMLCanvasEl
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
     const { x, y } = position(e);
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 3;
     ctx.lineCap = "round";
     ctx.strokeStyle = "#1F2937";
     ctx.lineTo(x, y);
@@ -86,7 +89,7 @@ function PavéSignature({ canvasRef }: { canvasRef: React.RefObject<HTMLCanvasEl
       <button
         type="button"
         onClick={effacer}
-        className="mt-1.5 text-xs text-ink/50 hover:text-ink underline transition-colors"
+        className="mt-1 inline-flex min-h-12 items-center text-base text-ink underline decoration-ink/30 underline-offset-4"
       >
         Effacer
       </button>
@@ -243,7 +246,7 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
             )}
 
             <div className="mt-6">
-              {(reponseEnregistree || devis.devis_statut === "refuse" || devis.demande_statut === "accepte") ? (
+              {(reponseEnregistree || devis.devis_statut === "refuse" || ["accepte", "en_cours", "termine"].includes(devis.demande_statut ?? "")) ? (
                 // Retravaillé le 13/09 : ce bloc est le dernier écran que
                 // voit le client après avoir engagé plusieurs milliers
                 // d'euros. Une phrase grise dans un cadre, sans le montant
@@ -252,7 +255,7 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                 // clairement, on rappelle ce qui a été accepté, et on dit
                 // ce qu'il se passe ensuite.
                 <div className="rounded-2xl border border-ink/10 bg-surface p-6 text-center">
-                  {reponseEnregistree === "accepte" || devis.demande_statut === "accepte" ? (
+                  {reponseEnregistree === "accepte" || ["accepte", "en_cours", "termine"].includes(devis.demande_statut ?? "") ? (
                     <>
                       <span className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-[#2F8F5B]/12 text-[#2F8F5B] text-xl">
                         ✓

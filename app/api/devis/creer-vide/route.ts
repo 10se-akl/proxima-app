@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
         sous_total_ht: 0,
         deplacement: parametres.forfait_deplacement ?? 0,
         marge_pct: parametres.marge_defaut_pct ?? 0,
-        tva_pct: parametres.tva_pct ?? 20,
+        tva_pct: parametres.mention_tva_non_applicable ? 0 : (parametres.tva_pct ?? 20),
         montant_tva: 0,
         total_estime: 0,
         statut: "brouillon",

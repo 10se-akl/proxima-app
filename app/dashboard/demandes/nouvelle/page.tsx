@@ -414,7 +414,9 @@ export default function NouveauProjetPage() {
     });
 
     effacerBrouillonDescription();
-    router.push(`/dashboard/demandes/${data.id}?cree=1`);
+    // 13/10 — replace, comme les autres créations : le retour Android ne
+    // rouvre plus un formulaire vide, qu'on risquait de remplir à nouveau.
+    router.replace(`/dashboard/demandes/${data.id}?cree=1`);
   }
 
   return (
@@ -474,19 +476,17 @@ export default function NouveauProjetPage() {
             />
             {anciensProjets.length > 0 && (
               <div className="mt-2 rounded-xl border border-ink/10 bg-paper-warm p-3">
-                <p className="text-xs text-ink/50">
+                <p className="text-sm text-steel">
                   {anciensProjets.length === 1
-                    ? "Un projet existe déjà pour ce nom :"
-                    : `${anciensProjets.length} projets existent déjà pour ce nom :`}
+                    ? "Ce client a déjà un projet :"
+                    : `Ce client a déjà ${anciensProjets.length} projets :`}
                 </p>
                 <div className="mt-2 flex flex-col gap-1">
                   {anciensProjets.map((p) => (
                     <Link
                       key={p.id}
                       href={`/dashboard/demandes/${p.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs text-ink/70 hover:text-ink underline underline-offset-2 transition-colors"
+                      className="inline-flex min-h-12 items-center text-base text-ink underline decoration-ink/30 underline-offset-4"
                     >
                       {LABEL_TYPE_CHANTIER[p.type_chantier] || "Chantier"} —{" "}
                       {LABEL_STATUT[p.statut as keyof typeof LABEL_STATUT] ?? p.statut} (

@@ -225,7 +225,7 @@ export default function DetailDemandePage({
       // réduit d'autant le temps de chargement de la fiche projet — sensible
       // sur un chantier avec un réseau mobile faible.
       const [
-        { data: demandeData },
+        { data: demandeData, error: erreurDemande },
         { data: devisData },
         { data: notesData },
         { data: evenementsData },
@@ -262,6 +262,13 @@ export default function DetailDemandePage({
           .order("date_heure", { ascending: true }),
       ]);
 
+      // 13/10 — sans réseau, Supabase ne lève pas d'exception : il renvoie
+      // une erreur. La fiche disait alors « Projet introuvable. Supprimé,
+      // ou d'une autre équipe. » : c'est la connexion qu'il faut dire.
+      if (erreurDemande) {
+        setErreurChargement("Impossible de charger cette fiche projet. Vérifiez votre connexion et réessayez.");
+        return;
+      }
       if (!demandeData) {
         setIntrouvable(true);
         return;
@@ -1019,11 +1026,14 @@ export default function DetailDemandePage({
   }
 
   // Informations complémentaires (facultatives, ajoutées après coup)
-  const [infos, setInfos] = useState({
-    telephone_client: "",
-    adresse_client: "",
-    type_chantier: "autre",
-  });
+  // 13/10 — le nom du client se corrige ici aussi (avant, un projet créé
+  // sans nom restait « Client à identifier » pour toujours). Et on n'écrit
+  // que ce qui a changé depuis l'ouverture : un numéro ajouté depuis la
+  // feuille « Message » n'est plus effacé par un enregistrement d'adresse.
+  const INFOS_VIDES = { nom_client: "", telephone_client: "", adresse_client: "", type_chantier: "autre" };
+  const [infos, setInfos] = useState(INFOS_VIDES);
+  const [infosBase, setInfosBase] = useState(INFOS_VIDES);
+  const [enregistrementInfos, setEnregistrementInfos] = useState(false);
   // Sprint Robustesse (30/08) — même bug que erreurNotes ci-dessus : un
   // échec Supabase sur enregistrerInfos ne se traduisait par rien à
   // l'écran, l'artisan pensant ses coordonnées client enregistrées.
@@ -1031,28 +1041,36 @@ export default function DetailDemandePage({
 
   useEffect(() => {
     if (demande) {
-      setInfos({
+      const valeurs = {
+        nom_client: demande.nom_client ?? "",
         telephone_client: demande.telephone_client ?? "",
         adresse_client: demande.adresse_client ?? "",
         type_chantier: demande.type_chantier ?? "autre",
-      });
+      };
+      setInfos(valeurs);
+      setInfosBase(valeurs);
     }
-  }, [demande?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [demande?.id, demande?.nom_client, demande?.telephone_client, demande?.adresse_client, demande?.type_chantier]); // eslint-disable-line react-hooks/exhaustive-deps
 
   async function enregistrerInfos(): Promise<boolean> {
-    if (!demande) return false;
+    if (!demande || enregistrementInfos) return false;
+    const maj: Record<string, string | null> = {};
+    const nom = infos.nom_client.trim();
+    if (nom && nom !== infosBase.nom_client.trim()) maj.nom_client = nom;
+    if (infos.telephone_client.trim() !== infosBase.telephone_client.trim()) maj.telephone_client = infos.telephone_client.trim() || null;
+    if (infos.adresse_client.trim() !== infosBase.adresse_client.trim()) maj.adresse_client = infos.adresse_client.trim() || null;
+    if (infos.type_chantier !== infosBase.type_chantier) maj.type_chantier = infos.type_chantier;
+    if (Object.keys(maj).length === 0) {
+      setErreurInfos(null);
+      return true;
+    }
+    setEnregistrementInfos(true);
     const resultat = await executerMutation(
-      supabase
-        .from("demandes")
-        .update({
-          telephone_client: infos.telephone_client || null,
-          adresse_client: infos.adresse_client || null,
-          type_chantier: infos.type_chantier,
-        })
-        .eq("id", demande.id),
+      supabase.from("demandes").update(maj).eq("id", demande.id),
       "Impossible d'enregistrer. Réessayez."
     );
     if (!resultat.ok) {
+      setEnregistrementInfos(false);
       setErreurInfos(resultat.erreur);
       return false;
     }
@@ -1067,6 +1085,7 @@ export default function DetailDemandePage({
       });
     }
     await rafraichir({ projet: true });
+    setEnregistrementInfos(false);
     return true;
   }
 
@@ -1270,6 +1289,14 @@ export default function DetailDemandePage({
           ),
           infos: (fermer) => (
             <div className="grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Field
+                  label="Nom du client"
+                  autoComplete="off"
+                  value={infos.nom_client}
+                  onChange={(e) => setInfos({ ...infos, nom_client: e.target.value })}
+                />
+              </div>
               <Field
                 label="Téléphone du client"
                 type="tel"
@@ -1277,12 +1304,12 @@ export default function DetailDemandePage({
                 onChange={(e) => setInfos({ ...infos, telephone_client: e.target.value })}
               />
               <div>
-                <label className="mb-1.5 block text-xs font-medium text-ink/70">Type de chantier</label>
+                <label className="mb-1.5 block text-sm text-steel">Type de chantier</label>
                 <select
                   value={infos.type_chantier}
                   onChange={(e) => setInfos({ ...infos, type_chantier: e.target.value })}
                   aria-label="Type de chantier"
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
+                  className="min-h-12 w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-base text-ink transition-colors focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15"
                 >
                   {TYPES_CHANTIER.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -1300,6 +1327,7 @@ export default function DetailDemandePage({
               </div>
               <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
                 <Button
+                  loading={enregistrementInfos}
                   onClick={async () => {
                     if (await enregistrerInfos()) fermer();
                   }}

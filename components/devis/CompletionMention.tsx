@@ -59,7 +59,7 @@ export const COMPLETIONS: Record<string, { raison: string; champs: Champ[] }> = 
     raison: "Obligatoire pour un client particulier — votre médiateur de la consommation.",
     champs: [
       { cle: "mediateur_nom", label: "Nom du médiateur" },
-      { cle: "mediateur_url", label: "Site du médiateur", type: "url", placeholder: "www.exemple-mediation.fr", facultatif: true },
+      { cle: "mediateur_url", label: "Site du médiateur", type: "text", placeholder: "www.exemple-mediation.fr", facultatif: true },
     ],
   },
   forme_juridique: {

@@ -99,7 +99,7 @@ export function evaluerDevis(
         "decennale",
         !vide(m?.assurance_decennale_compagnie) && !vide(m?.assurance_decennale_police),
         "Assurance décennale",
-        "Obligatoire sur un devis de travaux du bâtiment (art. L243-3 du code des assurances) : assureur et numéro de police. Son absence peut coûter très cher en cas de contrôle.",
+        "Obligatoire sur un devis de travaux du bâtiment (art. L243-2 du code des assurances) : assureur et numéro de police. Son absence peut coûter très cher en cas de contrôle.",
         { lien: PARAMETRES, detailOk: "Assureur et numéro de police indiqués sur le devis." }
       ),
     },

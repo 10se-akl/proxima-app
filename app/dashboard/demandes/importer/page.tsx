@@ -9,6 +9,27 @@ import {
   type ProjetOuvertMatch,
 } from "@/components/dashboard/CorrespondanceProjetExistant";
 import type { BrouillonProjet } from "@/types";
+import { extraireTelephone } from "@/lib/clients/extraireTelephone";
+
+// 13/10 — si l'IA échoue (indisponible, quota, délai), « Coller un
+// message » ne s'arrête plus sur « L'analyse a échoué » : la relecture
+// s'affiche quand même, remplie du message et du numéro trouvé dedans,
+// comme pour le partage Android (partage/[id]/page.tsx). « Créer le
+// projet » marche toujours.
+function brouillonDeSecours(texte: string): BrouillonProjet {
+  const telephone = extraireTelephone(texte);
+  return {
+    nomClient: { valeur: null, confiance: "absent" },
+    telephoneClient: { valeur: telephone, confiance: telephone ? "explicite" : "absent" },
+    adresseClient: { valeur: null, confiance: "absent" },
+    typeChantier: { valeur: "autre", confiance: "absent" },
+    resume: { valeur: texte.slice(0, 280), confiance: "absent" },
+    priorite: { valeur: "normal", confiance: "absent" },
+    rdvDate: { valeur: null, confiance: "absent" },
+    rdvHeure: { valeur: null, confiance: "absent" },
+    texteOrigine: texte,
+  };
+}
 
 type RdvPropose = { date: string; heure: string };
 
@@ -79,7 +100,8 @@ export default function ImporterMessagePage() {
     } catch (err) {
       setChargement(false);
       if ((err as Error).name !== "AbortError") {
-        setErreur("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
+        setErreur("Pas de réponse pour l'instant. Complétez, puis créez le projet.");
+        setBrouillon(brouillonDeSecours(texte));
       }
       return;
     }
@@ -87,8 +109,8 @@ export default function ImporterMessagePage() {
     setChargement(false);
 
     if (!res.ok) {
-      const data = await res.json().catch(() => null);
-      setErreur(data?.error ?? "L'analyse a échoué. Réessayez.");
+      setErreur("Le message n'a pas pu être lu. Complétez, puis créez le projet.");
+      setBrouillon(brouillonDeSecours(texte));
       return;
     }
 

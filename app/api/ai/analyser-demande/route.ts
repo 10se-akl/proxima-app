@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     supabase
       .from("demandes")
       .select(
-        "description, informations_disponibles, notes, questions_manquantes, derniere_modification_le, derniere_analyse_le"
+        "description, informations_disponibles, notes, questions_manquantes, derniere_modification_le, derniere_analyse_le, statut"
       )
       .eq("id", demandeId)
       // Filtre organisation_id explicite en plus de la RLS : défense en
@@ -205,11 +205,15 @@ ${formaterNotesPourPromptIA(notesActives)}`;
     // Horodate cette analyse pour pouvoir détecter, la prochaine fois,
     // qu'aucune note n'a été ajoutée depuis — voir peutAnalyser côté
     // interface, qui compare cette date à derniere_modification_le.
+    // 13/10 — « Résumer mes notes » sur un chantier signé, en cours ou
+    // devisé le ramenait à « Demande » (et la facturation disparaissait de
+    // la fiche) : le statut n'avance vers « analyse » qu'au tout début.
+    const statutAuDebut = !projet.statut || projet.statut === "nouveau" || projet.statut === "analyse";
     const { error: updateError } = await supabase
       .from("demandes")
       .update({
         questions_manquantes: analyse,
-        statut: "analyse",
+        ...(statutAuDebut ? { statut: "analyse" } : {}),
         derniere_analyse_le: new Date().toISOString(),
       })
       .eq("id", demandeId)

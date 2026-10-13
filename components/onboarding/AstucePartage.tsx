@@ -37,7 +37,7 @@ export function AstucePartage() {
     <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-signal/20 bg-signal/5 px-4 py-2.5">
       <p className="text-xs text-ink/70">
         💡 Astuce : la prochaine fois, essayez WhatsApp/SMS → <strong>Partager</strong> →{" "}
-        <strong>Compyo</strong>. Le projet se crée tout seul.
+        <strong>Compyo</strong>. Compyo prépare le projet, vous validez.
       </p>
       <button
         onClick={() => {

@@ -74,6 +74,13 @@ function compresserImage(fichier: File): Promise<{ base64: string; mediaType: st
   });
 }
 
+/** « 2026-10-15 » devient « mercredi 15 octobre » (13/10). */
+function dateEnMots(iso: string): string {
+  const d = new Date(`${iso}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
+}
+
 export default function ImporterCapturePage() {
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -224,11 +231,20 @@ export default function ImporterCapturePage() {
       rdvHeure: l.extrait!.rdv_heure,
     }));
 
-    const res = await fetch("/api/ai/confirmer-import-captures", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ lignes: payload }),
-    });
+    // 13/10 — une coupure réseau ici laissait « Import en cours… » figé
+    // pour toujours, sans message.
+    let res: Response;
+    try {
+      res = await fetch("/api/ai/confirmer-import-captures", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lignes: payload }),
+      });
+    } catch {
+      setImportEnCours(false);
+      setErreurGlobale("Pas de réseau : rien n'a été importé. Réessayez.");
+      return;
+    }
 
     setImportEnCours(false);
 
@@ -265,16 +281,18 @@ export default function ImporterCapturePage() {
             accept="image/*"
             multiple
             onChange={(e) => analyserFichiers(e.target.files)}
+            disabled={analyseEnCours}
             className="hidden"
             id="captures-input"
           />
           <label
             htmlFor="captures-input"
-            className="inline-flex items-center gap-2 rounded-xl bg-ink text-paper text-sm font-medium px-4 py-2.5 transition-all duration-150 hover:bg-signal hover:scale-[1.02] hover:shadow-md cursor-pointer"
+            aria-disabled={analyseEnCours}
+            className={`inline-flex min-h-12 items-center gap-2 rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 cursor-pointer ${analyseEnCours ? "pointer-events-none opacity-60" : ""}`}
           >
-            {analyseEnCours ? "Analyse en cours…" : "📷 Choisir des captures d'écran"}
+            {analyseEnCours ? "Lecture des captures…" : "Choisir des captures d'écran"}
           </label>
-          {erreurGlobale && <p className="mt-3 text-sm text-signal">{erreurGlobale}</p>}
+          {erreurGlobale && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreurGlobale}</p>}
         </Card>
       )}
 
@@ -317,7 +335,7 @@ export default function ImporterCapturePage() {
                         <p className="mt-1 text-sm text-ink/60">{l.extrait!.description_resumee}</p>
                         {l.extrait!.rdv_date && (
                           <p className="mt-1 text-xs text-steel">
-                            Rendez-vous proposé le {l.extrait!.rdv_date}
+                            Rendez-vous proposé le {dateEnMots(l.extrait!.rdv_date)}
                             {l.extrait!.rdv_heure ? ` à ${l.extrait!.rdv_heure}` : ""} — à planifier
                             vous-même après import.
                           </p>

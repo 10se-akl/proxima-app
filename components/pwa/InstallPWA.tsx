@@ -154,6 +154,13 @@ export function InstallPWA() {
     if (!dejaPropose) {
       minuteur = setTimeout(() => {
         if (!peutProposerInstallation()) return;
+        // 13/10 — l'écran du premier lancement a pu poser la même question
+        // pendant ces 30 secondes : on ne la repose pas.
+        try {
+          if (window.localStorage.getItem(CLE_DEJA_PROPOSE_AUTO) === "1") return;
+        } catch {
+          // Stockage indisponible : on propose, tant pis.
+        }
         try {
           window.localStorage.setItem(CLE_DEJA_PROPOSE_AUTO, "1");
         } catch {

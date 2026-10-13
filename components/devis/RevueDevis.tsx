@@ -312,6 +312,7 @@ export function RevueDevis({
         ligne={ligneOuverte}
         tarifs={tarifs}
         surFermer={() => setCleOuverte(null)}
+        surDescription={(cle, valeur) => setLignes((prev) => lignesAvecValeur(prev, cle, "description", valeur, tarifs))}
         surQuantite={(cle, valeur) => setLignes((prev) => lignesAvecValeur(prev, cle, "quantite", String(valeur), tarifs))}
         surPrix={(cle, valeur) =>
           setLignes((prev) => lignesAvecValeur(prev, cle, "prix_unitaire", String(valeur), tarifs))

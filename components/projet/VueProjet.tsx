@@ -344,6 +344,12 @@ export function VueProjet({
   // Après la signature, « changé depuis le devis signé » est le détail de
   // la ligne du devis (refonte 03/10, duel D lot 3).
   const engage = projet.statut === "accepte" || projet.statut === "en_cours" || projet.statut === "termine";
+  // 13/10 — la colonne de droite (À retenir, Argent) n'existe que si elle a
+  // quelque chose à montrer : sur un projet neuf, elle laissait 23rem vides
+  // à côté d'une colonne étroite. Et deux colonnes à partir de 1280 px
+  // seulement : avec la barre latérale, un écran de 1024 n'en laissait que
+  // 720 (« Commander les deux robinets … »).
+  const deuxColonnes = memoOuvert || Boolean(devis);
   const changeDepuisSigne =
     engage &&
     devis !== null &&
@@ -351,7 +357,7 @@ export function VueProjet({
     new Date(projet.derniere_modification_le as string) > new Date(devis.created_at);
 
   return (
-    <div className="mx-auto w-full max-w-6xl px-4 pb-28 pt-4 sm:px-8 sm:pb-16 sm:pt-8">
+    <div className={`mx-auto w-full px-4 pb-28 pt-4 sm:px-8 sm:pb-16 sm:pt-8 ${deuxColonnes ? "max-w-6xl" : "max-w-3xl"}`}>
       <EnTeteProjet
         nomClient={projet.nom_client}
         sousTitre={sousTitre}
@@ -378,8 +384,12 @@ export function VueProjet({
       {/* Téléphone : une colonne, dans l'ordre d'usage. Ordinateur : le
           Point et le Carnet à gauche, le mémo et le dossier à droite, qui
           restent sous les yeux pendant qu'on fait défiler le Carnet. */}
-      <div className="mt-6 grid grid-cols-[minmax(0,1fr)] gap-4 sm:gap-5 lg:grid-cols-[minmax(0,1fr)_21rem] lg:grid-rows-[auto_auto_auto_1fr] lg:gap-x-8 xl:grid-cols-[minmax(0,1fr)_23rem]">
-        <div className="lg:col-start-1 lg:row-start-1">
+      <div
+        className={`mt-6 grid grid-cols-[minmax(0,1fr)] gap-4 sm:gap-5 ${
+          deuxColonnes ? "xl:grid-cols-[minmax(0,1fr)_23rem] xl:grid-rows-[auto_auto_auto_1fr] xl:gap-x-8" : ""
+        }`}
+      >
+        <div className="xl:col-start-1 xl:row-start-1">
           <Maintenant
             point={point}
             surAction={agir}
@@ -393,7 +403,7 @@ export function VueProjet({
             }
           />
         </div>
-        <div className="lg:col-start-1 lg:row-start-2">
+        <div className="xl:col-start-1 xl:row-start-2">
           <BandeAjout
             idChampPhoto={rendus.capture.idChamp}
             photoPleine={projet.statut === "en_cours" && !point.accuse}
@@ -418,7 +428,7 @@ export function VueProjet({
             />
           )}
         </div>
-        <div className="empty:hidden lg:col-start-1 lg:row-start-3">
+        <div className="empty:hidden xl:col-start-1 xl:row-start-3">
           <AFaire
             rdvAVenir={rdvAVenir}
             taches={taches}
@@ -427,7 +437,7 @@ export function VueProjet({
             proposition={rendus.propositionTaches}
           />
         </div>
-        <div className="space-y-4 empty:hidden sm:space-y-5 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-4 lg:row-start-1 lg:self-start">
+        <div className="space-y-4 empty:hidden sm:space-y-5 xl:sticky xl:top-6 xl:col-start-2 xl:row-span-4 xl:row-start-1 xl:self-start">
           {memoOuvert && (
             <ARetenir
               memo={memo.valeur}
@@ -456,7 +466,7 @@ export function VueProjet({
             />
           )}
         </div>
-        <div className="pt-4 lg:col-start-1 lg:row-start-4 lg:pt-6">
+        <div className="pt-4 xl:col-start-1 xl:row-start-4 xl:pt-6">
           <Carnet
             entrees={entrees}
             urlsPhotos={urlsPhotos}

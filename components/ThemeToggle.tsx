@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { IconeLune, IconeSoleil } from "@/components/ui/Icones";
 
 const CLE_STOCKAGE = "compyo-mode-sombre";
 
@@ -32,7 +33,11 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   // Évite un flash "mauvais état" avant que la préférence sauvegardée soit lue.
   if (!pret) {
-    return <span className={className} aria-hidden style={{ visibility: "hidden" }}>🌙</span>;
+    return (
+      <span className={className} aria-hidden style={{ visibility: "hidden" }}>
+        <IconeLune taille={19} />
+      </span>
+    );
   }
 
   return (
@@ -42,7 +47,7 @@ export function ThemeToggle({ className }: { className?: string }) {
       title={actif ? "Mode clair" : "Mode sombre"}
       className={className ?? "text-ink/60 hover:text-ink transition-colors"}
     >
-      {actif ? "☀️" : "🌙"}
+      {actif ? <IconeSoleil taille={19} /> : <IconeLune taille={19} />}
     </button>
   );
 }

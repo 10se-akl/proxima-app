@@ -136,9 +136,9 @@ export function EspaceDevis({ devisId }: { devisId: string }) {
       <div className="px-4 py-6 sm:px-8 sm:py-8">
         <Skeleton className="h-4 w-40" />
         <Skeleton className="mt-3 h-8 w-64" />
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
+        <div className="mt-8 grid gap-8 xl:grid-cols-2">
           <Skeleton className="h-[480px]" />
-          <Skeleton className="hidden aspect-[210/297] lg:block" />
+          <Skeleton className="hidden aspect-[210/297] xl:block" />
         </div>
       </div>
     );
@@ -374,7 +374,7 @@ export function VueEspaceDevis({
       )}
 
       {estBrouillon && (
-        <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-ink/10 bg-surface p-1 max-sm:hidden lg:hidden" role="tablist">
+        <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-ink/10 bg-surface p-1 max-sm:hidden xl:hidden" role="tablist">
           {(
             [
               ["edition", "Modifier"],
@@ -398,14 +398,14 @@ export function VueEspaceDevis({
       )}
 
       <div
-        className={`grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] ${estBrouillon ? "mt-6 max-sm:mt-0" : "mt-6"}`}
+        className={`grid items-start gap-8 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] ${estBrouillon ? "mt-6 max-sm:mt-0" : "mt-6"}`}
       >
         {/* Sur téléphone, le brouillon n'a plus d'onglets : la revue (ou
             l'éditeur complet) est toujours là, le PDF s'ouvre depuis la
             revue (« Voir le PDF »). Même si l'onglet « Aperçu » avait été
             choisi avant de tourner le téléphone. */}
         <section
-          className={`min-w-0 space-y-4 ${estBrouillon && vue === "apercu" ? "hidden max-sm:block lg:block" : ""}`}
+          className={`min-w-0 space-y-4 ${estBrouillon && vue === "apercu" ? "hidden max-sm:block xl:block" : ""}`}
         >
           {/* Le score n'a de sens que tant qu'on peut encore corriger : une
               fois le devis parti, il est figé (voir mentions_legales). */}
@@ -448,7 +448,7 @@ export function VueEspaceDevis({
         </section>
 
         <aside
-          className={`min-w-0 lg:sticky lg:top-6 ${estBrouillon ? "max-sm:hidden" : ""} ${estBrouillon && vue === "edition" ? "hidden lg:block" : ""}`}
+          className={`min-w-0 xl:sticky xl:top-6 ${estBrouillon ? "max-sm:hidden" : ""} ${estBrouillon && vue === "edition" ? "hidden xl:block" : ""}`}
           aria-label="Aperçu du PDF"
         >
           <p className="mb-3 text-xs text-ink/45">
@@ -456,7 +456,7 @@ export function VueEspaceDevis({
               ? "Aperçu exact du PDF, mis à jour à chaque modification."
               : "Le PDF tel que votre client le reçoit."}
           </p>
-          <div className="lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:pr-2">
+          <div className="xl:max-h-[calc(100vh-7rem)] xl:overflow-y-auto xl:pr-2">
             <ApercuPdf modele={modele} />
           </div>
         </aside>

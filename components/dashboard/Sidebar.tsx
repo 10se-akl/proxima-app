@@ -9,6 +9,7 @@ import { CompyoMark } from "@/components/marketing/CompyoMark";
 import { Avatar } from "@/components/ui/Avatar";
 import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
 import { CentreNotifications } from "@/components/notifications/CentreNotifications";
+import { IconeSortie } from "@/components/ui/Icones";
 import { Feuille } from "@/components/projet/Feuille";
 import { IconeChevron, IconePlus, IconePoints } from "@/components/projet/icones";
 import { FeuilleCapture } from "@/components/navigation/FeuilleCapture";
@@ -136,7 +137,7 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
           aria-label="Se déconnecter"
           className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
         >
-          <span aria-hidden="true">⏻</span>
+          <IconeSortie taille={19} />
         </button>
       </div>
       <LiensCompte />
@@ -321,8 +322,11 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           ouverte en pilule terracotta pleine — on la voit du premier coup
           d'œil. « Nouveau projet » passe en bouton clair sur la nuit pour
           ne pas lui faire concurrence. */}
-      <aside className="hidden sm:flex sm:w-60 sm:shrink-0 bg-nuit text-white min-h-screen flex-col justify-between border-r border-white/5">
-        <div>
+      <aside className="hidden sm:sticky sm:top-0 sm:flex sm:h-screen sm:w-60 sm:shrink-0 sm:self-start bg-nuit text-white flex-col justify-between border-r border-white/5">
+        {/* 13/10 — collée à l'écran : le haut défile seul si la fenêtre est
+            basse ; le bas (rappels, compte) reste visible, et le panneau
+            des rappels, qui s'ouvre vers le haut, n'est jamais coupé. */}
+        <div className="min-h-0 overflow-y-auto">
           <div className="px-6 py-6 border-b border-white/10 flex items-center gap-2.5">
             <CompyoMark variante="blanc" taille={26} />
             <p className="font-display font-semibold">Compyo</p>

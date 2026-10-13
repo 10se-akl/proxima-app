@@ -269,7 +269,7 @@ export default function ImporterCapturePage() {
   }
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-3xl">
+    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-3xl">
       <h1 className="font-display text-2xl font-semibold text-ink">Photos ou captures</h1>
       <p className="mt-1 text-base text-steel">Une capture par conversation. Rien n&apos;est enregistré avant que vous confirmiez.</p>
 

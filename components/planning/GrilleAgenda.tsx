@@ -14,6 +14,7 @@ import {
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 import { useChangerRendezVous } from "./ChangerRendezVous";
+import { quoiDuRendezVous } from "./semaine";
 
 // Plage par défaut : couvre une journée de travail classique sans obliger
 // à scroller pour un artisan qui n'a jamais de rendez-vous hors de ces
@@ -128,6 +129,10 @@ function BlocEvenement({
   const changer = useChangerRendezVous(evenement, () => setMenuOuvert(false));
 
   const date = new Date(evenement.date_heure);
+  // 13/10 — le nom du client en gras, comme sur le téléphone : le bloc ne
+  // montrait que le titre (« Visite », « Pose ») sans dire chez qui.
+  const qui = evenement.demandes?.nom_client?.trim() || null;
+  const quoi = qui ? quoiDuRendezVous(evenement.titre, qui) : null;
   const minutesDepuisDebut = (date.getHours() - heureDebut) * 60 + date.getMinutes();
   const top = (minutesDepuisDebut / 60) * HAUTEUR_HEURE;
   // Même chasse que alignMenuADroite (10/09) : le menu contextuel ouvrait
@@ -225,20 +230,25 @@ function BlocEvenement({
           setMenuOuvert(!menuOuvert);
         }}
         style={{ height: hauteur }}
-        className={`w-full text-left px-2 py-1 border-l-4 text-white text-[11px] leading-tight overflow-hidden rounded-md transition-all duration-150 hover:brightness-110 hover:shadow-sm ${couleur} ${
+        className={`flex w-full items-start text-left px-2 py-1 border-l-4 text-white text-xs leading-tight overflow-hidden rounded-md transition-all duration-150 hover:brightness-110 hover:shadow-sm ${couleur} ${
           termine ? "opacity-40 line-through" : ""
         } ${annule ? "opacity-35 line-through italic" : ""}`}
         title={
           alerteMeteo
             ? `⚠️ Météo à risque (${meteo?.resume}) — ${evenement.titre}`
-            : evenement.titre
+            : [qui, evenement.titre].filter(Boolean).join(" · ")
         }
       >
-        <span className="font-mono opacity-80">
-          {date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-        </span>{" "}
-        {alerteMeteo && <span aria-hidden>⚠️ </span>}
-        {evenement.titre}
+        {/* En haut du bloc (un bouton centre son contenu : sur un chantier
+            de huit heures, le texte flottait au milieu). */}
+        <span className="block min-w-0">
+          <span className="font-mono tabular-nums opacity-85">
+            {date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+          </span>{" "}
+          {alerteMeteo && <span aria-hidden>⚠️ </span>}
+          <span className="font-semibold">{qui ?? evenement.titre}</span>
+          {qui && quoi && quoi !== qui && <span className="opacity-85"> · {quoi}</span>}
+        </span>
       </button>
 
       {menuOuvert && (
@@ -254,7 +264,7 @@ function BlocEvenement({
               verticalement via flex, pour absorber l'imprécision du doigt
               sur un écran de chantier. */}
           <div
-            className={`absolute z-30 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-xs w-44 ${
+            className={`absolute z-30 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-sm w-56 ${
               alignMenuADroite ? "right-0" : "left-0"
             } ${alignMenuEnHaut ? "bottom-full mb-1" : "top-full mt-1"}`}
           >
@@ -269,7 +279,7 @@ function BlocEvenement({
                 }}
                 className="w-full min-h-12 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink font-medium border-b border-ink/5"
               >
-                {alerteMeteo ? "⚠️ " : ""}Prévenir le client
+                {alerteMeteo ? "Prévenir le client (météo)" : "Prévenir le client"}
               </button>
             )}
             {evenement.demande_id && (
@@ -277,7 +287,7 @@ function BlocEvenement({
                 onClick={() => router.push(`/dashboard/demandes/${evenement.demande_id}`)}
                 className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
               >
-                → Ouvrir le projet
+                Ouvrir le projet
               </button>
             )}
             {!annule && (
@@ -295,14 +305,14 @@ function BlocEvenement({
               onClick={() => router.push(`/dashboard/planning/nouveau?eventId=${evenement.id}`)}
               className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
             >
-              ✏️ Modifier
+              Modifier
             </button>
             <button
               onClick={basculerTermine}
               disabled={enCours || annule}
               className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5 disabled:opacity-40"
             >
-              {termine ? "Marquer à faire" : "✓ Marquer terminé"}
+              {termine ? "Marquer à faire" : "Marquer terminé"}
             </button>
             {!annule && (
               <button
@@ -313,7 +323,7 @@ function BlocEvenement({
                 disabled={enCours}
                 className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
               >
-                ✕ Annuler ce rendez-vous
+                Annuler ce rendez-vous
               </button>
             )}
             <button
@@ -321,10 +331,10 @@ function BlocEvenement({
               disabled={enCours}
               className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-signal/10 text-signal"
             >
-              🗑 Supprimer
+              Supprimer
             </button>
             {erreur && (
-              <p className="px-3 py-2 text-[10px] text-signal border-t border-ink/5">
+              <p className="px-3 py-2 text-xs text-signal border-t border-ink/5">
                 Échec de l&apos;action. Réessayez.
               </p>
             )}

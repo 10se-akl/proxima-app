@@ -104,7 +104,10 @@ export function VueAccueil({
   ) : null;
 
   return (
-    <div className="max-w-2xl px-4 pb-8 pt-4 sm:p-8 lg:max-w-6xl">
+    // 13/10 — deux colonnes à partir de 1280 px seulement : avec la barre
+    // latérale de 240 px, un écran de 1024 ne laissait que 720 px, et les
+    // noms comme les tuiles étaient écrasés. Centré, comme les autres pages.
+    <div className="mx-auto max-w-2xl px-4 pb-8 pt-4 sm:p-8 xl:max-w-6xl">
       <RafraichirAuRetour />
       <EnTeteAccueil dateDuJour={dateDuJour} titre={titre} sousTitre={sousTitre}>
         {haut}
@@ -114,12 +117,12 @@ export function VueAccueil({
 
       {/* Sur téléphone, les deux colonnes s'effacent (contents) et l'ordre
           suit l'urgence ; sur ordinateur, chacune reprend sa place. */}
-      <div className="flex flex-col lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,23rem)] lg:items-start lg:gap-x-6 xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)]">
-        <div className="contents lg:block lg:min-w-0">
-          <div className="order-3 lg:order-none">
+      <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] xl:items-start xl:gap-x-6">
+        <div className="contents xl:block xl:min-w-0">
+          <div className="order-3 xl:order-none">
             <ChantiersAccueil chantiers={chantiers} total={nbChantiers} />
           </div>
-          <div className="order-2 lg:order-none">
+          <div className="order-2 xl:order-none">
             {aSuivre.length > 0 && (
               <BlocDepliable
                 titre="À suivre"
@@ -143,14 +146,14 @@ export function VueAccueil({
           </div>
         </div>
 
-        <div className="contents lg:block lg:min-w-0">
-          <div className="order-4 lg:order-none">
+        <div className="contents xl:block xl:min-w-0">
+          <div className="order-4 xl:order-none">
             <ActionsRapides />
           </div>
           {/* La cible du compteur « À régler ». Toujours monté, même vide :
               la trace du dernier geste et les feuilles ouvertes survivent
               au recalcul de l'accueil. */}
-          <div id="a-regler" className="order-1 scroll-mt-20 lg:order-none">
+          <div id="a-regler" className="order-1 scroll-mt-20 xl:order-none">
             <TraceAccueil>
               <ListeAujourdhui elements={aujourdhui} />
               <ARegler elements={aRegler} />

@@ -28,7 +28,7 @@ export default async function FacturesPage({ searchParams }: { searchParams?: { 
   }));
 
   return (
-    <div className="px-4 pt-4 pb-8 sm:p-8 max-w-4xl">
+    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-4xl">
       {/* L'en-tête bleu nuit vit dans la liste : la recherche, les filtres
           et l'export comptable y sont posés. */}
       <ListeFacturesRecherchable

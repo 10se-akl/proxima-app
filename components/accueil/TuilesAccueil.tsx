@@ -66,7 +66,7 @@ export function TuilesAccueil({ compteurs }: { compteurs: CompteursAccueil }) {
   ];
 
   return (
-    <ul className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
+    <ul className="mt-4 grid grid-cols-2 gap-3 xl:grid-cols-4 xl:gap-4">
       {tuiles.map((t) => {
         const contenu = (
           <>
@@ -84,7 +84,7 @@ export function TuilesAccueil({ compteurs }: { compteurs: CompteursAccueil }) {
               <span className="block text-sm leading-tight text-steel sm:mt-1">{t.libelle}</span>
               {t.detail && <span className="block text-xs font-semibold text-signal-fonce dark:text-signal-clair">{t.detail}</span>}
             </span>
-            <IconeChevron className="hidden h-4 w-4 shrink-0 text-ink/30 lg:block" />
+            <IconeChevron className="hidden h-4 w-4 shrink-0 text-ink/30 xl:block" />
             {t.signal && <span aria-hidden className="absolute right-3 top-3 h-2.5 w-2.5 rounded-full bg-signal ring-2 ring-surface" />}
           </>
         );

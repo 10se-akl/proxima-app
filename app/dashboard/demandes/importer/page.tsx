@@ -251,7 +251,7 @@ export default function ImporterMessagePage() {
 
   if (brouillon) {
     return (
-      <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
+      <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
         <BrouillonProjetForm
           brouillon={brouillon}
           onValider={creerProjet}
@@ -263,7 +263,7 @@ export default function ImporterMessagePage() {
   }
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
+    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
       <h1 className="font-display text-2xl font-semibold text-ink">Coller un message</h1>
       <p className="mt-1 text-base text-steel">Le message du client, tel quel.</p>
 

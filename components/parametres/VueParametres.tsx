@@ -233,7 +233,7 @@ export function VueParametres({
   );
 
   return (
-    <div className="px-4 pt-4 pb-8 sm:p-8 max-w-2xl">
+    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-2xl">
       <EnTetePage
         titre="Paramètres"
         sousTitre="Votre entreprise, vos devis, votre équipe."

@@ -5,7 +5,7 @@ export default function ChargementPlanning() {
     <>
       {/* Téléphone (refonte 03/10, règle 11) : la vraie forme de la semaine
           en sept lignes, vidée — un repère de jour et une ligne. */}
-      <div className="px-4 pb-8 pt-5 sm:hidden" aria-busy="true" aria-label="Chargement">
+      <div className="mx-auto max-w-5xl px-4 pb-8 pt-5 sm:p-8 lg:hidden" aria-busy="true" aria-label="Chargement">
         <div className="flex items-center justify-between gap-3">
           <Skeleton className="h-7 w-28 rounded-full" />
           <Skeleton className="h-12 w-28 rounded-full" />
@@ -23,7 +23,7 @@ export default function ChargementPlanning() {
         </div>
       </div>
 
-      <div className="hidden p-8 max-w-5xl sm:block">
+      <div className="mx-auto hidden p-8 max-w-5xl lg:block">
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div>
             <Skeleton className="h-8 w-32" />

@@ -79,7 +79,7 @@ export default async function ArgentPage() {
   });
 
   return (
-    <div className="max-w-2xl px-4 pb-8 pt-4 sm:p-8">
+    <div className="mx-auto max-w-2xl px-4 pb-8 pt-4 sm:p-8">
       {/* Refonte visuelle (04/10) : l'en-tête bleu nuit, et dedans ce qui
           reste dû, maintenant. */}
       <EnTetePage

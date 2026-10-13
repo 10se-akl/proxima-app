@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { IconeInstaller } from "@/components/ui/Icones";
 import {
   demanderAffichageManuel,
   estDejaInstallee,
@@ -59,7 +60,7 @@ export function BoutonInstallerDiscret({
         aria-label="Installer l'application"
         className={className || "text-white/60 hover:text-white transition-colors"}
       >
-        <span aria-hidden="true">📲</span>
+        <IconeInstaller taille={19} />
       </button>
     );
   }

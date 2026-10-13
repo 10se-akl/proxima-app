@@ -335,7 +335,7 @@ export default function RevuePartagePage() {
   }
 
   return (
-    <div className="max-w-lg px-4 pb-8 pt-5 sm:max-w-2xl sm:p-8">
+    <div className="mx-auto max-w-lg px-4 pb-8 pt-5 sm:max-w-2xl sm:p-8">
       {/* 06/10 — pendant la préparation : le message lui-même, puis la
           forme vide du récapitulatif (règle 11 : la forme, pas un mot). */}
       {(etape === "chargement" || etape === "analyse") && (

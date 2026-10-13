@@ -23,60 +23,20 @@ const NB_ETAPES = 4;
 
 export function BoutonRetour() {
   const [ouvert, setOuvert] = useState(false);
-  // Sprint Robustesse (30/08) — la carte d'installation PWA (InstallPWA.tsx,
-  // fixed inset-x-4 en bas de l'écran mobile) recouvre entièrement ce
-  // bouton flottant tant qu'elle est affichée. On écoute l'évènement
-  // qu'elle expose pour se décaler plus haut uniquement pendant ce temps,
-  // plutôt que de rester relevé en permanence.
-  const [carteInstallVisible, setCarteInstallVisible] = useState(false);
 
-  // 26/09 — sur téléphone, le bouton flottant chevauchait la barre de
-  // navigation du bas : il n'y est plus, et « Plus › Donner mon avis »
-  // ouvre la même fenêtre (voir components/dashboard/Sidebar.tsx).
+  // 26/09 — sur téléphone, « Donner mon avis » (menu du compte) ouvre
+  // cette fenêtre. 13/10 — sur ordinateur aussi : le bouton flottant
+  // « Avis & idées » couvrait le bas des listes et des fiches, et faisait
+  // doublon avec « Avis » en bas de la barre latérale. Il n'y a plus que
+  // la fenêtre, ouverte par l'événement « compyo:ouvrir-retour ».
   useEffect(() => {
     const ouvrir = () => setOuvert(true);
     window.addEventListener("compyo:ouvrir-retour", ouvrir);
     return () => window.removeEventListener("compyo:ouvrir-retour", ouvrir);
   }, []);
 
-  useEffect(() => {
-    function surChangement(e: Event) {
-      const detail = (e as CustomEvent<{ visible: boolean }>).detail;
-      setCarteInstallVisible(Boolean(detail?.visible));
-    }
-    window.addEventListener("compyo:install-carte-visible", surChangement);
-    return () => window.removeEventListener("compyo:install-carte-visible", surChangement);
-  }, []);
-
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOuvert(true)}
-        // [bottom:...] : sur un iPhone à barre d'accueil (home indicator),
-        // "bottom-5" fixe (20px) colle le bouton contre cette zone de
-        // geste système en app installée — on ajoute la marge de sécurité
-        // du téléphone par-dessus les 20px voulus, au lieu de les remplacer.
-        // Sprint Robustesse (30/08) — quand la carte d'installation est
-        // affichée, on remonte le bouton au-dessus d'elle (9rem couvre
-        // largement sa hauteur habituelle, marge de sécurité comprise) ;
-        // "transition-all" déjà présent anime ce décalage en douceur.
-        className={`fixed right-5 z-40 hidden sm:flex items-center gap-2 rounded-full bg-nuit text-white ring-1 ring-white/10 pl-3.5 pr-4 py-2.5 text-sm font-medium shadow-lg shadow-black/10 hover:bg-nuit/90 hover:scale-[1.03] active:scale-[0.97] transition-all ${
-          carteInstallVisible
-            ? "[bottom:calc(9rem+env(safe-area-inset-bottom))]"
-            : "[bottom:calc(1.25rem+env(safe-area-inset-bottom))]"
-        }`}
-      >
-        {/* Retour d'Axel (26/08) : "Faire un retour" seul seul se lisait
-            trop comme "signaler un problème" pour certains artisans, alors
-            que la moitié des catégories du parcours (voir taxonomie.ts)
-            sont des idées/suggestions, pas des soucis. Libellé changé pour
-            couvrir explicitement les deux sans ambiguïté dès le bouton,
-            sans attendre d'avoir ouvert la modale pour le comprendre. */}
-        <span aria-hidden="true">💡</span>
-        <span>Avis &amp; idées</span>
-      </button>
-
       {ouvert && <ModaleRetour onFermer={() => setOuvert(false)} />}
     </>
   );

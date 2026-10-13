@@ -420,7 +420,7 @@ export default function NouveauProjetPage() {
   }
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg">
+    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-lg">
       <h1 className="font-display text-2xl font-semibold text-ink">Nouveau projet</h1>
 
       {messageErreurPartage && (

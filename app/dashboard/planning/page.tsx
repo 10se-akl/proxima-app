@@ -104,7 +104,7 @@ export default async function PlanningPage({
   const libelleSemaine = `${numeroDuJour(premier)} ${nomDuMois(premier)} — ${numeroDuJour(dernier)} ${nomDuMois(dernier)}`;
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-5xl">
+    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-5xl">
       <PlanifierDepuisLien projet={projetAPlanifier} />
 
       {searchParams.rdvCree === "1" && (
@@ -118,7 +118,7 @@ export default async function PlanningPage({
           glissants gardent leurs flèches juste en dessous. */}
       <EnTetePage
         titre="Planning"
-        sousTitre={<span className="hidden sm:inline">{libelleSemaine}</span>}
+        sousTitre={<span className="hidden lg:inline">{libelleSemaine}</span>}
         icone={
           <Pastille couleur="bleu" taille="grande">
             <IconeCalendrier className="h-6 w-6" />
@@ -129,17 +129,17 @@ export default async function PlanningPage({
             <Link
               href={`/dashboard/planning?semaine=${offset - 1}`}
               aria-label="Semaine précédente"
-              className={`hidden sm:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
+              className={`hidden lg:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
             >
               <IconeChevron className="h-5 w-5 rotate-180" />
             </Link>
-            <Link href="/dashboard/planning" className={`hidden sm:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE}`}>
+            <Link href="/dashboard/planning" className={`hidden lg:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE}`}>
               Aujourd&apos;hui
             </Link>
             <Link
               href={`/dashboard/planning?semaine=${offset + 1}`}
               aria-label="Semaine suivante"
-              className={`hidden sm:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
+              className={`hidden lg:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
             >
               <IconeChevron className="h-5 w-5" />
             </Link>
@@ -151,14 +151,16 @@ export default async function PlanningPage({
       />
 
       {/* Téléphone : la semaine en sept lignes (sept jours glissants à partir
-          d'aujourd'hui). La grille de la semaine reste pour l'ordinateur. */}
-      <div className="sm:hidden">
+          d'aujourd'hui). La grille de la semaine reste pour l'ordinateur.
+          13/10 — à partir de 1024 px : en dessous, avec la barre latérale,
+          chaque jour de la grille n'avait que 60 à 100 px de large. */}
+      <div className="lg:hidden">
         <div className="mt-3">
           <AgendaMobile key={offset} jours={joursGlissants} evenements={dans(glissante)} meteoParJour={alertesMeteo} offset={offset} />
         </div>
       </div>
 
-      <div className="hidden sm:block">
+      <div className="hidden lg:block">
       <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink/60">
         <span className="flex items-center gap-1.5">
           <span className="w-2.5 h-2.5 rounded-full bg-[#C23B22]" /> Urgent

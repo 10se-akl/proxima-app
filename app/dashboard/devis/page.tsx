@@ -29,7 +29,7 @@ export default async function DevisPage({ searchParams }: { searchParams?: { sta
   }));
 
   return (
-    <div className="px-4 pt-4 pb-8 sm:p-8 max-w-4xl">
+    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-4xl">
       {/* L'en-tête bleu nuit vit dans la liste : la recherche et les
           filtres y sont posés. */}
       <ListeDevisRecherchable devisList={devisList} filtreInitial={searchParams?.statut} />

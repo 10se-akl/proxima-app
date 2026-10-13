@@ -7,7 +7,7 @@ import { Skeleton, SkeletonCarte } from "@/components/ui/Skeleton";
 // « Maintenant » et quelques lignes.
 export default function ChargementFiche() {
   return (
-    <div className="max-w-2xl px-4 pb-8 pt-5 sm:p-8" aria-busy="true" aria-label="Chargement">
+    <div className="mx-auto max-w-3xl px-4 pb-8 pt-5 sm:p-8" aria-busy="true" aria-label="Chargement">
       <Skeleton className="h-4 w-20 rounded-full" />
       <Skeleton className="mt-5 h-8 w-48 rounded-full" />
       <Skeleton className="mt-2 h-4 w-64 rounded-full" />

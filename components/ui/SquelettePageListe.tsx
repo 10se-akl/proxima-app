@@ -6,7 +6,7 @@ import { Skeleton, SkeletonCarte } from "@/components/ui/Skeleton";
 // le raisonnement d'ensemble.
 export function SquelettePageListe({ titre }: { titre: string }) {
   return (
-    <div className="p-8 max-w-4xl">
+    <div className="mx-auto p-8 max-w-4xl">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h1 className="font-display text-2xl font-semibold text-ink/20">{titre}</h1>
         <Skeleton className="h-9 w-36" />

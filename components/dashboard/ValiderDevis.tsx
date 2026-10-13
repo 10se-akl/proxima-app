@@ -341,7 +341,7 @@ export function ValiderDevis({
               onChange={(e) => setObjet(e.target.value)}
               placeholder="Ex : Rénovation de la salle de bain avec pose d'une douche à l'italienne."
             />
-            <p className="mt-1.5 text-[11px] text-ink/40">
+            <p className="mt-1.5 text-sm text-steel">
               La première phrase que lit votre client, avant le détail chiffré.
             </p>
           </div>
@@ -393,7 +393,7 @@ export function ValiderDevis({
 
           {postesFrequents.length > 0 && (
             <div className="mt-4">
-              <p className="text-[11px] font-medium text-ink/40 uppercase tracking-wider mb-2">
+              <p className="mb-2 text-sm font-medium text-steel">
                 Vos postes fréquents — un clic pour ajouter
               </p>
               <div className="flex flex-wrap gap-2">
@@ -512,7 +512,7 @@ export function ValiderDevis({
                   setMentionModifieeManuellement(true);
                 }}
               />
-              <p className="mt-1.5 text-[11px] text-ink/40 leading-relaxed">
+              <p className="mt-1.5 text-sm text-steel">
                 Texte suggéré à titre indicatif — la formulation officielle exacte n&apos;est pas
                 garantie, à vérifier avec votre comptable avant un premier envoi.
               </p>
@@ -558,7 +558,7 @@ export function ValiderDevis({
             {/* 17/09 — les prix saisis ici sont vos prix de revient ; le
                 client, lui, lit des prix marge incluse (voir prixDeVente.ts).
                 Sans cette phrase, l'écart entre les deux écrans surprendrait. */}
-            <p className="pt-2 text-[11px] text-ink/40 leading-relaxed">
+            <p className="pt-2 text-sm text-steel">
               Vous saisissez vos prix de revient. Sur le devis du client, la marge est
               répartie dans le prix de chaque ligne et le déplacement apparaît en ligne à
               part : il ne voit jamais votre marge, et ses lignes tombent juste sur le total.

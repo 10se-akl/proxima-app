@@ -1,9 +1,16 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
+import { CompyoMark } from "@/components/marketing/CompyoMark";
+import { IconeCoche, IconeMessage } from "@/components/projet/icones";
 
 // ============================================================
 // Le mini-tuto du premier lancement (03/10, demande du fondateur).
+//
+// 13/10 — sur ordinateur, la démonstration montre l'ordinateur (la barre
+// de gauche et « Nouveau projet », la feuille au milieu) au lieu d'un
+// téléphone : avant, un artisan sur PC apprenait à toucher un « + » qu'il
+// n'avait pas.
 //
 // Comme dans un jeu vidéo : on fait une fois, pour de faux, le geste le
 // plus important — créer un projet à partir d'une demande de client — et
@@ -40,6 +47,7 @@ export function TutoPremierProjet() {
   const [etape, setEtape] = useState<Etape>("intro");
   const [choix, setChoix] = useState<Choix>("coller");
   const [lu, setLu] = useState(false);
+  const grand = useGrandEcran();
 
   useEffect(() => {
     if (!tutoDejaVu()) setVisible(true);
@@ -74,17 +82,21 @@ export function TutoPremierProjet() {
 
   if (!visible) return null;
   const rang = ORDRE.indexOf(etape);
+  // Sur ordinateur, la démonstration montre l'ordinateur : la barre de
+  // gauche et son bouton « Nouveau projet », la feuille au milieu de
+  // l'écran. Sur téléphone, le téléphone et son « + ».
+  const Maquette = grand ? Fenetre : Telephone;
 
   return (
     <div
       role="dialog"
       aria-modal="true"
       aria-label="Tuto : créer un projet"
-      className="fixed inset-0 z-[70] flex flex-col bg-paper sm:items-center sm:justify-center sm:bg-ink/40"
+      className="fixed inset-0 z-[70] flex flex-col bg-paper sm:items-center sm:justify-center sm:bg-ink/40 sm:p-6"
     >
-      <div className="flex h-full w-full flex-col bg-paper sm:h-auto sm:max-h-[90vh] sm:max-w-sm sm:rounded-[1.6rem] sm:shadow-xl">
+      <div className="flex h-full w-full flex-col bg-paper sm:h-auto sm:max-h-[92vh] sm:max-w-xl sm:rounded-[1.6rem] sm:shadow-xl md:max-w-4xl">
         {/* En-tête : la progression et « Passer » */}
-        <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)]">
+        <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-8 sm:pt-6">
           <div className="flex gap-1.5" aria-label={`Étape ${rang + 1} sur ${ORDRE.length}`}>
             {ORDRE.map((e, i) => (
               <span key={e} className={`h-1.5 w-6 rounded-full ${i <= rang ? "bg-ink" : "bg-ink/15"}`} />
@@ -101,79 +113,102 @@ export function TutoPremierProjet() {
           )}
         </div>
 
-        <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4">
+        <div className="flex flex-1 flex-col overflow-y-auto px-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] pt-4 sm:px-8 sm:pb-8 md:min-h-[24rem] md:justify-center">
           {etape === "intro" && (
             <Ecran
               titre="Créons un projet ensemble."
               sousTitre="Pour de faux : rien n'est enregistré."
               action={<BoutonPlein onClick={() => setEtape("plus")}>C&apos;est parti</BoutonPlein>}
             >
-              <Telephone>
+              <Maquette>
                 <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
-                  <span className="grid h-14 w-14 place-items-center rounded-full bg-paper-warm text-2xl" aria-hidden>
-                    💬
+                  <span className="grid h-14 w-14 place-items-center rounded-full bg-paper-warm text-ink" aria-hidden>
+                    <IconeMessage className="h-7 w-7" />
                   </span>
                   <p className="text-base font-semibold text-ink">Mme Garnier vous écrit sur WhatsApp.</p>
                   <p className="text-sm text-steel">On va en faire un projet.</p>
                 </div>
-              </Telephone>
+              </Maquette>
             </Ecran>
           )}
 
-          {etape === "plus" && (
-            <Ecran titre="Touchez le +" sousTitre="C'est par là qu'arrive tout nouveau projet.">
-              <Telephone>
-                <div className="flex-1 px-4 pt-4">
-                  <p className="text-xs uppercase tracking-widest text-steel">Aujourd&apos;hui</p>
-                  <div className="mt-3 h-14 rounded-2xl bg-surface ring-1 ring-ink/15" />
-                  <div className="mt-2 h-14 rounded-2xl bg-surface ring-1 ring-ink/15" />
-                </div>
-                <div className="relative flex h-16 items-center justify-around border-t border-ink/15 bg-surface">
-                  <span className="h-2 w-10 rounded-full bg-ink/15" />
-                  <span className="h-2 w-10 rounded-full bg-ink/15" />
-                  <button
-                    type="button"
-                    onClick={() => setEtape("choix")}
-                    aria-label="Nouveau projet"
-                    className="-mt-8 grid h-16 w-16 place-items-center rounded-full border-4 border-paper bg-signal text-3xl font-semibold text-white motion-safe:animate-pulse"
-                  >
-                    +
-                  </button>
-                  <span className="h-2 w-10 rounded-full bg-ink/15" />
-                  <span className="h-2 w-10 rounded-full bg-ink/15" />
-                </div>
-              </Telephone>
-            </Ecran>
-          )}
+          {etape === "plus" &&
+            (grand ? (
+              <Ecran titre="Cliquez sur « Nouveau projet »." sousTitre="En haut à gauche : c'est par là qu'arrive tout nouveau projet.">
+                <Fenetre
+                  bouton={
+                    <button
+                      type="button"
+                      onClick={() => setEtape("choix")}
+                      className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-white/15 text-xs font-semibold text-white ring-2 ring-white/60 motion-safe:animate-pulse"
+                    >
+                      <span aria-hidden>+</span> Nouveau projet
+                    </button>
+                  }
+                >
+                  <div className="flex-1 px-4 pt-4">
+                    <p className="text-xs uppercase tracking-widest text-steel">Aujourd&apos;hui</p>
+                    <div className="mt-3 h-10 rounded-xl bg-surface ring-1 ring-ink/15" />
+                    <div className="mt-2 h-10 rounded-xl bg-surface ring-1 ring-ink/15" />
+                  </div>
+                </Fenetre>
+              </Ecran>
+            ) : (
+              <Ecran titre="Touchez le +" sousTitre="C'est par là qu'arrive tout nouveau projet.">
+                <Telephone>
+                  <div className="flex-1 px-4 pt-4">
+                    <p className="text-xs uppercase tracking-widest text-steel">Aujourd&apos;hui</p>
+                    <div className="mt-3 h-14 rounded-2xl bg-surface ring-1 ring-ink/15" />
+                    <div className="mt-2 h-14 rounded-2xl bg-surface ring-1 ring-ink/15" />
+                  </div>
+                  <div className="relative flex h-16 items-center justify-around border-t border-ink/15 bg-surface">
+                    <span className="h-2 w-10 rounded-full bg-ink/15" />
+                    <span className="h-2 w-10 rounded-full bg-ink/15" />
+                    <button
+                      type="button"
+                      onClick={() => setEtape("choix")}
+                      aria-label="Nouveau projet"
+                      className="-mt-8 grid h-16 w-16 place-items-center rounded-full border-4 border-paper bg-signal text-3xl font-semibold text-white motion-safe:animate-pulse"
+                    >
+                      +
+                    </button>
+                    <span className="h-2 w-10 rounded-full bg-ink/15" />
+                    <span className="h-2 w-10 rounded-full bg-ink/15" />
+                  </div>
+                </Telephone>
+              </Ecran>
+            ))}
 
           {etape === "choix" && (
             <Ecran titre="Choisissez comment il arrive." sousTitre="Les trois mènent au même projet.">
-              <Telephone>
-                <div className="flex-1 bg-ink/30" />
-                <div className="rounded-t-[1.4rem] bg-surface px-3 pb-3 pt-3">
-                  <p className="px-1 pb-2 text-base font-semibold text-ink">Nouveau projet</p>
-                  {(
-                    [
-                      ["coller", "Coller un message"],
-                      ["photo", "Photo ou capture"],
-                      ["ecrire", "Écrire moi-même"],
-                    ] as const
-                  ).map(([cle, libelle]) => (
-                    <button
-                      key={cle}
-                      type="button"
-                      onClick={() => {
-                        setChoix(cle);
-                        setEtape("lecture");
-                      }}
-                      className="flex min-h-14 w-full items-center justify-between border-t border-ink/10 px-2 text-left text-base font-semibold text-ink first:border-t-0 active:bg-ink/10"
-                    >
-                      {libelle}
-                      <span aria-hidden className="text-steel">›</span>
-                    </button>
-                  ))}
+              <Maquette>
+                <div className={`flex flex-1 flex-col bg-ink/30 ${grand ? "items-center justify-center p-4" : ""}`}>
+                  {!grand && <div className="flex-1" />}
+                  <div className={`bg-surface px-3 pb-3 pt-3 ${grand ? "w-full max-w-[17rem] rounded-2xl shadow-xl" : "rounded-t-[1.4rem]"}`}>
+                    <p className="px-1 pb-2 text-base font-semibold text-ink">Nouveau projet</p>
+                    {(
+                      [
+                        ["coller", "Coller un message"],
+                        ["photo", "Photo ou capture"],
+                        ["ecrire", "Écrire moi-même"],
+                      ] as const
+                    ).map(([cle, libelle]) => (
+                      <button
+                        key={cle}
+                        type="button"
+                        onClick={() => {
+                          setChoix(cle);
+                          setEtape("lecture");
+                        }}
+                        className={`flex w-full items-center justify-between border-t border-ink/10 px-2 text-left font-semibold text-ink first:border-t-0 active:bg-ink/10 sm:hover:bg-ink/5 ${grand ? "min-h-11 text-sm" : "min-h-14 text-base"}`}
+                      >
+                        {libelle}
+                        <span aria-hidden className="text-steel">›</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
-              </Telephone>
+              </Maquette>
             </Ecran>
           )}
 
@@ -183,7 +218,7 @@ export function TutoPremierProjet() {
               sousTitre={lu ? "Vous vérifiez, puis vous créez." : "Vous, vous continuez votre chantier."}
               action={lu ? <BoutonPlein onClick={() => setEtape("fiche")}>Créer le projet</BoutonPlein> : undefined}
             >
-              <Telephone>
+              <Maquette>
                 <div className="flex-1 space-y-3 px-4 pt-4">
                   {choix === "photo" ? (
                     <div className="rounded-2xl bg-paper-warm p-3">
@@ -214,13 +249,13 @@ export function TutoPremierProjet() {
                     </div>
                   )}
                 </div>
-              </Telephone>
+              </Maquette>
             </Ecran>
           )}
 
           {etape === "fiche" && (
             <Ecran titre="Le projet est créé." sousTitre="Rassurez le client en un geste.">
-              <Telephone>
+              <Maquette>
                 <div className="flex-1 px-4 pt-4">
                   <p className="font-display text-2xl font-semibold text-ink">Mme Garnier</p>
                   <p className="text-sm text-steel">Plafond de cuisine, 12 m²</p>
@@ -236,14 +271,14 @@ export function TutoPremierProjet() {
                     </button>
                   </div>
                 </div>
-              </Telephone>
+              </Maquette>
             </Ecran>
           )}
 
           {etape === "fin" && (
             <Ecran
               titre="Bravo, c'est tout."
-              sousTitre="Le message part de votre téléphone : c'est vous qui envoyez."
+              sousTitre="Le message part par vos SMS ou votre WhatsApp : c'est vous qui envoyez."
               action={
                 <div className="flex w-full flex-col gap-2">
                   <BoutonPlein onClick={() => terminer(true)}>À moi : mon premier projet</BoutonPlein>
@@ -258,11 +293,11 @@ export function TutoPremierProjet() {
               }
             >
               <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-                <span className="grid h-16 w-16 place-items-center rounded-full bg-succes/10 text-3xl text-succes" aria-hidden>
-                  ✓
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-succes/10 text-succes" aria-hidden>
+                  <IconeCoche className="h-8 w-8" />
                 </span>
                 <ul className="space-y-2 text-base text-ink">
-                  <li>1. Touchez +</li>
+                  <li>{grand ? "1. Cliquez sur « Nouveau projet »" : "1. Touchez +"}</li>
                   <li>2. Choisissez comment ça arrive</li>
                   <li>3. Vérifiez, créez, répondez</li>
                 </ul>
@@ -273,6 +308,20 @@ export function TutoPremierProjet() {
       </div>
     </div>
   );
+}
+
+/** Ordinateur à partir de 640 px : la même limite que la barre latérale
+ *  (components/dashboard/Sidebar.tsx). */
+function useGrandEcran(): boolean {
+  const [grand, setGrand] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 640px)");
+    const maj = () => setGrand(mq.matches);
+    maj();
+    mq.addEventListener("change", maj);
+    return () => mq.removeEventListener("change", maj);
+  }, []);
+  return grand;
 }
 
 function Ecran({
@@ -286,12 +335,18 @@ function Ecran({
   action?: ReactNode;
   children: ReactNode;
 }) {
+  // Téléphone : le titre, l'image, puis le bouton sous le pouce.
+  // Ordinateur (à partir de 768 px) : le texte et le bouton à gauche,
+  // l'image à droite.
   return (
-    <div className="flex flex-1 flex-col">
-      <h2 className="font-display text-3xl font-semibold leading-tight text-ink">{titre}</h2>
-      <p className="mt-1 text-base text-steel">{sousTitre}</p>
-      <div className="mt-5 flex flex-1 flex-col">{children}</div>
-      {action && <div className="mt-5">{action}</div>}
+    <div className="flex flex-1 flex-col md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center md:gap-10">
+      <div>
+        <h2 className="font-display text-3xl font-semibold leading-tight text-ink">{titre}</h2>
+        <p className="mt-1 text-base text-steel">{sousTitre}</p>
+        {action && <div className="mt-8 hidden md:block">{action}</div>}
+      </div>
+      <div className="mt-5 flex flex-1 flex-col md:mt-0">{children}</div>
+      {action && <div className="mt-5 md:hidden">{action}</div>}
     </div>
   );
 }
@@ -301,6 +356,33 @@ function Telephone({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto flex min-h-[320px] w-full max-w-[300px] flex-1 flex-col overflow-hidden rounded-[1.6rem] bg-paper ring-2 ring-ink/15">
       {children}
+    </div>
+  );
+}
+
+/** Une fausse fenêtre de Compyo sur ordinateur : la barre de gauche, bleu
+ *  nuit comme la vraie, et la page à droite. `bouton` prend la place de
+ *  « Nouveau projet » quand c'est lui qu'il faut toucher. */
+function Fenetre({ children, bouton }: { children: ReactNode; bouton?: ReactNode }) {
+  return (
+    <div className="flex min-h-[300px] w-full flex-1 overflow-hidden rounded-2xl bg-paper ring-2 ring-ink/15 md:aspect-[16/11] md:min-h-0 md:flex-none">
+      <div className="flex w-[34%] max-w-[11rem] shrink-0 flex-col gap-2 bg-nuit p-3" aria-hidden={bouton ? undefined : true}>
+        <div className="flex items-center gap-1.5 pb-1">
+          <CompyoMark variante="blanc" taille={14} />
+          <span className="text-xs font-semibold text-white">Compyo</span>
+        </div>
+        {bouton ?? (
+          <span className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-white/10 text-xs font-semibold text-white/80">
+            <span aria-hidden>+</span> Nouveau projet
+          </span>
+        )}
+        {["Aujourd'hui", "Projets", "Planning", "Argent"].map((l) => (
+          <span key={l} className="px-1 text-xs text-white/70">
+            {l}
+          </span>
+        ))}
+      </div>
+      <div className="relative flex min-w-0 flex-1 flex-col">{children}</div>
     </div>
   );
 }

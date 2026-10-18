@@ -1,63 +1,110 @@
 import Link from "next/link";
 import { VideoDemo } from "@/components/marketing/VideoDemo";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { SITE_URL } from "@/lib/site";
 import { CadrePhoto } from "./CadrePhoto";
 import { PHOTOS } from "./photos";
 import { Engagements } from "@/components/confiance/Engagements";
 
 // ============================================================
-// Les sections courtes de l'accueil (24/09) : la démonstration filmée,
-// et la dernière section, « 19:04 ». (La comparaison des deux soirées a
-// été retirée le 13/10.)
+// Les sections courtes de l'accueil (24/09) : le film, et la dernière
+// section, « 19:04 ». (La comparaison des deux soirées a été retirée le
+// 13/10 ; « En vrai » et ses deux anciennes démos, le 18/10 : le film
+// d'une minute fait leur travail.)
 // ============================================================
 
 function Surtitre({ children }: { children: React.ReactNode }) {
   return <p className="font-mono text-[11px] uppercase tracking-[0.24em] text-steel">{children}</p>;
 }
 
-const DESCRIPTION_DEMO =
-  "Démonstration filmée dans l'application : un message de client partagé vers Compyo crée le projet, une note dictée sur le chantier le complète, le devis se prépare avec les tarifs de l'artisan, puis part à la signature.";
+// Le film (18/10) : rendu image par image depuis compyo/pub-motion/film-1min
+// (film.html, rendu.mjs), en paysage et en vertical. Les écrans sont ceux
+// de l'application, reconstruits avec des données fictives.
+const FILM = {
+  paysage: { src: "/compyo-film.mp4", affiche: "/compyo-film-affiche.jpg" },
+  vertical: { src: "/compyo-film-vertical.mp4", affiche: "/compyo-film-vertical-affiche.jpg" },
+  duree: "PT1M3S",
+};
 
-export function SectionEnVrai() {
+const DESCRIPTION_FILM =
+  "Film d'une minute, sans son, sur un seul chantier : le message de la cliente devient un projet, l'artisan dicte une note sur place, relit et corrige le devis préparé par Compyo, l'envoie depuis son téléphone ; la cliente signe, le chantier se planifie, la facture part du devis signé, un rappel de paiement est prêt à relire. Le soir, tout est réglé. Données fictives de démonstration.";
+
+// Ce que dit et montre le film, moment par moment : pour qui ne le voit
+// pas, et pour qui préfère lire.
+const MOMENTS: [string, string][] = [
+  ["07:48", "Mme Garnier écrit : une fuite sous l'évier. Vous partagez son message vers Compyo, qui lit le nom, le téléphone, l'adresse et la demande. Vous vérifiez, vous créez le projet."],
+  ["10:15", "Sur place, vous dictez une note et prenez trois photos. Tout se range dans le projet."],
+  ["12:30", "Compyo prépare le devis avec vos tarifs. Vous corrigez la main-d'œuvre (3 h → 4 h), puis vous validez : 387,20 € TTC."],
+  ["12:34", "Vous envoyez le devis par SMS, depuis votre téléphone."],
+  ["15:10", "Mme Garnier le lit et le signe sur son téléphone. Dans Compyo, le projet passe à « Signé »."],
+  ["17:20", "Vous planifiez le chantier pour le lendemain matin et prévenez la cliente."],
+  ["Mercredi, 11:40", "Le chantier est terminé : vous créez la facture de solde, numérotée, à partir du devis signé."],
+  ["11:42", "Un rappel de paiement est déjà écrit pour une autre facture en retard. Vous le relisez, vous l'envoyez."],
+  ["19:04", "Tout est réglé. Vos soirées ne sont pas faites pour la paperasse."],
+];
+
+export function SectionFilm() {
   return (
-    <section aria-labelledby="titre-en-vrai" className="px-5 py-24 max-md:pb-12 max-md:pt-16 sm:px-8 sm:py-36">
+    <section id="film" aria-labelledby="titre-film" className="scroll-mt-16 px-5 py-24 max-md:pb-12 max-md:pt-16 sm:px-8 sm:py-32">
+      <JsonLd
+        donnees={{
+          "@context": "https://schema.org",
+          "@type": "VideoObject",
+          name: "Compyo, un chantier en une minute",
+          description: DESCRIPTION_FILM,
+          duration: FILM.duree,
+          thumbnailUrl: [`${SITE_URL}${FILM.paysage.affiche}`, `${SITE_URL}${FILM.vertical.affiche}`],
+          contentUrl: `${SITE_URL}${FILM.paysage.src}`,
+          inLanguage: "fr-FR",
+        }}
+      />
       <div className="mx-auto max-w-6xl">
-        <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
-          <div data-revele>
-            <Surtitre>En vrai</Surtitre>
+        <div data-revele className="flex flex-wrap items-end justify-between gap-x-10 gap-y-5">
+          <div>
+            <Surtitre>En une minute</Surtitre>
             <h2
-              id="titre-en-vrai"
-              className="mt-6 text-balance font-display text-[2.6rem] font-semibold leading-[1] tracking-[-0.035em] text-ink sm:text-7xl"
+              id="titre-film"
+              className="mt-6 text-balance font-display text-[2.6rem] font-semibold leading-[1] tracking-[-0.035em] text-ink max-md:mt-3 max-md:text-[2.3rem] sm:text-7xl"
             >
-              Une minute. Sans coupe.
+              Le même chantier, en entier.
             </h2>
           </div>
           <p className="max-w-xs text-[16px] leading-relaxed text-ink/60 max-md:hidden">
-            Le même parcours, filmé dans l&apos;application.
+            Du premier message à la facture, sans coupe.
           </p>
         </div>
 
-        {/* Paysage à partir de sm ; en dessous la version verticale : en
-            16:9 sur un téléphone, le devis serait illisible. Un lecteur
-            masqué ne télécharge rien (preload="none", lecture à l'écran). */}
-        <div className="mt-12 hidden sm:block">
-          <div className="relative aspect-video overflow-hidden rounded-[2rem] bg-paper-warm shadow-[var(--v-ombre)] ring-1 ring-ink/10">
-            <VideoDemo src="/compyo-demo.mp4" affiche="/compyo-demo-affiche.jpg" description={DESCRIPTION_DEMO} />
-          </div>
-        </div>
-        {/* Téléphone : la vidéo verticale en pleine largeur, comme un
-            réel — la plus grande image de la page. */}
-        <div data-sans-barre data-revele className="mx-auto mt-8 max-w-[26rem] sm:hidden">
-          <div className="aspect-[9/16] max-h-[calc(100svh-6rem)] overflow-hidden rounded-[1.8rem] bg-paper-warm shadow-[var(--v-ombre)] ring-1 ring-ink/10 max-md:mx-auto">
-            <VideoDemo
-              src="/compyo-demo-vertical.mp4"
-              affiche="/compyo-demo-vertical-affiche.jpg"
-              description={DESCRIPTION_DEMO}
-            />
-          </div>
+        {/* Un seul lecteur, deux cadrages : vertical sur téléphone (la plus
+            grande image de la page, comme un réel), paysage au-dessus de
+            640 px. La place est réservée : rien ne saute au chargement. */}
+        <div
+          data-sans-barre
+          className="mx-auto mt-8 aspect-[9/16] w-[min(100%,26rem,calc((100svh-7rem)*0.5625))] overflow-hidden rounded-[1.8rem] bg-paper-warm shadow-[var(--v-ombre)] ring-1 ring-ink/10 sm:mt-12 sm:aspect-video sm:w-full sm:rounded-[2rem]"
+        >
+          <VideoDemo
+            src={FILM.paysage.src}
+            affiche={FILM.paysage.affiche}
+            vertical={FILM.vertical}
+            description={DESCRIPTION_FILM}
+          />
         </div>
         <p className="mt-5 text-center text-[13px] text-steel max-md:mt-4 max-md:text-[12.5px]">
-          Reconstitution d&apos;un parcours réel dans l&apos;application, sans étape coupée.
+          Les écrans de l&apos;application, reconstitués avec des données fictives de démonstration. Sans son.
         </p>
+
+        <details className="mx-auto mt-6 max-w-2xl rounded-2xl bg-surface/70 px-5 ring-1 ring-ink/10">
+          <summary className="flex min-h-12 cursor-pointer items-center text-[15px] font-medium text-ink">
+            Lire ce que montre le film
+          </summary>
+          <ol className="pb-5">
+            {MOMENTS.map(([heure, texte]) => (
+              <li key={heure} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-3 border-t border-ink/10 py-3 text-[15px] leading-snug max-sm:grid-cols-1 max-sm:gap-1">
+                <span className="font-mono text-[12.5px] text-steel">{heure}</span>
+                <span className="text-ink/80">{texte}</span>
+              </li>
+            ))}
+          </ol>
+        </details>
       </div>
     </section>
   );

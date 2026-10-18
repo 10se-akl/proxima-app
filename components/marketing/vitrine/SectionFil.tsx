@@ -12,15 +12,15 @@ import {
 // ============================================================
 // Le fil d'un chantier (06/10 — « le compagnon des artisans »).
 //
-// Juste après le hero, la promesse en une image : une information dite
-// une fois suit tout le chantier. Huit étapes sur un même fil, de gauche à
+// Après la journée (18/10 ; avant, juste après le hero), la promesse en
+// une image : une information dite une fois suit tout le chantier. Huit étapes sur un même fil, de gauche à
 // droite sur ordinateur, de haut en bas sur téléphone. Sous chaque étape,
 // ce que Compyo garde de la précédente (une étiquette) : on voit le
 // dossier de Mme Garnier se remplir sans que rien soit ressaisi.
 //
 // Aucune technologie nommée : un résultat par étape. Le même chantier que
-// la journée plus bas (Mme Garnier, fuite sous l'évier), pour que les deux
-// sections racontent la même histoire.
+// la journée juste au-dessus et le film juste en dessous (Mme Garnier,
+// fuite sous l'évier) : les trois racontent la même histoire.
 //
 // Rien de nouveau à charger : HTML et CSS, l'apparition au défilement est
 // celle de toute la vitrine ([data-revele], Rythme.tsx), décalée étape par

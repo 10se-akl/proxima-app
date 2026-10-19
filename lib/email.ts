@@ -1,5 +1,6 @@
 import type { Candidature } from "@/types";
 import type { BilanMensuel } from "@/lib/bilan-mensuel";
+import { SITE_URL } from "@/lib/site";
 
 // Notification optionnelle : si RESEND_API_KEY n'est pas configurée,
 // la candidature est quand même enregistrée, seul l'email est sauté.
@@ -34,7 +35,7 @@ Devis/semaine : ${candidature.devis_par_semaine ?? "non précisé"}
 Problème principal : ${candidature.probleme_principal}
 Découverte : ${candidature.decouverte ?? "non précisé"}
 
-Pour accepter ou refuser : ${process.env.NEXT_PUBLIC_SITE_URL ?? ""}/admin/candidatures`,
+Pour accepter ou refuser : ${SITE_URL}/admin/candidatures`,
     }),
   });
 

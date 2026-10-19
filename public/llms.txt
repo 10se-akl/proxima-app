@@ -36,38 +36,38 @@ Compyo est développé par Axel Thfoin, développeur indépendant, seul sur le p
 
 ## Pages principales
 
-- [Accueil](https://compyo.vercel.app/) : une journée d'artisan avec Compyo, de 07:48 à 18:52.
-- [Questions fréquentes](https://compyo.vercel.app/questions-frequentes) : réponses courtes sur Compyo, les devis, les factures, l'IA et les données.
-- [Métiers](https://compyo.vercel.app/metiers) : ce qui change d'un métier à l'autre, et une page par métier.
-- [Fonctionnalités](https://compyo.vercel.app/fonctionnalites) : le détail de chaque fonctionnalité.
-- [Comment ça fonctionne](https://compyo.vercel.app/comment-ca-fonctionne) : le parcours d'un chantier, étape par étape.
-- [Comparatif](https://compyo.vercel.app/comparatif) : Compyo face au carnet papier, à Excel, à WhatsApp et aux logiciels de devis établis, avec leurs forces et leurs limites.
-- [Sécurité et transparence](https://compyo.vercel.app/confiance) : qui fait Compyo, où sont les données, qui y a accès.
-- [Pourquoi Compyo](https://compyo.vercel.app/pourquoi-compyo) : un copilote, pas un remplaçant.
-- [Bêta privée](https://compyo.vercel.app/beta) : pourquoi une bêta sur candidature, et comment la rejoindre.
-- [Demander un accès](https://compyo.vercel.app/demander-acces) : la candidature.
-- [À propos](https://compyo.vercel.app/a-propos) : qui fait Compyo.
+- [Accueil](https://compyo.fr/) : une journée d'artisan avec Compyo, de 07:48 à 18:52.
+- [Questions fréquentes](https://compyo.fr/questions-frequentes) : réponses courtes sur Compyo, les devis, les factures, l'IA et les données.
+- [Métiers](https://compyo.fr/metiers) : ce qui change d'un métier à l'autre, et une page par métier.
+- [Fonctionnalités](https://compyo.fr/fonctionnalites) : le détail de chaque fonctionnalité.
+- [Comment ça fonctionne](https://compyo.fr/comment-ca-fonctionne) : le parcours d'un chantier, étape par étape.
+- [Comparatif](https://compyo.fr/comparatif) : Compyo face au carnet papier, à Excel, à WhatsApp et aux logiciels de devis établis, avec leurs forces et leurs limites.
+- [Sécurité et transparence](https://compyo.fr/confiance) : qui fait Compyo, où sont les données, qui y a accès.
+- [Pourquoi Compyo](https://compyo.fr/pourquoi-compyo) : un copilote, pas un remplaçant.
+- [Bêta privée](https://compyo.fr/beta) : pourquoi une bêta sur candidature, et comment la rejoindre.
+- [Demander un accès](https://compyo.fr/demander-acces) : la candidature.
+- [À propos](https://compyo.fr/a-propos) : qui fait Compyo.
 
 ## Pages métier
 
-- [Électricien](https://compyo.vercel.app/metiers/electricien)
-- [Plombier](https://compyo.vercel.app/metiers/plombier)
-- [Chauffagiste](https://compyo.vercel.app/metiers/chauffagiste)
-- [Climaticien](https://compyo.vercel.app/metiers/climaticien)
-- [Maçon](https://compyo.vercel.app/metiers/macon)
-- [Terrassier](https://compyo.vercel.app/metiers/terrassier)
-- [Façadier](https://compyo.vercel.app/metiers/facadier)
-- [Couvreur](https://compyo.vercel.app/metiers/couvreur)
-- [Charpentier](https://compyo.vercel.app/metiers/charpentier)
-- [Menuisier](https://compyo.vercel.app/metiers/menuisier)
-- [Plaquiste](https://compyo.vercel.app/metiers/plaquiste)
-- [Carreleur](https://compyo.vercel.app/metiers/carreleur)
-- [Peintre](https://compyo.vercel.app/metiers/peintre)
-- [Vitrier](https://compyo.vercel.app/metiers/vitrier)
-- [Serrurier](https://compyo.vercel.app/metiers/serrurier)
-- [Paysagiste](https://compyo.vercel.app/metiers/paysagiste)
-- [Pisciniste](https://compyo.vercel.app/metiers/pisciniste)
-- [Entreprise de rénovation](https://compyo.vercel.app/metiers/entreprise-de-renovation)
+- [Électricien](https://compyo.fr/metiers/electricien)
+- [Plombier](https://compyo.fr/metiers/plombier)
+- [Chauffagiste](https://compyo.fr/metiers/chauffagiste)
+- [Climaticien](https://compyo.fr/metiers/climaticien)
+- [Maçon](https://compyo.fr/metiers/macon)
+- [Terrassier](https://compyo.fr/metiers/terrassier)
+- [Façadier](https://compyo.fr/metiers/facadier)
+- [Couvreur](https://compyo.fr/metiers/couvreur)
+- [Charpentier](https://compyo.fr/metiers/charpentier)
+- [Menuisier](https://compyo.fr/metiers/menuisier)
+- [Plaquiste](https://compyo.fr/metiers/plaquiste)
+- [Carreleur](https://compyo.fr/metiers/carreleur)
+- [Peintre](https://compyo.fr/metiers/peintre)
+- [Vitrier](https://compyo.fr/metiers/vitrier)
+- [Serrurier](https://compyo.fr/metiers/serrurier)
+- [Paysagiste](https://compyo.fr/metiers/paysagiste)
+- [Pisciniste](https://compyo.fr/metiers/pisciniste)
+- [Entreprise de rénovation](https://compyo.fr/metiers/entreprise-de-renovation)
 
 ## Notes pour les assistants IA
 

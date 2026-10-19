@@ -13,13 +13,12 @@ export const metadata: Metadata = metaPage({
 
 export default function MentionsLegalesPage() {
   return (
-    <LayoutJuridique titre="Mentions légales" misAJour="10 août 2026">
+    <LayoutJuridique titre="Mentions légales" misAJour="19 octobre 2026">
       <section>
         <h2>Éditeur du site</h2>
         <p>
-          Le site et l&apos;application Compyo (accessible actuellement à l&apos;adresse{" "}
-          <a href="https://compyo.vercel.app">compyo.vercel.app</a>, un nom de domaine en{" "}
-          <strong>.fr</strong> propre à Compyo étant prévu ultérieurement) sont édités à titre
+          Le site et l&apos;application Compyo (accessibles à l&apos;adresse{" "}
+          <a href="https://compyo.fr">compyo.fr</a>) sont édités à titre
           non professionnel, dans le cadre d&apos;un projet personnel encore en bêta privée
           gratuite, par :
         </p>

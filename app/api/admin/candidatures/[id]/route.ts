@@ -83,7 +83,9 @@ export async function PATCH(
   const { data: invite, error: inviteError } = await admin.auth.admin.inviteUserByEmail(
     candidature.email,
     {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/definir-mot-de-passe`,
+      // 19/10 — l'adresse du site, la même partout (sans la variable
+      // d'environnement, ce lien partait vers localhost:3000).
+      redirectTo: `${SITE_URL}/definir-mot-de-passe`,
     }
   );
 

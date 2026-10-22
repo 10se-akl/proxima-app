@@ -123,7 +123,15 @@ function versDevisPublic(d: ReponseRpc): DevisPublic {
   };
 }
 
+// 22/10 — même contrôle que la route « repondre » : un lien tronqué (SMS
+// coupé) n'est pas un identifiant valide, la base répondait par une erreur
+// et le client lisait « Impossible de charger » au lieu de « introuvable ».
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(_request: NextRequest, { params }: { params: { id: string } }) {
+  if (!UUID.test(params.id)) {
+    return NextResponse.json({ error: "Devis introuvable ou plus disponible." }, { status: 404 });
+  }
   const supabase = createClient();
 
   const { data, error } = await supabase

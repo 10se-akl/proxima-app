@@ -9,6 +9,23 @@ const nextConfig = {
   experimental: {
     instrumentationHook: true,
   },
+  // Vérification du 22/10 : aucune page ne refusait d'être affichée dans le
+  // cadre d'un autre site. La page de signature d'un devis pouvait donc être
+  // glissée sous une fausse page (« clic piégé »). Compyo ne s'affiche
+  // lui-même dans aucun cadre (le seul <iframe> du site montre une vidéo
+  // extérieure), donc SAMEORIGIN ne casse rien.
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;

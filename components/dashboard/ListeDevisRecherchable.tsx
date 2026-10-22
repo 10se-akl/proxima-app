@@ -119,7 +119,7 @@ export function ListeDevisRecherchable({
 
       {/* Refonte visuelle (04/10) : la liste dans une carte, chaque ligne
           un cran plus sombre, comme « Mes projets » sur l'accueil. */}
-      <div className="mt-4 flex flex-col gap-2 rounded-3xl bg-surface p-2 ring-1 ring-ink/10 sm:p-3">
+      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-ink/[0.08]">
         {filtres.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
@@ -138,7 +138,7 @@ export function ListeDevisRecherchable({
               <Link
                 key={d.id}
                 href={adresseEspaceDevis(d.id)}
-                className="flex min-h-[4.5rem] items-center gap-3 rounded-2xl bg-paper/70 px-4 py-3 ring-1 ring-ink/10 transition-colors hover:bg-ink/[0.04] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                className="flex min-h-[4.5rem] items-center gap-3 px-4 py-3 transition-colors hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
               >
                 <Avatar nom={d.demandes?.nom_client ?? "?"} taille={40} />
                 <span className="min-w-0 flex-1">

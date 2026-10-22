@@ -141,7 +141,7 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
         }}
         title="Notifications"
         aria-label="Notifications"
-        className={`relative grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors ${
+        className={`relative grid place-items-center rounded-lg text-steel hover:text-ink hover:bg-ink/[0.05] transition-colors ${
           vers === "bas" ? "w-12 h-12" : "w-11 h-11"
         }`}
       >

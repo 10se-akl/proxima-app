@@ -1,6 +1,5 @@
 import Link from "next/link";
-import { IconeCoche, IconeHorloge } from "@/components/projet/icones";
-import { Pastille } from "@/components/ui/Pastille";
+import { IconeCoche } from "@/components/projet/icones";
 import { FinRelancer, LigneAccueil } from "./Blocs";
 import { BlocDepliable } from "./BlocDepliable";
 import { ListeAujourdhui, type ElementJour } from "./ListeAujourdhui";
@@ -11,7 +10,6 @@ import { RafraichirAuRetour } from "./RafraichirAuRetour";
 import { EnTeteAccueil } from "./EnTeteAccueil";
 import { TuilesAccueil, type CompteursAccueil } from "./TuilesAccueil";
 import { ChantiersAccueil, type ChantierAccueil } from "./ChantiersAccueil";
-import { ActionsRapides } from "./ActionsRapides";
 
 // ============================================================
 // L'affichage de l'accueil, sans aucune requête : app/dashboard/page.tsx
@@ -89,96 +87,93 @@ export function VueAccueil({
   chantiers: ChantierAccueil[];
   nbChantiers: number;
 }) {
-  // Le côté droit de l'en-tête : une seule chose à la fois.
+  // Juste sous le bonjour : une seule chose à la fois.
   const haut = maintenant ? (
     <Maintenant action={maintenant} />
   ) : repos ? (
     <Repos demain={demain} />
   ) : premierProjet ? (
-    <BoutonCapture surNuit />
+    <BoutonCapture />
   ) : rienDUrgent ? (
-    <div className="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15">
-      <p className="text-base font-semibold">Rien d&apos;urgent.</p>
-      <p className="mt-0.5 truncate text-sm text-white/70">Demain · {demain ?? "Rien de prévu."}</p>
+    <div className="rounded-[20px] bg-surface px-5 py-4 ombre-douce">
+      <p className="text-base font-semibold text-ink">Rien d&apos;urgent.</p>
+      <p className="mt-0.5 truncate text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</p>
     </div>
   ) : null;
 
   return (
-    // 13/10 — deux colonnes à partir de 1280 px seulement : avec la barre
-    // latérale de 240 px, un écran de 1024 ne laissait que 720 px, et les
-    // noms comme les tuiles étaient écrasés. Centré, comme les autres pages.
-    <div className="mx-auto max-w-2xl px-4 pb-8 pt-4 sm:p-8 xl:max-w-6xl">
+    // Atelier (22/10) : le bonjour posé sur le fond, « Maintenant » seule
+    // carte sombre, puis des listes groupées. Sur ordinateur (1280 px et
+    // plus), deux colonnes : la journée et les projets à gauche, ce qui
+    // attend un geste (À régler) et « En cours » à droite. Sur téléphone,
+    // une colonne dans l'ordre de l'urgence.
+    <div className="mx-auto max-w-2xl px-5 pb-10 pt-6 sm:p-10 xl:max-w-6xl">
       <RafraichirAuRetour />
-      <EnTeteAccueil dateDuJour={dateDuJour} titre={titre} sousTitre={sousTitre}>
-        {haut}
-      </EnTeteAccueil>
+      <EnTeteAccueil dateDuJour={dateDuJour} titre={titre} sousTitre={sousTitre} />
 
-      {!premierProjet && <TuilesAccueil compteurs={compteurs} />}
-
-      {/* Sur téléphone, les deux colonnes s'effacent (contents) et l'ordre
-          suit l'urgence ; sur ordinateur, chacune reprend sa place. */}
-      <div className="flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,25rem)] xl:items-start xl:gap-x-6">
-        <div className="contents xl:block xl:min-w-0">
-          <div className="order-3 xl:order-none">
-            <ChantiersAccueil chantiers={chantiers} total={nbChantiers} />
+      {/* La trace du dernier geste et les feuilles ouvertes survivent au
+          recalcul de l'accueil : le fournisseur entoure les deux colonnes. */}
+      <TraceAccueil>
+        <div className="mt-6 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start xl:gap-x-10">
+          <div className="contents xl:block xl:min-w-0">
+            {haut && <div className="order-1 xl:order-none">{haut}</div>}
+            <div className="order-2 xl:order-none">
+              <ListeAujourdhui elements={aujourdhui} />
+            </div>
+            <div className="order-5 xl:order-none">
+              <ChantiersAccueil chantiers={chantiers} total={nbChantiers} />
+            </div>
+            <div className="order-4 xl:order-none">
+              {aSuivre.length > 0 && (
+                <BlocDepliable
+                  titre="À suivre"
+                  lignes={aSuivre.map((l) => (
+                    <LigneAccueil
+                      key={l.cle}
+                      href={l.href}
+                      repere={l.repere}
+                      principal={l.principal}
+                      secondaire={l.secondaire}
+                      fin={l.relance ? <FinRelancer href={l.relance} /> : undefined}
+                    />
+                  ))}
+                />
+              )}
+            </div>
           </div>
-          <div className="order-2 xl:order-none">
-            {aSuivre.length > 0 && (
-              <BlocDepliable
-                titre="À suivre"
-                icone={
-                  <Pastille couleur="signal" variante="doux" taille="petite">
-                    <IconeHorloge className="h-4 w-4" />
-                  </Pastille>
-                }
-                lignes={aSuivre.map((l) => (
-                  <LigneAccueil
-                    key={l.cle}
-                    href={l.href}
-                    repere={l.repere}
-                    principal={l.principal}
-                    secondaire={l.secondaire}
-                    fin={l.relance ? <FinRelancer href={l.relance} /> : undefined}
-                  />
-                ))}
-              />
+
+          <div className="contents xl:-mt-8 xl:block xl:min-w-0">
+            {/* La cible du lien « À régler ». */}
+            <div id="a-regler" className="order-3 scroll-mt-20 xl:order-none">
+              <ARegler elements={aRegler} />
+            </div>
+            {!premierProjet && (
+              <div className="order-6 xl:order-none">
+                <TuilesAccueil compteurs={compteurs} />
+              </div>
             )}
           </div>
         </div>
-
-        <div className="contents xl:block xl:min-w-0">
-          <div className="order-4 xl:order-none">
-            <ActionsRapides />
-          </div>
-          {/* La cible du compteur « À régler ». Toujours monté, même vide :
-              la trace du dernier geste et les feuilles ouvertes survivent
-              au recalcul de l'accueil. */}
-          <div id="a-regler" className="order-1 scroll-mt-20 xl:order-none">
-            <TraceAccueil>
-              <ListeAujourdhui elements={aujourdhui} />
-              <ARegler elements={aRegler} />
-            </TraceAccueil>
-          </div>
-        </div>
-      </div>
+      </TraceAccueil>
     </div>
   );
 }
 
-/** Maintenant, sur l'en-tête bleu nuit : un lien, jamais une coche. */
+/** Maintenant : la seule carte sombre de l'application. Un lien, jamais
+ *  une coche ; « Y aller » ouvre l'itinéraire. */
 function Maintenant({ action }: { action: ActionAccueil }) {
   return (
-    <div className="flex min-h-[4.5rem] items-stretch overflow-hidden rounded-2xl bg-white/10 text-white ring-1 ring-white/15 backdrop-blur-sm">
+    <div className="flex min-h-[5.5rem] items-center overflow-hidden rounded-3xl bg-nuit text-white shadow-[0_18px_36px_-18px_rgb(27_26_24/0.55)]">
       <Link
         href={action.href}
-        className="flex min-w-0 flex-1 items-center px-5 py-4 active:bg-white/10 sm:hover:bg-white/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+        className="flex min-w-0 flex-1 items-center self-stretch py-4 pl-5 pr-3 active:bg-white/10 sm:hover:bg-white/[0.04] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
       >
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2 text-sm text-white/70">
-            <span aria-hidden className="h-2 w-2 rounded-full bg-signal" />
+          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-signal-clair">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-signal" />
             Maintenant
           </span>
-          <span className="mt-0.5 block truncate text-xl font-semibold">{action.texte}</span>
+          <span className="mt-1 block truncate font-display text-xl font-bold tracking-[-0.01em]">{action.texte}</span>
           {action.detail && <span className="block truncate text-sm text-white/70">{action.detail}</span>}
         </span>
       </Link>
@@ -187,7 +182,7 @@ function Maintenant({ action }: { action: ActionAccueil }) {
           href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(action.adresse)}`}
           target="_blank"
           rel="noopener noreferrer"
-          className="flex shrink-0 items-center bg-signal px-4 text-base font-semibold text-white active:brightness-95 sm:hover:brightness-105 motion-safe:transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
+          className="mr-4 inline-flex min-h-12 shrink-0 items-center rounded-full bg-signal px-5 text-base font-semibold text-white active:scale-[0.97] sm:hover:brightness-105 motion-safe:transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
         >
           Y aller
         </a>
@@ -199,13 +194,13 @@ function Maintenant({ action }: { action: ActionAccueil }) {
 /** « Tout est réglé. » : un état vrai, jamais un geste (règle 16). */
 function Repos({ demain }: { demain: string | null }) {
   return (
-    <section aria-label="Tout est réglé" className="flex items-center gap-4 rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15">
+    <section aria-label="Tout est réglé" className="flex items-center gap-4 rounded-3xl bg-surface px-5 py-5 ombre-douce">
       <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-succes text-white">
         <IconeCoche className="h-6 w-6" />
       </span>
       <span className="min-w-0">
-        <span className="block font-display text-2xl font-semibold">Tout est réglé.</span>
-        <span className="mt-0.5 block truncate text-sm text-white/70">Demain · {demain ?? "Rien de prévu."}</span>
+        <span className="block font-display text-2xl font-bold tracking-[-0.01em] text-ink">Tout est réglé.</span>
+        <span className="mt-0.5 block truncate text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</span>
       </span>
     </section>
   );

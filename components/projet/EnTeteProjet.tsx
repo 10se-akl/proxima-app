@@ -184,7 +184,8 @@ export function EnTeteProjet({
   const classeRetour = `-ml-2 inline-flex min-h-12 items-center gap-1 rounded-xl pl-1 pr-3 text-base text-steel active:bg-ink/10 ${FOCUS}`;
   // Refonte visuelle (04/10) : les trois gestes sont posés sur la carte
   // bleu nuit, en verre clair.
-  const tuile = `flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-white/10 px-2 py-2 text-sm font-semibold text-white ring-1 ring-white/15 active:bg-white/20 motion-safe:transition-colors sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:hover:bg-white/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white`;
+  // Atelier (22/10) : les trois gestes en creux, posés sur le fond.
+  const tuile = `flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-paper-warm px-2 py-2 text-sm font-semibold text-ink active:scale-[0.97] motion-safe:transition sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:hover:bg-ink/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink`;
 
   return (
     <header>
@@ -213,23 +214,18 @@ export function EnTeteProjet({
         </div>
       </div>
 
-      {/* Refonte visuelle (04/10, maquette d'Axel) : qui, les trois gestes
-          et l'avancement dans une carte bleu nuit, comme l'en-tête de
-          l'accueil. La barre de retour et le menu restent au-dessus. */}
-      <div className="relative mt-1 overflow-hidden rounded-3xl bg-nuit px-5 py-5 text-white sm:px-7 sm:py-6">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgb(var(--c-signal)/0.32),transparent_55%),radial-gradient(ellipse_at_bottom_left,rgb(var(--c-bleu)/0.18),transparent_55%)]"
-        />
-        <div className="relative">
-          <h1 className="truncate font-display text-3xl font-bold">{nomClient}</h1>
+      {/* Atelier (22/10) : qui, les trois gestes et l'avancement, posés sur
+          le fond (plus de carte bleu nuit à halos). */}
+      <div className="mt-2">
+        <div>
+          <h1 className="truncate font-display text-3xl font-bold tracking-[-0.02em] text-ink sm:text-4xl">{nomClient}</h1>
           {(sousTitre || priorite !== "normal") && (
-            <p className="mt-1 flex min-w-0 items-center gap-2 text-sm text-white/70">
+            <p className="mt-1 flex min-w-0 items-center gap-2 text-base text-steel">
               {priorite === "urgent" && (
-                <span className="shrink-0 rounded-full bg-signal px-2.5 py-0.5 text-xs font-semibold text-white">Urgent</span>
+                <span className="shrink-0 rounded-full bg-signal/15 px-2.5 py-0.5 text-sm font-semibold text-signal-fonce">Urgent</span>
               )}
               {priorite === "important" && (
-                <span className="shrink-0 rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-semibold text-white">Important</span>
+                <span className="shrink-0 rounded-full bg-paper-warm px-2.5 py-0.5 text-sm font-semibold text-ink">Important</span>
               )}
               <span className="truncate">{sousTitre}</span>
             </p>
@@ -268,17 +264,17 @@ export function EnTeteProjet({
           <div className="mt-5" aria-label={`Étape : ${ETAPES[etape].libelle}`}>
             <div className="flex gap-1" aria-hidden>
               {ETAPES.map((e, i) => (
-                <span key={e.libelle} className={`h-1.5 flex-1 rounded-full ${i <= etape ? "bg-signal" : "bg-white/15"}`} />
+                <span key={e.libelle} className={`h-1.5 flex-1 rounded-full ${i <= etape ? "bg-ink" : "bg-ink/[0.12]"}`} />
               ))}
             </div>
             <div className="mt-1.5 hidden justify-between text-sm sm:flex" aria-hidden>
               {ETAPES.map((e, i) => (
-                <span key={e.libelle} className={i === etape ? "font-semibold text-white" : "text-white/55"}>
+                <span key={e.libelle} className={i === etape ? "font-semibold text-ink" : "text-steel"}>
                   {e.libelle}
                 </span>
               ))}
             </div>
-            <p className="mt-1.5 text-sm font-semibold text-white sm:hidden">{ETAPES[etape].libelle}</p>
+            <p className="mt-1.5 text-sm font-semibold text-ink sm:hidden">{ETAPES[etape].libelle}</p>
           </div>
         </div>
       </div>

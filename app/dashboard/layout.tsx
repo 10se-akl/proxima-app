@@ -68,7 +68,7 @@ export default async function DashboardLayout({
     : { count: 0 };
 
   return (
-    <div className="flex flex-col sm:flex-row">
+    <div data-da="atelier" className="flex flex-col sm:flex-row">
       <Sidebar nomArtisan={profil?.nom ?? user.email ?? ""} nbEnRetard={nbEnRetard ?? 0} />
       {/* Fond de l'app (06/09) — retour d'Axel : l'app "ne donne pas envie
           de l'ouvrir" comparée au site vitrine, qui lui a du relief (voir
@@ -84,7 +84,7 @@ export default async function DashboardLayout({
       {/* min-w-0 (27/09) : à côté de la barre latérale (tablette, téléphone
           en paysage), un nom de client très long faisait déborder toute la
           page de 144 px sur le côté au lieu d'être coupé par « … ». */}
-      <main className="flex-1 min-w-0 min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0 bg-[radial-gradient(ellipse_1200px_700px_at_top_left,rgb(var(--c-signal-clair)/0.14),transparent_65%)] dark:bg-none">
+      <main className="flex-1 min-w-0 min-h-screen pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0">
         <BandeauReseau />
         <LienPrecedent />
         {children}

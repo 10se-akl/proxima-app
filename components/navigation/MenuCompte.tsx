@@ -63,12 +63,12 @@ export function MenuCompte({ nom, surDeconnexion }: { nom: string; surDeconnexio
         aria-haspopup="dialog"
         aria-expanded={ouvert}
         aria-label="Compte"
-        className="grid h-12 w-12 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white/70"
+        className="grid h-12 w-12 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
       >
         {/* Un petit visuel dans une grande cible (règle 17). */}
         <span
           aria-hidden
-          className="grid h-9 w-9 place-items-center rounded-full bg-white/15 font-display text-sm font-semibold text-white"
+          className="grid h-9 w-9 place-items-center rounded-full bg-ink font-display text-sm font-semibold text-paper"
         >
           {initialesCompte(nom)}
         </span>
@@ -139,7 +139,7 @@ export function LiensCompte() {
   const pathname = usePathname();
   const classe = (actif: boolean) =>
     `flex items-center rounded-lg text-sm transition-colors [@media(pointer:coarse)]:min-h-12 ${
-      actif ? "font-semibold text-white" : "text-white/75 hover:text-white"
+      actif ? "font-semibold text-ink" : "text-steel hover:text-ink"
     }`;
   return (
     <nav aria-label="Compte" className="flex flex-wrap items-center gap-x-2 px-2">
@@ -148,7 +148,7 @@ export function LiensCompte() {
           <Link href={l.href} aria-current={estDans(pathname, l.href) ? "page" : undefined} className={classe(estDans(pathname, l.href))}>
             {l.label}
           </Link>
-          <span aria-hidden className="text-white/30">
+          <span aria-hidden className="text-steel">
             ·
           </span>
         </span>

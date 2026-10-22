@@ -140,7 +140,7 @@ export function TutoPremierProjet() {
                     <button
                       type="button"
                       onClick={() => setEtape("choix")}
-                      className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-white/15 text-xs font-semibold text-white ring-2 ring-white/60 motion-safe:animate-pulse"
+                      className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-signal text-xs font-semibold text-white ring-2 ring-signal/40 ring-offset-2 ring-offset-paper-warm motion-safe:animate-pulse"
                     >
                       <span aria-hidden>+</span> Nouveau projet
                     </button>
@@ -366,18 +366,18 @@ function Telephone({ children }: { children: ReactNode }) {
 function Fenetre({ children, bouton }: { children: ReactNode; bouton?: ReactNode }) {
   return (
     <div className="flex min-h-[300px] w-full flex-1 overflow-hidden rounded-2xl bg-paper ring-2 ring-ink/15 md:aspect-[16/11] md:min-h-0 md:flex-none">
-      <div className="flex w-[34%] max-w-[11rem] shrink-0 flex-col gap-2 bg-nuit p-3" aria-hidden={bouton ? undefined : true}>
+      <div className="flex w-[34%] max-w-[11rem] shrink-0 flex-col gap-2 bg-paper-warm p-3" aria-hidden={bouton ? undefined : true}>
         <div className="flex items-center gap-1.5 pb-1">
-          <CompyoMark variante="blanc" taille={14} />
-          <span className="text-xs font-semibold text-white">Compyo</span>
+          <CompyoMark variante="couleur" taille={14} />
+          <span className="text-xs font-semibold text-ink">Compyo</span>
         </div>
         {bouton ?? (
-          <span className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-white/10 text-xs font-semibold text-white/80">
+          <span className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-signal text-xs font-semibold text-white">
             <span aria-hidden>+</span> Nouveau projet
           </span>
         )}
         {["Aujourd'hui", "Projets", "Planning", "Argent"].map((l) => (
-          <span key={l} className="px-1 text-xs text-white/70">
+          <span key={l} className="px-1 text-xs text-steel">
             {l}
           </span>
         ))}

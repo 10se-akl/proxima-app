@@ -16,13 +16,13 @@ import type { ReactNode } from "react";
 
 export const LIGNES_MAX = 5;
 
-/** Le titre d'un bloc et son nombre. */
-export function TitreBloc({ titre, nombre, icone }: { titre: string; nombre: number; icone?: ReactNode }) {
+/** Le titre d'un bloc et son nombre (Atelier, 22/10 : sans pastille ni
+ *  icône, le titre seul ; `icone` reste accepté pour ne rien casser). */
+export function TitreBloc({ titre, nombre }: { titre: string; nombre: number; icone?: ReactNode }) {
   return (
-    <h2 className="flex items-center gap-2.5 px-1 font-display text-lg font-semibold text-ink">
-      {icone}
+    <h2 className="flex items-baseline gap-2 px-1 font-display text-xl font-bold tracking-[-0.02em] text-ink">
       {titre}
-      <span className="rounded-full bg-ink/[0.07] px-2 py-0.5 font-sans text-xs font-semibold tabular-nums text-steel">{nombre}</span>
+      <span className="font-sans text-sm font-normal tabular-nums tracking-normal text-steel">{nombre}</span>
     </h2>
   );
 }
@@ -30,7 +30,12 @@ export function TitreBloc({ titre, nombre, icone }: { titre: string; nombre: num
 /** Refonte visuelle (04/10, maquette d'Axel) : chaque bloc est une carte
  *  qui porte son titre et ses lignes, au lieu de lignes posées sur le
  *  fond. Accueil et Argent la partagent. */
-export const CLASSE_CARTE_BLOC = "mt-6 rounded-3xl bg-surface p-3 ring-1 ring-ink/10 sm:p-4";
+export const CLASSE_CARTE_BLOC = "mt-8";
+
+/** Atelier (22/10) : les lignes d'un bloc, groupées sur une surface
+ *  blanche à l'ombre très douce, séparées d'un filet fin — plus de cadre
+ *  autour de chaque ligne. */
+export const CLASSE_GROUPE = "mt-2.5 overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-ink/[0.08]";
 
 /** « Voir les N », « Tous les devis »… : un bouton texte (règle 6). */
 export const CLASSE_BOUTON_TEXTE =
@@ -53,7 +58,7 @@ export function BlocAccueil({
   return (
     <section className={CLASSE_CARTE_BLOC} aria-label={titre}>
       <TitreBloc titre={titre} nombre={nombre} icone={icone} />
-      <div className="mt-2.5 flex flex-col gap-2">{children}</div>
+      <div className={CLASSE_GROUPE}>{children}</div>
       {lienTous && nombre > LIGNES_MAX && (
         <Link href={lienTous} className={`-ml-3 mt-1 ${CLASSE_BOUTON_TEXTE}`}>
           Voir les {nombre}
@@ -85,15 +90,15 @@ export function LigneAccueil({
   fin?: ReactNode;
 }) {
   return (
-    <div className="flex min-h-16 items-stretch overflow-hidden rounded-2xl bg-paper/70 ring-1 ring-ink/10">
+    <div className="flex min-h-16 items-stretch">
       <Link
         href={href}
         className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
       >
         {repere && (
           <span
-            className={`w-14 shrink-0 font-mono text-sm tabular-nums ${
-              repereAccent ? "font-semibold text-signal-fonce dark:text-signal-clair" : "text-steel"
+            className={`w-14 shrink-0 font-display text-base font-bold tabular-nums ${
+              repereAccent ? "text-signal-fonce dark:text-signal-clair" : "text-ink"
             }`}
           >
             {repere}
@@ -115,7 +120,7 @@ export function LigneAccueil({
 
 /** La colonne de fin d'une ligne, quand l'action est un mot. */
 export const CLASSE_FIN_TEXTE =
-  "flex shrink-0 items-center border-l border-ink/15 px-3 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink";
+  "flex shrink-0 items-center border-l border-ink/[0.08] px-4 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink";
 
 /** La colonne de fin « Relancer » : le message prêt s'ouvre sur la fiche. */
 export function FinRelancer({ href }: { href: string }) {

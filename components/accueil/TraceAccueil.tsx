@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { IconeCoche } from "@/components/projet/icones";
 import { vibrer, vibrerEchec } from "@/lib/retour";
-import { CLASSE_BOUTON_TEXTE, CLASSE_CARTE_BLOC, CLASSE_FIN_TEXTE, LIGNES_MAX, TitreBloc } from "./Blocs";
+import { CLASSE_BOUTON_TEXTE, CLASSE_CARTE_BLOC, CLASSE_FIN_TEXTE, CLASSE_GROUPE, LIGNES_MAX, TitreBloc } from "./Blocs";
 
 // ============================================================
 // Fait, trace, repos (refonte 03/10 — duel C lot 4, duel H lot 3 ; règles
@@ -140,7 +140,7 @@ function LigneTrace() {
   const { trace, erreurTrace, enCours, annuler } = useTraceAccueil();
   if (!trace) return null;
   return (
-    <div className="flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
+    <div className="flex min-h-14 items-center gap-3 bg-succes/10 pl-4 text-sm text-ink">
       <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
         <IconeCoche className="h-4 w-4" />
       </span>
@@ -189,7 +189,7 @@ export function BlocAvecTrace({
 
   if (lignes.length === 0) {
     return avecTrace ? (
-      <div className="mt-7">
+      <div className="mt-8">
         <LigneTrace />
       </div>
     ) : null;
@@ -199,7 +199,7 @@ export function BlocAvecTrace({
   return (
     <section className={CLASSE_CARTE_BLOC} aria-label={titre}>
       <TitreBloc titre={titre} nombre={lignes.length} icone={icone} />
-      <div className="mt-2.5 flex flex-col gap-2">
+      <div className={CLASSE_GROUPE}>
         {avecTrace && <LigneTrace />}
         {visibles}
       </div>

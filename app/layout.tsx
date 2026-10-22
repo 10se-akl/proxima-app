@@ -278,7 +278,7 @@ export default function RootLayout({
             sont chargées en mode CORS. */}
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&family=Atkinson+Hyperlegible+Next:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
           rel="stylesheet"
         />
         {/* Applique la classe .dark AVANT le premier rendu React, en

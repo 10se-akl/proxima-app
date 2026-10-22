@@ -91,23 +91,23 @@ export default async function ArgentPage() {
           </Pastille>
         }
       >
-        <section aria-label="À encaisser" className="rounded-2xl bg-white/10 px-5 py-4 ring-1 ring-white/15">
+        <section aria-label="À encaisser" className="rounded-[20px] bg-surface px-5 py-5 ombre-douce">
           {aEncaisser.nombre > 0 ? (
             <>
               <p className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-display text-3xl font-semibold tabular-nums">{euros(aEncaisser.total)}</span>
-                <span className="text-base text-white/70">à encaisser</span>
+                <span className="font-display text-4xl font-bold tabular-nums tracking-[-0.02em] text-ink">{euros(aEncaisser.total)}</span>
+                <span className="text-base text-steel">à encaisser</span>
               </p>
               <Link
                 href="/dashboard/factures?statut=emise"
-                className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-white/70 underline decoration-white/30 underline-offset-4 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+                className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-steel underline decoration-ink/30 underline-offset-4 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
               >
                 {aEncaisser.nombre} {aEncaisser.nombre > 1 ? "factures émises" : "facture émise"}
                 {aEncaisser.enRetard > 0 && ` · ${aEncaisser.enRetard} après échéance`}
               </Link>
             </>
           ) : (
-            <p className="text-base text-white/80">Rien à encaisser.</p>
+            <p className="text-base text-steel">Rien à encaisser.</p>
           )}
         </section>
       </EnTetePage>

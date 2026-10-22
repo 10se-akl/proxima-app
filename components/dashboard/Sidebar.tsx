@@ -117,38 +117,38 @@ const argentActif = (pathname: string) => PAGES_ARGENT.some((h) => estActif(path
 // liens du site vitrine tout en bas.
 function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; onDeconnexion: () => void }) {
   return (
-    <div className="px-4 py-5 border-t border-white/10 flex flex-col gap-3">
+    <div className="px-4 py-5 border-t border-ink/[0.08] flex flex-col gap-3">
       <div className="flex items-center gap-2.5 px-2">
         <Avatar nom={nomArtisan || "?"} taille={30} />
-        <p className="text-sm text-white/80 font-medium truncate">{nomArtisan}</p>
+        <p className="text-sm text-ink font-semibold truncate">{nomArtisan}</p>
       </div>
       {/* gap-1 (27/09) : quatre boutons de 44 px tiennent dans la barre
           (192 px utiles) ; avec gap-2.5 ils se tassaient sous 44 px. */}
       <div className="flex items-center gap-1 px-2">
         <CentreNotifications />
-        <ThemeToggle className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors" />
+        <ThemeToggle className="w-11 h-11 grid place-items-center rounded-lg text-steel hover:text-ink hover:bg-ink/[0.05] transition-colors" />
         <BoutonInstallerDiscret
           compact
-          className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="w-11 h-11 grid place-items-center rounded-lg text-steel hover:text-ink hover:bg-ink/[0.05] transition-colors"
         />
         <button
           onClick={onDeconnexion}
           title="Se déconnecter"
           aria-label="Se déconnecter"
-          className="w-11 h-11 grid place-items-center rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors"
+          className="w-11 h-11 grid place-items-center rounded-lg text-steel hover:text-ink hover:bg-ink/[0.05] transition-colors"
         >
           <IconeSortie taille={19} />
         </button>
       </div>
       <LiensCompte />
-      <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-white/5 text-xs text-white/40">
-        <Link href="/" className="flex items-center hover:text-white/70 transition-colors [@media(pointer:coarse)]:min-h-11">
+      <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-ink/[0.07] text-xs text-steel">
+        <Link href="/" className="flex items-center hover:text-ink transition-colors [@media(pointer:coarse)]:min-h-11">
           Site vitrine
         </Link>
-        <span className="text-white/20" aria-hidden="true">
+        <span className="text-steel" aria-hidden="true">
           ·
         </span>
-        <Link href="/contact" className="flex items-center hover:text-white/70 transition-colors [@media(pointer:coarse)]:min-h-11">
+        <Link href="/contact" className="flex items-center hover:text-ink transition-colors [@media(pointer:coarse)]:min-h-11">
           Contact
         </Link>
       </div>
@@ -214,9 +214,9 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           (refonte 03/10 : l'avatar ouvre Paramètres, Guide, avis, thème,
           installation, déconnexion). pt safe-area : sous l'encoche en
           application installée. */}
-      <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between bg-nuit text-white pl-4 pr-1 min-h-12 [padding-top:env(safe-area-inset-top)]">
+      <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between bg-paper/90 text-ink backdrop-blur-md shadow-[0_1px_0_rgb(var(--c-ink)/0.07)] pl-4 pr-1 min-h-12 [padding-top:env(safe-area-inset-top)]">
         <span className="flex items-center gap-2">
-          <CompyoMark variante="blanc" taille={22} />
+          <CompyoMark variante="couleur" taille={22} />
           <span className="font-display font-semibold">Compyo</span>
         </span>
         <span className="flex items-center">
@@ -322,20 +322,20 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           ouverte en pilule terracotta pleine — on la voit du premier coup
           d'œil. « Nouveau projet » passe en bouton clair sur la nuit pour
           ne pas lui faire concurrence. */}
-      <aside className="hidden sm:sticky sm:top-0 sm:flex sm:h-screen sm:w-60 sm:shrink-0 sm:self-start bg-nuit text-white flex-col justify-between border-r border-white/5">
+      <aside className="hidden sm:sticky sm:top-0 sm:flex sm:h-screen sm:w-60 sm:shrink-0 sm:self-start bg-paper-warm/60 text-ink flex-col justify-between border-r border-ink/[0.07]">
         {/* 13/10 — collée à l'écran : le haut défile seul si la fenêtre est
             basse ; le bas (rappels, compte) reste visible, et le panneau
             des rappels, qui s'ouvre vers le haut, n'est jamais coupé. */}
         <div className="min-h-0 overflow-y-auto">
-          <div className="px-6 py-6 border-b border-white/10 flex items-center gap-2.5">
-            <CompyoMark variante="blanc" taille={26} />
+          <div className="px-6 py-6 flex items-center gap-2.5">
+            <CompyoMark variante="couleur" taille={26} />
             <p className="font-display font-semibold">Compyo</p>
           </div>
           <div className="px-3 pt-4">
             <button
               type="button"
               onClick={() => setCaptureOuverte(true)}
-              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-xl bg-white/[0.08] text-[15px] font-semibold text-white ring-1 ring-white/15 transition hover:bg-white/[0.13] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-[14px] bg-signal text-[15px] font-semibold text-white shadow-[0_10px_22px_-12px_rgb(var(--c-signal)/0.9)] transition hover:brightness-105 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
             >
               <IconePlus className="h-5 w-5" /> Nouveau projet
             </button>
@@ -348,17 +348,17 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   key={lien.href}
                   href={lien.href}
                   aria-current={actif ? "page" : undefined}
-                  className={`relative flex items-center gap-3 px-3.5 py-3 text-[15px] rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/60 ${
+                  className={`relative flex items-center gap-3 px-3.5 py-3 text-[15px] rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
                     actif
-                      ? "bg-signal text-white font-semibold shadow-[0_10px_24px_-12px_rgb(var(--c-signal)/0.9)]"
-                      : "text-white/70 hover:text-white hover:bg-white/5"
+                      ? "bg-surface text-ink font-semibold ombre-douce"
+                      : "text-steel hover:text-ink hover:bg-ink/[0.05]"
                   }`}
                 >
                   <lien.Icone taille={19} />
                   <span className="flex-1">{lien.label}</span>
                   {lien.href === "/dashboard" && nbEnRetard > 0 && (
                     <span
-                      className={`rounded-full px-1.5 text-[11px] font-semibold ${actif ? "bg-white text-signal-fonce" : "bg-signal text-white"}`}
+                      className={`rounded-full px-1.5 text-[11px] font-semibold bg-signal text-white`}
                       aria-label={`${nbEnRetard} en retard`}
                     >
                       {nbEnRetard}
@@ -369,7 +369,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             })}
           </nav>
           {CINQUIEME_CASE === "plus" && (
-          <nav aria-label="Autres pages" className="mt-4 mx-3 border-t border-white/10 pt-3 flex flex-col">
+          <nav aria-label="Autres pages" className="mt-4 mx-3 border-t border-ink/[0.08] pt-3 flex flex-col">
             {SECONDAIRES.map((lien) => {
               const actif = estActif(pathname, lien.href);
               return (
@@ -378,7 +378,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   href={lien.href}
                   aria-current={actif ? "page" : undefined}
                   className={`flex items-center gap-2.5 px-3 py-2 text-[13px] rounded-lg transition-colors [@media(pointer:coarse)]:min-h-11 ${
-                    actif ? "bg-white/10 text-white font-medium" : "text-white/50 hover:text-white hover:bg-white/5"
+                    actif ? "bg-surface text-ink font-medium" : "text-steel hover:text-ink hover:bg-ink/[0.05]"
                   }`}
                 >
                   <lien.Icone taille={15} />
@@ -418,7 +418,7 @@ function OngletBas({
       }`}
     >
       {/* L'onglet actif : un trait en plus de la couleur, jamais la couleur seule. */}
-      {actif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-signal" />}
+      {actif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
       <span className="relative">
         {icone}
         {pastille > 0 && (

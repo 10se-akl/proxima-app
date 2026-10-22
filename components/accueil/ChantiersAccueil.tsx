@@ -4,7 +4,7 @@ import { CLASSE_ETIQUETTE, Pastille, type CouleurPastille } from "@/components/u
 import { IconeDossier } from "@/components/ui/Icones";
 import { IconeCalendrier, IconeChevron, IconeLieu, IconeMessage, IconeTelephone } from "@/components/projet/icones";
 import { numeroSms, numeroWhatsApp } from "@/lib/messagesClient";
-import { CLASSE_CARTE_BLOC, TitreBloc } from "./Blocs";
+import { CLASSE_CARTE_BLOC, CLASSE_GROUPE, TitreBloc } from "./Blocs";
 
 // ============================================================
 // « Mes projets » sur l'accueil (refonte visuelle 04/10, maquette d'Axel).
@@ -72,7 +72,7 @@ export function ChantiersAccueil({ chantiers, total }: { chantiers: ChantierAccu
           Voir tous <IconeChevron className="h-4 w-4" />
         </Link>
       </div>
-      <ul className="mt-1.5 flex flex-col gap-2">
+      <ul className={CLASSE_GROUPE}>
         {chantiers.map((c) => (
           <LigneChantier key={c.id} c={c} />
         ))}
@@ -98,7 +98,7 @@ export function LigneChantier({ c }: { c: ChantierAccueil }) {
   );
 
   return (
-    <li className={`flex items-center gap-2 rounded-2xl bg-paper/70 p-2 ring-1 ring-ink/10 sm:gap-3 ${c.estompe ? "opacity-70" : ""}`}>
+    <li className={`flex items-center gap-2 px-3 py-2.5 sm:gap-3 ${c.estompe ? "opacity-70" : ""}`}>
       <Link href={`/dashboard/demandes/${c.id}`} className={`flex min-w-0 flex-1 items-center gap-3 rounded-xl ${FOCUS}`}>
         {c.photo ? (
           // Une miniature signée, déjà petite : pas besoin de next/image.

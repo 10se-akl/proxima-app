@@ -2,7 +2,7 @@
 
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
-import { CLASSE_BOUTON_TEXTE, CLASSE_CARTE_BLOC, LIGNES_MAX, TitreBloc } from "./Blocs";
+import { CLASSE_BOUTON_TEXTE, CLASSE_CARTE_BLOC, CLASSE_GROUPE, LIGNES_MAX, TitreBloc } from "./Blocs";
 
 // ============================================================
 // Un bloc de cinq lignes au plus, puis « Voir les N » (refonte 03/10).
@@ -35,7 +35,7 @@ export function BlocDepliable({
   return (
     <section className={CLASSE_CARTE_BLOC} aria-label={titre}>
       <TitreBloc titre={titre} nombre={lignes.length} icone={icone} />
-      <div className="mt-2.5 flex flex-col gap-2">{visibles}</div>
+      <div className={CLASSE_GROUPE}>{visibles}</div>
       {apres}
       {reste &&
         (lienTous ? (

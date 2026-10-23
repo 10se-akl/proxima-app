@@ -93,9 +93,13 @@ async function purgerCachePagesHorsLigne() {
 // Avis »), on ne les voyait pas. Ils deviennent des liens de la barre,
 // sous les destinations, avec leur icône. Sur téléphone, ils restent dans
 // le menu du compte (MenuCompte).
+// Le site (présentation, tarifs, questions) suit, avec le logo : avant, un
+// « Site vitrine » de 12 px tout en bas.
+const IconeSite = ({ taille = 19 }: { taille?: number }) => <CompyoMark taille={taille} />;
 const AIDE_ET_REGLAGES = [
   { href: "/dashboard/guide", label: "Guide", Icone: IconeGuide },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
+  { href: "/", label: "Le site Compyo", Icone: IconeSite },
 ];
 
 const DESTINATIONS = [
@@ -162,12 +166,6 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
         Donner mon avis
       </button>
       <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-ink/[0.07] text-xs text-steel">
-        <Link href="/" className="flex items-center hover:text-ink transition-colors [@media(pointer:coarse)]:min-h-11">
-          Site vitrine
-        </Link>
-        <span className="text-steel" aria-hidden="true">
-          ·
-        </span>
         <Link href="/contact" className="flex items-center hover:text-ink transition-colors [@media(pointer:coarse)]:min-h-11">
           Contact
         </Link>
@@ -390,7 +388,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           </nav>
           <nav aria-label="Aide et réglages" className="mx-3 mt-3 flex flex-col gap-1 border-t border-ink/[0.08] pt-3">
             {AIDE_ET_REGLAGES.map((lien) => {
-              const actif = estActif(pathname, lien.href);
+              const actif = lien.href !== "/" && estActif(pathname, lien.href);
               return (
                 <Link
                   key={lien.href}

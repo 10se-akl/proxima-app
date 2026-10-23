@@ -8,6 +8,7 @@ import { IconeChevron } from "@/components/projet/icones";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
 import { IconeGuide, IconeParametres, IconeRetours } from "@/components/ui/Icones";
+import { CompyoMark } from "@/components/marketing/CompyoMark";
 
 // ============================================================
 // Le compte (refonte 03/10 — duel B, lot 1).
@@ -93,6 +94,22 @@ export function MenuCompte({ nom, surDeconnexion }: { nom: string; surDeconnexio
               </Link>
             </li>
           ))}
+          {/* 23/10 — demande d'Axel : sur téléphone, rien ne ramenait au site
+              (présentation, tarifs, questions fréquentes). « / » ne renvoie
+              pas un compte connecté vers l'appli (middleware.ts). */}
+          <li>
+            <Link
+              href="/"
+              onClick={() => setOuvert(false)}
+              className="flex min-h-14 items-center gap-3.5 border-b border-ink/15 text-base text-ink active:bg-ink/10"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/[0.06]">
+                <CompyoMark taille={20} />
+              </span>
+              <span className="flex-1">Voir le site Compyo</span>
+              <IconeChevron className="h-4 w-4 text-steel" />
+            </Link>
+          </li>
           <li>
             <button
               type="button"

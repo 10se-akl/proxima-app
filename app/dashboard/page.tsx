@@ -7,7 +7,9 @@ import type { Projet } from "@/types";
 import { etapeDe, lieuDe, prochainRendezVous, quoiDe } from "@/lib/projetAffichage";
 import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation } from "@/lib/notes";
-import { aujourdhuiParis, minuitParis } from "@/lib/moisParis";
+import { aujourdhuiParis, minuitParis, moisCourant, nomMois } from "@/lib/moisParis";
+import { chiffresDuMoisEnCours } from "@/lib/activite";
+import type { ChiffresDuMois } from "@/components/accueil/ChiffresMois";
 import { aplatirClient, calculerArgent, JOURS_PAUSE_RELANCE } from "@/lib/argent";
 
 // ============================================================
@@ -100,6 +102,20 @@ export default async function DashboardHome() {
     new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Paris", hour: "numeric", hourCycle: "h23" }).format(maintenant)
   );
   const estLeSoir = heureParis >= HEURE_DU_SOIR;
+
+  // 22/10 (panel) — l'argent du mois en haut de l'accueil : signé et
+  // encaissé ce mois-ci, avec les règles du Bilan (lib/activite.ts,
+  // chiffresDuMoisEnCours : trois petites requêtes sur le seul mois en
+  // cours), lancées en même temps que le reste. « À encaisser » vient de
+  // calculerArgent plus bas (le même total que la page Factures et le
+  // Bilan). Une lecture en échec n'affiche rien plutôt qu'un « 0 € » faux.
+  const moisEnCours = moisCourant(maintenant);
+  const chiffresMoisPromesse: Promise<{ signe: number; encaisse: number } | null> = organisationId
+    ? chiffresDuMoisEnCours(supabase, organisationId, maintenant).catch((erreur) => {
+        console.error("Accueil : chiffres du mois indisponibles", erreur);
+        return null;
+      })
+    : Promise.resolve(null);
 
   // Requêtes indépendantes : en parallèle, ce qui compte vraiment sur un
   // chantier avec un réseau mobile faible.
@@ -513,6 +529,10 @@ export default async function DashboardHome() {
     };
   });
 
+  const duMois = await chiffresMoisPromesse;
+  const chiffresMois: ChiffresDuMois | null = duMois
+    ? { nomMois: nomMois(moisEnCours), signe: duMois.signe, encaisse: duMois.encaisse, aEncaisser: argent.aEncaisser }
+    : null;
   const premierPrenom = (profil?.nom ?? "").split(" ")[0];
   const dateDuJour = maintenant.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
 
@@ -530,6 +550,7 @@ export default async function DashboardHome() {
       aRegler={aRegler}
       aSuivre={aSuivre}
       compteurs={compteurs}
+      chiffresMois={premierProjet ? null : chiffresMois}
       chantiers={chantiers}
       nbChantiers={enCours.length}
     />

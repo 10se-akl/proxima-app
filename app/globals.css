@@ -810,7 +810,9 @@ html:has([data-da="atelier"]) {
   --c-paper-warm: 236 232 226; /* creux : boutons secondaires, champs */
   --c-surface: 255 255 255;
   --c-ink: 27 26 24;
-  --c-steel: 107 102 95;
+  /* 22/10 (panel) : plus foncé (6,8:1 sur le fond, 7,6:1 sur le blanc) —
+     les sous-titres gris ne se lisaient pas sans lunettes ni au soleil. */
+  --c-steel: 88 83 77;
   --c-gris-clair: 236 232 226;
   --c-signal: 194 96 63; /* terracotta : le +, l'instant */
   --c-signal-fonce: 164 77 48;
@@ -827,18 +829,43 @@ html.dark:has([data-da="atelier"]) {
   --c-paper-warm: 39 37 35;
   --c-surface: 28 27 25;
   --c-ink: 242 239 234;
-  --c-steel: 168 161 151;
+  --c-steel: 182 175 165;
   --c-gris-clair: 39 37 35;
   --c-signal-fonce: 220 130 98;
   --c-signal-clair: 243 183 158;
-  --c-nuit: 44 42 39;
+  /* 22/10 (2e panel) — en sombre, les étiquettes vertes (« En cours »)
+     et la carte « Maintenant » ne ressortaient plus. */
+  --c-succes: 122 196 150;
+  --c-alerte-orange: 232 170 82;
+  --c-bleu: 125 170 240;
+  --c-violet: 178 150 245;
+  --c-nuit: 58 53 48;
   --ombre-douce: 0 1px 2px rgb(0 0 0 / 0.3), 0 10px 28px -16px rgb(0 0 0 / 0.6);
 }
 /* Le texte en Atkinson Hyperlegible : faite pour se lire d'un coup d'œil,
-   au soleil. Les titres et les chiffres restent en Manrope. */
+   au soleil. Les titres restent en Manrope.
+   22/10 (panel) — ses chiffres ont un zéro barré (« 69Ø03 », « 4 820,ØØ € »)
+   qui faisait « code d'ordinateur ». Les seuls chiffres (0-9) sont pris
+   dans Inter, déjà chargée par app/layout.tsx (même fichier que celui que
+   sert Google Fonts) ; si ce fichier manquait, on retombe sur Atkinson. */
+@font-face {
+  font-family: "Compyo Chiffres";
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url(https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2) format("woff2");
+  unicode-range: U+0030-0039;
+}
 html:has([data-da="atelier"]) body,
 html:has([data-da="atelier"]) .font-sans {
-  font-family: "Atkinson Hyperlegible Next", Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: "Compyo Chiffres", "Atkinson Hyperlegible Next", Inter, ui-sans-serif, system-ui, sans-serif;
+}
+/* 22/10 (2e panel) — les heures et les montants en police à chasse fixe
+   (« 8 420,00 € », « 10h00 ») faisaient « ticket de caisse ». Dans
+   l'application, ils prennent la police du texte ; l'alignement des
+   colonnes reste assuré par tabular-nums. */
+html:has([data-da="atelier"]) .font-mono {
+  font-family: "Compyo Chiffres", "Atkinson Hyperlegible Next", Inter, ui-sans-serif, system-ui, sans-serif;
 }
 .ombre-douce {
   box-shadow: var(--ombre-douce);

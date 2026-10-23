@@ -5,11 +5,12 @@ import { BlocDepliable } from "./BlocDepliable";
 import { ListeAujourdhui, type ElementJour } from "./ListeAujourdhui";
 import { ARegler, type ElementARegler } from "./ARegler";
 import { TraceAccueil } from "./TraceAccueil";
-import { BoutonCapture } from "./BoutonCapture";
+import { PremiersPas } from "./PremiersPas";
 import { RafraichirAuRetour } from "./RafraichirAuRetour";
 import { EnTeteAccueil } from "./EnTeteAccueil";
 import { TuilesAccueil, type CompteursAccueil } from "./TuilesAccueil";
 import { ChantiersAccueil, type ChantierAccueil } from "./ChantiersAccueil";
+import { ChiffresMois, type ChiffresDuMois } from "./ChiffresMois";
 
 // ============================================================
 // L'affichage de l'accueil, sans aucune requête : app/dashboard/page.tsx
@@ -66,6 +67,7 @@ export function VueAccueil({
   aRegler,
   aSuivre,
   compteurs,
+  chiffresMois = null,
   chantiers,
   nbChantiers,
 }: {
@@ -84,6 +86,8 @@ export function VueAccueil({
   aRegler: ElementARegler[];
   aSuivre: LigneASuivre[];
   compteurs: CompteursAccueil;
+  /** 22/10 — l'argent du mois (les chiffres du Bilan), ou rien. */
+  chiffresMois?: ChiffresDuMois | null;
   chantiers: ChantierAccueil[];
   nbChantiers: number;
 }) {
@@ -93,7 +97,7 @@ export function VueAccueil({
   ) : repos ? (
     <Repos demain={demain} />
   ) : premierProjet ? (
-    <BoutonCapture />
+    <PremiersPas />
   ) : rienDUrgent ? (
     <div className="rounded-[20px] bg-surface px-5 py-4 ombre-douce">
       <p className="text-base font-semibold text-ink">Rien d&apos;urgent.</p>
@@ -110,6 +114,7 @@ export function VueAccueil({
     <div className="mx-auto max-w-2xl px-5 pb-10 pt-6 sm:p-10 xl:max-w-6xl">
       <RafraichirAuRetour />
       <EnTeteAccueil dateDuJour={dateDuJour} titre={titre} sousTitre={sousTitre} />
+      <ChiffresMois chiffres={chiffresMois} />
 
       {/* La trace du dernier geste et les feuilles ouvertes survivent au
           recalcul de l'accueil : le fournisseur entoure les deux colonnes. */}
@@ -143,7 +148,7 @@ export function VueAccueil({
           </div>
 
           <div className="contents xl:-mt-8 xl:block xl:min-w-0">
-            {/* La cible du lien « À régler ». */}
+            {/* La cible du lien « À confirmer » (ex-« À régler »). */}
             <div id="a-regler" className="order-3 scroll-mt-20 xl:order-none">
               <ARegler elements={aRegler} />
             </div>
@@ -195,7 +200,7 @@ function Maintenant({ action }: { action: ActionAccueil }) {
 function Repos({ demain }: { demain: string | null }) {
   return (
     <section aria-label="Tout est réglé" className="flex items-center gap-4 rounded-3xl bg-surface px-5 py-5 ombre-douce">
-      <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-succes text-white">
+      <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-succes text-white dark:text-nuit">
         <IconeCoche className="h-6 w-6" />
       </span>
       <span className="min-w-0">

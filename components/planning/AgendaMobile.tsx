@@ -139,7 +139,8 @@ export function AgendaMobile({
             : premier === aujourdhui
             ? "Auj."
             : premier === demain
-            ? "Dem."
+            ? // 22/10 (panel) — « Dem. » se lisait « dimanche ».
+              "Demain"
             : capitale(jourCourt(premier));
           const numero = fondu ? `${numeroDuJour(g.cles[0])}–${numeroDuJour(g.cles[1])}` : String(numeroDuJour(premier));
           const libelle = fondu
@@ -150,7 +151,7 @@ export function AgendaMobile({
             <section key={premier} aria-label={libelle} className="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-2">
               {/* Le repère du jour, à hauteur de la première ligne. */}
               <div className={`flex flex-col items-center justify-center ${vide ? "min-h-14" : "min-h-16"}`}>
-                <span className="text-sm font-semibold text-steel">{mot}</span>
+                <span className={`font-semibold text-steel ${mot.length > 4 ? "text-xs" : "text-sm"}`}>{mot}</span>
                 <span
                   className={`font-display font-semibold tabular-nums ${fondu ? "text-base" : "text-xl"} ${
                     estAujourdhui ? "rounded-xl bg-signal px-2 py-0.5 text-white" : "text-ink"
@@ -271,14 +272,11 @@ function LigneRendezVous({
           <span className="block truncate text-sm text-steel">
             <span className="font-mono tabular-nums text-ink">{heureEnLettres(e.date_heure)}</span>
             {fait && " · Fait"}
-            {risque && (
-              <>
-                {" · "}
-                <span className="font-semibold text-signal-fonce dark:text-signal-clair">Météo à risque</span>
-              </>
-            )}
             {detail && ` · ${detail}`}
           </span>
+          {/* 22/10 (panel) — sur sa propre ligne : à côté de l'heure, il
+              finissait coupé (« Météo à risqu… »). */}
+          {risque && <span className="block truncate text-sm font-semibold text-signal-fonce dark:text-signal-clair">Météo à risque</span>}
         </span>
         {fait ? (
           <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
@@ -292,10 +290,13 @@ function LigneRendezVous({
         <button
           type="button"
           onClick={surPrevenir}
-          aria-label={`Prévenir ${qui ?? "le client"} : météo à risque`}
+          aria-label={`Prévenir le client${qui ? ` ${qui}` : ""} : météo à risque`}
           className="grid w-[4.5rem] shrink-0 place-items-center border-l border-ink/15 text-sm font-semibold text-ink active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
         >
-          Prévenir
+          <span className="text-center leading-tight">
+            Prévenir
+            <span className="block font-normal text-steel">le client</span>
+          </span>
         </button>
       )}
     </div>

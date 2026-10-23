@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Avatar } from "@/components/ui/Avatar";
+import { EnTeteColonnes, LigneDocument, formatEuros } from "@/components/dashboard/LigneDocument";
 import { IconeDocument } from "@/components/ui/Icones";
 import { CLASSE_CHAMP_NUIT, EnTetePage, classePuceNuit } from "@/components/ui/EnTetePage";
 import { Pastille } from "@/components/ui/Pastille";
@@ -80,11 +79,24 @@ export function ListeDevisRecherchable({
       `${d.demandes?.nom_client ?? ""} ${d.numero}`.toLowerCase().includes(recherche.toLowerCase())
     );
 
+  // 22/10 (panel) — le total en attente de réponse, en TTC comme partout
+  // (lib/activite.ts) : la liste ne donnait aucun chiffre d'ensemble.
+  // Un projet compte une fois : une v2 envoyée laisse la v1 « envoyée »
+  // (dupliquerDevis ne touche pas l'original). On garde le dernier envoyé.
+  const dernierParProjet = new Map<string, DevisAvecClient>();
+  for (const d of devisList.filter((x) => correspondFiltre(x, "envoye"))) {
+    const deja = dernierParProjet.get(d.demande_id);
+    if (!deja || (d.envoye_le ?? "") > (deja.envoye_le ?? "")) dernierParProjet.set(d.demande_id, d);
+  }
+  const enAttente = Array.from(dernierParProjet.values());
+  const totalEnAttente = enAttente.reduce((s, d) => s + Number(d.total_estime ?? 0), 0);
+  const nombre = devisList.length === 0 ? "Aucun devis" : devisList.length === 1 ? "1 devis" : `${devisList.length} devis`;
+
   return (
     <div>
       <EnTetePage
         titre="Devis"
-        sousTitre={devisList.length === 0 ? "Aucun devis" : devisList.length === 1 ? "1 devis" : `${devisList.length} devis`}
+        sousTitre={enAttente.length > 0 ? `${nombre} · ${formatEuros(totalEnAttente)} TTC en attente de réponse` : nombre}
         icone={
           <Pastille couleur="vert" taille="grande">
             <IconeDocumentPastille className="h-6 w-6" />
@@ -102,7 +114,7 @@ export function ListeDevisRecherchable({
 
         {/* 27/09 — Des pastilles au pouce (44 px) sur une seule rangée qui
             défile, plutôt que de petites étiquettes de 24 px sur deux lignes. */}
-        <div className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
           {LABEL_STATUT_FILTRE.map((f) => (
             <button
               key={f.cle}
@@ -119,7 +131,9 @@ export function ListeDevisRecherchable({
 
       {/* Refonte visuelle (04/10) : la liste dans une carte, chaque ligne
           un cran plus sombre, comme « Mes projets » sur l'accueil. */}
-      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-ink/[0.08]">
+      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce">
+        {filtres.length > 0 && <EnTeteColonnes />}
+        <div className="divide-y divide-ink/[0.08]">
         {filtres.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
@@ -132,31 +146,25 @@ export function ListeDevisRecherchable({
             </p>
           </div>
         ) : (
-          filtres.map((d) => {
-            const { texte, classe } = statutAffiche(d, d.demandes?.statut);
-            return (
-              <Link
+          <>
+            {filtres.map((d) => (
+              <LigneDocument
                 key={d.id}
                 href={adresseEspaceDevis(d.id)}
-                className="flex min-h-[4.5rem] items-center gap-3 px-4 py-3 transition-colors hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
-              >
-                <Avatar nom={d.demandes?.nom_client ?? "?"} taille={40} />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="truncate text-[16px] font-semibold text-ink">{d.demandes?.nom_client ?? "Client"}</span>
-                    <span className="shrink-0 text-[15px] font-semibold tabular-nums text-ink">
-                      {d.total_estime.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 flex items-center justify-between gap-3">
-                    <span className="truncate text-[13.5px] text-ink/65">{`${d.numero} · ${d.envoye_le ? `envoyé le ${new Date(d.envoye_le).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}` : `créé le ${new Date(d.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`}`}</span>
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${classe}`}>{texte}</span>
-                  </span>
-                </span>
-              </Link>
-            );
-          })
+                client={d.demandes?.nom_client ?? "Client"}
+                numero={d.numero}
+                date={
+                  d.envoye_le
+                    ? `envoyé le ${new Date(d.envoye_le).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`
+                    : `créé le ${new Date(d.created_at).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`
+                }
+                montant={Number(d.total_estime ?? 0)}
+                etat={statutAffiche(d, d.demandes?.statut)}
+              />
+            ))}
+          </>
         )}
+        </div>
       </div>
     </div>
   );

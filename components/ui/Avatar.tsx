@@ -1,17 +1,10 @@
-// Petit cercle coloré avec les initiales du client — pattern très courant
-// dans les SaaS modernes (Linear, Notion, Stripe...), utilisé partout où
-// un nom de client apparaît (listes de projets, devis, planning). Aucune
-// dépendance externe (pas de bibliothèque d'avatars/photos), juste du CSS.
-// Couleur dérivée du nom (hash simple) plutôt que toujours la même teinte,
-// pour distinguer visuellement les clients d'un coup d'œil dans une liste.
-const TEINTES = [
-  "bg-signal/15 text-signal-fonce",
-  "bg-[#2F8F5B]/15 text-[#2F8F5B]",
-  "bg-[#3B6FA0]/15 text-[#3B6FA0]",
-  "bg-[#8B5CF6]/15 text-[#8B5CF6]",
-  "bg-[#D9861A]/15 text-[#D9861A]",
-];
-
+// Les initiales du client (ou de l'artisan), en CSS seul.
+//
+// 22/10 (panel de 18 faux clients) — les cinq teintes pastel tirées du nom
+// faisaient « appli de rencontre » et n'aidaient pas à reconnaître un
+// client. Une seule teinte neutre, aux couleurs de l'application ; `carre`
+// donne la forme des miniatures de « Mes projets » (même liste, même
+// forme), le rond reste pour une personne (le compte, l'équipe).
 function initiales(nom: string): string {
   const mots = nom.trim().split(/\s+/).filter(Boolean);
   if (mots.length === 0) return "?";
@@ -19,24 +12,21 @@ function initiales(nom: string): string {
   return (mots[0][0] + mots[mots.length - 1][0]).toUpperCase();
 }
 
-function teinteDe(nom: string): string {
-  let hash = 0;
-  for (let i = 0; i < nom.length; i++) hash = (hash + nom.charCodeAt(i)) % TEINTES.length;
-  return TEINTES[hash];
-}
-
 export function Avatar({
   nom,
   taille = 36,
   className = "",
+  carre = false,
 }: {
   nom: string;
   taille?: number;
   className?: string;
+  /** Une ligne de dossier (devis, facture) : coins arrondis, pas un rond. */
+  carre?: boolean;
 }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full font-display font-semibold shrink-0 ${teinteDe(nom)} ${className}`}
+      className={`inline-flex shrink-0 items-center justify-center bg-ink/[0.07] font-display font-semibold text-ink ${carre ? "rounded-xl" : "rounded-full"} ${className}`}
       style={{ width: taille, height: taille, fontSize: taille * 0.4 }}
       aria-hidden
     >

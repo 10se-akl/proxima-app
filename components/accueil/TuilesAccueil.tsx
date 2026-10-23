@@ -35,7 +35,7 @@ export function TuilesAccueil({ compteurs }: { compteurs: CompteursAccueil }) {
   // Atelier (22/10) : plus quatre tuiles aux pastilles de quatre couleurs
   // qui se disputaient l'œil (et affichaient « 0 » à un compte neuf), mais
   // une courte liste « En cours » : seulement ce qui n'est pas à zéro,
-  // chaque ligne mène à sa liste. « À régler » a déjà son bloc.
+  // chaque ligne mène à sa liste. « À confirmer » a déjà son bloc.
   const lignes = [
     { href: "/dashboard/devis", libelle: "Devis sans réponse", nombre: compteurs.devis, detail: undefined as string | undefined },
     {
@@ -49,8 +49,10 @@ export function TuilesAccueil({ compteurs }: { compteurs: CompteursAccueil }) {
   if (lignes.length === 0) return null;
 
   return (
-    <section aria-label="En cours" className="mt-8">
-      <h2 className="px-1 font-display text-xl font-bold tracking-[-0.02em] text-ink">En cours</h2>
+    // 22/10 (2e panel) — « En cours » était aussi le nom d'une étape de
+    // projet (« À suivre et En cours : quelle différence ? »).
+    <section aria-label="En résumé" className="mt-8">
+      <h2 className="px-1 font-display text-xl font-bold tracking-[-0.02em] text-ink">En résumé</h2>
       <ul className="mt-2.5 overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-ink/[0.08]">
         {lignes.map((l) => (
           <li key={l.libelle}>

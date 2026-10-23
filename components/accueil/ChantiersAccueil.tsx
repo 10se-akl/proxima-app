@@ -107,7 +107,7 @@ export function LigneChantier({ c }: { c: ChantierAccueil }) {
         ) : (
           <span
             aria-hidden
-            className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-signal/25 to-violet/25 font-display text-lg font-semibold text-ink sm:w-20"
+            className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-ink/[0.07] font-display text-lg font-semibold text-ink sm:w-20"
           >
             {initiales(c.nom)}
           </span>

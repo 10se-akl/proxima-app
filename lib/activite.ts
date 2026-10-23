@@ -285,6 +285,63 @@ export async function calculerActivite(
   };
 }
 
+/** 23/10 — Les deux chiffres du mois en cours pour l'accueil (la bande
+ *  « Signé · Encaissé »), sans les six mois d'historique ni les chantiers
+ *  terminés de calculerActivite : trois requêtes au lieu de six. Mêmes
+ *  règles que `chiffres()` ci-dessus, donc les mêmes montants que le
+ *  Bilan : signé = projets acceptés ce mois-ci, au montant de leur devis
+ *  retenu (devisRetenu) ; encaissé = factures payées ce mois-ci, hors
+ *  avoirs, par date de paiement. Une lecture en échec lève une erreur
+ *  (jamais un « 0 € » faux). */
+export async function chiffresDuMoisEnCours(
+  supabase: SupabaseClient,
+  organisationId: string,
+  maintenant = new Date()
+): Promise<{ signe: number; encaisse: number }> {
+  const { debut } = bornes(moisCourant(maintenant));
+  const [{ data: acceptees, error: e1 }, { data: payees, error: e2 }] = await Promise.all([
+    supabase
+      .from("demandes")
+      .select("id, accepte_le")
+      .eq("organisation_id", organisationId)
+      .gte("accepte_le", debut.toISOString())
+      .lt("accepte_le", maintenant.toISOString()),
+    supabase
+      .from("factures")
+      .select("total_ttc, payee_le")
+      .eq("organisation_id", organisationId)
+      .eq("statut", "payee")
+      .neq("type", "avoir")
+      .gte("payee_le", debut.toISOString())
+      .lt("payee_le", maintenant.toISOString()),
+  ]);
+  const erreur = e1 ?? e2;
+  if (erreur) throw new Error(`Chiffres du mois : lecture impossible (${erreur.message})`);
+
+  const ids = (acceptees ?? []).map((d) => d.id as string);
+  let signe = 0;
+  if (ids.length > 0) {
+    const { data: devis, error } = await supabase
+      .from("devis")
+      .select("demande_id, statut, total_estime, envoye_le, signe_le")
+      .eq("organisation_id", organisationId)
+      .in("demande_id", ids);
+    if (error) throw new Error(`Chiffres du mois : devis illisibles (${error.message})`);
+    const parProjet = new Map<string, LigneDevis[]>();
+    for (const d of (devis ?? []) as LigneDevis[]) {
+      const liste = parProjet.get(d.demande_id) ?? [];
+      liste.push(d);
+      parProjet.set(d.demande_id, liste);
+    }
+    signe = ids.reduce((s, id) => {
+      const retenu = devisRetenu(parProjet.get(id) ?? []);
+      return s + (retenu?.total_estime != null ? Number(retenu.total_estime) : 0);
+    }, 0);
+  }
+  const encaisse = (payees ?? []).reduce((s, f) => s + Number(f.total_ttc), 0);
+  return { signe: arrondi(signe), encaisse: arrondi(encaisse) };
+}
+
 /** Évolution d'un chiffre par rapport au mois précédent, prête à afficher.
  *  Jamais de "+∞ %" : partir de zéro, c'est "nouveau", pas une hausse. */
 export function evolution(actuel: number, precedent: number): {

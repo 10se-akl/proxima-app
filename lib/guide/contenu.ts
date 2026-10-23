@@ -197,7 +197,7 @@ export const SECTIONS: SectionGuide[] = [
         capture: "journee-maintenant",
         alt: "L'accueil : la carte « Maintenant », puis les chiffres du jour.",
         texte:
-          "Chaque jour, l'accueil vous dit quoi faire maintenant, avec l'itinéraire en un appui. Dessous : vos chiffres du jour, ce qui vous attend aujourd'hui et ce qui reste à régler.",
+          "Chaque jour, l'accueil vous dit quoi faire maintenant, avec l'itinéraire en un appui. Dessous : vos chiffres du jour, ce qui vous attend aujourd'hui et ce qui reste à confirmer.",
       },
       {
         capture: "journee-rappel",
@@ -206,9 +206,9 @@ export const SECTIONS: SectionGuide[] = [
       },
       {
         capture: "journee-aregler",
-        alt: "Le bloc « À régler » : un chantier terminé ? Oui ou Pas encore.",
+        alt: "Le bloc « À confirmer » : un chantier terminé ? Oui ou Pas encore.",
         texte:
-          "Ce qui est passé sans réponse attend dans « À régler » : vous répondez d'un geste, par exemple ① oui, le chantier est terminé, ou ② pas encore. Le soir, quand tout est réglé, l'écran vous le dit.",
+          "Ce qui est passé sans réponse attend dans « À confirmer » : vous répondez d'un geste, par exemple ① oui, le chantier est terminé, ou ② pas encore. Le soir, quand tout est réglé, l'écran vous le dit.",
       },
     ],
   },

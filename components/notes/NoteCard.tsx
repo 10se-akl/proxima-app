@@ -82,7 +82,7 @@ export function NoteCard({
           <span
             className={`grid h-6 w-6 place-items-center rounded-full border-2 motion-safe:transition-colors ${
               estTerminee
-                ? "border-succes bg-succes text-white"
+                ? "border-succes bg-succes text-white dark:text-nuit"
                 : "border-ink/40 text-transparent group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes"
             }`}
           >

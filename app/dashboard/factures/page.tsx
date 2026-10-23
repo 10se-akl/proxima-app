@@ -17,7 +17,7 @@ export default async function FacturesPage({ searchParams }: { searchParams?: { 
   const { data: facturesBrutes } = await supabase
     .from("factures")
     .select(
-      "id, demande_id, type, numero, statut, total_ttc, date_emission, notifie_relance_le, demandes(nom_client)"
+      "id, demande_id, type, numero, statut, total_ttc, date_emission, date_echeance, notifie_relance_le, demandes(nom_client)"
     )
     .eq("organisation_id", organisationId)
     .order("date_emission", { ascending: false });
@@ -28,7 +28,7 @@ export default async function FacturesPage({ searchParams }: { searchParams?: { 
   }));
 
   return (
-    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-4xl">
+    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-4xl lg:max-w-5xl">
       {/* L'en-tête bleu nuit vit dans la liste : la recherche, les filtres
           et l'export comptable y sont posés. */}
       <ListeFacturesRecherchable

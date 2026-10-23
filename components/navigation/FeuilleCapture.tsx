@@ -30,7 +30,7 @@ import { IconeNote } from "@/components/ui/Icones";
 // qu'on obtient. Le champ `ia` reste, pour mémoire de ce qui appelle l'IA.
 type Choix = { href: string; libelle: string; detail: string; icone: React.ReactNode; ia: boolean };
 
-const CHOIX: Choix[] = [
+export const CHOIX_CAPTURE: Choix[] = [
   {
     href: "/dashboard/demandes/importer",
     libelle: "Coller un message",
@@ -62,7 +62,7 @@ const NOTE: Choix = {
   ia: false,
 };
 
-function LigneChoix({ c, surFermer }: { c: Choix; surFermer: () => void }) {
+export function LigneChoix({ c, surFermer }: { c: Choix; surFermer: () => void }) {
   return (
     <Link
       href={c.href}
@@ -85,7 +85,7 @@ export function FeuilleCapture({ ouverte, surFermer }: { ouverte: boolean; surFe
   return (
     <Feuille ouverte={ouverte} titre="Nouveau projet" surFermer={surFermer}>
       <ul className="flex flex-col gap-2.5">
-        {CHOIX.map((c) => (
+        {CHOIX_CAPTURE.map((c) => (
           <li key={c.href}>
             <LigneChoix c={c} surFermer={surFermer} />
           </li>

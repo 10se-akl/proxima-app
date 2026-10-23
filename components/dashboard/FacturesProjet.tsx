@@ -25,7 +25,7 @@ const LIBELLE_TYPE: Record<Facture["type"], string> = {
 // Refonte (03/10) — règles 4 et 10 : deux tons de texte ; « Payée »
 // s'écrit en encre (plus en terracotta).
 const LIBELLE_STATUT: Record<Facture["statut"], { texte: string; classe: string }> = {
-  emise: { texte: "Émise", classe: "text-steel" },
+  emise: { texte: "À encaisser", classe: "text-steel" },
   payee: { texte: "Payée", classe: "font-semibold text-ink" },
   annulee: { texte: "Annulée", classe: "text-steel" },
 };
@@ -254,7 +254,12 @@ export function FacturesProjet({
                   </p>
                   <p className="truncate text-sm text-steel">
                     {new Date(f.date_emission).toLocaleDateString("fr-FR")} ·{" "}
-                    <span className={LIBELLE_STATUT[f.statut].classe}>{LIBELLE_STATUT[f.statut].texte}</span>
+                    {/* Un avoir est créé « émis » : il annule, il ne s'encaisse pas. */}
+                    {f.type === "avoir" && f.statut === "emise" ? (
+                      <span className="text-steel">Avoir émis</span>
+                    ) : (
+                      <span className={LIBELLE_STATUT[f.statut].classe}>{LIBELLE_STATUT[f.statut].texte}</span>
+                    )}
                   </p>
                 </div>
                 <p className="shrink-0 font-mono text-base tabular-nums text-ink">{formatEuros(f.total_ttc)}</p>

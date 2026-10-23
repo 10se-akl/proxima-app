@@ -150,7 +150,9 @@ export function ARegler({ elements }: { elements: ElementARegler[] }) {
     <>
       <BlocAvecTrace
         bloc="aregler"
-        titre="À régler"
+        // 22/10 (panel) — « À régler » se lisait « à payer » (15 faux
+        // clients sur 18). Chaque ligne demande de confirmer : c'est fait ?
+        titre="À confirmer"
         icone={
           <Pastille couleur="orange" variante="doux" taille="petite">
             <IconeCloche className="h-4 w-4" />

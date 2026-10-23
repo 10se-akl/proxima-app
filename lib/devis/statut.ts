@@ -27,6 +27,8 @@ export function statutAffiche(
   if (d.statut === "brouillon") return { texte: "Brouillon", classe: "bg-ink/10 text-ink/60" };
   if (d.statut === "a_valider") return { texte: "À envoyer", classe: "bg-alerte-orange/15 text-alerte-orange" };
   if (d.statut === "refuse") return { texte: "Refusé", classe: "bg-signal/10 text-signal" };
+  // 22/10 (panels) — vert, « le vert c'est oui » ; l'étape « Accepté »
+  // d'un projet (lib/projetAffichage.ts) est verte elle aussi.
   if (devisAccepte(d, statutProjet)) return { texte: "Accepté", classe: "bg-succes/15 text-succes" };
   // Relance (11/09) — le devis est toujours en attente, mais l'artisan a
   // déjà reçu une proposition de relance (voir app/api/cron/relance-devis).

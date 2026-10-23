@@ -15,10 +15,10 @@ import type { ReactNode } from "react";
 export type CouleurPastille = "bleu" | "vert" | "violet" | "orange" | "signal";
 
 const PLEIN: Record<CouleurPastille, string> = {
-  bleu: "bg-bleu text-white",
-  vert: "bg-succes text-white",
-  violet: "bg-violet text-white",
-  orange: "bg-alerte-orange text-white",
+  bleu: "bg-bleu text-white dark:text-nuit",
+  vert: "bg-succes text-white dark:text-nuit",
+  violet: "bg-violet text-white dark:text-nuit",
+  orange: "bg-alerte-orange text-white dark:text-nuit",
   signal: "bg-signal text-white",
 };
 

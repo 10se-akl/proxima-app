@@ -9,14 +9,15 @@ import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
 // ============================================================
 
 /** L'étape en mots de chantier, et sa couleur. Orange : ça attend
- *  l'artisan ; bleu : ça attend le client ; violet : signé ; vert : le
- *  chantier tourne ou il est fini. */
+ *  l'artisan ; bleu : ça attend le client ; vert : c'est signé, le
+ *  chantier tourne ou il est fini (22/10, panels : « Accepté » était violet
+ *  ici et vert dans les devis — « le vert c'est oui »). */
 export const ETAPE_PROJET: Record<StatutProjet, { libelle: string; couleur: CouleurPastille }> = {
   nouveau: { libelle: "À cadrer", couleur: "orange" },
   analyse: { libelle: "Devis à préparer", couleur: "orange" },
   devis_genere: { libelle: "Devis à relire", couleur: "orange" },
   devis_envoye: { libelle: "Devis envoyé", couleur: "bleu" },
-  accepte: { libelle: "Accepté", couleur: "violet" },
+  accepte: { libelle: "Accepté", couleur: "vert" },
   en_cours: { libelle: "En cours", couleur: "vert" },
   termine: { libelle: "Terminé", couleur: "vert" },
 };

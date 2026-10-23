@@ -303,25 +303,41 @@ export function Carnet({
         <span className="rounded-full bg-ink/[0.07] px-2 py-0.5 font-sans text-xs font-semibold tabular-nums text-steel">{entrees.length}</span>
       </h2>
 
+      {/* 22/10 (panel) — « Photos · 24 » sans une seule image : « on ne
+          voit rien du chantier ». Les quatre dernières en vraies vignettes,
+          la dernière case dit combien il en reste ; un appui ouvre toutes
+          les photos, comme avant. */}
       {photos && photos.nombre > 0 && (
         <button
           type="button"
           onClick={photos.surOuvrir}
-          className={`mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-paper/70 px-4 py-2 text-left ring-1 ring-ink/10 active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${FOCUS}`}
+          aria-label={photos.nombre > 1 ? `Voir les ${photos.nombre} photos` : "Voir la photo"}
+          className={`mt-3 block w-full rounded-2xl text-left active:opacity-90 ${FOCUS}`}
         >
-          <IconePhoto className="h-5 w-5 shrink-0 text-ink" />
-          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">
-            Photos <span className="font-normal tabular-nums text-steel">· {photos.nombre}</span>
+          <span className="flex min-h-10 items-center gap-2 px-1">
+            <IconePhoto className="h-5 w-5 shrink-0 text-ink" />
+            <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">
+              Photos <span className="font-normal tabular-nums text-steel">· {photos.nombre}</span>
+            </span>
+            <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
           </span>
           {photos.vignettes.length > 0 && (
-            <span className="flex -space-x-2" aria-hidden>
-              {photos.vignettes.slice(0, 3).map((u) => (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img key={u} src={u} alt="" className="h-9 w-9 rounded-xl object-cover ring-2 ring-surface" />
-              ))}
+            <span className="mt-1.5 grid grid-cols-4 gap-1.5" aria-hidden>
+              {photos.vignettes.slice(0, 4).map((u, i) => {
+                const reste = photos.nombre - 4;
+                const derniere = i === 3 && reste > 0;
+                return (
+                  <span key={u} className="relative block aspect-square overflow-hidden rounded-xl bg-ink/[0.07]">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={u} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    {derniere && (
+                      <span className="absolute inset-0 grid place-items-center bg-ink/55 font-display text-lg font-bold text-white">+{reste}</span>
+                    )}
+                  </span>
+                );
+              })}
             </span>
           )}
-          <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
         </button>
       )}
 

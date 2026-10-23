@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import Link from "next/link";
-import { Avatar } from "@/components/ui/Avatar";
+import { EnTeteColonnes, LigneDocument, formatEuros } from "@/components/dashboard/LigneDocument";
+import { resumerAEncaisser } from "@/lib/argent";
+import { aujourdhuiParis } from "@/lib/moisParis";
 import { IconeDocument } from "@/components/ui/Icones";
 import { CLASSE_CHAMP_NUIT, EnTetePage, classePuceNuit } from "@/components/ui/EnTetePage";
 import { Pastille } from "@/components/ui/Pastille";
@@ -13,6 +14,7 @@ type FactureAvecClient = Pick<
   Facture,
   "id" | "demande_id" | "type" | "numero" | "statut" | "total_ttc" | "date_emission"
 > & {
+  date_echeance?: string | null;
   notifie_relance_le?: string | null;
   demandes?: { nom_client?: string } | null;
 };
@@ -25,20 +27,34 @@ const LIBELLE_TYPE: Record<Facture["type"], string> = {
 
 const LABEL_STATUT_FILTRE = [
   { cle: "tous", label: "Toutes" },
-  { cle: "emise", label: "Émises" },
+  { cle: "emise", label: "À encaisser" },
   { cle: "payee", label: "Payées" },
   { cle: "annulee", label: "Annulées" },
 ] as const;
 
-function statutAffiche(f: FactureAvecClient): { texte: string; classe: string } {
+/** « 2026-10-22 », la date du jour à Paris (les échéances n'ont pas d'heure). */
+function jourParis(): string {
+  const j = aujourdhuiParis(new Date());
+  return `${j.annee}-${String(j.mois + 1).padStart(2, "0")}-${String(j.jour).padStart(2, "0")}`;
+}
+
+function statutAffiche(f: FactureAvecClient, aujourdHui: string): { texte: string; classe: string } {
+  // Un avoir est créé « émis » (creer_avoir_et_annuler, schema.sql) : il ne
+  // s'encaisse pas, il annule. Il le dit, avant tout le reste.
+  if (f.type === "avoir") return { texte: "Avoir", classe: "bg-ink/10 text-ink/60" };
   if (f.statut === "payee") return { texte: "Payée", classe: "bg-succes/15 text-succes" };
   if (f.statut === "annulee") return { texte: "Annulée", classe: "bg-ink/10 text-ink/40" };
   // Module 40 (11/09) — une relance a déjà été PROPOSÉE à l'artisan pour
   // cette facture (voir app/api/cron/relance-factures). Même nuance neutre
   // que "Émise", seul le texte change : pas de rouge, pas de compteur de
   // retard — ce badge informe, il ne met pas la pression.
+  const enRetard = !!f.date_echeance && f.date_echeance < aujourdHui;
+  if (enRetard) return { texte: f.notifie_relance_le ? "En retard · relancée" : "En retard", classe: "bg-alerte-orange/15 text-alerte-orange" };
   if (f.notifie_relance_le) return { texte: "Relancée", classe: "bg-steel/15 text-steel" };
-  return { texte: "Émise", classe: "bg-steel/15 text-steel" };
+  // 22/10 (panel) — « Émise » ne disait pas si c'était payé, envoyé ou en
+  // retard. L'échéance passée se voit (même règle que l'accueil,
+  // resumerAEncaisser) ; sinon, ce qu'on attend : l'argent.
+  return { texte: "À encaisser", classe: "bg-steel/15 text-steel" };
 }
 
 // ============================================================
@@ -71,14 +87,22 @@ export function ListeFacturesRecherchable({
   const [filtre, setFiltre] = useState<CleFiltre>(() => filtreFacturesDepuis(filtreInitial));
 
   const filtres = factures
-    .filter((f) => filtre === "tous" || f.statut === filtre)
+    // « À encaisser » : les factures émises, sans les avoirs (le même
+    // périmètre que le total du sous-titre, resumerAEncaisser).
+    .filter((f) => filtre === "tous" || (f.statut === filtre && !(filtre === "emise" && f.type === "avoir")))
     .filter((f) => `${f.demandes?.nom_client ?? ""} ${f.numero}`.toLowerCase().includes(recherche.toLowerCase()));
+
+  const aujourdHui = jourParis();
+  // 22/10 (panel) — le reste à encaisser, le même calcul que l'accueil et
+  // le Bilan (lib/argent.ts : factures émises, hors avoirs, en TTC).
+  const aEncaisser = resumerAEncaisser(factures.map((f) => ({ ...f, date_echeance: f.date_echeance ?? null })));
+  const nombre = factures.length === 0 ? "Aucune facture" : factures.length === 1 ? "1 facture" : `${factures.length} factures`;
 
   return (
     <div>
       <EnTetePage
         titre="Factures"
-        sousTitre={factures.length === 0 ? "Aucune facture" : factures.length === 1 ? "1 facture" : `${factures.length} factures`}
+        sousTitre={aEncaisser.nombre > 0 ? `${nombre} · ${formatEuros(aEncaisser.total)} TTC à encaisser` : nombre}
         icone={
           <Pastille couleur="violet" taille="grande">
             <IconeEuro className="h-6 w-6" />
@@ -97,7 +121,7 @@ export function ListeFacturesRecherchable({
 
         {/* 27/09 — Des pastilles au pouce (44 px) sur une seule rangée qui
             défile, plutôt que de petites étiquettes de 24 px sur deux lignes. */}
-        <div className="-mx-5 mt-3 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
           {LABEL_STATUT_FILTRE.map((f) => (
             <button
               key={f.cle}
@@ -114,7 +138,9 @@ export function ListeFacturesRecherchable({
 
       {/* Refonte visuelle (04/10) : la liste dans une carte, chaque ligne
           un cran plus sombre, comme « Mes projets » sur l'accueil. */}
-      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-ink/[0.08]">
+      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce">
+        {filtres.length > 0 && <EnTeteColonnes />}
+        <div className="divide-y divide-ink/[0.08]">
         {filtres.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-6 text-center">
             <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
@@ -127,31 +153,21 @@ export function ListeFacturesRecherchable({
             </p>
           </div>
         ) : (
-          filtres.map((f) => {
-            const { texte, classe } = statutAffiche(f);
-            return (
-              <Link
+          <>
+            {filtres.map((f) => (
+              <LigneDocument
                 key={f.id}
                 href={`/dashboard/demandes/${f.demande_id}#facturation`}
-                className="flex min-h-[4.5rem] items-center gap-3 px-4 py-3 transition-colors hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
-              >
-                <Avatar nom={f.demandes?.nom_client ?? "?"} taille={40} />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="truncate text-[16px] font-semibold text-ink">{f.demandes?.nom_client ?? "Client"}</span>
-                    <span className="shrink-0 text-[15px] font-semibold tabular-nums text-ink">
-                      {f.total_ttc.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}
-                    </span>
-                  </span>
-                  <span className="mt-0.5 flex items-center justify-between gap-3">
-                    <span className="truncate text-[13.5px] text-ink/65">{`${LIBELLE_TYPE[f.type]} ${f.numero} · ${new Date(f.date_emission).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`}</span>
-                    <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold ${classe}`}>{texte}</span>
-                  </span>
-                </span>
-              </Link>
-            );
-          })
+                client={f.demandes?.nom_client ?? "Client"}
+                numero={`${LIBELLE_TYPE[f.type]} ${f.numero}`}
+                date={`émise le ${new Date(f.date_emission).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}`}
+                montant={Number(f.total_ttc ?? 0)}
+                etat={statutAffiche(f, aujourdHui)}
+              />
+            ))}
+          </>
         )}
+        </div>
       </div>
     </div>
   );

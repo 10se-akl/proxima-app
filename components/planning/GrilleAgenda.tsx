@@ -28,13 +28,27 @@ const HEURE_DEBUT_DEFAUT = 7;
 const HEURE_FIN_DEFAUT = 20;
 const HAUTEUR_HEURE = 52; // px
 
+// 22/10 (panels) — des aplats rouge vif et vert, sans légende : « rouge,
+// c'est en retard ? ». Des blocs teintés (trois couleurs bien distinctes,
+// « Urgent » et « Important » se confondaient en orange), un filet à
+// gauche, le texte à l'encre, et une légende au-dessus (LEGENDE).
 const COULEUR_PRIORITE: Record<Priorite, string> = {
-  urgent: "bg-[#C23B22] border-[#C23B22]",
-  important: "bg-[#D9861A] border-[#D9861A]",
-  normal: "bg-[#2F8F5B] border-[#2F8F5B]",
+  // Teinte posée sur un fond opaque (dégradé d'une seule couleur au-dessus
+  // de bg-surface) : les lignes des heures ne traversent plus les blocs.
+  // Mêmes couleurs que le choix de priorité (FormulaireRdv).
+  urgent: "bg-surface bg-gradient-to-r from-signal/30 to-signal/30 border-signal",
+  important: "bg-surface bg-gradient-to-r from-alerte-orange/20 to-alerte-orange/20 border-alerte-orange",
+  normal: "bg-surface bg-gradient-to-r from-succes/15 to-succes/15 border-succes",
 };
 
-const COULEUR_TACHE_SANS_PROJET = "bg-ink/40 border-ink/40";
+const COULEUR_TACHE_SANS_PROJET = "bg-surface bg-gradient-to-r from-ink/[0.06] to-ink/[0.06] border-ink/30";
+
+const LEGENDE: { libelle: string; filet: string }[] = [
+  { libelle: "Urgent", filet: "bg-signal" },
+  { libelle: "Important", filet: "bg-alerte-orange" },
+  { libelle: "Normal", filet: "bg-succes" },
+  { libelle: "Sans projet", filet: "bg-ink/30" },
+];
 
 function estPasse(jour: Date) {
   const debutAujourdhui = new Date();
@@ -230,7 +244,7 @@ function BlocEvenement({
           setMenuOuvert(!menuOuvert);
         }}
         style={{ height: hauteur }}
-        className={`flex w-full items-start text-left px-2 py-1 border-l-4 text-white text-xs leading-tight overflow-hidden rounded-md transition-all duration-150 hover:brightness-110 hover:shadow-sm ${couleur} ${
+        className={`flex w-full items-start text-left px-2 py-1 border-l-4 text-ink text-xs leading-tight overflow-hidden rounded-md transition-all duration-150 hover:shadow-sm ${couleur} ${
           termine ? "opacity-40 line-through" : ""
         } ${annule ? "opacity-35 line-through italic" : ""}`}
         title={
@@ -242,12 +256,12 @@ function BlocEvenement({
         {/* En haut du bloc (un bouton centre son contenu : sur un chantier
             de huit heures, le texte flottait au milieu). */}
         <span className="block min-w-0">
-          <span className="font-mono tabular-nums opacity-85">
+          <span className="tabular-nums text-steel">
             {date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
           </span>{" "}
           {alerteMeteo && <span aria-hidden>⚠️ </span>}
           <span className="font-semibold">{qui ?? evenement.titre}</span>
-          {qui && quoi && quoi !== qui && <span className="opacity-85"> · {quoi}</span>}
+          {qui && quoi && quoi !== qui && <span className="text-steel"> · {quoi}</span>}
         </span>
       </button>
 
@@ -383,6 +397,15 @@ export function GrilleAgenda({
   );
 
   return (
+    <>
+    <ul aria-label="Légende des couleurs" className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-sm text-steel">
+      {LEGENDE.map((l) => (
+        <li key={l.libelle} className="inline-flex items-center gap-1.5">
+          <span aria-hidden className={`h-3.5 w-1 rounded-full ${l.filet}`} />
+          {l.libelle}
+        </li>
+      ))}
+    </ul>
     <div className="rounded-2xl border border-ink/10 bg-surface overflow-x-auto">
       <div className="min-w-[700px]">
         <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-ink/10">
@@ -472,5 +495,6 @@ export function GrilleAgenda({
         </div>
       </div>
     </div>
+    </>
   );
 }

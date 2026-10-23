@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import type { EvenementPlanning, ImportanceNote, Note } from "@/types";
 import type { Action, IdAction, ProchaineAction } from "./prochaineAction";
 import { dateRdv } from "./prochaineAction";
-import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeDocument, IconeMicro, IconePhoto } from "./icones";
+import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeMicro, IconePhoto } from "./icones";
 
 // ============================================================
 // Les blocs du « Point » (24/09) : Maintenant, À faire, À retenir, Dossier.
@@ -517,6 +517,21 @@ export function ARetenir({
 
 // ------------------------------------------------------------ Argent
 
+/** Une page de devis en miniature (CSS seul) : un en-tête, des lignes, un
+ *  total. Décorative. */
+function MiniatureFeuille() {
+  return (
+    <span aria-hidden className="flex h-[3.75rem] w-12 shrink-0 flex-col gap-[3px] rounded-md bg-surface p-1.5 shadow-[0_1px_3px_rgb(0_0_0/0.12)] ring-1 ring-ink/10">
+      <span className="h-1 w-5 rounded-full bg-signal" />
+      <span className="mt-1 h-[2px] w-full rounded-full bg-ink/15" />
+      <span className="h-[2px] w-4/5 rounded-full bg-ink/15" />
+      <span className="h-[2px] w-full rounded-full bg-ink/15" />
+      <span className="h-[2px] w-3/5 rounded-full bg-ink/15" />
+      <span className="mt-auto h-1 w-5 self-end rounded-full bg-ink/40" />
+    </span>
+  );
+}
+
 /** Refonte (03/10, duel D lot 3) — le Dossier devient « Argent », le même
  *  mot que la 5e case (duel B) : la ligne du devis, puis la facturation
  *  entière (payée, avoir, CSV, acompte), sous l'ancre #facturation que
@@ -540,7 +555,9 @@ export function Argent({
         onClick={surOuvrirDevis}
         className={`-mx-2 mt-1 flex min-h-16 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
       >
-        <IconeDocument className="h-5 w-5 shrink-0 text-ink" />
+        {/* 22/10 (panel) — une feuille en miniature plutôt qu'une icône :
+            le devis est un document que le client reçoit, il se voit. */}
+        <MiniatureFeuille />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-base font-semibold text-ink">Devis {devis.numero}</span>
           {devis.alerte ? (

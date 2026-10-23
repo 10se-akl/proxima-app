@@ -474,7 +474,7 @@ export function VueProjet({
             maintenant={maintenant}
             photos={{
               nombre: photos.length,
-              vignettes: photos.slice(-3).reverse().map((c) => urlsPhotos[c]).filter(Boolean),
+              vignettes: photos.slice(-4).reverse().map((c) => urlsPhotos[c]).filter(Boolean),
               surOuvrir: () => setPhotosOuvertes(true),
             }}
           />

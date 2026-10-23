@@ -13,7 +13,7 @@ import { IconeSortie } from "@/components/ui/Icones";
 import { Feuille } from "@/components/projet/Feuille";
 import { IconeChevron, IconePlus, IconePoints } from "@/components/projet/icones";
 import { FeuilleCapture } from "@/components/navigation/FeuilleCapture";
-import { LiensCompte, MenuCompte } from "@/components/navigation/MenuCompte";
+import { MenuCompte, ouvrirRetour } from "@/components/navigation/MenuCompte";
 import {
   IconeAccueil,
   IconeDossier,
@@ -22,6 +22,9 @@ import {
   IconeBilan,
   IconeCalendrier,
   IconeNote,
+  IconeGuide,
+  IconeParametres,
+  IconeRetours,
 } from "@/components/ui/Icones";
 
 // Refonte (03/10 — duel B, lot 3) : la 5e case de la barre du bas.
@@ -85,6 +88,16 @@ async function purgerCachePagesHorsLigne() {
   }
 }
 
+// 23/10 — demande d'Axel : sur ordinateur, le Guide et les Paramètres
+// étaient deux petits mots en bas de la barre (« Paramètres · Guide ·
+// Avis »), on ne les voyait pas. Ils deviennent des liens de la barre,
+// sous les destinations, avec leur icône. Sur téléphone, ils restent dans
+// le menu du compte (MenuCompte).
+const AIDE_ET_REGLAGES = [
+  { href: "/dashboard/guide", label: "Guide", Icone: IconeGuide },
+  { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
+];
+
 const DESTINATIONS = [
   { href: "/dashboard", label: "Aujourd'hui", Icone: IconeAccueil },
   { href: "/dashboard/demandes", label: "Projets", Icone: IconeDossier },
@@ -113,8 +126,8 @@ const PAGES_ARGENT = ["/dashboard/argent", "/dashboard/devis", "/dashboard/factu
 const argentActif = (pathname: string) => PAGES_ARGENT.some((h) => estActif(pathname, h));
 
 // Bloc "compte" en bas de la barre latérale (ordinateur) : identité,
-// actions courantes en une rangée, Paramètres · Guide · Avis à un clic,
-// liens du site vitrine tout en bas.
+// actions courantes en une rangée, « Donner mon avis » (Guide et
+// Paramètres sont montés dans la barre le 23/10), liens du site vitrine.
 function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; onDeconnexion: () => void }) {
   return (
     <div className="px-4 py-5 border-t border-ink/[0.08] flex flex-col gap-3">
@@ -140,7 +153,14 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
           <IconeSortie taille={19} />
         </button>
       </div>
-      <LiensCompte />
+      <button
+        type="button"
+        onClick={ouvrirRetour}
+        className="flex items-center gap-2 rounded-lg px-2 text-sm text-steel transition-colors hover:text-ink [@media(pointer:coarse)]:min-h-11"
+      >
+        <IconeRetours taille={16} />
+        Donner mon avis
+      </button>
       <div className="flex items-center gap-2.5 px-2 pt-2 border-t border-ink/[0.07] text-xs text-steel">
         <Link href="/" className="flex items-center hover:text-ink transition-colors [@media(pointer:coarse)]:min-h-11">
           Site vitrine
@@ -364,6 +384,24 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                       {nbEnRetard}
                     </span>
                   )}
+                </Link>
+              );
+            })}
+          </nav>
+          <nav aria-label="Aide et réglages" className="mx-3 mt-3 flex flex-col gap-1 border-t border-ink/[0.08] pt-3">
+            {AIDE_ET_REGLAGES.map((lien) => {
+              const actif = estActif(pathname, lien.href);
+              return (
+                <Link
+                  key={lien.href}
+                  href={lien.href}
+                  aria-current={actif ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                    actif ? "bg-surface font-semibold text-ink ombre-douce" : "text-steel hover:bg-ink/[0.05] hover:text-ink"
+                  }`}
+                >
+                  <lien.Icone taille={19} />
+                  {lien.label}
                 </Link>
               );
             })}

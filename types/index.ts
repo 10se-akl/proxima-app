@@ -314,7 +314,13 @@ export type TypeEvenementProjet =
   // Refonte (02/10, duel C lot 3) — réponse « Pas encore » à « Chantier
   // terminé ? ». Sert seulement à ne plus reposer la question tant qu'aucun
   // nouveau rendez-vous n'a été fait ; masqué au carnet.
-  | "chantier_pas_termine";
+  | "chantier_pas_termine"
+  // 23/10 — les projets qui dorment (lib/projetEnSommeil.ts) : « Plus tard »
+  // (masqué au carnet), « Classer » et « Reprendre ». Aucune migration.
+  | "projet_en_pause"
+  | "projet_classe"
+  | "projet_repris"
+  | "projet_pause_annulee";
 
 export type EvenementProjet = {
   id: string;

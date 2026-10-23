@@ -7,6 +7,7 @@ import { changerStatutEvenement } from "@/components/planning/actionsEvenement";
 import { FeuilleDeplacer, type EvenementADeplacer } from "@/components/planning/FeuilleDeplacer";
 import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/FeuilleMessageClient";
 import { cloturerChantier, noterChantierPasTermine } from "@/components/dashboard/ConfirmerClotureProjet";
+import { annulerPause, classerProjet, mettreEnPause, reprendreProjet } from "@/lib/projetEnSommeil";
 import { Pastille } from "@/components/ui/Pastille";
 import { IconeCloche } from "@/components/projet/icones";
 import { LigneAccueil } from "./Blocs";
@@ -32,7 +33,9 @@ import { BlocAvecTrace, FinCoche, FinMot, useTraceAccueil } from "./TraceAccueil
 
 export type ElementARegler = {
   cle: string;
-  genre: "note" | "tache" | "rdv" | "chantier";
+  // 23/10 — « dormant » : un projet que plus personne ne touche
+  // (lib/projetEnSommeil.ts) : Plus tard ou Classer ; la ligne ouvre la fiche.
+  genre: "note" | "tache" | "rdv" | "chantier" | "dormant";
   /** La note, l'événement du planning, ou le projet (chantier). */
   id: string;
   /** L'heure de la note ou de l'événement : le tri, le plus récent d'abord. */
@@ -128,6 +131,18 @@ export function ARegler({ elements }: { elements: ElementARegler[] }) {
     );
   }
 
+  // « Dans 1 sem. » : une semaine de silence ; « Ranger » : il quitte
+  // l'accueil (reste dans Projets). Les deux s'annulent par « Projet repris ».
+  function sommeil(e: ElementARegler, classer: boolean) {
+    void faire({
+      bloc: "aregler",
+      cle: e.cle,
+      texte: classer ? `Rangé dans Projets : ${e.principal}` : `Dans une semaine : ${e.principal}`,
+      ecrire: () => (classer ? classerProjet(supabase, e.id) : mettreEnPause(supabase, e.id)),
+      annuler: () => (classer ? reprendreProjet(supabase, e.id) : annulerPause(supabase, e.id)),
+    });
+  }
+
   // La feuille « Déplacer » a déjà écrit (et vibré) : il reste la trace,
   // puis le message au client avec la nouvelle date. Fermé sans envoyer,
   // la trace garde « Prévenir ».
@@ -162,6 +177,15 @@ export function ARegler({ elements }: { elements: ElementARegler[] }) {
           const reessayer = erreurs.get(e.cle);
           let fin;
           if (reessayer) fin = <FinMot libelle="Réessayer" surClic={reessayer} occupe={occupe} />;
+          else if (e.genre === "dormant")
+            fin = (
+              <>
+                <FinMot libelle="Dans 1 sem." aria={`Dans 1 semaine, me reproposer ${e.principal}`} surClic={() => sommeil(e, false)} occupe={occupe} />
+                {/* « Ranger » plutôt que « Classer », lu « classer l'affaire »
+                    (= supprimer) par le panel : le projet reste dans Projets. */}
+                <FinMot libelle="Ranger" aria={`Ranger le projet ${e.principal} dans Projets`} surClic={() => sommeil(e, true)} occupe={occupe} />
+              </>
+            );
           else if (e.genre === "chantier")
             fin = (
               <>

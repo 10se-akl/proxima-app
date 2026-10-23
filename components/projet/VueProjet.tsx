@@ -19,6 +19,8 @@ import { FeuillePlanifier } from "@/components/planning/FeuillePlanifier";
 import { BOUTON_CONTOUR, FOCUS } from "./Blocs";
 import { IconeCoche } from "./icones";
 import { createClient } from "@/lib/supabase/client";
+import { etatsSommeil, sommeilValable } from "@/lib/projetEnSommeil";
+import { BandeauClasse } from "./BandeauClasse";
 
 // ============================================================
 // La fiche projet (24/09) — « le Point et le Carnet ».
@@ -380,6 +382,16 @@ export function VueProjet({
           setMessageOuvert(true);
         }}
       />
+
+      {/* 23/10 — classé depuis l'accueil (« ça dort ») : il se reprend ici.
+          surRdvPlanifie relit le carnet du projet, donc ce bandeau aussi. */}
+      {(() => {
+        const etat = etatsSommeil(evenements, maintenant).get(projet.id);
+        // Un projet qui a bougé depuis (signé, nouveau devis…) est réveillé.
+        return etat?.etat === "classe" && sommeilValable(etat, projet, devis ? [devis] : []) ? (
+          <BandeauClasse projetId={projet.id} depuis={etat.depuis} surRepris={surRdvPlanifie} />
+        ) : null;
+      })()}
 
       {/* Téléphone : une colonne, dans l'ordre d'usage. Ordinateur : le
           Point et le Carnet à gauche, le mémo et le dossier à droite, qui

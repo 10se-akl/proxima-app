@@ -11,6 +11,15 @@ import { aujourdhuiParis, minuitParis, moisCourant, nomMois } from "@/lib/moisPa
 import { chiffresDuMoisEnCours } from "@/lib/activite";
 import type { ChiffresDuMois } from "@/components/accueil/ChiffresMois";
 import { aplatirClient, calculerArgent, JOURS_PAUSE_RELANCE } from "@/lib/argent";
+import {
+  JOURS_A_PLANIFIER,
+  JOURS_AVANT_EXPIRATION,
+  TYPES_SOMMEIL,
+  etatsSommeil,
+  etatsValables,
+  joursAvantExpiration,
+  raisonSommeil,
+} from "@/lib/projetEnSommeil";
 
 // ============================================================
 // L'accueil (26/09 — « moins mais mieux », lot B ; refonte 03/10 — duel C,
@@ -69,6 +78,9 @@ function quand(iso: string, maintenant: Date): string {
 }
 
 const CHANTIERS_VISIBLES = 5;
+/** « Ça dort » : pas plus de trois questions à la fois sur l'accueil. */
+const DORMANTS_MAX = 3;
+const euros = (n: number) => n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 /** Le même, en cinq signes au plus, pour la colonne du repère : « 14h30 »,
  *  « hier », « lun. », « 29/09 ». */
@@ -133,12 +145,13 @@ export default async function DashboardHome() {
     { data: relancesBrut },
     { data: premierRdvDemainBrut },
     { data: partagesBrut },
+    { data: sommeilBrut },
   ] = await Promise.all([
     supabase.from("profils").select("nom").eq("id", user?.id).single(),
     supabase.from("demandes").select("*").eq("organisation_id", organisationId),
     supabase
       .from("devis")
-      .select("id, statut, numero, envoye_le, created_at, total_estime, demande_id, artisan_id, demandes(nom_client)")
+      .select("id, statut, numero, envoye_le, created_at, total_estime, demande_id, artisan_id, signe_le, validite_jours, demandes(nom_client)")
       .eq("organisation_id", organisationId),
     // Refonte (03/10) : l'adresse, pour « Y aller » dans Maintenant.
     supabase
@@ -182,12 +195,13 @@ export default async function DashboardHome() {
       .eq("organisation_id", organisationId)
       .in("type", ["journal_chantier_interprete", "chantier_pas_termine"])
       .order("created_at", { ascending: false }),
+    // 23/10 — toutes les factures (plus seulement les émises) : « Facturer
+    // le solde » déduit aussi les payées et les avoirs, comme la page Argent.
+    // calculerArgent ne garde que les émises pour ce qui reste à encaisser.
     supabase
       .from("factures")
       .select("id, numero, demande_id, statut, type, total_ttc, date_emission, date_echeance, artisan_id, demandes(nom_client)")
-      .eq("organisation_id", organisationId)
-      .eq("statut", "emise")
-      .neq("type", "avoir"),
+      .eq("organisation_id", organisationId),
     organisationId
       ? listerNotesActivesOrganisation(supabase, organisationId, { avecRappelUniquement: true })
       : Promise.resolve([]),
@@ -201,7 +215,7 @@ export default async function DashboardHome() {
     // Le premier rendez-vous de demain : la ligne « Demain » du repos.
     supabase
       .from("evenements_planning")
-      .select("date_heure, titre, demandes(nom_client, adresse_client)")
+      .select("date_heure, titre, demandes(nom_client, adresse_client, notes)")
       .eq("organisation_id", organisationId)
       .eq("type", "rendez_vous")
       .eq("statut", "a_faire")
@@ -224,18 +238,45 @@ export default async function DashboardHome() {
           .gte("created_at", new Date(t - JOURS_PARTAGE_VISIBLE * JOUR_MS).toISOString())
           .order("created_at", { ascending: false })
       : Promise.resolve({ data: null }),
+    // 23/10 — les traces « Dans 1 sem. », « Ranger », « Reprendre »
+    // (lib/projetEnSommeil.ts), à part : la requête du journal de chantier
+    // peut devenir longue, une trace de sommeil ne doit jamais en tomber.
+    supabase
+      .from("evenements_projet")
+      .select("demande_id, type, created_at")
+      .eq("organisation_id", organisationId)
+      .in("type", [...TYPES_SOMMEIL])
+      .order("created_at", { ascending: false }),
   ]);
 
   const devisListPlat = aplatirClient(devisList);
   const duJourPlat = aplatirClient(evenementsAujourdhui);
   const passesPlat = aplatirClient(passesBrut);
-  const facturesDues = aplatirClient(facturesDuesBrut);
+  const toutesFactures = aplatirClient(facturesDuesBrut);
+  const facturesDues = toutesFactures.filter((f) => f.statut === "emise" && f.type !== "avoir");
 
   const listeProjets = (projets as Projet[] | null) ?? [];
   // Un chantier marqué « terminé » disparaît de toute section de l'accueil
   // (ses factures impayées restent dans Argent).
   const idsProjetsTermines = new Set(listeProjets.filter((p) => p.statut === "termine").map((p) => p.id));
   const actif = (demandeId: string | null) => !demandeId || !idsProjetsTermines.has(demandeId);
+  // 23/10 — les projets mis de côté une semaine ou classés (lib/projetEnSommeil.ts) :
+  // l'accueil ne les propose plus (À suivre, « ça dort »), et un projet
+  // classé quitte « Mes projets ». Leurs factures et leurs rappels restent.
+  // Un projet qui a bougé depuis le geste (signé, devis créé ou envoyé,
+  // fiche modifiée) se réveille de lui-même (sommeilValable).
+  const sommeil = etatsValables(etatsSommeil(sommeilBrut ?? [], maintenant), listeProjets, devisListPlat);
+  const devisParProjet = new Map<string, (typeof devisListPlat)[number][]>();
+  for (const d of devisListPlat) if (d.demande_id) devisParProjet.set(d.demande_id, [...(devisParProjet.get(d.demande_id) ?? []), d]);
+  const endormi = (demandeId: string | null | undefined) => !!demandeId && sommeil.has(demandeId);
+  const classe = (demandeId: string) => sommeil.get(demandeId)?.etat === "classe";
+  // Le dernier devis envoyé de chaque projet (relances, expiration, sommeil).
+  const dernierDevisEnvoye = new Map<string, (typeof devisListPlat)[number]>();
+  for (const d of devisListPlat) {
+    if (d.statut !== "envoye" || !d.envoye_le || !d.demande_id) continue;
+    const deja = dernierDevisEnvoye.get(d.demande_id);
+    if (!deja || (deja.envoye_le ?? "") < d.envoye_le) dernierDevisEnvoye.set(d.demande_id, d);
+  }
   const fiche = (demandeId: string | null, repli: string) => (demandeId ? `/dashboard/demandes/${demandeId}` : repli);
   const finEstimee = (e: { type: string; date_heure: string; duree_minutes?: number | null }) =>
     Date.parse(e.date_heure) + (e.duree_minutes ?? (e.type === "rendez_vous" ? 60 : 15)) * 60000;
@@ -310,6 +351,15 @@ export default async function DashboardHome() {
     return null;
   };
 
+  // Pas de « ça dort » sur un projet qui a déjà sa question « Chantier
+  // terminé ? », un rendez-vous à venir ou un devis en préparation.
+  const dormants = listeProjets
+    .filter((p) => p.statut !== "termine" && !endormi(p.id) && questionChantier(p.id) === null)
+    .map((p) => ({ p, raison: raisonSommeil(p, devisParProjet.get(p.id) ?? [], idsAvecEvenementFutur.has(p.id), maintenant) }))
+    .filter((x): x is { p: Projet; raison: { jours: number; texte: string } } => x.raison !== null)
+    .sort((a, b) => b.raison.jours - a.raison.jours);
+  const idsDormants = new Set(dormants.slice(0, DORMANTS_MAX).map((x) => x.p.id));
+
   const aRegler: ElementARegler[] = [
     ...notesAvecRappel
       .filter((n) => Date.parse(n.rappel_a as string) < t)
@@ -352,6 +402,17 @@ export default async function DashboardHome() {
         href: `/dashboard/demandes/${p.id}`,
         demandeId: p.id,
       })),
+    // 23/10 — « ça dort » : trois au plus à la fois, les plus anciens.
+    ...dormants.slice(0, DORMANTS_MAX).map(({ p, raison }) => ({
+      cle: `dort-${p.id}`,
+      genre: "dormant" as const,
+      id: p.id,
+      date: new Date(t - raison.jours * JOUR_MS).toISOString(),
+      principal: p.nom_client,
+      secondaire: parAuteur(raison.texte, p.artisan_id),
+      href: `/dashboard/demandes/${p.id}`,
+      demandeId: p.id,
+    })),
   ].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
 
   // ---- Devant : ce dont l'heure n'est pas passée -------------------------
@@ -398,10 +459,35 @@ export default async function DashboardHome() {
 
   // ---- À suivre : les dossiers qui attendent un geste --------------------
   const joursDepuis = (iso: string) => Math.max(0, Math.floor((t - Date.parse(iso)) / JOUR_MS));
-  const argent = calculerArgent({ devis: devisListPlat, factures: facturesDues, projets: listeProjets, messages: relancesBrut ?? [], maintenant });
+  /** « Devis valable encore 3 j » quand il expire dans 5 jours ou moins,
+   *  en jours de Paris comme sur le document (finDeValidite). Un devis sans
+   *  durée de validité n'expire pas. */
+  const expiration = (devisId: string): string | null => {
+    const d = devisListPlat.find((x) => x.id === devisId);
+    if (!d?.envoye_le) return null;
+    const reste = joursAvantExpiration(d, maintenant);
+    if (reste === null || reste < 0 || reste > JOURS_AVANT_EXPIRATION) return null;
+    return reste === 0 ? "Devis valable jusqu'à ce soir" : `Devis valable encore ${reste} j`;
+  };
+  // Une v2 laisse la v1 « envoyée » : une seule relance par projet, la
+  // dernière version (relecture du 23/10).
+  const derniereVersion = (l: { genre: string; id: string; demandeId: string | null }) =>
+    l.genre !== "devis" || !l.demandeId || dernierDevisEnvoye.get(l.demandeId)?.id === l.id;
+  const argent = calculerArgent({
+    devis: devisListPlat,
+    factures: toutesFactures,
+    projets: listeProjets,
+    messages: relancesBrut ?? [],
+    avecAFacturer: true,
+    maintenant,
+  });
+  // Une ligne d'un projet qui dort, mis de côté ou classé ne s'affiche pas
+  // ici : il a sa question dans « À confirmer », ou il se tait.
+  const propose = (demandeId: string | null | undefined) => !endormi(demandeId) && !(demandeId && idsDormants.has(demandeId));
+  const nomProjet = new Map(listeProjets.map((p) => [p.id, p.nom_client]));
   const aSuivreTout: LigneASuivre[] = [
     ...listeProjets
-      .filter((p) => p.statut === "nouveau" || p.statut === "analyse")
+      .filter((p) => (p.statut === "nouveau" || p.statut === "analyse") && propose(p.id))
       .map((p) => {
         const nouveau = p.statut === "nouveau";
         return {
@@ -412,10 +498,11 @@ export default async function DashboardHome() {
           secondaire: parAuteur(nouveau ? "Nouveau projet à cadrer" : "Devis à préparer", p.artisan_id) as string,
           action: nouveau ? `Cadrer le projet ${p.nom_client}` : `Préparer le devis de ${p.nom_client}`,
           href: `/dashboard/demandes/${p.id}`,
+          bouton: nouveau ? null : { libelle: "Préparer", href: `/dashboard/demandes/${p.id}` },
         };
       }),
     // Relire et Envoyer ouvrent le devis lui-même.
-    ...argent.devisAEnvoyer.map((d) => ({
+    ...argent.devisAEnvoyer.filter((d) => propose(d.demandeId)).map((d) => ({
       cle: `devis-${d.id}`,
       id: d.id,
       jours: d.jours,
@@ -423,20 +510,75 @@ export default async function DashboardHome() {
       secondaire: parAuteur(d.quoi, d.artisanId) as string,
       action: `${d.quoi === "Devis à relire" ? "Relire" : "Envoyer"} le devis ${d.nom}`,
       href: d.href,
+      bouton: { libelle: d.quoi === "Devis à relire" ? "Relire" : "Envoyer", href: d.href },
     })),
     // Relancer : dès le seuil (devis à 5 j, facture échue à 3 j), et pas
     // dans la semaine qui suit une relance préparée.
     ...argent.enAttente
-      .filter((l) => l.relance && !l.relanceeRecemment)
+      .filter((l) => l.relance && !l.relanceeRecemment && derniereVersion(l) && (l.genre === "facture" || propose(l.demandeId)))
       .map((l) => ({
         cle: `${l.genre}-${l.id}`,
         id: l.id,
         jours: l.jours,
         principal: l.nom,
-        secondaire: parAuteur(l.quoi, l.artisanId) as string,
+        secondaire: parAuteur(l.genre === "devis" ? expiration(l.id) ?? l.quoi : l.quoi, l.artisanId) as string,
         action: `Relancer ${l.nom}`,
         href: l.href,
         relance: l.relance,
+      })),
+    // 23/10 — un devis qui expire bientôt, même relancé il y a peu : la date
+    // limite est un bon motif d'appel (« votre devis est valable jusqu'à… »).
+    ...Array.from(dernierDevisEnvoye.values())
+      .filter((d) => d.demande_id && propose(d.demande_id) && expiration(d.id) !== null)
+      .filter((d) => !argent.enAttente.some((l) => l.genre === "devis" && l.id === d.id && l.relance && !l.relanceeRecemment))
+      .filter((d) => listeProjets.some((p) => p.id === d.demande_id && p.statut === "devis_envoye"))
+      .map((d) => {
+        const nom = d.demandes?.nom_client || nomProjet.get(d.demande_id as string) || `Devis ${d.numero}`;
+        return {
+          cle: `expire-${d.id}`,
+          id: d.id,
+          jours: joursDepuis(d.envoye_le as string),
+          principal: nom,
+          secondaire: parAuteur(expiration(d.id) as string, d.artisan_id) as string,
+          action: `Relancer ${nom}`,
+          href: `/dashboard/demandes/${d.demande_id}`,
+          relance: `/dashboard/demandes/${d.demande_id}?message=relanceDevis&devis=${d.id}`,
+        };
+      }),
+    // 23/10 — chantier fini, pas tout facturé : le même calcul que la page
+    // Argent (calculerAFacturer). L'argent oublié.
+    ...argent.aFacturer
+      .filter((l) => !classe(l.demandeId))
+      .map((l) => ({
+        cle: `facturer-${l.demandeId}`,
+        id: l.demandeId,
+        jours: l.jours,
+        principal: l.nom,
+        secondaire: parAuteur(`Chantier fini · ${euros(l.solde)} TTC à facturer`, l.artisanId) as string,
+        action: `Facturer le solde de ${l.nom}`,
+        href: `${l.href}#facturation`,
+        bouton: { libelle: "Facturer", href: `${l.href}#facturation` },
+      })),
+    // 23/10 — signé, mais aucune date de chantier : « Planifier ».
+    ...listeProjets
+      .filter(
+        (p) =>
+          p.statut === "accepte" &&
+          propose(p.id) &&
+          questionChantier(p.id) === null &&
+          !idsAvecEvenementFutur.has(p.id) &&
+          !!p.accepte_le &&
+          joursDepuis(p.accepte_le) >= JOURS_A_PLANIFIER
+      )
+      .map((p) => ({
+        cle: `planifier-${p.id}`,
+        id: p.id,
+        jours: joursDepuis(p.accepte_le as string),
+        principal: p.nom_client,
+        secondaire: parAuteur("Accepté · chantier à planifier", p.artisan_id) as string,
+        action: `Planifier le chantier de ${p.nom_client}`,
+        href: `/dashboard/demandes/${p.id}`,
+        bouton: { libelle: "Planifier", href: `/dashboard/planning/nouveau?projetId=${p.id}` },
       })),
   ]
     // Le plus ancien d'abord.
@@ -481,6 +623,13 @@ export default async function DashboardHome() {
   const premierProjet = listeProjets.length === 0;
   const r = aplatirClient(premierRdvDemainBrut)[0];
   const demain = r ? [heureCourte(r.date_heure), r.demandes?.nom_client ?? r.titre, r.demandes?.adresse_client].filter(Boolean).join(" · ") : null;
+  // 23/10 — le soir, avec le premier rendez-vous de demain, son « À retenir »
+  // (code du portail, chien, mesures : demandes.notes), sur une ligne.
+  // Seul le mémo : les messages partagés ajoutés plus bas (« --- Message
+  // partagé --- ») n'en font pas partie. Coupé par caractères entiers.
+  const memoDemain = ((r?.demandes as { notes?: string | null } | null)?.notes ?? "").split(/\n\s*---/)[0].replace(/\s+/g, " ").trim();
+  const lettres = Array.from(memoDemain);
+  const demainRetenir = lettres.length === 0 ? null : lettres.length > 90 ? `${lettres.slice(0, 89).join("")}…` : memoDemain;
 
   // ---- Les compteurs et « Mes projets » (refonte visuelle 04/10) ---------
   const compteurs = {
@@ -496,7 +645,7 @@ export default async function DashboardHome() {
     if (e.type === "rendez_vous" && e.demande_id && !prochainRdv.has(e.demande_id)) prochainRdv.set(e.demande_id, e.date_heure);
   }
   const enCours = listeProjets
-    .filter((p) => p.statut !== "termine")
+    .filter((p) => p.statut !== "termine" && !classe(p.id))
     .sort((a, b) => Date.parse(b.derniere_modification_le ?? b.created_at) - Date.parse(a.derniere_modification_le ?? a.created_at));
   const visibles = enCours.slice(0, CHANTIERS_VISIBLES);
   // La première photo de chaque projet : un seul appel groupé pour les URLs
@@ -534,16 +683,43 @@ export default async function DashboardHome() {
     ? { nomMois: nomMois(moisEnCours), signe: duMois.signe, encaisse: duMois.encaisse, aEncaisser: argent.aEncaisser }
     : null;
   const premierPrenom = (profil?.nom ?? "").split(" ")[0];
+  // 23/10 — la phrase du soir (panel : « le soir, je veux que l'appli me
+  // dise : c'est bon, t'as 6 000 € qui arrivent »). Rien d'estimé : ce qui
+  // reste à voir sur l'écran, et ce qu'on vous doit (le même total que la
+  // bande et la page Factures).
+  // 2e panel : dire QUOI (et pas répéter les montants de la bande juste
+  // dessous) ; les mêmes lignes que l'écran (À suivre en entier, À confirmer).
+  const pluriel = (n: number, un: string, plusieurs: string) => `${n} ${n > 1 ? plusieurs : un}`;
+  const nbFacturer = aSuivreTout.filter((l) => l.cle.startsWith("facturer-")).length;
+  const nbRelances = aSuivreTout.filter((l) => l.relance).length;
+  const nbAutres = aSuivreTout.length - nbFacturer - nbRelances;
+  const morceaux = [
+    nbFacturer > 0 ? pluriel(nbFacturer, "chantier à facturer", "chantiers à facturer") : null,
+    nbRelances > 0 ? pluriel(nbRelances, "relance", "relances") : null,
+    aRegler.length > 0 ? pluriel(aRegler.length, "chose à confirmer", "choses à confirmer") : null,
+    aujourdhui.length > 0 ? pluriel(aujourdhui.length, "chose encore prévue", "choses encore prévues") : null,
+    nbAutres > 0 ? pluriel(nbAutres, "dossier à faire avancer", "dossiers à faire avancer") : null,
+  ].filter((m): m is string => m !== null);
+  const phraseDuSoir = morceaux.length === 0 ? "Tout est à jour. Bonne soirée." : `Ce soir : ${morceaux.join(", ")}.`;
   const dateDuJour = maintenant.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
 
   return (
     <VueAccueil
       dateDuJour={dateDuJour}
       titre={premierProjet ? "Bienvenue sur Compyo." : `${estLeSoir ? "Bonsoir" : "Bonjour"} ${premierPrenom}`.trim()}
-      sousTitre={premierProjet ? "Votre premier projet commence ici." : undefined}
+      sousTitre={
+        premierProjet
+          ? "Votre premier projet commence ici."
+          : // Le repos (« Tout est réglé. ») le dit déjà : pas de phrase qui le contredise.
+            estLeSoir && !(rienDevantNiDerriere && !premierProjet)
+            ? phraseDuSoir
+            : undefined
+      }
       premierProjet={premierProjet}
       maintenant={action}
       repos={estLeSoir && !premierProjet && rienDevantNiDerriere}
+      soir={estLeSoir && !premierProjet}
+      demainRetenir={demainRetenir}
       rienDUrgent={!estLeSoir && !premierProjet && rienDevantNiDerriere && aSuivre.length === 0 && !action}
       demain={demain}
       aujourdhui={aujourdhui}

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { IconeCoche } from "@/components/projet/icones";
-import { FinRelancer, LigneAccueil } from "./Blocs";
+import { FinLien, FinRelancer, LigneAccueil } from "./Blocs";
 import { BlocDepliable } from "./BlocDepliable";
 import { ListeAujourdhui, type ElementJour } from "./ListeAujourdhui";
 import { ARegler, type ElementARegler } from "./ARegler";
@@ -52,6 +52,8 @@ export type LigneASuivre = {
   action: string;
   href: string;
   relance?: string | null;
+  /** 23/10 — le geste de la ligne quand ce n'est pas une relance. */
+  bouton?: { libelle: string; href: string } | null;
 };
 
 export function VueAccueil({
@@ -68,6 +70,8 @@ export function VueAccueil({
   aSuivre,
   compteurs,
   chiffresMois = null,
+  soir = false,
+  demainRetenir = null,
   chantiers,
   nbChantiers,
 }: {
@@ -88,6 +92,10 @@ export function VueAccueil({
   compteurs: CompteursAccueil;
   /** 22/10 — l'argent du mois (les chiffres du Bilan), ou rien. */
   chiffresMois?: ChiffresDuMois | null;
+  /** 23/10 — dès 17 h : la carte « Demain » sous Aujourd'hui. */
+  soir?: boolean;
+  /** 23/10 — l'« À retenir » du premier rendez-vous de demain. */
+  demainRetenir?: string | null;
   chantiers: ChantierAccueil[];
   nbChantiers: number;
 }) {
@@ -95,7 +103,7 @@ export function VueAccueil({
   const haut = maintenant ? (
     <Maintenant action={maintenant} />
   ) : repos ? (
-    <Repos demain={demain} />
+    <Repos demain={demain} retenir={demainRetenir} />
   ) : premierProjet ? (
     <PremiersPas />
   ) : rienDUrgent ? (
@@ -124,6 +132,9 @@ export function VueAccueil({
             {haut && <div className="order-1 xl:order-none">{haut}</div>}
             <div className="order-2 xl:order-none">
               <ListeAujourdhui elements={aujourdhui} />
+              {/* 23/10 — le soir, demain matin en un coup d'œil (le repos le
+                  montre déjà quand tout est réglé). */}
+              {soir && !repos && demain && <DemainMatin demain={demain} retenir={demainRetenir} />}
             </div>
             <div className="order-5 xl:order-none">
               <ChantiersAccueil chantiers={chantiers} total={nbChantiers} />
@@ -139,7 +150,7 @@ export function VueAccueil({
                       repere={l.repere}
                       principal={l.principal}
                       secondaire={l.secondaire}
-                      fin={l.relance ? <FinRelancer href={l.relance} /> : undefined}
+                      fin={l.relance ? <FinRelancer href={l.relance} /> : l.bouton ? <FinLien href={l.bouton.href} libelle={l.bouton.libelle} /> : undefined}
                     />
                   ))}
                 />
@@ -197,7 +208,25 @@ function Maintenant({ action }: { action: ActionAccueil }) {
 }
 
 /** « Tout est réglé. » : un état vrai, jamais un geste (règle 16). */
-function Repos({ demain }: { demain: string | null }) {
+/** Le soir : le premier rendez-vous de demain et son « À retenir ». */
+function DemainMatin({ demain, retenir }: { demain: string; retenir: string | null }) {
+  return (
+    <section aria-label="Demain" className="mt-8">
+      <h2 className="px-1 font-display text-xl font-bold tracking-[-0.02em] text-ink">Demain</h2>
+      <div className="mt-2.5 rounded-[20px] bg-surface px-4 py-3.5 ombre-douce">
+        <p className="truncate text-base font-semibold text-ink">{demain}</p>
+        {retenir && (
+          <p className="mt-1 text-sm text-steel">
+            <span className="font-semibold text-ink">À retenir : </span>
+            {retenir}
+          </p>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function Repos({ demain, retenir = null }: { demain: string | null; retenir?: string | null }) {
   return (
     <section aria-label="Tout est réglé" className="flex items-center gap-4 rounded-3xl bg-surface px-5 py-5 ombre-douce">
       <span aria-hidden className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-succes text-white dark:text-nuit">
@@ -206,6 +235,12 @@ function Repos({ demain }: { demain: string | null }) {
       <span className="min-w-0">
         <span className="block font-display text-2xl font-bold tracking-[-0.01em] text-ink">Tout est réglé.</span>
         <span className="mt-0.5 block truncate text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</span>
+        {retenir && (
+          <span className="mt-0.5 block text-sm text-steel">
+            <span className="font-semibold text-ink">À retenir : </span>
+            {retenir}
+          </span>
+        )}
       </span>
     </section>
   );

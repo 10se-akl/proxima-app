@@ -3422,3 +3422,20 @@ begin
     alter table memberships validate constraint memberships_role_valide;
   end if;
 end $$;
+
+-- ============================================================
+-- Module 53 (23/10) — Le journal d'un projet ne s'écrit que pour un projet
+-- de sa propre entreprise (relecture sécurité du 23/10). Détail et
+-- retour arrière : supabase/migrations/53-journal-du-bon-projet*.sql.
+-- ============================================================
+drop policy if exists "un membre ajoute au journal de son organisation" on evenements_projet;
+create policy "un membre ajoute au journal de son organisation"
+  on evenements_projet for insert
+  with check (
+    organisation_id in (select mes_organisations())
+    and exists (
+      select 1 from demandes d
+      where d.id = evenements_projet.demande_id
+        and d.organisation_id = evenements_projet.organisation_id
+    )
+  );

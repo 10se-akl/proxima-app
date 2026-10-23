@@ -109,7 +109,9 @@ export function LigneAccueil({
           {alerte ? (
             <span className="block truncate text-sm font-semibold text-signal-fonce dark:text-signal-clair">{alerte}</span>
           ) : (
-            secondaire && <span className="block truncate text-sm text-steel">{secondaire}</span>
+            // 23/10 — sur deux lignes plutôt que coupé (« Sans réponse · 3 se… ») :
+            // à côté de deux boutons, la place manque sur téléphone.
+            secondaire && <span className="line-clamp-2 block text-sm text-steel">{secondaire}</span>
           )}
         </span>
       </Link>
@@ -121,6 +123,17 @@ export function LigneAccueil({
 /** La colonne de fin d'une ligne, quand l'action est un mot. */
 export const CLASSE_FIN_TEXTE =
   "flex shrink-0 items-center border-l border-ink/[0.08] px-4 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink";
+
+/** 23/10 — la colonne de fin quand le geste est une page : « Facturer »,
+ *  « Planifier », « Relire »… (panel : « la ligne la plus rentable n'a
+ *  aucun bouton »). */
+export function FinLien({ href, libelle }: { href: string; libelle: string }) {
+  return (
+    <Link href={href} className={CLASSE_FIN_TEXTE}>
+      {libelle}
+    </Link>
+  );
+}
 
 /** La colonne de fin « Relancer » : le message prêt s'ouvre sur la fiche. */
 export function FinRelancer({ href }: { href: string }) {

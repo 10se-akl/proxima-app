@@ -272,7 +272,7 @@ export function VueParametres({
         </div>
       )}
 
-      <div className="mt-5 overflow-hidden rounded-2xl bg-surface ring-1 ring-ink/10">
+      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce">
       <form ref={formRef} onSubmit={handleSubmit}>
         {groupe(
           "entreprise",

@@ -6,7 +6,7 @@ type P = { className?: string };
 
 function Svg({ className = "h-4 w-4", children }: P & { children: React.ReactNode }) {
   return (
-    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+    <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
       {children}
     </svg>
   );

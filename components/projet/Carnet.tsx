@@ -294,11 +294,8 @@ export function Carnet({
   return (
     // Refonte visuelle (04/10) : le Carnet dans une carte, comme les blocs
     // de l'accueil.
-    <section aria-labelledby="titre-carnet" className="rounded-3xl bg-surface p-4 ring-1 ring-ink/10 sm:p-5">
+    <section aria-labelledby="titre-carnet" className="rounded-[20px] bg-surface p-4 ombre-douce sm:p-5">
       <h2 id="titre-carnet" className="flex items-center gap-2.5 font-display text-xl font-semibold text-ink">
-        <Pastille couleur="signal" variante="doux" taille="petite">
-          <IconeCrayon className="h-4 w-4" />
-        </Pastille>
         Carnet
         <span className="rounded-full bg-ink/[0.07] px-2 py-0.5 font-sans text-xs font-semibold tabular-nums text-steel">{entrees.length}</span>
       </h2>

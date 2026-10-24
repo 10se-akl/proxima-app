@@ -19,7 +19,7 @@ export function Card({
     // Refonte (03/10) — règle 8 de docs/langage-interface.md : le bloc n'a
     // pas d'ombre (seule la feuille qui monte du bas en porte une), et un
     // filet assez marqué pour se voir au soleil.
-    <div className={`bg-surface ring-1 ring-ink/15 rounded-2xl ${className}`}>
+    <div className={`bg-surface ombre-douce rounded-[20px] ${className}`}>
       {children}
     </div>
   );

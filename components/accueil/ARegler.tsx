@@ -71,7 +71,7 @@ function jourHeure(iso: string): string {
   return JOUR_HEURE.format(new Date(iso)).replace(/(\d+):00$/, "$1h").replace(/(\d+):(\d\d)$/, "$1h$2");
 }
 
-export function ARegler({ elements }: { elements: ElementARegler[] }) {
+export function ARegler({ elements, sansTitre = false }: { elements: ElementARegler[]; sansTitre?: boolean }) {
   const supabase = createClient();
   const { masques, erreurs, enCours, faire, poserTrace } = useTraceAccueil();
   const [aDeplacer, setADeplacer] = useState<(EvenementADeplacer & { cle: string; demandeId: string | null }) | null>(null);
@@ -165,6 +165,7 @@ export function ARegler({ elements }: { elements: ElementARegler[] }) {
     <>
       <BlocAvecTrace
         bloc="aregler"
+        sansTitre={sansTitre}
         // 22/10 (panel) — « À régler » se lisait « à payer » (15 faux
         // clients sur 18). Chaque ligne demande de confirmer : c'est fait ?
         titre="À confirmer"

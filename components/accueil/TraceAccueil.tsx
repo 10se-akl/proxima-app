@@ -176,12 +176,15 @@ export function BlocAvecTrace({
   lignes,
   lienTous,
   icone,
+  sansTitre = false,
 }: {
   bloc: BlocTrace;
   titre: string;
   lignes: ReactNode[];
   lienTous?: string;
   icone?: ReactNode;
+  /** Design v3 : posé sous le titre commun « À faire » (VueAccueil). */
+  sansTitre?: boolean;
 }) {
   const { trace } = useTraceAccueil();
   const [ouvert, setOuvert] = useState(false);
@@ -189,7 +192,7 @@ export function BlocAvecTrace({
 
   if (lignes.length === 0) {
     return avecTrace ? (
-      <div className="mt-8">
+      <div className={sansTitre ? "mt-2.5" : "mt-8"}>
         <LigneTrace />
       </div>
     ) : null;
@@ -197,8 +200,8 @@ export function BlocAvecTrace({
 
   const visibles = ouvert ? lignes : lignes.slice(0, LIGNES_MAX);
   return (
-    <section className={CLASSE_CARTE_BLOC} aria-label={titre}>
-      <TitreBloc titre={titre} nombre={lignes.length} icone={icone} />
+    <section className={sansTitre ? "" : CLASSE_CARTE_BLOC} aria-label={titre}>
+      {!sansTitre && <TitreBloc titre={titre} nombre={lignes.length} icone={icone} />}
       <div className={CLASSE_GROUPE}>
         {avecTrace && <LigneTrace />}
         {visibles}
@@ -226,9 +229,10 @@ export function FinCoche({ libelle, surFait, occupe }: { libelle: string; surFai
       onClick={surFait}
       disabled={occupe}
       aria-label={`Fait : ${libelle}`}
-      className="group grid w-14 shrink-0 place-items-center border-l border-ink/15 active:bg-ink/10 sm:hover:bg-ink/5 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
+      className="group grid h-11 w-11 shrink-0 place-items-center rounded-full active:bg-ink/10 sm:hover:bg-ink/5 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
     >
-      <span className="grid h-7 w-7 place-items-center rounded-full border-[1.5px] border-ink/40 text-transparent group-active:border-succes group-active:bg-succes/10 group-active:text-succes sm:group-hover:text-steel">
+      {/* Le rond à cocher : un trait à 3:1 et plus (il se voit au soleil). */}
+      <span className="grid h-7 w-7 place-items-center rounded-full border-2 border-steel/80 text-transparent group-active:border-succes group-active:bg-succes-fond group-active:text-succes sm:group-hover:text-steel">
         <IconeCoche className="h-4 w-4" />
       </span>
     </button>

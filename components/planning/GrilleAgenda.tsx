@@ -36,18 +36,18 @@ const COULEUR_PRIORITE: Record<Priorite, string> = {
   // Teinte posée sur un fond opaque (dégradé d'une seule couleur au-dessus
   // de bg-surface) : les lignes des heures ne traversent plus les blocs.
   // Mêmes couleurs que le choix de priorité (FormulaireRdv).
-  urgent: "bg-surface bg-gradient-to-r from-signal/30 to-signal/30 border-signal",
-  important: "bg-surface bg-gradient-to-r from-alerte-orange/20 to-alerte-orange/20 border-alerte-orange",
-  normal: "bg-surface bg-gradient-to-r from-succes/15 to-succes/15 border-succes",
+  urgent: "bg-signal-fond border-signal",
+  important: "bg-alerte-fond border-alerte-orange",
+  normal: "bg-paper-warm border-steel",
 };
 
-const COULEUR_TACHE_SANS_PROJET = "bg-surface bg-gradient-to-r from-ink/[0.06] to-ink/[0.06] border-ink/30";
+const COULEUR_TACHE_SANS_PROJET = "bg-surface border-gris-clair";
 
 const LEGENDE: { libelle: string; filet: string }[] = [
   { libelle: "Urgent", filet: "bg-signal" },
   { libelle: "Important", filet: "bg-alerte-orange" },
-  { libelle: "Normal", filet: "bg-succes" },
-  { libelle: "Sans projet", filet: "bg-ink/30" },
+  { libelle: "Normal", filet: "bg-steel" },
+  { libelle: "Sans projet", filet: "bg-gris-clair" },
 ];
 
 function estPasse(jour: Date) {
@@ -343,7 +343,7 @@ function BlocEvenement({
             <button
               onClick={supprimer}
               disabled={enCours}
-              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-signal/10 text-signal"
+              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-signal-fond text-signal-fonce"
             >
               Supprimer
             </button>

@@ -19,8 +19,11 @@ export function BlocDepliable({
   lienTous,
   apres,
   icone,
+  sansTitre = false,
 }: {
   titre: string;
+  /** Design v3 : posé sous le titre commun « À faire » (VueAccueil). */
+  sansTitre?: boolean;
   icone?: ReactNode;
   /** Les lignes déjà rendues, chacune avec sa `key`. */
   lignes: ReactNode[];
@@ -33,8 +36,8 @@ export function BlocDepliable({
   const reste = lignes.length > LIGNES_MAX && !ouvert;
 
   return (
-    <section className={CLASSE_CARTE_BLOC} aria-label={titre}>
-      <TitreBloc titre={titre} nombre={lignes.length} icone={icone} />
+    <section className={sansTitre ? "" : CLASSE_CARTE_BLOC} aria-label={titre}>
+      {!sansTitre && <TitreBloc titre={titre} nombre={lignes.length} icone={icone} />}
       <div className={CLASSE_GROUPE}>{visibles}</div>
       {apres}
       {reste &&

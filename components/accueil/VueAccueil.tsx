@@ -8,7 +8,6 @@ import { TraceAccueil } from "./TraceAccueil";
 import { PremiersPas } from "./PremiersPas";
 import { RafraichirAuRetour } from "./RafraichirAuRetour";
 import { EnTeteAccueil } from "./EnTeteAccueil";
-import { TuilesAccueil, type CompteursAccueil } from "./TuilesAccueil";
 import { ChantiersAccueil, type ChantierAccueil } from "./ChantiersAccueil";
 import { ChiffresMois, type ChiffresDuMois } from "./ChiffresMois";
 
@@ -39,6 +38,16 @@ export type ActionAccueil = {
   href: string;
   /** L'adresse du rendez-vous : « Y aller » ouvre l'itinéraire. */
   adresse?: string | null;
+};
+
+/** Les compteurs de l'accueil (lus par la page ; « En résumé » a été retiré
+ *  au design v3 : il répétait les listes juste au-dessus). */
+export type CompteursAccueil = {
+  rdv: number;
+  devis: number;
+  factures: number;
+  facturesEnRetard: number;
+  aRegler: number;
 };
 
 export type LigneASuivre = {
@@ -113,61 +122,66 @@ export function VueAccueil({
     </div>
   ) : null;
 
+  // Design v3 (23/10) — « À faire » : une seule liste sous un seul titre.
+  // D'abord les questions d'un geste (c'est fait ? ça dort ?), puis les
+  // dossiers qui attendent (relancer, facturer, planifier). Les gestes et
+  // leurs traces ne changent pas (ARegler, TraceAccueil).
+  const nbAFaire = aRegler.length + aSuivre.length;
+  const lignesASuivre = aSuivre.map((l) => (
+    <LigneAccueil
+      key={l.cle}
+      href={l.href}
+      repere={l.repere}
+      principal={l.principal}
+      secondaire={l.secondaire}
+      fin={l.relance ? <FinRelancer href={l.relance} /> : l.bouton ? <FinLien href={l.bouton.href} libelle={l.bouton.libelle} /> : undefined}
+    />
+  ));
+
   return (
-    // Atelier (22/10) : le bonjour posé sur le fond, « Maintenant » seule
-    // carte sombre, puis des listes groupées. Sur ordinateur (1280 px et
-    // plus), deux colonnes : la journée et les projets à gauche, ce qui
-    // attend un geste (À régler) et « En cours » à droite. Sur téléphone,
-    // une colonne dans l'ordre de l'urgence.
-    <div className="mx-auto max-w-2xl px-5 pb-10 pt-6 sm:p-10 xl:max-w-6xl">
+    // Design v3 (23/10, synthèse de 7 visions) — mobile d'abord, six blocs
+    // au plus, dans un ordre qui ne change jamais : la carte du haut (une
+    // seule chose), l'argent (la récompense), Aujourd'hui, À faire, trois
+    // chantiers. Ordinateur (1280 px et plus) : ce qu'il faut faire à
+    // gauche ; l'argent et les chantiers, le contexte, à droite.
+    <div className="mx-auto max-w-2xl px-4 pb-10 pt-6 min-[400px]:px-5 sm:p-10 xl:max-w-6xl">
       <RafraichirAuRetour />
       <EnTeteAccueil dateDuJour={dateDuJour} titre={titre} sousTitre={sousTitre} />
-      <ChiffresMois chiffres={chiffresMois} />
 
       {/* La trace du dernier geste et les feuilles ouvertes survivent au
           recalcul de l'accueil : le fournisseur entoure les deux colonnes. */}
       <TraceAccueil>
-        <div className="mt-6 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,24rem)] xl:items-start xl:gap-x-10">
+        <div className="mt-6 flex flex-col xl:grid xl:grid-cols-[minmax(0,1fr)_minmax(0,22.5rem)] xl:items-start xl:gap-x-10">
           <div className="contents xl:block xl:min-w-0">
             {haut && <div className="order-1 xl:order-none">{haut}</div>}
-            <div className="order-2 xl:order-none">
+            <div className="order-3 xl:order-none">
               <ListeAujourdhui elements={aujourdhui} />
-              {/* 23/10 — le soir, demain matin en un coup d'œil (le repos le
-                  montre déjà quand tout est réglé). */}
+              {/* Le soir, demain matin en un coup d'œil (le repos le montre
+                  déjà quand tout est réglé). */}
               {soir && !repos && demain && <DemainMatin demain={demain} retenir={demainRetenir} />}
+            </div>
+            <section aria-label="À faire" className="order-4 mt-8 xl:order-none">
+              {nbAFaire > 0 && (
+                <h2 id="titre-a-faire" className="flex items-baseline gap-2 px-1 font-display text-xl font-bold text-ink">
+                  À faire
+                  <span className="font-sans text-[15px] font-normal tabular-nums tracking-normal text-steel">{nbAFaire}</span>
+                </h2>
+              )}
+              {/* La cible du lien du badge de la barre du bas. */}
+              <div id="a-regler" className="scroll-mt-20">
+                <ARegler elements={aRegler} sansTitre />
+              </div>
+              {aSuivre.length > 0 && <BlocDepliable titre="À suivre" sansTitre lignes={lignesASuivre} />}
+            </section>
+          </div>
+
+          <div className="contents xl:sticky xl:top-6 xl:block xl:min-w-0">
+            <div className="order-2 xl:order-none">
+              <ChiffresMois chiffres={chiffresMois} />
             </div>
             <div className="order-5 xl:order-none">
               <ChantiersAccueil chantiers={chantiers} total={nbChantiers} />
             </div>
-            <div className="order-4 xl:order-none">
-              {aSuivre.length > 0 && (
-                <BlocDepliable
-                  titre="À suivre"
-                  lignes={aSuivre.map((l) => (
-                    <LigneAccueil
-                      key={l.cle}
-                      href={l.href}
-                      repere={l.repere}
-                      principal={l.principal}
-                      secondaire={l.secondaire}
-                      fin={l.relance ? <FinRelancer href={l.relance} /> : l.bouton ? <FinLien href={l.bouton.href} libelle={l.bouton.libelle} /> : undefined}
-                    />
-                  ))}
-                />
-              )}
-            </div>
-          </div>
-
-          <div className="contents xl:-mt-8 xl:block xl:min-w-0">
-            {/* La cible du lien « À confirmer » (ex-« À régler »). */}
-            <div id="a-regler" className="order-3 scroll-mt-20 xl:order-none">
-              <ARegler elements={aRegler} />
-            </div>
-            {!premierProjet && (
-              <div className="order-6 xl:order-none">
-                <TuilesAccueil compteurs={compteurs} />
-              </div>
-            )}
           </div>
         </div>
       </TraceAccueil>
@@ -179,18 +193,18 @@ export function VueAccueil({
  *  une coche ; « Y aller » ouvre l'itinéraire. */
 function Maintenant({ action }: { action: ActionAccueil }) {
   return (
-    <div className="flex min-h-[5.5rem] items-center overflow-hidden rounded-3xl bg-nuit text-white shadow-[0_18px_36px_-18px_rgb(27_26_24/0.55)]">
+    <div className="flex min-h-[6rem] items-center overflow-hidden rounded-[24px] bg-nuit text-white">
       <Link
         href={action.href}
         className="flex min-w-0 flex-1 items-center self-stretch py-4 pl-5 pr-3 active:bg-white/10 sm:hover:bg-white/[0.04] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
       >
         <span className="min-w-0 flex-1">
-          <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.08em] text-signal-clair">
-            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-signal" />
+          <span className="flex items-center gap-2 text-[13px] font-semibold text-signal-clair">
+            <span aria-hidden className="h-2 w-2 rounded-full bg-signal" />
             Maintenant
           </span>
-          <span className="mt-1 block truncate font-display text-xl font-bold tracking-[-0.01em]">{action.texte}</span>
-          {action.detail && <span className="block truncate text-sm text-white/70">{action.detail}</span>}
+          <span className="mt-1 line-clamp-2 block font-display text-[22px] font-bold leading-7">{action.texte}</span>
+          {action.detail && <span className="mt-0.5 line-clamp-2 block text-[15px] text-white/75">{action.detail}</span>}
         </span>
       </Link>
       {action.adresse && (

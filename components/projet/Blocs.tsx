@@ -31,7 +31,8 @@ export const BOUTON_TEXTE = `inline-flex min-h-12 items-center justify-center ga
 export const BOUTON_CONTOUR = `inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 ${FOCUS}`;
 /** Le bloc (règle 8) : même fond, même filet, sans ombre. Refonte
  *  visuelle (04/10) : la carte de l'accueil, rayon plus grand. */
-const BLOC = "rounded-3xl bg-surface p-5 ring-1 ring-ink/10 sm:p-6";
+// Design v3 : une carte = surface blanche, rayon 20, ombre douce (sans contour).
+const BLOC = "rounded-[20px] bg-surface p-5 ombre-douce sm:p-6";
 
 function Titre({ children, compte, action }: { children: ReactNode; compte?: number; action?: ReactNode }) {
   return (
@@ -77,7 +78,8 @@ export function BandeAjout({
   surNote: () => void;
 }) {
   const tuile = `flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 rounded-2xl text-sm font-semibold motion-safe:transition-colors sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-5 ${FOCUS}`;
-  const contour = "bg-surface text-ink ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5";
+  // Design v3 : le secondaire est en creux, sans contour (un seul style).
+  const contour = "bg-paper-warm text-ink active:bg-ink/10 sm:hover:bg-ink/[0.08]";
   const plein = "bg-ink text-paper active:bg-ink/80";
   return (
     <div role="group" aria-label="Ajouter au projet" className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">

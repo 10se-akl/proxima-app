@@ -23,11 +23,11 @@ const PLEIN: Record<CouleurPastille, string> = {
 };
 
 const DOUX: Record<CouleurPastille, string> = {
-  bleu: "bg-bleu/15 text-bleu",
-  vert: "bg-succes/15 text-succes",
-  violet: "bg-violet/15 text-violet",
-  orange: "bg-alerte-orange/15 text-alerte-orange",
-  signal: "bg-signal/15 text-signal",
+  bleu: "bg-bleu-fond text-bleu",
+  vert: "bg-succes-fond text-succes",
+  violet: "bg-violet-fond text-violet",
+  orange: "bg-alerte-fond text-alerte-orange",
+  signal: "bg-signal-fond text-signal-fonce",
 };
 
 const TAILLES = {
@@ -45,7 +45,8 @@ export function Pastille({
   className = "",
 }: {
   couleur: CouleurPastille;
-  variante?: "plein" | "doux";
+  /** « neutre » (design v3) : creux, icône à l'encre — la couleur n'a pas de sens ici. */
+  variante?: "plein" | "doux" | "neutre";
   taille?: keyof typeof TAILLES;
   children: ReactNode;
   className?: string;
@@ -53,7 +54,7 @@ export function Pastille({
   return (
     <span
       aria-hidden
-      className={`grid shrink-0 place-items-center ${TAILLES[taille]} ${variante === "plein" ? PLEIN[couleur] : DOUX[couleur]} ${className}`}
+      className={`grid shrink-0 place-items-center ${TAILLES[taille]} ${variante === "plein" ? PLEIN[couleur] : variante === "neutre" ? "bg-paper-warm text-ink" : DOUX[couleur]} ${className}`}
     >
       {children}
     </span>
@@ -63,9 +64,9 @@ export function Pastille({
 /** L'étiquette d'une étape (« Devis envoyé », « En cours ») : fond teinté,
  *  texte de la même couleur. */
 export const CLASSE_ETIQUETTE: Record<CouleurPastille, string> = {
-  bleu: "bg-bleu/15 text-bleu",
-  vert: "bg-succes/15 text-succes",
-  violet: "bg-violet/15 text-violet",
-  orange: "bg-alerte-orange/15 text-alerte-orange",
-  signal: "bg-signal/15 text-signal-fonce dark:text-signal-clair",
+  bleu: "bg-bleu-fond text-bleu",
+  vert: "bg-succes-fond text-succes",
+  violet: "bg-violet-fond text-violet",
+  orange: "bg-alerte-fond text-alerte-orange",
+  signal: "bg-signal-fond text-signal-fonce",
 };

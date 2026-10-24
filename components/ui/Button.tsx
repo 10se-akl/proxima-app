@@ -11,7 +11,10 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 // le doigt) : l'appui fonce la couleur.
 const VARIANTS: Record<Variant, string> = {
   primary: "bg-ink text-paper active:bg-ink/80 sm:hover:bg-ink/90",
-  secondary: "bg-ink text-paper active:bg-ink/80 sm:hover:bg-ink/90",
+  // Design v3 (23/10) : « secondary » était identique à « primary » (relevé
+  // par l'inventaire du design system) — un seul plein par écran ; le
+  // secondaire est en creux.
+  secondary: "bg-paper-warm text-ink active:bg-ink/10 sm:hover:bg-ink/[0.08]",
   ghost: "bg-transparent text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10 sm:hover:bg-ink/5",
   // Audit Cycle 2 (Agent UX Senior) : aucune variante ne distinguait
   // visuellement une action destructrice/négative (refuser un devis,
@@ -49,7 +52,7 @@ export function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 text-base font-semibold motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] px-5 text-base font-semibold motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${VARIANTS[variant]} ${className}`}
       {...props}
     >
       {loading && (

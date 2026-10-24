@@ -232,7 +232,9 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           (refonte 03/10 : l'avatar ouvre Paramètres, Guide, avis, thème,
           installation, déconnexion). pt safe-area : sous l'encoche en
           application installée. */}
-      <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between bg-paper/90 text-ink backdrop-blur-md shadow-[0_1px_0_rgb(var(--c-ink)/0.07)] pl-4 pr-1 min-h-12 [padding-top:env(safe-area-inset-top)]">
+      {/* Design v3 (23/10) : opaque, un filet d'un pixel, plus de flou
+          (fluidité sur Android d'entrée de gamme). */}
+      <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between border-b border-gris-clair bg-paper text-ink pl-4 pr-1 min-h-14 [padding-top:env(safe-area-inset-top)]">
         <span className="flex items-center gap-2">
           <CompyoMark variante="couleur" taille={22} />
           <span className="font-display font-semibold">Compyo</span>
@@ -247,7 +249,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
       <nav
         data-barre-bas
         aria-label="Navigation principale"
-        className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-surface/95 backdrop-blur-md [padding-bottom:env(safe-area-inset-bottom)]"
+        className="sm:hidden fixed inset-x-0 bottom-0 z-40 border-t border-gris-clair bg-surface [padding-bottom:env(safe-area-inset-bottom)]"
       >
         <ul className="grid grid-cols-5 items-end">
           {DESTINATIONS.slice(0, 2).map((d) => (
@@ -256,7 +258,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                 href={d.href}
                 label={d.label}
                 actif={estActif(pathname, d.href)}
-                icone={<d.Icone taille={22} />}
+                icone={<d.Icone taille={24} />}
                 pastille={d.href === "/dashboard" ? nbEnRetard : 0}
               />
             </li>
@@ -266,12 +268,14 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               type="button"
               onClick={capturer}
               aria-label={libelleCapture ? "Ajouter à ce projet" : "Nouveau projet"}
-              className="group flex min-h-[4rem] w-full flex-col items-center justify-end gap-1 pb-1.5 focus-visible:outline-none"
+              className="group flex min-h-[4.25rem] w-full flex-col items-center justify-end gap-1 pb-2 focus-visible:outline-none"
             >
-              <span className="grid h-14 w-14 -mt-6 place-items-center rounded-full bg-signal text-white shadow-[0_10px_24px_-10px_rgb(var(--c-signal)/0.9)] ring-4 ring-surface transition-transform motion-safe:group-active:scale-95 group-focus-visible:ring-signal/40">
+              {/* Design v3 : le + en bleu-nuit, posé dans la barre (8 px de
+                  débord au plus), sans halo coloré ni anneau. */}
+              <span className="-mt-2 grid h-14 w-14 place-items-center rounded-full bg-nuit text-white ombre-douce motion-safe:transition-transform motion-safe:duration-150 motion-safe:group-active:scale-95 group-focus-visible:ring-2 group-focus-visible:ring-ink group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-surface">
                 <IconePlus className="h-7 w-7" />
               </span>
-              <span className="text-xs text-steel">{libelleCapture ?? "Nouveau"}</span>
+              <span className="text-xs font-semibold text-ink">{libelleCapture ?? "Nouveau"}</span>
             </button>
           </li>
           <li>
@@ -279,7 +283,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               href="/dashboard/planning"
               label="Planning"
               actif={estActif(pathname, "/dashboard/planning")}
-              icone={<IconeCalendrier taille={22} />}
+              icone={<IconeCalendrier taille={24} />}
             />
           </li>
           <li>
@@ -288,7 +292,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                 href={ARGENT.href}
                 label={ARGENT.label}
                 actif={argentActif(pathname)}
-                icone={<ARGENT.Icone taille={22} />}
+                icone={<ARGENT.Icone taille={24} />}
               />
             ) : (
               <button
@@ -340,7 +344,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           ouverte en pilule terracotta pleine — on la voit du premier coup
           d'œil. « Nouveau projet » passe en bouton clair sur la nuit pour
           ne pas lui faire concurrence. */}
-      <aside className="hidden sm:sticky sm:top-0 sm:flex sm:h-screen sm:w-60 sm:shrink-0 sm:self-start bg-paper-warm/60 text-ink flex-col justify-between border-r border-ink/[0.07]">
+      <aside className="hidden sm:sticky sm:top-0 sm:flex sm:h-screen sm:w-60 sm:shrink-0 sm:self-start bg-surface text-ink flex-col justify-between border-r border-gris-clair">
         {/* 13/10 — collée à l'écran : le haut défile seul si la fenêtre est
             basse ; le bas (rappels, compte) reste visible, et le panneau
             des rappels, qui s'ouvre vers le haut, n'est jamais coupé. */}
@@ -353,7 +357,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             <button
               type="button"
               onClick={() => setCaptureOuverte(true)}
-              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-[14px] bg-signal text-[15px] font-semibold text-white shadow-[0_10px_22px_-12px_rgb(var(--c-signal)/0.9)] transition hover:brightness-105 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-[14px] bg-nuit text-[15px] font-semibold text-white transition-colors hover:bg-nuit/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
             >
               <IconePlus className="h-5 w-5" /> Nouveau projet
             </button>
@@ -368,7 +372,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   aria-current={actif ? "page" : undefined}
                   className={`relative flex items-center gap-3 px-3.5 py-3 text-[15px] rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
                     actif
-                      ? "bg-surface text-ink font-semibold ombre-douce"
+                      ? "bg-paper-warm text-ink font-semibold"
                       : "text-steel hover:text-ink hover:bg-ink/[0.05]"
                   }`}
                 >
@@ -395,7 +399,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   href={lien.href}
                   aria-current={actif ? "page" : undefined}
                   className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
-                    actif ? "bg-surface font-semibold text-ink ombre-douce" : "text-steel hover:bg-ink/[0.05] hover:text-ink"
+                    actif ? "bg-paper-warm font-semibold text-ink" : "text-steel hover:bg-ink/[0.05] hover:text-ink"
                   }`}
                 >
                   <lien.Icone taille={19} />
@@ -449,24 +453,29 @@ function OngletBas({
     <Link
       href={href}
       aria-current={actif ? "page" : undefined}
-      className={`relative flex min-h-[4rem] flex-col items-center justify-center gap-1 pt-1.5 pb-1.5 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${
-        actif ? "text-signal-fonce font-semibold dark:text-signal-clair" : "text-steel"
+      className={`relative flex min-h-[4.25rem] flex-col items-center justify-center gap-1 pt-2 pb-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${
+        actif ? "font-semibold text-ink" : "font-medium text-steel"
       }`}
     >
-      {/* L'onglet actif : un trait en plus de la couleur, jamais la couleur seule. */}
-      {actif && <span aria-hidden className="absolute inset-x-5 top-0 h-[3px] rounded-b-full bg-ink" />}
-      <span className="relative">
+      {/* Design v3 (23/10) : l'onglet actif porte une pilule derrière son
+          icône (lisible au soleil, pas seulement une couleur), comme dans
+          les applis natives. */}
+      <span
+        className={`relative grid h-8 w-14 place-items-center rounded-full motion-safe:transition-colors motion-safe:duration-150 ${
+          actif ? "bg-paper-warm" : ""
+        }`}
+      >
         {icone}
         {pastille > 0 && (
           <span
-            className="absolute -right-2.5 -top-1.5 min-w-[1.25rem] rounded-full bg-signal-fonce px-1 text-center text-xs font-semibold leading-5 text-white"
+            className="absolute right-1 -top-1 min-w-[1.25rem] rounded-full bg-signal px-1 text-center text-xs font-semibold leading-5 text-white"
             aria-label={`${pastille} en retard`}
           >
             {pastille}
           </span>
         )}
       </span>
-      <span className="text-xs">{label}</span>
+      <span className="whitespace-nowrap text-xs tracking-[-0.01em]">{label}</span>
     </Link>
   );
 }

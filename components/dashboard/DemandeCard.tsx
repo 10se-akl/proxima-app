@@ -51,6 +51,7 @@ export function DemandeCard({
         lieu: lieuDe(demande.adresse_client),
         etape: etape.libelle,
         couleur: etape.couleur,
+        statut: demande.statut,
         info,
         telephone: demande.telephone_client,
         adresse: demande.adresse_client,

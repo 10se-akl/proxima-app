@@ -154,7 +154,7 @@ export function AgendaMobile({
                 <span className={`font-semibold text-steel ${mot.length > 4 ? "text-xs" : "text-sm"}`}>{mot}</span>
                 <span
                   className={`font-display font-semibold tabular-nums ${fondu ? "text-base" : "text-xl"} ${
-                    estAujourdhui ? "rounded-xl bg-signal px-2 py-0.5 text-white" : "text-ink"
+                    estAujourdhui ? "rounded-xl bg-nuit px-2 py-0.5 text-white" : "text-ink"
                   }`}
                 >
                   {numero}
@@ -223,10 +223,12 @@ function LigneVide({ libelle, surPlanifier }: { libelle: string; surPlanifier: (
       type="button"
       onClick={surPlanifier}
       aria-label={`Planifier le ${libelle}`}
-      className={`flex min-h-14 w-full items-stretch overflow-hidden rounded-2xl text-left ring-1 ring-ink/15 active:bg-ink/10 ${FOCUS}`}
+      // Design v3 : un jour libre se fait discret (une ligne légère, pas une
+      // carte) ; les vrais rendez-vous ressortent.
+      className={`flex min-h-12 w-full items-center gap-3 rounded-[14px] pl-4 pr-2 text-left active:bg-ink/[0.06] ${FOCUS}`}
     >
-      <span className="flex min-w-0 flex-1 items-center px-4 text-base text-steel">Rien de prévu</span>
-      <span className="grid w-14 shrink-0 place-items-center border-l border-ink/15 text-ink">
+      <span className="min-w-0 flex-1 text-[15px] text-steel">Libre</span>
+      <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-paper-warm text-ink">
         <IconePlus className="h-5 w-5" />
       </span>
     </button>
@@ -254,7 +256,7 @@ function LigneRendezVous({
   const detail = [quoi, e.demandes?.adresse_client].filter(Boolean).join(" · ");
 
   return (
-    <div className="flex min-h-16 items-stretch overflow-hidden rounded-2xl bg-surface ring-1 ring-ink/15">
+    <div className="flex min-h-16 items-stretch overflow-hidden rounded-[20px] bg-surface ombre-douce">
       <button
         type="button"
         onClick={surOuvrir}
@@ -264,7 +266,8 @@ function LigneRendezVous({
       >
         {/* Refonte visuelle (04/10) : bleu pour un rendez-vous, orange pour
             un rappel, comme partout ailleurs. */}
-        <Pastille couleur={e.type === "rendez_vous" ? "bleu" : "orange"} variante="doux" taille="petite">
+        {/* Design v3 : une icône neutre ; la couleur est gardée pour ce qui a un sens (météo). */}
+        <Pastille couleur={e.type === "rendez_vous" ? "bleu" : "orange"} variante="neutre" taille="petite">
           {e.type === "rendez_vous" ? <IconeCalendrier className="h-4 w-4" /> : <IconeCloche className="h-4 w-4" />}
         </Pastille>
         <span className="min-w-0 flex-1">
@@ -291,7 +294,7 @@ function LigneRendezVous({
           type="button"
           onClick={surPrevenir}
           aria-label={`Prévenir le client${qui ? ` ${qui}` : ""} : météo à risque`}
-          className="grid w-[4.5rem] shrink-0 place-items-center border-l border-ink/15 text-sm font-semibold text-ink active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
+          className="grid w-[5rem] shrink-0 place-items-center border-l border-gris-clair text-sm font-semibold text-ink active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
         >
           <span className="text-center leading-tight">
             Prévenir

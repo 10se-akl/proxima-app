@@ -60,7 +60,7 @@ function Ligne({ point, completion }: { point: PointQualite; completion?: Contex
       ? "bg-succes/12 text-succes"
       : point.niveau === "attention"
         ? "bg-signal/12 text-signal"
-        : "bg-alerte-orange/15 text-alerte-orange";
+        : "bg-alerte-fond text-alerte-orange";
   return (
     <li className="flex gap-3 py-2">
       <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold ${style}`}>

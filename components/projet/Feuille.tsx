@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type PointerEvent as EvenementPointeur, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { IconeFermer } from "./icones";
 import { annoncerNavigation, protegerFeuilleDuRetour } from "@/lib/retourFeuilles";
@@ -36,6 +36,8 @@ export function Feuille({
   const panneau = useRef<HTMLDivElement>(null);
   const retourFocus = useRef<HTMLElement | null>(null);
   const fermer = useRef(surFermer);
+  // Design v3 : le geste « tirer vers le bas » en cours (voir debutGlisser).
+  const glisse = useRef<{ y: number; t: number; dy: number } | null>(null);
   fermer.current = surFermer;
 
   useEffect(() => {
@@ -88,6 +90,35 @@ export function Feuille({
 
   if (!ouverte) return null;
 
+  // Design v3 (23/10) — tirer la poignée (ou le titre) vers le bas ferme la
+  // feuille, comme une feuille native : au-delà de 80 px, ou d'un geste
+  // rapide. Seulement au doigt ou au stylet, et jamais depuis le contenu
+  // (son défilement reste libre).
+  function debutGlisser(e: EvenementPointeur<HTMLDivElement>) {
+    if (e.pointerType === "mouse" || (e.target as HTMLElement).closest("button")) return;
+    glisse.current = { y: e.clientY, t: e.timeStamp, dy: 0 };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+  }
+  function pendantGlisser(e: EvenementPointeur<HTMLDivElement>) {
+    if (!glisse.current || !panneau.current) return;
+    const dy = Math.max(0, e.clientY - glisse.current.y);
+    glisse.current.dy = dy;
+    panneau.current.style.transition = "none";
+    panneau.current.style.transform = `translateY(${dy}px)`;
+  }
+  function finGlisser(e: EvenementPointeur<HTMLDivElement>) {
+    const g = glisse.current;
+    glisse.current = null;
+    if (!g || !panneau.current) return;
+    const vitesse = g.dy / Math.max(1, e.timeStamp - g.t);
+    panneau.current.style.transition = "transform 160ms cubic-bezier(0.2, 0, 0, 1)";
+    const el = panneau.current;
+    // Toujours remettre en place : si la fermeture est refusée (un retrait
+    // en cours, par exemple), la feuille ne reste pas à moitié descendue.
+    el.style.transform = "";
+    if (g.dy > 80 || (g.dy > 16 && vitesse > 0.5)) surFermer();
+  }
+
   // 26/09 — rendue dans <body> : ouverte depuis un bloc positionné (un
   // rendez-vous du planning), elle doit couvrir tout l'écran quel que soit
   // le parent qui l'appelle.
@@ -99,7 +130,7 @@ export function Feuille({
         data-fermer
         tabIndex={-1}
         onClick={surFermer}
-        className="absolute inset-0 cursor-default feuille-voile bg-ink/40 backdrop-blur-[2px]"
+        className="absolute inset-0 cursor-default feuille-voile bg-black/40 dark:bg-black/60"
       />
       <div
         ref={panneau}
@@ -121,13 +152,19 @@ export function Feuille({
             annoncerNavigation();
           }
         }}
-        className={`relative flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-[1.6rem] bg-paper shadow-2xl ring-1 ring-ink/10 outline-none feuille-panneau sm:rounded-[1.6rem] ${
+        className={`relative flex max-h-[92svh] w-full flex-col overflow-hidden rounded-t-[28px] bg-paper ombre-feuille outline-none feuille-panneau sm:rounded-[28px] ${
           large ? "sm:max-w-2xl" : "sm:max-w-lg"
         }`}
       >
-        <div className="flex items-center justify-between gap-3 border-b border-ink/[0.07] px-5 py-3.5">
-          {/* La poignée, sur téléphone */}
-          <span aria-hidden className="absolute left-1/2 top-1.5 h-1 w-9 -translate-x-1/2 rounded-full bg-ink/15 sm:hidden" />
+        <div
+          onPointerDown={debutGlisser}
+          onPointerMove={pendantGlisser}
+          onPointerUp={finGlisser}
+          onPointerCancel={finGlisser}
+          className="flex touch-none items-center justify-between gap-3 px-5 pb-2 pt-5 sm:pt-4"
+        >
+          {/* La poignée, sur téléphone : elle se tire. */}
+          <span aria-hidden className="absolute left-1/2 top-2 h-[5px] w-10 -translate-x-1/2 rounded-full bg-gris-clair sm:hidden" />
           <h2 id={idTitre} className="font-display text-xl font-semibold text-ink">
             {titre}
           </h2>
@@ -141,7 +178,7 @@ export function Feuille({
             <IconeFermer className="h-5 w-5" />
           </button>
         </div>
-        <div className="overflow-y-auto px-5 py-5 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">{children}</div>
+        <div className="overflow-y-auto px-5 pb-5 pt-2 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">{children}</div>
       </div>
     </div>,
     document.body

@@ -9,6 +9,7 @@ import { PopupRappel } from "@/components/notes/PopupRappel";
 import { lireMembership } from "@/lib/organisation";
 import { BandeauReseau } from "@/components/ui/BandeauReseau";
 import { LienPrecedent } from "@/components/navigation/LienPrecedent";
+import { ThemeAppli } from "@/components/ThemeAppli";
 
 export default async function DashboardLayout({
   children,
@@ -69,6 +70,8 @@ export default async function DashboardLayout({
 
   return (
     <div data-da="atelier" className="flex flex-col sm:flex-row">
+      {/* Design v3 : le thème suit le téléphone tant qu'on n'a rien choisi. */}
+      <ThemeAppli />
       <Sidebar nomArtisan={profil?.nom ?? user.email ?? ""} nbEnRetard={nbEnRetard ?? 0} />
       {/* Fond de l'app (06/09) — retour d'Axel : l'app "ne donne pas envie
           de l'ouvrir" comparée au site vitrine, qui lui a du relief (voir

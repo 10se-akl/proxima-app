@@ -26,41 +26,34 @@ export function ChiffresMois({ chiffres }: { chiffres: ChiffresDuMois | null }) 
   if (!chiffres) return null;
   const { nomMois, signe, encaisse, aEncaisser } = chiffres;
   if (signe === 0 && encaisse === 0 && aEncaisser.total === 0) return null;
+  const retard =
+    aEncaisser.enRetard > 0 ? `${aEncaisser.enRetard} ${aEncaisser.enRetard > 1 ? "factures" : "facture"} en retard` : null;
 
-  // 22/10 (2e panel) — le mois et « TTC » une seule fois, en tête : les
-  // libellés tiennent sur une ligne à 360 px, et on sait de quels montants
-  // on parle (« HT ou TTC ? »).
-  const cases = [
-    { libelle: "Signé", valeur: euros(signe), detail: null as string | null },
-    { libelle: "Encaissé", valeur: euros(encaisse), detail: null },
-    {
-      libelle: "À encaisser",
-      valeur: euros(aEncaisser.total),
-      detail: aEncaisser.enRetard > 0 ? `${aEncaisser.enRetard} ${aEncaisser.enRetard > 1 ? "factures" : "facture"} en retard` : null,
-    },
-  ];
-
+  // Design v3 (23/10, 7 visions) : la récompense en UN gros chiffre — ce
+  // qui doit rentrer — et le mois en une ligne dessous. Plus de tableau à
+  // trois colonnes (« relevé de banque »).
   return (
     <Link
       href="/dashboard/bilan"
-      aria-label={`${nomMois}, montants TTC : ${cases.map((c) => `${c.libelle} ${c.valeur}${c.detail ? `, ${c.detail}` : ""}`).join(" ; ")}. Voir le bilan.`}
-      className="mt-5 block rounded-[20px] bg-surface pb-3.5 pt-3 ombre-douce active:bg-ink/[0.03] sm:hover:bg-ink/[0.02] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+      aria-label={`À encaisser : ${euros(aEncaisser.total)} TTC${retard ? `, dont ${retard}` : ""}. ${nomMois} : ${euros(signe)} signés, ${euros(encaisse)} encaissés. Voir le bilan.`}
+      className="mt-4 block rounded-[20px] bg-surface p-5 ombre-douce active:bg-ink/[0.03] sm:hover:bg-ink/[0.02] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
     >
-      <span className="flex items-center justify-between gap-3 px-3 sm:px-5">
-        <span className="text-sm font-semibold text-ink first-letter:uppercase">{nomMois}</span>
-        <span className="text-xs text-steel">Montants TTC · Voir le bilan ›</span>
+      <span className="flex items-baseline justify-between gap-3">
+        <span className="text-[15px] font-medium text-steel">À encaisser</span>
+        <span className="text-[13px] text-steel">TTC · Bilan ›</span>
       </span>
-      <span className="mt-2 grid grid-cols-3 divide-x divide-ink/10">
-      {cases.map((c) => (
-        <span key={c.libelle} className="min-w-0 px-2 min-[400px]:px-3 sm:px-5">
-          <span className="block truncate text-xs text-steel sm:text-sm">{c.libelle}</span>
-          {/* Un montant ne se coupe jamais (« 124 80… ») : il rapetisse. */}
-          <span className="mt-0.5 block whitespace-nowrap font-display text-base font-bold tabular-nums tracking-[-0.01em] text-ink min-[400px]:text-lg sm:text-2xl">
-            {c.valeur}
-          </span>
-          {c.detail && <span className="mt-0.5 block text-xs font-semibold leading-tight text-signal-fonce dark:text-signal-clair">{c.detail}</span>}
+      <span className="mt-1 block whitespace-nowrap font-display text-[2rem] font-bold leading-10 tracking-[-0.03em] tabular-nums text-ink min-[400px]:text-[2.25rem]">
+        {euros(aEncaisser.total)}
+      </span>
+      {retard && (
+        <span className="mt-1 flex items-center gap-2 text-[15px] font-semibold text-signal-fonce">
+          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-signal" />
+          dont {retard}
         </span>
-      ))}
+      )}
+      <span className="mt-4 block border-t border-gris-clair pt-3 text-[15px] leading-snug text-steel">
+        {nomMois.charAt(0).toUpperCase() + nomMois.slice(1)} : <span className="font-semibold tabular-nums text-ink">{euros(signe)}</span> signés ·{" "}
+        <span className="font-semibold tabular-nums text-succes">{euros(encaisse)}</span> encaissés
       </span>
     </Link>
   );

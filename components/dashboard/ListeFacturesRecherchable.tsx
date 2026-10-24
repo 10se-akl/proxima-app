@@ -41,20 +41,20 @@ function jourParis(): string {
 function statutAffiche(f: FactureAvecClient, aujourdHui: string): { texte: string; classe: string } {
   // Un avoir est créé « émis » (creer_avoir_et_annuler, schema.sql) : il ne
   // s'encaisse pas, il annule. Il le dit, avant tout le reste.
-  if (f.type === "avoir") return { texte: "Avoir", classe: "bg-ink/10 text-ink/60" };
-  if (f.statut === "payee") return { texte: "Payée", classe: "bg-succes/15 text-succes" };
-  if (f.statut === "annulee") return { texte: "Annulée", classe: "bg-ink/10 text-ink/40" };
+  if (f.type === "avoir") return { texte: "Avoir", classe: "bg-paper-warm text-steel" };
+  if (f.statut === "payee") return { texte: "Payée", classe: "bg-succes-fond text-succes" };
+  if (f.statut === "annulee") return { texte: "Annulée", classe: "bg-paper-warm text-steel" };
   // Module 40 (11/09) — une relance a déjà été PROPOSÉE à l'artisan pour
   // cette facture (voir app/api/cron/relance-factures). Même nuance neutre
   // que "Émise", seul le texte change : pas de rouge, pas de compteur de
   // retard — ce badge informe, il ne met pas la pression.
   const enRetard = !!f.date_echeance && f.date_echeance < aujourdHui;
-  if (enRetard) return { texte: f.notifie_relance_le ? "En retard · relancée" : "En retard", classe: "bg-alerte-orange/15 text-alerte-orange" };
-  if (f.notifie_relance_le) return { texte: "Relancée", classe: "bg-steel/15 text-steel" };
+  if (enRetard) return { texte: f.notifie_relance_le ? "En retard · relancée" : "En retard", classe: "bg-alerte-fond text-alerte-orange" };
+  if (f.notifie_relance_le) return { texte: "Relancée", classe: "bg-paper-warm text-steel" };
   // 22/10 (panel) — « Émise » ne disait pas si c'était payé, envoyé ou en
   // retard. L'échéance passée se voit (même règle que l'accueil,
   // resumerAEncaisser) ; sinon, ce qu'on attend : l'argent.
-  return { texte: "À encaisser", classe: "bg-steel/15 text-steel" };
+  return { texte: "À encaisser", classe: "bg-paper-warm text-steel" };
 }
 
 // ============================================================

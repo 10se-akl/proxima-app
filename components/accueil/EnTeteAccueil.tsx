@@ -21,7 +21,7 @@ export function EnTeteAccueil({
   return (
     <header>
       <p className="text-sm text-steel first-letter:uppercase">{dateDuJour}</p>
-      <h1 className="mt-1 font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-ink sm:text-4xl">{phrase}</h1>
+      <h1 className="mt-1 font-display text-3xl font-semibold leading-tight tracking-[-0.025em] text-ink sm:text-4xl">{phrase}</h1>
       {sousTitre && <p className="mt-1 text-base text-steel">{sousTitre}</p>}
     </header>
   );

@@ -174,7 +174,7 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
   return (
     <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
       <h1 className="font-display text-3xl font-semibold text-ink">Projet créé</h1>
-      <section className="mt-6 rounded-2xl bg-surface p-5 ring-1 ring-ink/15">
+      <section className="mt-6 rounded-[20px] bg-surface p-5 ombre-douce">
         <p className="text-base text-ink">
           {nomClient} propose le <span className="font-semibold">{dateFormatee}</span> à{" "}
           <span className="font-mono font-semibold tabular-nums">{rdv.heure}</span>.

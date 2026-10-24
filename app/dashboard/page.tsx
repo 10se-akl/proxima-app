@@ -77,7 +77,8 @@ function quand(iso: string, maintenant: Date): string {
   return DATE_COURTE.format(d);
 }
 
-const CHANTIERS_VISIBLES = 5;
+// Design v3 : trois chantiers sur l'accueil ; les autres sont dans Projets.
+const CHANTIERS_VISIBLES = 3;
 /** « Ça dort » : pas plus de trois questions à la fois sur l'accueil. */
 const DORMANTS_MAX = 3;
 const euros = (n: number) => n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -670,6 +671,7 @@ export default async function DashboardHome() {
       lieu: lieuDe(p.adresse_client),
       etape: etapeDe(p.statut).libelle,
       couleur: etapeDe(p.statut).couleur,
+      statut: p.statut,
       info: rdv ? prochainRendezVous(rdv, maintenant) : null,
       telephone: p.telephone_client,
       adresse: p.adresse_client,
@@ -687,34 +689,16 @@ export default async function DashboardHome() {
   // dise : c'est bon, t'as 6 000 € qui arrivent »). Rien d'estimé : ce qui
   // reste à voir sur l'écran, et ce qu'on vous doit (le même total que la
   // bande et la page Factures).
-  // 2e panel : dire QUOI (et pas répéter les montants de la bande juste
-  // dessous) ; les mêmes lignes que l'écran (À suivre en entier, À confirmer).
-  const pluriel = (n: number, un: string, plusieurs: string) => `${n} ${n > 1 ? plusieurs : un}`;
-  const nbFacturer = aSuivreTout.filter((l) => l.cle.startsWith("facturer-")).length;
-  const nbRelances = aSuivreTout.filter((l) => l.relance).length;
-  const nbAutres = aSuivreTout.length - nbFacturer - nbRelances;
-  const morceaux = [
-    nbFacturer > 0 ? pluriel(nbFacturer, "chantier à facturer", "chantiers à facturer") : null,
-    nbRelances > 0 ? pluriel(nbRelances, "relance", "relances") : null,
-    aRegler.length > 0 ? pluriel(aRegler.length, "chose à confirmer", "choses à confirmer") : null,
-    aujourdhui.length > 0 ? pluriel(aujourdhui.length, "chose encore prévue", "choses encore prévues") : null,
-    nbAutres > 0 ? pluriel(nbAutres, "dossier à faire avancer", "dossiers à faire avancer") : null,
-  ].filter((m): m is string => m !== null);
-  const phraseDuSoir = morceaux.length === 0 ? "Tout est à jour. Bonne soirée." : `Ce soir : ${morceaux.join(", ")}.`;
+
   const dateDuJour = maintenant.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", timeZone: "Europe/Paris" });
 
   return (
     <VueAccueil
       dateDuJour={dateDuJour}
       titre={premierProjet ? "Bienvenue sur Compyo." : `${estLeSoir ? "Bonsoir" : "Bonjour"} ${premierPrenom}`.trim()}
-      sousTitre={
-        premierProjet
-          ? "Votre premier projet commence ici."
-          : // Le repos (« Tout est réglé. ») le dit déjà : pas de phrase qui le contredise.
-            estLeSoir && !(rienDevantNiDerriere && !premierProjet)
-            ? phraseDuSoir
-            : undefined
-      }
+      // Design v3 : plus de phrase sous le bonjour (elle répétait les titres
+      // des blocs) ; la carte du haut et l'argent disent l'essentiel.
+      sousTitre={premierProjet ? "Votre premier projet commence ici." : undefined}
       premierProjet={premierProjet}
       maintenant={action}
       repos={estLeSoir && !premierProjet && rienDevantNiDerriere}

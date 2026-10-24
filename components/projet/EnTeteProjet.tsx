@@ -1,5 +1,6 @@
 "use client";
 
+import { Cordeau } from "@/components/ui/Cordeau";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -218,7 +219,7 @@ export function EnTeteProjet({
           le fond (plus de carte bleu nuit à halos). */}
       <div className="mt-2">
         <div>
-          <h1 className="truncate font-display text-3xl font-bold tracking-[-0.02em] text-ink sm:text-4xl">{nomClient}</h1>
+          <h1 className="truncate font-display text-3xl font-semibold tracking-[-0.025em] text-ink sm:text-4xl">{nomClient}</h1>
           {(sousTitre || priorite !== "normal") && (
             <p className="mt-1 flex min-w-0 items-center gap-2 text-base text-steel">
               {priorite === "urgent" && (
@@ -262,11 +263,7 @@ export function EnTeteProjet({
 
           {/* La progression : cinq étapes, la courante nommée. */}
           <div className="mt-5" aria-label={`Étape : ${ETAPES[etape].libelle}`}>
-            <div className="flex gap-1" aria-hidden>
-              {ETAPES.map((e, i) => (
-                <span key={e.libelle} className={`h-1.5 flex-1 rounded-full ${i <= etape ? "bg-ink" : "bg-ink/[0.12]"}`} />
-              ))}
-            </div>
+            <Cordeau statut={statut} taille="grand" />
             <div className="mt-1.5 hidden justify-between text-sm sm:flex" aria-hidden>
               {ETAPES.map((e, i) => (
                 <span key={e.libelle} className={i === etape ? "font-semibold text-ink" : "text-steel"}>

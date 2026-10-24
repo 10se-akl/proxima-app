@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { SITE_URL } from "@/lib/site";
 import { InstallPWA } from "@/components/pwa/InstallPWA";
@@ -84,14 +85,23 @@ export const metadata: Metadata = {
 // theme_color en deux variantes claire/sombre : c'est ce qui teinte la
 // barre de statut Android et le cadre de fenêtre, cohérent avec le mode
 // sombre déjà présent dans l'app plutôt qu'une couleur fixe.
+// Design v3 (23/10) — la police de l'application, servie par le site
+// (next/font télécharge Inter au build : plus d'aller-retour vers Google
+// sur le chemin critique de l'appli, et un repli calibré qui évite le saut
+// du texte au chargement). Inter variable : toutes les graisses dans un
+// seul fichier. Le site vitrine garde ses polices (lien plus bas).
+const inter = Inter({ subsets: ["latin"], variable: "--font-app", display: "swap" });
+
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#FAF8F5" },
-    { media: "(prefers-color-scheme: dark)", color: "#0A111F" },
+    // Design v3 : le fond de l'application (papier / nuit d'encre). Le
+    // script ci-dessous recale la balise sur le thème réellement affiché.
+    { media: "(prefers-color-scheme: light)", color: "#F6F5F2" },
+    { media: "(prefers-color-scheme: dark)", color: "#0E0F12" },
   ],
 };
 
@@ -208,7 +218,7 @@ export default function RootLayout({
     // React signalait à chaque chargement une différence d'attribut
     // « class » entre le serveur et le navigateur — attendue, et limitée
     // à cette seule balise (les enfants restent vérifiés normalement).
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className={inter.variable} suppressHydrationWarning>
       <head>
         {/* 20/09 — Capte l'installation PWA AVANT React. Chrome déclenche
             "beforeinstallprompt" très tôt pendant le chargement et ne le
@@ -292,7 +302,12 @@ export default function RootLayout({
             démarre donc en sombre, pas en clair. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem("compyo-mode-sombre")!=="0"){document.documentElement.classList.add("dark")}}catch(e){}`,
+            // Design v3 (23/10) — dans l'application (/dashboard), le thème
+            // suit le téléphone tant qu'on n'a rien choisi (« 1 » sombre,
+            // « 0 » clair) : Gérard a le clair au soleil, le sombre le soir.
+            // Le site vitrine garde son sombre par défaut. La couleur de la
+            // barre d'état suit le thème réellement affiché.
+            __html: `try{var c=localStorage.getItem("compyo-mode-sombre"),a=location.pathname.indexOf("/dashboard")===0,s=c==="1"||(c!=="0"&&(!a||matchMedia("(prefers-color-scheme: dark)").matches));if(s){document.documentElement.classList.add("dark")}if(a){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#0E0F12":"#F6F5F2")})}}catch(e){}`,
           }}
         />
       </head>

@@ -29,6 +29,10 @@ export function ThemeToggle({ className }: { className?: string }) {
     setActif(nouveau);
     document.documentElement.classList.toggle("dark", nouveau);
     localStorage.setItem(CLE_STOCKAGE, nouveau ? "1" : "0");
+    // Design v3 : la barre d'état du téléphone suit, dans l'application.
+    if (location.pathname.startsWith("/dashboard")) {
+      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", nouveau ? "#0E0F12" : "#F6F5F2"));
+    }
   }
 
   // Évite un flash "mauvais état" avant que la préférence sauvegardée soit lue.

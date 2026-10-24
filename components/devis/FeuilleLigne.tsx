@@ -218,7 +218,7 @@ function ContenuLigne({
         </button>
 
         {question ? (
-          <div className="rounded-2xl bg-surface p-4 ring-1 ring-ink/15">
+          <div className="rounded-[20px] bg-surface p-4 ombre-douce">
             <p className="text-base font-semibold text-ink">Retirer cette ligne ?</p>
             <div className="mt-3 flex flex-col gap-2">
               <button

@@ -31,8 +31,8 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait-primary",
-    background_color: "#FAF8F5",
-    theme_color: "#C96B4A",
+    background_color: "#F6F5F2", // design v3 : le fond de l'application
+    theme_color: "#F6F5F2", // design v3 : la barre d'état se fond dans l'appli
     lang: "fr-FR",
     icons: [
       { src: "/icons/icon-72.png", sizes: "72x72", type: "image/png" },

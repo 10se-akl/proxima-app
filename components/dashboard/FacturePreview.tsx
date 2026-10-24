@@ -94,7 +94,7 @@ export function FacturePreview({
         </div>
 
         {estAvoir && (
-          <p className="px-5 py-2 bg-signal/10 text-signal text-xs font-medium">
+          <p className="px-5 py-2 bg-signal-fond text-signal-fonce text-xs font-medium">
             Cet avoir annule la facture n° {facture.facture_liee_id ? "correspondante" : ""} — les montants ci-dessous
             viennent en déduction.
           </p>

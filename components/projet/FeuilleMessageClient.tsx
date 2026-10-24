@@ -175,7 +175,7 @@ export function FeuilleMessageClient({
       {!charge && !erreur && (
         <div aria-busy="true" aria-label="Chargement" className="flex flex-col gap-3">
           {[0, 1].map((i) => (
-            <div key={i} className="rounded-2xl bg-surface p-4 ring-1 ring-ink/15">
+            <div key={i} className="rounded-[20px] bg-surface p-4 ombre-douce">
               <div className="h-4 w-24 rounded-full bg-ink/10 motion-safe:animate-pulse" />
               <div className="mt-2 h-4 w-full rounded-full bg-ink/10 motion-safe:animate-pulse" />
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -278,7 +278,7 @@ export function ContenuMessageClient({
   return (
     <ul className="flex flex-col gap-3">
       {suggestions.map((s, rang) => (
-        <li key={s.cle} className="rounded-2xl bg-surface p-4 ring-1 ring-ink/10">
+        <li key={s.cle} className="rounded-[20px] bg-surface p-4 ombre-douce">
           <p className="text-sm text-steel">{LIBELLES[s.cle]}</p>
           <p className="mt-1 text-base text-ink">
             {/* À l'écran seulement : « 1 250,00 € » ne se coupe pas en fin de ligne. */}

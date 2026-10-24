@@ -51,6 +51,18 @@ const config: Config = {
         nuit: "rgb(var(--c-nuit) / <alpha-value>)",
         bleu: "rgb(var(--c-bleu) / <alpha-value>)",
         violet: "rgb(var(--c-violet) / <alpha-value>)",
+        // Design v3 (23/10) — les teintes d'étiquettes, opaques et conçues
+        // par mode (voir app/globals.css, bloc « Design v3 »).
+        "succes-fond": "rgb(var(--c-succes-fond) / <alpha-value>)",
+        "alerte-fond": "rgb(var(--c-alerte-fond) / <alpha-value>)",
+        "bleu-fond": "rgb(var(--c-bleu-fond) / <alpha-value>)",
+        "violet-fond": "rgb(var(--c-violet-fond) / <alpha-value>)",
+        "signal-fond": "rgb(var(--c-signal-fond) / <alpha-value>)",
+      },
+      // Design v3 (23/10) : text-xs vaut 13 px dans l'application (plancher de
+      // lisibilité, variable posée par app/globals.css), 12 px ailleurs.
+      fontSize: {
+        xs: ["var(--t-xs, 0.75rem)", { lineHeight: "var(--t-xs-lh, 1rem)" }],
       },
       fontFamily: {
         display: ["Manrope", "ui-sans-serif", "system-ui"],

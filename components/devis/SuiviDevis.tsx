@@ -4,7 +4,6 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { createClient } from "@/lib/supabase/client";
 import {
   adresseEspaceDevis,
@@ -20,6 +19,16 @@ import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
 import { devisAccepte } from "@/lib/devis/statut";
 import { numeroWhatsApp, ouvrirMessage, type Canal } from "@/lib/messagesClient";
 import { Feuille } from "@/components/projet/Feuille";
+import { IconeCoche } from "@/components/projet/icones";
+import {
+  BOUTON_ALERTE,
+  BOUTON_PLEIN_LARGE,
+  BOUTON_TEXTE,
+  CARTE_PLEINE,
+  CREUX,
+  SECONDAIRE,
+  TITRE_CARTE,
+} from "@/components/ui/recettes";
 import type { Devis, ParametresEntreprise } from "@/types";
 
 // ============================================================
@@ -31,6 +40,17 @@ import type { Devis, ParametresEntreprise } from "@/types";
 // devis et ouvre le lien de signature ; c'est lui qui le transmet, par le
 // moyen qu'il veut.
 // ============================================================
+
+// Design v3 (24/10) : chaque étape est une carte (surface + ombre douce),
+// un seul bouton plein, le reste en creux ; les boutons s'empilent en
+// pleine largeur sur téléphone, côte à côte sur ordinateur.
+const RANGEE_BOUTONS = "mt-5 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3";
+// Une action tertiaire après une question (« Le noter comme envoyé »).
+// Design v3 (25/10) : plus de lien souligné utilisé comme bouton — le bouton
+// texte (encre, sans soulignement).
+const LIEN_ACTION = `${BOUTON_TEXTE} disabled:cursor-not-allowed disabled:opacity-60`;
+// La roue d'un bouton en cours (même dessin que <Button loading>).
+const ROUE = "h-3.5 w-3.5 shrink-0 motion-safe:animate-spin rounded-full border-2 border-current border-t-transparent";
 
 export type ProjetDuDevis = {
   id: string;
@@ -175,19 +195,23 @@ export function SuiviDevis({
     else void envoyer(canal);
   }
 
-  const erreurAffichee = erreur && <p className="mt-3 text-sm text-signal-fonce dark:text-signal-clair">{erreur}</p>;
+  const erreurAffichee = erreur && (
+    <p role="alert" className="mt-3 text-[15px] font-semibold text-signal-fonce">
+      {erreur}
+    </p>
+  );
 
   // ---- Prêt à partir ------------------------------------------------------
   if (devis.statut === "a_valider") {
     const sansContact = !projet.telephone_client?.trim() && !projet.email_client?.trim();
     return (
-      <Card className="p-6">
-        <p className="font-display text-lg font-semibold">Prêt à partir</p>
-        <p className="mt-1 text-sm text-steel">Une fois parti, le devis ne se modifie plus.</p>
+      <section className={CARTE_PLEINE}>
+        <h2 className={TITRE_CARTE}>Prêt à partir</h2>
+        <p className={`${SECONDAIRE} mt-1`}>Une fois parti, le devis ne se modifie plus.</p>
         {sansContact && (
-          <p className="mt-3 text-sm text-steel">Pas de numéro pour ce client : partagez le lien vous-même.</p>
+          <p className={`${SECONDAIRE} mt-3`}>Pas de numéro pour ce client : partagez le lien vous-même.</p>
         )}
-        <div className="mt-5 flex flex-wrap gap-3">
+        <div className={RANGEE_BOUTONS}>
           {telephone ? (
             <>
               <Button
@@ -198,7 +222,7 @@ export function SuiviDevis({
                 {whatsappPossible ? "Envoyer par WhatsApp" : "Envoyer par SMS"}
               </Button>
               {whatsappPossible && (
-                <Button variant="ghost" onClick={() => demanderEnvoi("sms")} loading={enCours === "sms"} disabled={enCours !== null}>
+                <Button variant="secondary" onClick={() => demanderEnvoi("sms")} loading={enCours === "sms"} disabled={enCours !== null}>
                   Par SMS
                 </Button>
               )}
@@ -208,20 +232,20 @@ export function SuiviDevis({
               Valider et partager le lien
             </Button>
           )}
-          <Button variant="ghost" onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
+          <Button variant="secondary" onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
             Modifier (nouvelle version)
           </Button>
         </div>
         {/* 27/09 (Axel) — Déjà envoyé en PDF ou à la main : le noter sans
             rouvrir de messagerie. */}
         {telephone && (
-          <p className="mt-2 text-sm text-steel">
-            Déjà envoyé autrement ?{" "}
+          <p className={`${SECONDAIRE} mt-2 flex flex-wrap items-center gap-x-1`}>
+            Déjà envoyé autrement&nbsp;?
             <button
               type="button"
               onClick={() => demanderEnvoi("deja")}
               disabled={enCours !== null}
-              className="inline-flex min-h-12 items-center font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-50"
+              className={LIEN_ACTION}
             >
               {enCours === "deja" ? "Enregistrement…" : "Le noter comme envoyé"}
             </button>
@@ -231,43 +255,47 @@ export function SuiviDevis({
 
         <Feuille
           ouverte={questionEnvoi !== null}
-          titre={`Il manque : ${pointsManquants.join(", ").toLowerCase()}`}
+          titre={`Il manque : ${pointsManquants.join(", ").toLowerCase()}`}
           surFermer={() => setQuestionEnvoi(null)}
         >
-          <p className="text-base text-steel">Le devis partira sans, et ne se modifiera plus.</p>
+          <p className="text-base text-steel [text-wrap:pretty]">Le devis partira sans, et ne se modifiera plus.</p>
+          {/* Design v3 (24/10) : le bouton plein (le geste prudent) en bas,
+              sous le pouce, comme dans les autres feuilles. */}
           <div className="mt-5 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => questionEnvoi && void envoyer(questionEnvoi)}
+              className={`${BOUTON_TEXTE} w-full justify-center`}
+            >
+              Envoyer quand même
+            </button>
             <button
               type="button"
               onClick={() => {
                 setQuestionEnvoi(null);
                 window.scrollTo({ top: 0, behavior: "smooth" });
               }}
-              className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80"
+              className={BOUTON_PLEIN_LARGE}
             >
               Compléter d&apos;abord
             </button>
-            <button
-              type="button"
-              onClick={() => questionEnvoi && void envoyer(questionEnvoi)}
-              className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-            >
-              Envoyer quand même
-            </button>
           </div>
         </Feuille>
-      </Card>
+      </section>
     );
   }
 
   // ---- Accepté ------------------------------------------------------------
   if (accepte) {
     return (
-      <Card className="p-6">
+      <section className={CARTE_PLEINE}>
         <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-full bg-succes/12 text-lg text-succes">✓</span>
-          <div>
-            <p className="font-display text-lg font-semibold">Devis accepté</p>
-            <p className="text-sm text-ink/60">
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden>
+            <IconeCoche className="h-5 w-5" />
+          </span>
+          <div className="min-w-0">
+            <h2 className={TITRE_CARTE}>Devis accepté</h2>
+            <p className={SECONDAIRE}>
               {devis.signe_le
                 ? `Signé en ligne${devis.signature_nom ? ` par ${devis.signature_nom}` : ""} le ${dateLongue(devis.signe_le)}.`
                 : projet.accepte_le
@@ -276,50 +304,50 @@ export function SuiviDevis({
             </p>
           </div>
         </div>
-        <p className="mt-4 text-sm text-ink/60">
+        <p className={`${SECONDAIRE} mt-4`}>
           La suite se passe sur le projet : acompte, factures et suivi du chantier.
         </p>
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className={RANGEE_BOUTONS}>
           <Button onClick={() => router.push(`/dashboard/demandes/${projet.id}`)}>Aller au projet</Button>
-          <Button variant="ghost" onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
+          <Button variant="secondary" onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
             Créer une nouvelle version
           </Button>
         </div>
         {erreurAffichee}
-      </Card>
+      </section>
     );
   }
 
   // ---- Refusé -------------------------------------------------------------
   if (devis.statut === "refuse") {
     return (
-      <Card className="p-6">
-        <p className="font-display text-lg font-semibold">Devis refusé</p>
-        <p className="mt-1 text-sm text-ink/60">
+      <section className={CARTE_PLEINE}>
+        <h2 className={TITRE_CARTE}>Devis refusé</h2>
+        <p className={`${SECONDAIRE} mt-1`}>
           Si le client a seulement tiqué sur un poste ou sur le prix, repartez de celui-ci.
         </p>
-        <div className="mt-4 flex flex-wrap gap-3">
+        <div className={RANGEE_BOUTONS}>
           <Button onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
             Créer une nouvelle version
           </Button>
-          <Button variant="ghost" onClick={() => router.push(`/dashboard/demandes/${projet.id}`)}>
+          <Button variant="secondary" onClick={() => router.push(`/dashboard/demandes/${projet.id}`)}>
             Retour au projet
           </Button>
         </div>
         {erreurAffichee}
-      </Card>
+      </section>
     );
   }
 
   // ---- Envoyé, en attente -------------------------------------------------
   return (
     <div className="space-y-4">
-      <Card className="p-6">
-        <p className="font-display text-lg font-semibold">En attente de la réponse du client</p>
-        <p className="mt-1 text-sm text-ink/60">
+      <section className={CARTE_PLEINE}>
+        <h2 className={TITRE_CARTE}>En attente de la réponse du client</h2>
+        <p className={`${SECONDAIRE} mt-1`}>
           {devis.envoye_le ? `Noté envoyé le ${dateLongue(devis.envoye_le)}` : "Noté envoyé"}
           {fin && (
-            <span className={expire ? "text-alerte-orange" : ""}>
+            <span className={expire ? "font-semibold text-alerte-orange" : ""}>
               {expire ? ` · offre expirée depuis le ${dateLongue(fin.toISOString())}` : ` · valable jusqu'au ${dateLongue(fin.toISOString())}`}
             </span>
           )}
@@ -329,13 +357,13 @@ export function SuiviDevis({
             partir : s'il n'est pas parti (réseau, mauvais contact), on le
             rouvre tel quel, en un appui. */}
         {telephone && (
-          <p className="mt-3 flex flex-wrap items-center gap-x-3 text-sm text-steel">
-            Pas parti ?
+          <p className={`${SECONDAIRE} mt-2 flex flex-wrap items-center gap-x-1`}>
+            Pas parti&nbsp;?
             {whatsappPossible && (
               <button
                 type="button"
                 onClick={() => ouvrirMessage("whatsapp", telephone, messageClient(devis, projet, nomEntreprise))}
-                className="inline-flex min-h-12 items-center font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+                className={LIEN_ACTION}
               >
                 Rouvrir WhatsApp
               </button>
@@ -343,90 +371,98 @@ export function SuiviDevis({
             <button
               type="button"
               onClick={() => ouvrirMessage("sms", telephone, messageClient(devis, projet, nomEntreprise))}
-              className="inline-flex min-h-12 items-center font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+              className={LIEN_ACTION}
             >
               {whatsappPossible ? "SMS" : "Rouvrir les SMS"}
             </button>
           </p>
         )}
 
-        <p className="mt-5 text-xs font-medium uppercase tracking-wider text-ink/50">Transmettre le devis</p>
-        <p className="mt-1 text-xs text-ink/45">
-          Le lien permet à votre client de lire le devis et de le signer en ligne.
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {partageLienPossible && (
-            <Button onClick={partagerLien}>Partager (SMS, WhatsApp, mail…)</Button>
-          )}
-          <Button variant="ghost" onClick={() => copier("lien")}>
-            {copie === "lien" ? "✓ Lien copié" : "Copier le lien"}
-          </Button>
-        </div>
-
-        <div className="mt-4 rounded-xl border border-ink/10 bg-paper px-4 py-3">
-          <p className="whitespace-pre-line text-xs leading-relaxed text-ink/70">
-            {messageClient(devis, projet, nomEntreprise)}
+        {/* Design v3 (24/10) : un sous-titre en clair (plus de capitales
+            espacées), le message dans un encart en creux, lisible en 15 px. */}
+        <div className="mt-5 border-t border-gris-clair pt-5">
+          <h3 className="text-[17px] font-semibold text-ink">Transmettre le devis</h3>
+          <p className={`${SECONDAIRE} mt-1`}>
+            Le lien permet à votre client de lire le devis et de le signer en ligne.
           </p>
-          <button
-            type="button"
-            onClick={() => copier("message")}
-            className="mt-2 text-xs font-medium text-signal underline-offset-2 hover:underline"
-          >
-            {copie === "message" ? "✓ Message copié" : "Copier ce message"}
-          </button>
-        </div>
-      </Card>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+            {partageLienPossible && (
+              <Button onClick={partagerLien}>Partager (SMS, WhatsApp, mail…)</Button>
+            )}
+            <Button variant="secondary" onClick={() => copier("lien")}>
+              {copie === "lien" ? "✓ Lien copié" : "Copier le lien"}
+            </Button>
+          </div>
 
-      <Card className="p-6">
-        <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Le client a répondu ?</p>
-        <p className="mt-1 text-xs text-ink/45">
+          <div className={`${CREUX} mt-4 px-4 pb-1 pt-3`}>
+            <p className="whitespace-pre-line break-words text-[15px] leading-relaxed text-ink">
+              {messageClient(devis, projet, nomEntreprise)}
+            </p>
+            <button type="button" onClick={() => copier("message")} className={`${BOUTON_TEXTE} -ml-3`}>
+              {copie === "message" ? "✓ Message copié" : "Copier ce message"}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section className={CARTE_PLEINE}>
+        <h2 className={TITRE_CARTE}>Le client a répondu ?</h2>
+        <p className={`${SECONDAIRE} mt-1`}>
           S&apos;il signe en ligne, c&apos;est automatique. Sinon, notez sa réponse ici.
         </p>
         {confirmerRefus ? (
-          <div className="mt-3 rounded-xl border border-ink/10 bg-paper px-4 py-3">
-            <p className="text-sm text-ink/80">Noter ce devis comme refusé ?</p>
-            <div className="mt-3 flex flex-wrap gap-3">
-              <Button
-                variant="danger"
+          <div className={`${CREUX} mt-4 px-4 py-4`}>
+            <p className="text-base font-semibold text-ink">Noter ce devis comme refusé ?</p>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
+              {/* Une réponse négative n'est jamais pleine : creux d'alerte. */}
+              <button
+                type="button"
                 onClick={() =>
                   executer("refus", () => marquerDevisRefuse(ctx, { devisId: devis.id, demandeId: projet.id }))
                 }
-                loading={enCours === "refus"}
                 disabled={enCours !== null}
+                className={BOUTON_ALERTE}
               >
-                Oui, refusé
-              </Button>
-              <Button variant="ghost" onClick={() => setConfirmerRefus(false)} disabled={enCours !== null}>
+                {enCours === "refus" && <span className={ROUE} aria-hidden="true" />}
+                {enCours === "refus" ? "Enregistrement…" : "Oui, refusé"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmerRefus(false)}
+                disabled={enCours !== null}
+                className={`${BOUTON_TEXTE} justify-center`}
+              >
                 Annuler
-              </Button>
+              </button>
             </div>
           </div>
         ) : (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
             <Button
-              variant="ghost"
+              variant="secondary"
               onClick={() => executer("accepte", () => marquerDevisAccepte(ctx, { demandeId: projet.id }))}
               loading={enCours === "accepte"}
               disabled={enCours !== null}
             >
-              ✓ Accepté
+              {enCours !== "accepte" && <IconeCoche className="h-5 w-5" />}
+              Accepté
             </Button>
-            <Button variant="ghost" onClick={() => setConfirmerRefus(true)} disabled={enCours !== null}>
+            <Button variant="secondary" onClick={() => setConfirmerRefus(true)} disabled={enCours !== null}>
               Refusé
             </Button>
-            <Button variant="ghost" onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
+            <Button variant="secondary" onClick={nouvelleVersion} loading={enCours === "version"} disabled={enCours !== null}>
               Ajuster (nouvelle version)
             </Button>
           </div>
         )}
-        <p className="mt-4 text-xs text-ink/45">
-          Pas de nouvelles ?{" "}
-          <Link href={`/dashboard/demandes/${projet.id}`} className="text-signal underline-offset-2 hover:underline">
+        <p className={`${SECONDAIRE} mt-4 flex flex-wrap items-center gap-x-1`}>
+          Pas de nouvelles&nbsp;?
+          <Link href={`/dashboard/demandes/${projet.id}`} className={LIEN_ACTION}>
             Préparer une relance depuis le projet
           </Link>
         </p>
         {erreurAffichee}
-      </Card>
+      </section>
     </div>
   );
 }

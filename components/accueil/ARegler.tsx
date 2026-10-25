@@ -12,6 +12,7 @@ import { Pastille } from "@/components/ui/Pastille";
 import { IconeCloche } from "@/components/projet/icones";
 import { LigneAccueil } from "./Blocs";
 import { BlocAvecTrace, FinCoche, FinMot, useTraceAccueil } from "./TraceAccueil";
+import { heure as ecrireHeure } from "@/lib/heure";
 
 // ============================================================
 // « À régler » (refonte 03/10 — duel C, lot 4) : c'est « derrière ».
@@ -65,10 +66,10 @@ function demainMemeHeure(iso: string): Date {
   return d;
 }
 
-const JOUR_HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short", hour: "numeric", minute: "2-digit" });
-/** « ven. 14h », « lun. 8h30 ». */
+const JOUR = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short" });
+/** « ven. 14 h », « lun. 8 h 30 » (lib/heure.ts : une seule écriture). */
 function jourHeure(iso: string): string {
-  return JOUR_HEURE.format(new Date(iso)).replace(/(\d+):00$/, "$1h").replace(/(\d+):(\d\d)$/, "$1h$2");
+  return `${JOUR.format(new Date(iso))} ${ecrireHeure(iso)}`;
 }
 
 export function ARegler({ elements, sansTitre = false }: { elements: ElementARegler[]; sansTitre?: boolean }) {
@@ -178,10 +179,12 @@ export function ARegler({ elements, sansTitre = false }: { elements: ElementAReg
           const reessayer = erreurs.get(e.cle);
           let fin;
           if (reessayer) fin = <FinMot libelle="Réessayer" surClic={reessayer} occupe={occupe} />;
+          // 25/10 (WCAG 2.5.3) — chaque nom accessible commence par le mot
+          // affiché : la commande vocale « Oui » ou « Dans 1 sem. » marche.
           else if (e.genre === "dormant")
             fin = (
               <>
-                <FinMot libelle="Dans 1 sem." aria={`Dans 1 semaine, me reproposer ${e.principal}`} surClic={() => sommeil(e, false)} occupe={occupe} />
+                <FinMot libelle="Dans 1 sem." aria={`Dans 1 sem. : me reproposer ${e.principal} dans une semaine`} surClic={() => sommeil(e, false)} occupe={occupe} />
                 {/* « Ranger » plutôt que « Classer », lu « classer l'affaire »
                     (= supprimer) par le panel : le projet reste dans Projets. */}
                 <FinMot libelle="Ranger" aria={`Ranger le projet ${e.principal} dans Projets`} surClic={() => sommeil(e, true)} occupe={occupe} />
@@ -190,7 +193,7 @@ export function ARegler({ elements, sansTitre = false }: { elements: ElementAReg
           else if (e.genre === "chantier")
             fin = (
               <>
-                <FinMot libelle="Oui" aria={`Chantier terminé : ${e.principal}`} surClic={() => chantier(e, true)} occupe={occupe} />
+                <FinMot libelle="Oui" aria={`Oui, chantier terminé : ${e.principal}`} surClic={() => chantier(e, true)} occupe={occupe} />
                 <FinMot libelle="Pas encore" aria={`Pas encore terminé : ${e.principal}`} surClic={() => chantier(e, false)} occupe={occupe} />
               </>
             );

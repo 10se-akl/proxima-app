@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/meteo";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 import { IconeCalendrier, IconeChevron, IconeCloche, IconeCoche, IconePlus } from "@/components/projet/icones";
-import { Pastille } from "@/components/ui/Pastille";
+import { BOUTON_CREUX, BOUTON_ICONE, BOUTON_TEXTE, CARTE, FOCUS, TUILE_ICONE } from "@/components/ui/recettes";
 import { ActionsRendezVous } from "./ActionsRendezVous";
 import { ChoisirChantier } from "./ChoisirChantier";
 import { FeuillePlanifier, TracePlanifie, type ProjetAPlanifier } from "./FeuillePlanifier";
@@ -16,7 +16,6 @@ import {
   ajouterJours,
   cleParis,
   grouperParJour,
-  heureEnLettres,
   jourCourt,
   jourEnLettres,
   libelleFenetre,
@@ -24,6 +23,7 @@ import {
   quoiDuRendezVous,
   type CleJour,
 } from "./semaine";
+import { heure } from "@/lib/heure";
 
 // ============================================================
 // Le planning sur téléphone : la semaine en sept lignes (refonte 03/10,
@@ -37,8 +37,8 @@ import {
 // « + » ; un samedi et un dimanche vides se fondent en une ligne. Les
 // flèches avancent de sept jours.
 //
-// La météo à risque reste sur la ligne : « Météo à risque », et « Prévenir »
-// prend la colonne de fin (règle 7). Pas de pourcentage : le résumé de la
+// La météo à risque reste sur la ligne : « Météo à risque », et « Prévenir
+// le client » en pastille creuse sous le texte (design v3, 24/10). Pas de pourcentage : le résumé de la
 // météo est un texte libre, la ligne n'en cite aucun chiffre.
 //
 // Pas de glisser-déposer : avec des gants, dans une liste qui défile, le
@@ -51,15 +51,16 @@ import {
 // s'est éloigné d'aujourd'hui.
 // ============================================================
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
-
 function alerteMeteo(e: EvenementAvecProjet, meteo?: RisqueMeteoJour) {
   const type = e.demandes?.type_chantier;
   return !!meteo?.risque && !!type && TYPES_CHANTIER_METEO_SENSIBLES.includes(type);
 }
 
 const capitale = (m: string) => `${m[0].toUpperCase()}${m.slice(1)}`;
+
+// Design v3 (25/10) : « Bernard-Lefèvre » ne se coupe plus au trait d'union
+// (trait d'union insécable, U+2011) ; le nom passe à la ligne entre les mots.
+const sansCoupureAuTrait = (t: string) => t.replace(/-/g, "\u2011");
 
 export function AgendaMobile({
   jours,
@@ -101,27 +102,24 @@ export function AgendaMobile({
         <Link
           href={`/dashboard/planning?semaine=${offset - 1}`}
           aria-label="Les sept jours précédents"
-          className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-ink active:bg-ink/10 ${FOCUS}`}
+          className={BOUTON_ICONE}
         >
           <IconeChevron className="h-5 w-5 rotate-180" />
         </Link>
-        <p className="min-w-0 flex-1 text-center text-base font-semibold text-ink">
+        <p className="min-w-0 flex-1 text-center text-[17px] font-semibold text-ink">
           {libelleFenetre(cles[0], cles[cles.length - 1])}
         </p>
         <Link
           href={`/dashboard/planning?semaine=${offset + 1}`}
           aria-label="Les sept jours suivants"
-          className={`grid h-12 w-12 shrink-0 place-items-center rounded-full text-ink active:bg-ink/10 ${FOCUS}`}
+          className={BOUTON_ICONE}
         >
           <IconeChevron className="h-5 w-5" />
         </Link>
       </div>
 
       {offset !== 0 && (
-        <Link
-          href="/dashboard/planning"
-          className="inline-flex min-h-12 items-center text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-        >
+        <Link href="/dashboard/planning" className={`-ml-3 ${BOUTON_TEXTE}`}>
           Revenir à aujourd&apos;hui
         </Link>
       )}
@@ -148,13 +146,21 @@ export function AgendaMobile({
             : `${premier === aujourdhui ? "Aujourd'hui, " : ""}${jourEnLettres(premier)}`;
 
           return (
-            <section key={premier} aria-label={libelle} className="grid grid-cols-[3.25rem_minmax(0,1fr)] gap-2">
-              {/* Le repère du jour, à hauteur de la première ligne. */}
-              <div className={`flex flex-col items-center justify-center ${vide ? "min-h-14" : "min-h-16"}`}>
-                <span className={`font-semibold text-steel ${mot.length > 4 ? "text-xs" : "text-sm"}`}>{mot}</span>
+            // Design v3 (24/10) : la colonne du jour passe à 56 px, pour que
+            // « Demain » et « sam–dim » tiennent en 13 px (plus de 12 px).
+            <section key={premier} aria-label={libelle} className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-2">
+              {/* Le repère du jour, à hauteur de la première ligne.
+                  Design v3 (25/10) : calé en haut (self-start) ; centré sur
+                  toute la hauteur, « Mar. 27 » flottait au milieu d'une
+                  carte haute, à l'écart des autres jours. */}
+              <div className={`flex flex-col items-center justify-center self-start ${vide ? "min-h-14" : "min-h-16"}`}>
+                <span className={`font-semibold text-steel ${mot.length > 4 ? "text-[13px]" : "text-sm"}`}>{mot}</span>
+                {/* Design v3 (25/10) : aujourd'hui, un rond à l'encre, la même
+                    forme que sur la grille de l'ordinateur (plus un carré
+                    arrondi ici et un rond là-bas). */}
                 <span
                   className={`font-display font-semibold tabular-nums ${fondu ? "text-base" : "text-xl"} ${
-                    estAujourdhui ? "rounded-xl bg-nuit px-2 py-0.5 text-white" : "text-ink"
+                    estAujourdhui ? "mt-0.5 inline-grid h-9 min-w-[2.25rem] place-items-center rounded-full bg-ink px-2 text-paper" : "text-ink"
                   }`}
                 >
                   {numero}
@@ -236,7 +242,7 @@ function LigneVide({ libelle, surPlanifier }: { libelle: string; surPlanifier: (
 }
 
 /** Une ligne : le client, puis l'heure, le quoi, le où. Toute la ligne ouvre
- *  le rendez-vous ; la météo à risque met « Prévenir » dans la colonne de fin. */
+ *  le rendez-vous ; la météo à risque ajoute « Prévenir le client » dessous. */
 function LigneRendezVous({
   evenement: e,
   meteo,
@@ -256,51 +262,54 @@ function LigneRendezVous({
   const detail = [quoi, e.demandes?.adresse_client].filter(Boolean).join(" · ");
 
   return (
-    <div className="flex min-h-16 items-stretch overflow-hidden rounded-[20px] bg-surface ombre-douce">
+    <div className={`flex min-h-16 flex-col overflow-hidden ${CARTE}`}>
       <button
         type="button"
         onClick={surOuvrir}
-        className={`flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 text-left active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${
-          risque ? "pr-2" : "pr-4"
-        }`}
+        className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 text-left active:bg-ink/[0.06] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
       >
-        {/* Refonte visuelle (04/10) : bleu pour un rendez-vous, orange pour
-            un rappel, comme partout ailleurs. */}
-        {/* Design v3 : une icône neutre ; la couleur est gardée pour ce qui a un sens (météo). */}
-        <Pastille couleur={e.type === "rendez_vous" ? "bleu" : "orange"} variante="neutre" taille="petite">
-          {e.type === "rendez_vous" ? <IconeCalendrier className="h-4 w-4" /> : <IconeCloche className="h-4 w-4" />}
-        </Pastille>
+        {/* Design v3 (24/10) : la tuile d'icône neutre ; la couleur reste
+            pour ce qui a un sens (la météo). */}
+        <span aria-hidden className={TUILE_ICONE}>
+          {e.type === "rendez_vous" ? <IconeCalendrier className="h-5 w-5" /> : <IconeCloche className="h-5 w-5" />}
+        </span>
         <span className="min-w-0 flex-1">
-          <span className={`block truncate text-base font-semibold text-ink ${fait ? "line-through" : ""}`}>{qui ?? e.titre}</span>
-          <span className="block truncate text-sm text-steel">
-            <span className="font-mono tabular-nums text-ink">{heureEnLettres(e.date_heure)}</span>
+          <span className={`line-clamp-2 break-words text-[17px] font-semibold leading-snug text-ink [hyphens:none] ${fait ? "line-through" : ""}`}>
+            {sansCoupureAuTrait(qui ?? e.titre)}
+          </span>
+          {/* Design v3 (24/10) : le quoi et le où sur deux lignes au plus,
+              plutôt qu'une ligne coupée (« Chantier toit… »). */}
+          <span className="line-clamp-2 text-[15px] text-steel">
+            <span className="tabular-nums text-ink">{heure(e.date_heure)}</span>
             {fait && " · Fait"}
             {detail && ` · ${detail}`}
           </span>
           {/* 22/10 (panel) — sur sa propre ligne : à côté de l'heure, il
               finissait coupé (« Météo à risqu… »). */}
-          {risque && <span className="block truncate text-sm font-semibold text-signal-fonce dark:text-signal-clair">Météo à risque</span>}
+          {risque && <span className="block text-[15px] font-semibold text-signal-fonce">Météo à risque</span>}
         </span>
         {fait ? (
-          <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
+          <span aria-hidden className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-succes-fond text-succes">
             <IconeCoche className="h-4 w-4" />
           </span>
         ) : (
-          !risque && <IconeChevron className="h-4 w-4 shrink-0 text-ink" />
+          <IconeChevron className="h-4 w-4 shrink-0 text-steel" />
         )}
       </button>
+      {/* Design v3 (24/10) : « Prévenir le client » n'est plus une colonne à
+          filet vertical mais une pastille creuse sous le texte, alignée sur
+          lui. Deux cibles distinctes, jamais imbriquées. */}
       {risque && e.demande_id && (
-        <button
-          type="button"
-          onClick={surPrevenir}
-          aria-label={`Prévenir le client${qui ? ` ${qui}` : ""} : météo à risque`}
-          className="grid w-[5rem] shrink-0 place-items-center border-l border-gris-clair text-sm font-semibold text-ink active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
-        >
-          <span className="text-center leading-tight">
-            Prévenir
-            <span className="block font-normal text-steel">le client</span>
-          </span>
-        </button>
+        <div className="pb-3 pl-[4.25rem] pr-4">
+          <button
+            type="button"
+            onClick={surPrevenir}
+            aria-label={`Prévenir le client${qui ? ` ${qui}` : ""} : météo à risque`}
+            className={BOUTON_CREUX}
+          >
+            Prévenir le client
+          </button>
+        </div>
       )}
     </div>
   );

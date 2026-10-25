@@ -307,7 +307,7 @@ export default function RootLayout({
             // « 0 » clair) : Gérard a le clair au soleil, le sombre le soir.
             // Le site vitrine garde son sombre par défaut. La couleur de la
             // barre d'état suit le thème réellement affiché.
-            __html: `try{var c=localStorage.getItem("compyo-mode-sombre"),a=location.pathname.indexOf("/dashboard")===0,s=c==="1"||(c!=="0"&&(!a||matchMedia("(prefers-color-scheme: dark)").matches));if(s){document.documentElement.classList.add("dark")}if(a){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#0E0F12":"#F6F5F2")})}}catch(e){}`,
+            __html: `try{var c=localStorage.getItem("compyo-mode-sombre"),a=location.pathname.indexOf("/dashboard")===0||location.pathname.indexOf("/devis/")===0,s=c==="1"||(c!=="0"&&(!a||matchMedia("(prefers-color-scheme: dark)").matches));if(s){document.documentElement.classList.add("dark")}if(a){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#0E0F12":"#F6F5F2")})}}catch(e){}`,
           }}
         />
       </head>

@@ -6,12 +6,13 @@ import {
   ajouterJours,
   aujourdhuiCle,
   cleParis,
-  heureEnLettres,
   instantParis,
   libelleChoix,
   occupationEnConflit,
   type CleJour,
 } from "./semaine";
+import { heure } from "@/lib/heure";
+import { BOUTON_TEXTE, CHAMP, LIBELLE } from "@/components/ui/recettes";
 
 // ============================================================
 // Choisir le jour : les sept jours qui viennent, avec ce qui est déjà pris
@@ -19,7 +20,7 @@ import {
 //
 // Le même choix sert à planifier et à déplacer. Avant, une date à taper :
 // l'erreur « créneau déjà pris » arrivait après, une fois le formulaire
-// rempli. Ici, chaque jour dit ce qu'il porte (« 8h00 Dupont · 14h00
+// rempli. Ici, chaque jour dit ce qu'il porte (« 8 h Dupont · 14 h 30
 // Roux », ou « Rien de prévu ») avant qu'on le touche, et un jour qui
 // gênerait le créneau proposé le dit en alerte. Ce n'est qu'un
 // avertissement : la base reste seule juge (contrainte de non-chevauchement),
@@ -101,20 +102,23 @@ export function ChoisirJour({
                   setAutreOuvert(false);
                   surChoisir(cle);
                 }}
-                className={`flex min-h-12 w-full items-center gap-3 rounded-2xl bg-surface px-4 text-left motion-safe:transition-colors active:bg-ink/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
-                  choisi ? "ring-2 ring-ink" : "ring-1 ring-ink/15"
+                // Design v3 (24/10) : un choix se lit comme un champ (contour
+                // fin `contour` depuis le 25/10, à l'encre une fois choisi) ; le détail du jour
+                // tient sur deux lignes au plus au lieu d'être coupé.
+                className={`flex min-h-12 w-full items-center gap-3 rounded-[14px] bg-surface px-4 py-2 text-left motion-safe:transition-colors active:bg-ink/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                  choisi ? "ring-2 ring-inset ring-ink" : "ring-1 ring-inset ring-contour"
                 }`}
               >
                 <span className="w-24 shrink-0 text-base font-semibold text-ink">{libelleChoix(cle, aujourdhui)}</span>
-                <span className="min-w-0 flex-1 truncate text-sm text-steel">
+                <span className="line-clamp-2 min-w-0 flex-1 text-sm text-steel">
                   {pris === null ? (
-                    <span aria-hidden className="block h-4 w-24 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+                    <span aria-hidden className="block h-4 w-24 rounded-full bg-paper-warm" />
                   ) : gene ? (
-                    <span className="font-semibold text-signal-fonce dark:text-signal-clair">Heure déjà prise</span>
+                    <span className="font-semibold text-signal-fonce">Heure déjà prise</span>
                   ) : visibles.length === 0 ? (
                     "Rien de prévu"
                   ) : (
-                    visibles.map((p) => `${heureEnLettres(p.date_heure)} ${nomDe(p)}`).join(" · ")
+                    visibles.map((p) => `${heure(p.date_heure)} ${nomDe(p)}`).join(" · ")
                   )}
                 </span>
                 <span
@@ -132,22 +136,18 @@ export function ChoisirJour({
       </ul>
 
       {autreOuvert || horsSemaine ? (
-        <label className="mt-2 block text-sm font-semibold text-ink">
-          Un autre jour
+        <label className="mt-3 block">
+          <span className={LIBELLE}>Un autre jour</span>
           <input
             type="date"
             min={aujourdhui}
             value={horsSemaine ? jour : ""}
             onChange={(e) => e.target.value && surChoisir(e.target.value)}
-            className="mt-1.5 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-3 text-base text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/20"
+            className={CHAMP}
           />
         </label>
       ) : (
-        <button
-          type="button"
-          onClick={() => setAutreOuvert(true)}
-          className="mt-1 inline-flex min-h-12 items-center px-1 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-        >
+        <button type="button" onClick={() => setAutreOuvert(true)} className={`-ml-3 mt-1 ${BOUTON_TEXTE}`}>
           Un autre jour…
         </button>
       )}

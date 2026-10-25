@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganisationId } from "@/lib/organisation";
-import { aplatirClient, calculerArgent, euros, JOURS_PAUSE_RELANCE, type LigneEnAttente } from "@/lib/argent";
-import { CLASSE_BOUTON_TEXTE, CLASSE_FIN_TEXTE, FinRelancer, LigneAccueil } from "@/components/accueil/Blocs";
+import type { ReactNode } from "react";
+import { aplatirClient, calculerArgent, JOURS_PAUSE_RELANCE, type LigneEnAttente } from "@/lib/argent";
+import { CLASSE_FIN_TEXTE, FinRelancer } from "@/components/accueil/Blocs";
 import { BlocDepliable } from "@/components/accueil/BlocDepliable";
 import { LienAncre } from "@/components/accueil/LienAncre";
-import { Pastille } from "@/components/ui/Pastille";
-import { EnTetePage } from "@/components/ui/EnTetePage";
-import { IconeCloche, IconeDocument, IconeEuro } from "@/components/projet/icones";
+import { CLASSE_PAGE_ETROITE, EnTetePage } from "@/components/ui/EnTetePage";
+import { BOUTON_TEXTE, CARTE_PLEINE, MONTANT, SECONDAIRE, euros } from "@/components/ui/recettes";
 
 // ============================================================
 // Argent (refonte 03/10 — duel B, lot 2).
@@ -23,6 +23,8 @@ import { IconeCloche, IconeDocument, IconeEuro } from "@/components/projet/icone
 //      n'est pas encore entièrement facturé, avec « Facturer » ;
 //   5. en pied : Tous les devis · Toutes les factures · Bilan du mois.
 // Aucune pastille : rien ici n'est urgent au point de clignoter.
+// Design v3 (24/10) : le gros chiffre de l'accueil, et chaque ligne porte
+// son montant à droite.
 // Les lignes viennent de lib/argent.ts, la fonction que l'accueil appelle.
 // ============================================================
 
@@ -78,56 +80,57 @@ export default async function ArgentPage() {
     maintenant,
   });
 
+  const retard =
+    aEncaisser.enRetard > 0 ? `${aEncaisser.enRetard} ${aEncaisser.enRetard > 1 ? "factures" : "facture"} en retard` : null;
+
   return (
-    <div className="mx-auto max-w-2xl px-4 pb-8 pt-4 sm:p-8">
-      {/* Refonte visuelle (04/10) : l'en-tête bleu nuit, et dedans ce qui
-          reste dû, maintenant. */}
-      <EnTetePage
-        titre="Argent"
-        sousTitre="Ce qu'on vous doit, et ce qui reste à faire."
-        icone={
-          <Pastille couleur="violet" taille="grande">
-            <IconeEuro className="h-6 w-6" />
-          </Pastille>
-        }
-      >
-        <section aria-label="À encaisser" className="rounded-[20px] bg-surface px-5 py-5 ombre-douce">
-          {aEncaisser.nombre > 0 ? (
-            <>
-              <p className="flex flex-wrap items-baseline gap-x-2">
-                <span className="font-display text-4xl font-bold tabular-nums tracking-[-0.02em] text-ink">{euros(aEncaisser.total)}</span>
-                <span className="text-base text-steel">à encaisser</span>
+    // Design v3 (24/10) : la grille commune ; en tête, le même gros chiffre
+    // « À encaisser » que la carte de l'accueil (ChiffresMois), puis les
+    // listes en cartes groupées, chaque ligne avec son montant à droite.
+    <div className={CLASSE_PAGE_ETROITE}>
+      <EnTetePage titre="Argent" sousTitre="Ce qu'on vous doit, et ce qui reste à faire." />
+
+      <section aria-label="À encaisser" className={`mt-6 ${CARTE_PLEINE}`}>
+        {aEncaisser.nombre > 0 ? (
+          <>
+            <p className="flex items-baseline justify-between gap-3">
+              <span className="text-[15px] font-medium text-steel">À encaisser</span>
+              <span className="text-[13px] text-steel">TTC</span>
+            </p>
+            <p className="mt-1 whitespace-nowrap font-display text-[2rem] font-bold leading-10 tracking-[-0.03em] tabular-nums text-ink min-[400px]:text-[2.25rem]">
+              {euros(Math.round(aEncaisser.total))}
+            </p>
+            {retard && (
+              <p className="mt-1 flex items-center gap-2 text-[15px] font-semibold text-signal-fonce">
+                <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-signal" />
+                dont {retard}
               </p>
-              <Link
-                href="/dashboard/factures?statut=emise"
-                className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-steel underline decoration-ink/30 underline-offset-4 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-              >
+            )}
+            <div className="mt-3 border-t border-gris-clair pt-1">
+              <Link href="/dashboard/factures?statut=emise" className={`-mb-2 -ml-3 ${BOUTON_TEXTE}`}>
                 {aEncaisser.nombre} {aEncaisser.nombre > 1 ? "factures émises" : "facture émise"}
-                {aEncaisser.enRetard > 0 && ` · ${aEncaisser.enRetard} après échéance`}
               </Link>
-            </>
-          ) : (
-            <p className="text-base text-steel">Rien à encaisser.</p>
-          )}
-        </section>
-      </EnTetePage>
+            </div>
+          </>
+        ) : (
+          <>
+            <p className="text-[15px] font-medium text-steel">À encaisser</p>
+            <p className="mt-1 text-[17px] font-semibold text-ink">Rien à encaisser.</p>
+          </>
+        )}
+      </section>
 
       {/* 2. En attente du client, au complet. */}
       {enAttente.length > 0 && (
         <BlocDepliable
           titre="En attente du client"
-          icone={
-            <Pastille couleur="orange" variante="doux" taille="petite">
-              <IconeCloche className="h-4 w-4" />
-            </Pastille>
-          }
           lignes={enAttente.map((l) => (
-            <LigneAccueil
+            <LigneArgent
               key={l.id}
               href={l.href}
-              repere={`${l.jours} j`}
               principal={l.nom}
               secondaire={detailEnAttente(l)}
+              montant={l.montant}
               fin={l.relance ? <FinRelancer href={l.relance} /> : undefined}
             />
           ))}
@@ -138,20 +141,14 @@ export default async function ArgentPage() {
       {devisAEnvoyer.length > 0 && (
         <BlocDepliable
           titre="Devis à envoyer"
-          icone={
-            <Pastille couleur="vert" variante="doux" taille="petite">
-              <IconeDocument className="h-4 w-4" />
-            </Pastille>
-          }
           lienTous="/dashboard/devis?statut=a_traiter"
           lignes={devisAEnvoyer.map((d) => (
-            <LigneAccueil
+            <LigneArgent
               key={d.id}
               href={d.href}
               principal={d.nom}
-              secondaire={[d.quoi === "Devis à relire" ? "À relire" : "Prêt à envoyer", d.montant != null && euros(d.montant)]
-                .filter(Boolean)
-                .join(" · ")}
+              secondaire={d.quoi === "Devis à relire" ? "À relire" : "Prêt à envoyer"}
+              montant={d.montant}
             />
           ))}
         />
@@ -163,18 +160,13 @@ export default async function ArgentPage() {
       {aFacturer.length > 0 && (
         <BlocDepliable
           titre="À facturer"
-          icone={
-            <Pastille couleur="violet" variante="doux" taille="petite">
-              <IconeEuro className="h-4 w-4" />
-            </Pastille>
-          }
           lignes={aFacturer.map((l) => (
-            <LigneAccueil
+            <LigneArgent
               key={l.demandeId}
               href={l.href}
-              repere={`${l.jours} j`}
               principal={l.nom}
-              secondaire={`Reste ${euros(l.solde)}`}
+              secondaire={`Reste à facturer · ${l.jours} j`}
+              montant={l.solde}
               fin={
                 <LienAncre href={l.href} ancre="facturation" className={CLASSE_FIN_TEXTE}>
                   Facturer
@@ -186,20 +178,20 @@ export default async function ArgentPage() {
       )}
 
       {/* Le pied : les listes complètes, en boutons texte. */}
-      <nav aria-label="Listes" className="-ml-3 mt-7 flex flex-wrap items-center">
-        <Link href="/dashboard/devis" className={CLASSE_BOUTON_TEXTE}>
+      <nav aria-label="Listes" className="-ml-3 mt-8 flex flex-wrap items-center">
+        <Link href="/dashboard/devis" className={BOUTON_TEXTE}>
           Tous les devis
         </Link>
         <span aria-hidden className="text-steel">
           ·
         </span>
-        <Link href="/dashboard/factures" className={CLASSE_BOUTON_TEXTE}>
+        <Link href="/dashboard/factures" className={BOUTON_TEXTE}>
           Toutes les factures
         </Link>
         <span aria-hidden className="text-steel">
           ·
         </span>
-        <Link href="/dashboard/bilan" className={CLASSE_BOUTON_TEXTE}>
+        <Link href="/dashboard/bilan" className={BOUTON_TEXTE}>
           Bilan du mois
         </Link>
       </nav>
@@ -207,12 +199,49 @@ export default async function ArgentPage() {
   );
 }
 
-// « Facture · 1 250 € · relancée » : court, pour tenir sur une ligne à côté
-// de « Relancer » (règle 2).
+/** Design v3 (24/10) — une ligne d'argent : qui, quoi, et le montant à
+ *  droite (le chiffre se lit d'un coup d'œil, sans coupure) ; le geste
+ *  (Relancer, Facturer) reste hors du lien, en pastille creuse. */
+function LigneArgent({
+  href,
+  principal,
+  secondaire,
+  montant,
+  fin,
+}: {
+  href: string;
+  principal: string;
+  secondaire: string;
+  montant: number | null;
+  fin?: ReactNode;
+}) {
+  return (
+    <div className="flex min-h-[4.25rem] items-center">
+      <Link
+        href={href}
+        className="flex min-w-0 flex-1 items-center gap-3 py-3 pl-4 pr-3 active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
+      >
+        <span className="min-w-0 flex-1">
+          <span className="line-clamp-2 block text-[17px] font-semibold leading-snug text-ink">{principal}</span>
+          <span className={`line-clamp-2 block ${SECONDAIRE}`}>{secondaire}</span>
+        </span>
+        {montant != null && (
+          <span className={`shrink-0 whitespace-nowrap text-[17px] ${MONTANT}`}>{euros(montant, !Number.isInteger(montant))}</span>
+        )}
+      </Link>
+      {fin && <span className="flex shrink-0 items-center py-2 pr-3">{fin}</span>}
+    </div>
+  );
+}
+
+// « Facture · 12 j · relancée » : court, pour tenir à côté du montant et
+// de « Relancer » (règle 2). Design v3 (24/10) : le montant est à droite
+// de la ligne, il ne se répète plus dans le détail ; le repère « 12 j »
+// (l'ancienne colonne de gauche) passe dans le détail.
 function detailEnAttente(l: LigneEnAttente): string {
   return [
     l.genre === "facture" ? "Facture" : "Devis",
-    l.montant != null && euros(l.montant),
+    `${l.jours} j`,
     l.relanceeRecemment && (l.genre === "facture" ? "relancée" : "relancé"),
   ]
     .filter(Boolean)

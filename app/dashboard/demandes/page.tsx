@@ -4,6 +4,7 @@ import { ListeProjetsRecherchable } from "@/components/dashboard/ListeProjetsRec
 import { AstucePartage } from "@/components/onboarding/AstucePartage";
 import type { Projet } from "@/types";
 import { prochainRendezVous } from "@/lib/projetAffichage";
+import { CLASSE_PAGE_LARGE } from "@/components/ui/EnTetePage";
 
 export default async function ProjetsPage() {
   const supabase = createClient();
@@ -53,7 +54,8 @@ export default async function ProjetsPage() {
   }
 
   return (
-    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-4xl">
+    // Design v3 (24/10) : la grille commune des écrans de liste.
+    <div className={CLASSE_PAGE_LARGE}>
       {/* 26/09 (lot C) — plus de bouton « Nouveau projet » ici : le [+] de
           la navigation est la seule porte d'entrée, partout. L'en-tête et
           la recherche vivent dans la liste (elle filtre en direct). */}

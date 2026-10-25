@@ -70,8 +70,10 @@ export function CaptureAnnotee({
 
   return (
     <figure
-      className={`relative w-full overflow-hidden bg-paper shadow-[0_18px_40px_-24px_rgb(0_0_0/0.45)] ring-1 ring-ink/10 ${
-        appareil === "telephone" ? "mx-auto max-w-[330px] rounded-[1.4rem]" : "max-w-[720px] rounded-2xl"
+      // Design v3 (24/10) : l'ombre douce des cartes et un filet, plus
+      // d'ombre sur mesure.
+      className={`relative w-full overflow-hidden bg-paper ombre-douce ring-1 ring-gris-clair ${
+        appareil === "telephone" ? "mx-auto max-w-[330px] rounded-[1.4rem]" : "max-w-[720px] rounded-[20px]"
       }`}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}

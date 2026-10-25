@@ -1,6 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { ListeDevisRecherchable } from "@/components/dashboard/ListeDevisRecherchable";
 import { getOrganisationId } from "@/lib/organisation";
+import { CLASSE_PAGE_LARGE } from "@/components/ui/EnTetePage";
 
 // Refonte (03/10) : ?statut= ouvre la liste déjà filtrée (page Argent).
 export default async function DevisPage({ searchParams }: { searchParams?: { statut?: string } }) {
@@ -29,9 +30,10 @@ export default async function DevisPage({ searchParams }: { searchParams?: { sta
   }));
 
   return (
-    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-4xl lg:max-w-5xl">
-      {/* L'en-tête bleu nuit vit dans la liste : la recherche et les
-          filtres y sont posés. */}
+    // Design v3 (24/10) : la grille commune des écrans de liste.
+    <div className={CLASSE_PAGE_LARGE}>
+      {/* L'en-tête vit dans la liste : la recherche et les filtres y sont
+          posés. */}
       <ListeDevisRecherchable devisList={devisList} filtreInitial={searchParams?.statut} />
     </div>
   );

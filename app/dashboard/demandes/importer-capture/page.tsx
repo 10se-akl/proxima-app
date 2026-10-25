@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
-import { Avatar } from "@/components/ui/Avatar";
+import { IconeEtincelle, IconePhoto } from "@/components/projet/icones";
+import { AIDE, BOUTON_CREUX, BOUTON_PLEIN, BOUTON_PLEIN_LARGE, BOUTON_TEXTE, CARTE_PLEINE, CHAMP, ERREUR, LIBELLE, SECONDAIRE, TITRE_ECRAN, SELECT } from "@/components/ui/recettes";
+import { heureLue } from "@/lib/heure";
 
 type Extrait = {
   nom_client: string;
@@ -268,13 +268,17 @@ export default function ImporterCapturePage() {
     setLignes([]);
   }
 
+  // Design v3 (24/10) : un écran calme. Avant l'envoi, une seule grande
+  // action (choisir les captures) avec l'étincelle et « avec l'IA » ; après
+  // la lecture, une carte par capture (plus d'avatar coloré), le choix de
+  // destination en champ v3, et le bouton plein collé en bas.
   return (
-    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-3xl">
-      <h1 className="font-display text-2xl font-semibold text-ink">Photos ou captures</h1>
+    <div className="mx-auto max-w-3xl px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
+      <h1 className={TITRE_ECRAN}>Photos ou captures</h1>
       <p className="mt-1 text-base text-steel">Une capture par conversation. Rien n&apos;est enregistré avant que vous confirmiez.</p>
 
       {lignes.length === 0 && !importTermine && (
-        <Card className="mt-5 p-4 sm:mt-8 sm:p-6">
+        <div className="mt-6">
           <input
             ref={inputRef}
             type="file"
@@ -288,71 +292,68 @@ export default function ImporterCapturePage() {
           <label
             htmlFor="captures-input"
             aria-disabled={analyseEnCours}
-            className={`inline-flex min-h-12 items-center gap-2 rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 cursor-pointer ${analyseEnCours ? "pointer-events-none opacity-60" : ""}`}
+            className={`${BOUTON_PLEIN_LARGE} cursor-pointer sm:w-auto sm:px-8 ${analyseEnCours ? "pointer-events-none opacity-60" : ""}`}
           >
+            <IconePhoto className="h-5 w-5 shrink-0" />
             {analyseEnCours ? "Lecture des captures…" : "Choisir des captures d'écran"}
           </label>
-          {erreurGlobale && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreurGlobale}</p>}
-        </Card>
+          <p className={`mt-2 flex items-center gap-1.5 ${SECONDAIRE}`}>
+            <IconeEtincelle className="h-4 w-4 shrink-0 text-ink" />
+            Lues avec l&apos;IA. Vous relisez avant d&apos;importer.
+          </p>
+          {erreurGlobale && <p className={`mt-3 ${ERREUR}`}>{erreurGlobale}</p>}
+        </div>
       )}
 
       {importTermine && (
-        <Card className="mt-5 p-4 sm:mt-8 sm:p-6">
-          <p className="text-sm text-ink/80">
+        <div className={`mt-6 ${CARTE_PLEINE}`}>
+          <p className="text-[17px] font-semibold text-ink">
             {importTermine.nbReussis} capture{importTermine.nbReussis > 1 ? "s" : ""} importée
             {importTermine.nbReussis > 1 ? "s" : ""}
             {importTermine.nbEchecs > 0
               ? `, ${importTermine.nbEchecs} échec${importTermine.nbEchecs > 1 ? "s" : ""}.`
               : "."}
           </p>
-          <div className="mt-4 flex gap-3">
-            <Button onClick={() => router.push("/dashboard/demandes")}>Voir les projets</Button>
-            <Button variant="ghost" onClick={() => setImportTermine(null)}>
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button type="button" className={BOUTON_PLEIN} onClick={() => router.push("/dashboard/demandes")}>
+              Voir les projets
+            </button>
+            <button type="button" className={BOUTON_CREUX} onClick={() => setImportTermine(null)}>
               Importer d&apos;autres captures
-            </Button>
+            </button>
           </div>
-        </Card>
+        </div>
       )}
 
       {lignes.length > 0 && (
-        <div className="mt-8 flex flex-col gap-4">
+        <div className="mt-6 flex flex-col gap-3">
           {lignes.map((l) => (
-            <Card
-              key={l.index}
-              className={`p-5 transition-colors ${l.erreur ? "border-signal/30" : ""}`}
-            >
+            <div key={l.index} className={CARTE_PLEINE}>
               {l.erreur ? (
-                <p className="text-sm text-signal">
+                <p className="text-[15px] font-semibold text-signal-fonce">
                   Capture {l.index + 1} : {l.erreur}
                 </p>
               ) : (
                 <>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-2.5">
-                      <Avatar nom={l.extrait!.nom_client || "?"} taille={28} className="mt-0.5" />
-                      <div>
-                        <p className="text-sm font-semibold text-ink/80">{l.extrait!.nom_client}</p>
-                        <p className="mt-1 text-sm text-ink/60">{l.extrait!.description_resumee}</p>
-                        {l.extrait!.rdv_date && (
-                          <p className="mt-1 text-xs text-steel">
-                            Rendez-vous proposé le {dateEnMots(l.extrait!.rdv_date)}
-                            {l.extrait!.rdv_heure ? ` à ${l.extrait!.rdv_heure}` : ""} — à planifier
-                            vous-même après import.
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
+                  <p className="break-words text-[17px] font-semibold leading-snug text-ink">{l.extrait!.nom_client}</p>
+                  <p className={`mt-1 ${SECONDAIRE}`}>{l.extrait!.description_resumee}</p>
+                  {l.extrait!.rdv_date && (
+                    <p className={AIDE}>
+                      Rendez-vous proposé le {dateEnMots(l.extrait!.rdv_date)}
+                      {l.extrait!.rdv_heure ? ` à ${heureLue(l.extrait!.rdv_heure)}` : ""} — à planifier
+                      vous-même après import.
+                    </p>
+                  )}
 
-                  <div className="mt-3">
-                    <label className="block text-xs font-medium text-ink/70 mb-1.5">
+                  <div className="mt-4">
+                    <label htmlFor={`destination-${l.index}`} className={LIBELLE}>
                       Où importer ce message ?
                     </label>
                     <select
+                      id={`destination-${l.index}`}
                       value={l.destination}
                       onChange={(e) => changerDestination(l.index, e.target.value)}
-                      aria-label="Où importer ce message ?"
-                      className="w-full sm:w-auto rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
+                      className={SELECT}
                     >
                       <option value="nouveau">Créer un nouveau projet</option>
                       {(l.correspondances ?? []).map((c) => (
@@ -366,18 +367,18 @@ export default function ImporterCapturePage() {
                   </div>
                 </>
               )}
-            </Card>
+            </div>
           ))}
 
-          {erreurGlobale && <p className="text-sm text-signal">{erreurGlobale}</p>}
+          {erreurGlobale && <p className={ERREUR}>{erreurGlobale}</p>}
 
-          <div className="flex gap-3">
-            <Button onClick={confirmerImport} disabled={importEnCours}>
+          <div className="sticky bottom-[calc(var(--barre-bas,0px)+env(safe-area-inset-bottom)+1rem)] z-10 -mx-4 mt-2 flex flex-col gap-1 bg-paper px-4 pb-1 pt-2 sm:static sm:mx-0 sm:flex-row sm:items-center sm:gap-3 sm:bg-transparent sm:p-0">
+            <button type="button" onClick={confirmerImport} disabled={importEnCours} className={`${BOUTON_PLEIN_LARGE} sm:w-auto sm:px-8`}>
               {importEnCours ? "Import en cours…" : "Confirmer l'import"}
-            </Button>
-            <Button variant="ghost" onClick={() => setLignes([])}>
+            </button>
+            <button type="button" onClick={() => setLignes([])} className={`self-center ${BOUTON_TEXTE}`}>
               Annuler
-            </Button>
+            </button>
           </div>
         </div>
       )}

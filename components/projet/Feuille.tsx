@@ -164,7 +164,7 @@ export function Feuille({
           className="flex touch-none items-center justify-between gap-3 px-5 pb-2 pt-5 sm:pt-4"
         >
           {/* La poignée, sur téléphone : elle se tire. */}
-          <span aria-hidden className="absolute left-1/2 top-2 h-[5px] w-10 -translate-x-1/2 rounded-full bg-gris-clair sm:hidden" />
+          <span aria-hidden className="absolute left-1/2 top-2 h-[5px] w-10 -translate-x-1/2 rounded-full bg-steel/60 sm:hidden" />
           <h2 id={idTitre} className="font-display text-xl font-semibold text-ink">
             {titre}
           </h2>

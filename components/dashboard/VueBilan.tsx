@@ -3,10 +3,18 @@ import { evolution, type Activite, type ChiffresMois } from "@/lib/activite";
 import type { DetailHeures } from "@/lib/bilan-mensuel";
 import { cle, decaler, libelle, memeMois, nomMois, type Mois } from "@/lib/moisParis";
 import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
-import { Card } from "@/components/ui/Card";
-import { CLASSE_BOUTON_NUIT_SECONDAIRE, EnTetePage } from "@/components/ui/EnTetePage";
-import { Pastille } from "@/components/ui/Pastille";
-import { IconeBilan } from "@/components/ui/Icones";
+import { CLASSE_PAGE_LARGE, EnTetePage } from "@/components/ui/EnTetePage";
+import {
+  BOUTON_CREUX,
+  CARTE_PLEINE,
+  ETIQUETTE,
+  FOCUS,
+  FORME_ETIQUETTE,
+  MONTANT,
+  SECONDAIRE,
+  TITRE_CARTE,
+  euros,
+} from "@/components/ui/recettes";
 import { IconeChevron } from "@/components/projet/icones";
 import { GraphiqueActivite } from "@/components/dashboard/GraphiqueActivite";
 
@@ -16,13 +24,19 @@ import { GraphiqueActivite } from "@/components/dashboard/GraphiqueActivite";
 // refonte. Séparé pour pouvoir être vérifié avec des données d'exemple,
 // sans session ni base, exactement comme components/marketing/
 // AvisGoogle.tsx (VueAvisGoogle).
+//
+// Design v3 (24/10) : la grille commune ; « Bilan » en titre et le mois
+// entre deux flèches juste dessous (le titre ne se coupe plus sur deux
+// lignes) ; les quatre chiffres en gros (28 à 32 px) dans des cartes sans
+// contour ; l'encaissé en vert, comme sur l'accueil.
 // ============================================================
 
-function euros(n: number): string {
-  const [entier, centimes] = n.toFixed(2).split(".");
-  const e = entier.replace(/\B(?=(\d{3})+(?!\d))/g, "\u00A0");
-  return centimes === "00" ? `${e}\u00A0€` : `${e},${centimes}\u00A0€`;
-}
+/** Les flèches de mois : des pastilles rondes en creux de 48 px (25/10 :
+ *  la forme des boutons compacts). */
+const FLECHE_MOIS = `grid h-12 w-12 shrink-0 place-items-center rounded-full bg-paper-warm text-ink active:bg-ink/10 sm:hover:bg-ink/[0.08] motion-safe:transition-colors ${FOCUS}`;
+
+// 25/10 — les montants passent par euros() des recettes : un résumé, donc
+// sans centimes, et sans coupure (« 12 400 € »).
 
 function pluriel(n: number, un: string, plusieurs: string): string {
   return `${n} ${n > 1 ? plusieurs : un}`;
@@ -40,17 +54,17 @@ function Evolution({
   const e = evolution(actuel, precedent);
   if (e.sens === "aucun") return null;
   if (e.sens === "nouveau") {
-    return <p className="mt-1.5 text-xs text-ink/50">Rien sur {reference}</p>;
+    return <p className="mt-1.5 text-[13px] text-steel">Rien sur {reference}</p>;
   }
   if (e.sens === "stable") {
-    return <p className="mt-1.5 text-xs text-ink/50">Comme {reference}</p>;
+    return <p className="mt-1.5 text-[13px] text-steel">Comme {reference}</p>;
   }
   const hausse = e.sens === "hausse";
   return (
-    <p className={`mt-1.5 text-xs ${hausse ? "text-succes" : "text-ink/50"}`}>
+    <p className={`mt-1.5 text-[13px] ${hausse ? "font-semibold text-succes" : "text-steel"}`}>
       <span aria-hidden>{hausse ? "▲" : "▼"}</span>
-      <span className="sr-only">{hausse ? "En hausse de" : "En baisse de"}</span> {e.pourcentage} %{" "}
-      <span className="text-ink/50">vs {reference}</span>
+      <span className="sr-only">{hausse ? "En hausse de" : "En baisse de"}</span> {e.pourcentage}&nbsp;%{" "}
+      <span className="font-normal text-steel">vs&nbsp;{reference}</span>
     </p>
   );
 }
@@ -63,6 +77,7 @@ function Chiffre({
   actuel,
   precedent,
   reference,
+  vert = false,
 }: {
   titre: string;
   valeur: string;
@@ -71,25 +86,29 @@ function Chiffre({
   actuel: ChiffresMois;
   precedent: ChiffresMois;
   reference: string;
+  /** L'encaissé : l'argent qui rentre, en vert (comme sur l'accueil). */
+  vert?: boolean;
 }) {
   // 27/09 — Deux tuiles par ligne sur téléphone ne laissent qu'environ
-  // 110 px au chiffre : « 9 850,40 € » débordait déjà de sa tuile (et sur
-  // ordinateur, à quatre tuiles, « 24 850,40 € »). La taille suit
-  // maintenant la largeur de la tuile ET la longueur du texte (un chiffre
-  // fait ~0,52 fois sa hauteur de large), sans jamais dépasser la taille
-  // d'avant. Un navigateur qui ne connaît pas « cqi » garde la taille fixe.
+  // 130 px au chiffre : « 9 850,40 € » débordait de sa tuile. La taille
+  // suit la largeur de la tuile ET la longueur du texte (un chiffre fait
+  // ~0,52 fois sa hauteur de large), sans jamais dépasser la taille
+  // maximale. Un navigateur qui ne connaît pas « cqi » garde la taille fixe.
+  // Design v3 (24/10) : le gros chiffre passe à 28 px (32 sur ordinateur).
   return (
-    <Card className="p-5 [container-type:inline-size]">
-      <p className="text-xs text-ink/55">{titre}</p>
+    <div className={`${CARTE_PLEINE} [container-type:inline-size]`}>
+      <p className="text-[15px] font-medium text-steel">{titre}</p>
       <p
-        className="mt-1.5 font-display text-2xl font-semibold tabular-nums [--taille-max:1.5rem] sm:text-[1.7rem] sm:[--taille-max:1.7rem]"
+        className={`mt-1 whitespace-nowrap font-display text-[1.75rem] font-bold leading-tight tracking-[-0.03em] tabular-nums [--taille-max:1.75rem] sm:text-[2rem] sm:[--taille-max:2rem] ${
+          vert ? "text-succes" : "text-ink"
+        }`}
         style={{ fontSize: `min(var(--taille-max), ${(182 / Math.max(valeur.length, 1)).toFixed(1)}cqi)` }}
       >
         {valeur}
       </p>
-      {detail && <p className="mt-0.5 text-xs text-ink/45">{detail}</p>}
+      {detail && <p className="mt-0.5 text-[13px] text-steel [text-wrap:pretty]">{detail}</p>}
       <Evolution actuel={actuel[cleChiffre]} precedent={precedent[cleChiffre]} reference={reference} />
-    </Card>
+    </div>
   );
 }
 
@@ -107,7 +126,7 @@ export function VueBilan({
   const precedent = decaler(mois, -1);
   const suivant = decaler(mois, 1);
   const reference = activite.enCours
-    ? `1er–${activite.jourCompare} ${nomMois(precedent)}`
+    ? `1er⁠–⁠${activite.jourCompare} ${nomMois(precedent)}`
     : nomMois(precedent);
 
   const { actuel } = activite;
@@ -121,49 +140,46 @@ export function VueBilan({
       : null;
 
   const chantiersChiffres = activite.chantiersTermines.filter((c) => c.parJour !== null);
+  const moisAffiche = libelle(mois).charAt(0).toUpperCase() + libelle(mois).slice(1);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 pt-4 pb-8 sm:p-8">
-      {/* En-tête et navigation entre les mois (refonte visuelle 04/10 :
-          l'en-tête bleu nuit). */}
+    <div className={CLASSE_PAGE_LARGE}>
+      {/* En-tête et navigation entre les mois. */}
       <EnTetePage
-        titre={`Bilan · ${libelle(mois)}`}
+        titre="Bilan"
         sousTitre={activite.enCours ? `Mois en cours · chiffres au ${activite.jourCompare} ${nomMois(mois)}` : "Mois terminé"}
-        icone={
-          <Pastille couleur="signal" taille="grande">
-            <IconeBilan taille={24} />
-          </Pastille>
-        }
         actions={
-          <nav aria-label="Changer de mois" className="flex items-center gap-2">
-            <Link href={`/dashboard/bilan?mois=${cle(precedent)}`} className={`${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`} aria-label={`Voir ${libelle(precedent)}`}>
-              <IconeChevron className="h-5 w-5 rotate-180" />
+          !memeMois(mois, courant) ? (
+            <Link href="/dashboard/bilan" className={BOUTON_CREUX}>
+              Mois en cours
             </Link>
-            {activite.enCours ? (
-              <span aria-disabled className={`${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3 opacity-40`}>
-                <IconeChevron className="h-5 w-5" />
-                <span className="sr-only">Pas de mois suivant</span>
-              </span>
-            ) : (
-              <Link href={`/dashboard/bilan?mois=${cle(suivant)}`} className={`${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`} aria-label={`Voir ${libelle(suivant)}`}>
-                <IconeChevron className="h-5 w-5" />
-              </Link>
-            )}
-            {!memeMois(mois, courant) && (
-              <Link href="/dashboard/bilan" className={CLASSE_BOUTON_NUIT_SECONDAIRE}>
-                Mois en cours
-              </Link>
-            )}
-          </nav>
+          ) : undefined
         }
-      />
+      >
+        <nav aria-label="Changer de mois" className="flex items-center gap-3">
+          <Link href={`/dashboard/bilan?mois=${cle(precedent)}`} className={FLECHE_MOIS} aria-label={`Voir ${libelle(precedent)}`}>
+            <IconeChevron className="h-5 w-5 rotate-180" />
+          </Link>
+          <p className="min-w-0 flex-1 text-center text-[17px] font-semibold text-ink">{moisAffiche}</p>
+          {activite.enCours ? (
+            <span aria-disabled className={`${FLECHE_MOIS} opacity-40`}>
+              <IconeChevron className="h-5 w-5" />
+              <span className="sr-only">Pas de mois suivant</span>
+            </span>
+          ) : (
+            <Link href={`/dashboard/bilan?mois=${cle(suivant)}`} className={FLECHE_MOIS} aria-label={`Voir ${libelle(suivant)}`}>
+              <IconeChevron className="h-5 w-5" />
+            </Link>
+          )}
+        </nav>
+      </EnTetePage>
 
       {/* Les quatre chiffres du mois */}
-      <div className="mt-7 grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Chiffre
           titre="Signé"
           valeur={euros(actuel.signe)}
-          detail={actuel.devisAcceptes > 0 ? `${pluriel(actuel.devisAcceptes, "devis accepté", "devis acceptés")}, TTC` : "TTC"}
+          detail={actuel.devisAcceptes > 0 ? `${pluriel(actuel.devisAcceptes, "devis accepté", "devis acceptés").replace(/ /g, " ")}, TTC` : "TTC"}
           cleChiffre="signe"
           actuel={actuel}
           precedent={activite.precedent}
@@ -172,11 +188,12 @@ export function VueBilan({
         <Chiffre
           titre="Encaissé"
           valeur={euros(actuel.encaisse)}
-          detail="Factures payées, TTC"
+          detail="Factures payées, TTC"
           cleChiffre="encaisse"
           actuel={actuel}
           precedent={activite.precedent}
           reference={reference}
+          vert
         />
         <Chiffre
           titre="Devis envoyés"
@@ -189,7 +206,7 @@ export function VueBilan({
         <Chiffre
           titre="Devis acceptés"
           valeur={String(actuel.devisAcceptes)}
-          detail={taux !== null ? `${taux} % des devis envoyés ce mois` : undefined}
+          detail={taux !== null ? `${taux} % des devis envoyés ce mois` : undefined}
           cleChiffre="devisAcceptes"
           actuel={actuel}
           precedent={activite.precedent}
@@ -202,123 +219,127 @@ export function VueBilan({
       {activite.aEncaisser.nombre > 0 && (
         <Link
           href="/dashboard/factures"
-          className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-ink/10 bg-paper-warm px-5 py-4 transition-colors hover:border-ink/25"
+          className={`mt-3 flex min-h-[4.25rem] items-center gap-3 ${CARTE_PLEINE} py-4 active:bg-ink/[0.03] sm:hover:bg-ink/[0.02] motion-safe:transition-colors ${FOCUS}`}
         >
-          <span className="text-sm">
-            <span className="font-medium">{euros(activite.aEncaisser.total)}</span> à encaisser ·{" "}
-            {pluriel(activite.aEncaisser.nombre, "facture en attente", "factures en attente")}
+          {/* 25/10 — « dont N après échéance » sur sa propre ligne : la
+              phrase ne se coupe plus après « dont ». */}
+          <span className="min-w-0 flex-1">
+            <span className="block text-[15px] font-medium text-steel">À encaisser aujourd&apos;hui</span>
+            <span className="mt-0.5 block text-[15px] text-steel">
+              {pluriel(activite.aEncaisser.nombre, "facture en attente", "factures en attente")}
+            </span>
             {activite.aEncaisser.enRetard > 0 && (
-              <span className="text-alerte-orange">
-                {" "}
-                · dont {activite.aEncaisser.enRetard} après échéance
+              <span className="block text-[15px] font-semibold text-signal-fonce">
+                dont {activite.aEncaisser.enRetard}&nbsp;après échéance
               </span>
             )}
           </span>
-          <span className="text-xs text-ink/55">Voir les factures →</span>
+          <span className={`shrink-0 whitespace-nowrap text-xl ${MONTANT}`}>{euros(activite.aEncaisser.total)}</span>
+          <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
         </Link>
       )}
 
       {/* Six mois */}
-      <Card className="mt-6 p-5 sm:p-6">
+      <section aria-labelledby="titre-six-mois" className={`mt-6 ${CARTE_PLEINE} sm:p-6`}>
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-display text-lg font-semibold">Les six derniers mois</h2>
-          <p className="text-xs text-ink/45">TTC</p>
+          <h2 id="titre-six-mois" className={TITRE_CARTE}>
+            Les six derniers mois
+          </h2>
+          <p className="text-[13px] text-steel">TTC</p>
         </div>
         <div className="mt-5">
           <GraphiqueActivite points={activite.historique} moisActif={mois} />
         </div>
-      </Card>
+      </section>
 
       {/* Chantiers terminés : le temps face à l'argent */}
-      <Card className="mt-6 p-5 sm:p-6">
-        <h2 className="font-display text-lg font-semibold">
+      <section aria-labelledby="titre-chantiers-termines" className={`mt-6 ${CARTE_PLEINE} sm:p-6`}>
+        <h2 id="titre-chantiers-termines" className={TITRE_CARTE}>
           Chantiers terminés en {nomMois(mois)}
         </h2>
         {activite.chantiersTermines.length === 0 ? (
-          <p className="mt-3 text-sm text-ink/55 leading-relaxed">
+          <p className={`mt-2 leading-relaxed ${SECONDAIRE}`}>
             Aucun chantier marqué terminé {activite.enCours ? "pour l'instant ce mois-ci" : "ce mois-là"}.
             Quand vous passez un projet en « Terminé », il apparaît ici avec sa durée et ce qu&apos;il a
             rapporté par jour.
           </p>
         ) : (
           <>
-            <ul className="mt-4 divide-y divide-ink/10">
+            <ul className="mt-3 divide-y divide-gris-clair">
               {activite.chantiersTermines.map((c, i) => (
                 <li key={c.demandeId} className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 py-3.5">
-                  <Link href={`/dashboard/demandes/${c.demandeId}`} className="min-w-0 hover:underline">
-                    <span className="font-medium">{c.client}</span>
+                  <Link href={`/dashboard/demandes/${c.demandeId}`} className={`min-w-0 rounded-[6px] text-base sm:hover:underline ${FOCUS}`}>
+                    <span className="font-semibold text-ink">{c.client}</span>
                     {LABEL_TYPE_CHANTIER[c.typeChantier] && (
-                      <span className="text-ink/50"> · {LABEL_TYPE_CHANTIER[c.typeChantier]}</span>
+                      <span className="text-steel"> · {LABEL_TYPE_CHANTIER[c.typeChantier]}</span>
                     )}
                     {/* Le premier de la liste (triée) est celui qui a le moins
                         rapporté par jour — dit sans jugement, seulement s'il y
                         a au moins deux chantiers à comparer. */}
                     {i === 0 && chantiersChiffres.length >= 2 && c.parJour !== null && (
-                      <span className="ml-2 rounded-full bg-paper-warm px-2 py-0.5 text-[11px] text-ink/60">
-                        le moins par jour
-                      </span>
+                      <span className={`ml-2 align-middle ${FORME_ETIQUETTE} ${ETIQUETTE.neutre}`}>le moins par jour</span>
                     )}
                   </Link>
-                  <span className="flex items-baseline gap-4 text-sm tabular-nums">
-                    <span className="text-ink/55">
+                  <span className="flex items-baseline gap-4 text-[15px] tabular-nums">
+                    <span className="text-steel">
                       {c.jours !== null ? pluriel(c.jours, "jour", "jours") : "durée inconnue"}
                     </span>
-                    <span className="text-ink/55">{c.montant !== null ? euros(c.montant) : "—"}</span>
-                    <span className="min-w-[6.5rem] text-right font-medium">
-                      {c.parJour !== null ? `${euros(c.parJour)} / jour` : "—"}
+                    <span className="whitespace-nowrap text-steel">{c.montant !== null ? euros(c.montant) : "—"}</span>
+                    <span className={`min-w-[6.5rem] whitespace-nowrap text-right ${MONTANT}`}>
+                      {c.parJour !== null ? `${euros(c.parJour)} / jour` : "—"}
                     </span>
                   </span>
                 </li>
               ))}
             </ul>
-            <p className="mt-3 text-xs text-ink/45 leading-relaxed">
+            <p className="mt-3 text-[13px] leading-relaxed text-steel">
               Durée comptée du démarrage à la fin du chantier (les dates que vous avez indiquées),
               week-ends compris. Montant du devis accepté, TTC. Compyo ne connaît pas vos heures
               réelles : c&apos;est un repère pour comparer vos chantiers entre eux, pas une rentabilité.
             </p>
           </>
         )}
-      </Card>
+      </section>
 
       {/* Deux repères plus discrets */}
       <div className="mt-6 grid gap-3 sm:grid-cols-2">
-        <Card className="p-5">
-          <p className="text-xs text-ink/55">Délai de signature</p>
+        <div className={CARTE_PLEINE}>
+          <p className="text-[15px] font-medium text-steel">Délai de signature</p>
           {activite.delaiSignatureJours !== null ? (
             <>
-              <p className="mt-1.5 font-display text-xl font-semibold">
+              <p className="mt-1 font-display text-2xl font-bold tracking-[-0.02em] text-ink">
                 {activite.delaiSignatureJours < 1
                   ? "Moins d'un jour"
                   : pluriel(Math.round(activite.delaiSignatureJours), "jour", "jours")}
               </p>
-              <p className="mt-1 text-xs text-ink/45">
+              <p className="mt-1 text-[13px] text-steel">
                 Entre l&apos;envoi du devis et son acceptation, pour la moitié de vos clients ce mois-ci.
               </p>
             </>
           ) : (
-            <p className="mt-1.5 text-sm text-ink/50">Aucun devis accepté sur ce mois pour le calculer.</p>
+            <p className={`mt-1 ${SECONDAIRE}`}>Aucun devis accepté sur ce mois pour le calculer.</p>
           )}
-        </Card>
-        <Card className="p-5">
-          <p className="text-xs text-ink/55">Temps gagné avec Compyo (estimation)</p>
-          <p className="mt-1.5 font-display text-xl font-semibold">
+        </div>
+        <div className={CARTE_PLEINE}>
+          <p className="text-[15px] font-medium text-steel">Temps gagné avec Compyo (estimation)</p>
+          <p className="mt-1 font-display text-2xl font-bold tracking-[-0.02em] tabular-nums text-ink">
             {String(temps.heuresGagnees).replace(".", ",")}&nbsp;h
           </p>
           {temps.detailHeures.length > 0 ? (
             <ul className="mt-1.5 space-y-0.5">
               {temps.detailHeures.map((d) => (
-                <li key={d.libelle} className="text-xs text-ink/45">
+                <li key={d.libelle} className="text-[13px] text-steel">
                   {d.libelle} : {d.occurrences} × ~{Math.round(d.minutes / d.occurrences)} min
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-1 text-xs text-ink/45">Rien à compter sur ce mois pour l&apos;instant.</p>
+            <p className="mt-1 text-[13px] text-steel">Rien à compter sur ce mois pour l&apos;instant.</p>
           )}
-        </Card>
+        </div>
       </div>
 
-      <p className="mt-6 text-xs text-ink/40 leading-relaxed">
+      <p className="mt-6 text-[13px] leading-relaxed text-steel">
         « Signé » additionne les devis acceptés dans le mois, que ce soit par signature en ligne ou
         marqués acceptés à la main. « Encaissé » additionne les factures marquées payées, à la date du
         paiement. Le temps gagné est une estimation, selon la méthode détaillée ci-dessus.

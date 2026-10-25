@@ -7,6 +7,25 @@ import type { EvenementPlanning, ImportanceNote, Note } from "@/types";
 import type { Action, IdAction, ProchaineAction } from "./prochaineAction";
 import { dateRdv } from "./prochaineAction";
 import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeMicro, IconePhoto } from "./icones";
+import {
+  BOUTON_CREUX,
+  BOUTON_PLEIN_LARGE,
+  BOUTON_TEXTE as RECETTE_BOUTON_TEXTE,
+  CARTE_PLEINE,
+  CHAMP,
+  COMPTEUR,
+  ERREUR,
+  ETIQUETTE,
+  FOCUS as RECETTE_FOCUS,
+  FORME_ETIQUETTE,
+  MONTANT,
+  SECONDAIRE,
+  TITRE_CARTE,
+  TUILE_ACTION,
+  TUILE_ACTION_PLEINE,
+  BOUTON_CREUX_SURFACE,
+} from "@/components/ui/recettes";
+import { dateEtHeure } from "@/lib/heure";
 
 // ============================================================
 // Les blocs du « Point » (24/09) : Maintenant, À faire, À retenir, Dossier.
@@ -22,26 +41,28 @@ import { IconeCalendrier, IconeChevron, IconeCoche, IconeCrayon, IconeMicro, Ico
 // cible de 28 px (`min-h-0 py-1`) : tout ce qui se touche fait 48 px.
 // ============================================================
 
-/** Le focus se voit, en encre (règle 18). */
-export const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
-/** Bouton texte (règle 6). */
-export const BOUTON_TEXTE = `inline-flex min-h-12 items-center justify-center gap-2 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-60 ${FOCUS}`;
-/** Bouton en contour (règle 6). */
-export const BOUTON_CONTOUR = `inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 ${FOCUS}`;
-/** Le bloc (règle 8) : même fond, même filet, sans ombre. Refonte
- *  visuelle (04/10) : la carte de l'accueil, rayon plus grand. */
-// Design v3 : une carte = surface blanche, rayon 20, ombre douce (sans contour).
-const BLOC = "rounded-[20px] bg-surface p-5 ombre-douce sm:p-6";
+/** Le focus se voit, en encre (règle 18). Design v3 (24/10) : la recette
+ *  commune (components/ui/recettes.ts), nom gardé pour les importateurs. */
+export const FOCUS = RECETTE_FOCUS;
+/** Bouton texte (règle 6) : la recette, centrée et désactivable. */
+export const BOUTON_TEXTE = `${RECETTE_BOUTON_TEXTE} justify-center gap-2 disabled:opacity-60`;
+/** Design v3 (24/10) : l'ancien « contour » est désormais le secondaire en
+ *  creux, le seul style de bouton secondaire (nom gardé : PhotosProjet,
+ *  NotesVocales, PropositionUrgence et la page du projet l'importent). */
+export const BOUTON_CONTOUR = BOUTON_CREUX;
+/** Le secondaire posé sur un fond déjà en creux ou teinté (encart,
+ *  alerte) : en surface, pour rester visible. */
+export const BOUTON_CREUX_SUR_TEINTE = BOUTON_CREUX_SURFACE;
+/** Le bloc : une carte (surface, rayon 20, ombre douce, sans contour). */
+const BLOC = `${CARTE_PLEINE} sm:p-6`;
 
+// Design v3 (24/10) : le titre de carte et son compteur gris, sans pastille.
 function Titre({ children, compte, action }: { children: ReactNode; compte?: number; action?: ReactNode }) {
   return (
-    <div className="flex items-center justify-between gap-3">
-      <h2 className="font-display text-xl font-semibold text-ink">
+    <div className="flex min-h-8 items-center justify-between gap-3">
+      <h2 className={`flex items-baseline gap-2 ${TITRE_CARTE}`}>
         {children}
-        {compte !== undefined && compte > 0 && (
-          <span className="ml-2 rounded-full bg-ink/[0.07] px-2 py-0.5 align-middle font-sans text-xs font-semibold tabular-nums text-steel">{compte}</span>
-        )}
+        {compte !== undefined && compte > 0 && <span className={COMPTEUR}>{compte}</span>}
       </h2>
       {action}
     </div>
@@ -77,10 +98,15 @@ export function BandeAjout({
   surDicter: () => void;
   surNote: () => void;
 }) {
-  const tuile = `flex min-h-[3.75rem] flex-col items-center justify-center gap-0.5 rounded-2xl text-sm font-semibold motion-safe:transition-colors sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-5 ${FOCUS}`;
-  // Design v3 : le secondaire est en creux, sans contour (un seul style).
-  const contour = "bg-paper-warm text-ink active:bg-ink/10 sm:hover:bg-ink/[0.08]";
-  const plein = "bg-ink text-paper active:bg-ink/80";
+  // Design v3 (24/10) : les trois gestes sont des tuiles d'action (icône
+  // au-dessus, mot dessous), comme Appeler · Message · Itinéraire ; sur
+  // ordinateur, icône et mot sur une ligne. « Photo » reste pleine sur un
+  // chantier en cours : c'est alors le seul bouton plein de l'écran
+  // (« Maintenant » n'en a pas).
+  const disposition = "sm:min-h-12 sm:flex-row sm:gap-2 sm:px-5";
+  const tuile = `${TUILE_ACTION} ${disposition}`;
+  // 25/10 — une vraie recette, plus de .replace() sur des classes.
+  const tuilePleine = `${TUILE_ACTION_PLEINE} ${disposition}`;
   return (
     <div role="group" aria-label="Ajouter au projet" className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap">
       <label
@@ -93,16 +119,16 @@ export function BandeAjout({
           e.preventDefault();
           document.getElementById(idChampPhoto)?.click();
         }}
-        className={`${tuile} ${photoPleine ? plein : contour} cursor-pointer ${envoiPhotos ? "pointer-events-none opacity-60" : ""}`}
+        className={`${photoPleine ? tuilePleine : tuile} cursor-pointer ${envoiPhotos ? "pointer-events-none opacity-60" : ""}`}
       >
         {envoiPhotos ? <Roue className="h-6 w-6 sm:h-5 sm:w-5" /> : <IconePhoto className="h-6 w-6 sm:h-5 sm:w-5" />}
         Photo
       </label>
-      <button type="button" onClick={surDicter} className={`${tuile} ${contour}`}>
+      <button type="button" onClick={surDicter} className={tuile}>
         <IconeMicro className="h-6 w-6 sm:h-5 sm:w-5" />
         Dicter
       </button>
-      <button type="button" onClick={surNote} className={`${tuile} ${contour}`}>
+      <button type="button" onClick={surNote} className={tuile}>
         <IconeCrayon className="h-6 w-6 sm:h-5 sm:w-5" />
         Note
       </button>
@@ -126,7 +152,8 @@ const CE_QUE_FAIT_L_IA: Partial<Record<IdAction, string>> = {
 function LibelleAction({ libelle }: { libelle: string; ia?: boolean }) {
   return (
     <span className="inline-flex min-w-0 items-center gap-2">
-      <span className="truncate">{libelle}</span>
+      {/* 25/10 — un libellé de bouton passe à la ligne, jamais coupé. */}
+      <span className="line-clamp-2 text-center">{libelle}</span>
     </span>
   );
 }
@@ -179,8 +206,10 @@ export function Maintenant({
       <h2 id="titre-maintenant" className="sr-only">
         Maintenant
       </h2>
-      <p className="truncate font-display text-xl font-semibold text-ink">{point.phrase}</p>
-      {point.details.length > 0 && <p className="mt-1 truncate text-sm text-steel">{point.details.join(" · ")}</p>}
+      {/* Design v3 (24/10) : la phrase et son détail passent à la ligne
+          plutôt que d'être coupés. */}
+      <p className="font-display text-xl font-semibold leading-snug text-ink">{point.phrase}</p>
+      {point.details.length > 0 && <p className={`mt-1 ${SECONDAIRE}`}>{point.details.join(" · ")}</p>}
 
       {/* Refonte (03/10, duel D lot 3) — juste après une capture : « Bien
           reçu » en un appui, par SMS (plein) ou WhatsApp, au numéro du
@@ -188,14 +217,10 @@ export function Maintenant({
           envoie lui-même. */}
       {point.accuse && (
         <div className="mt-4 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => surAction("accuse_sms")}
-            className={`min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 ${FOCUS}`}
-          >
+          <button type="button" onClick={() => surAction("accuse_sms")} className={BOUTON_PLEIN_LARGE}>
             SMS
           </button>
-          <button type="button" onClick={() => surAction("accuse_whatsapp")} className={`${BOUTON_CONTOUR} min-h-14`}>
+          <button type="button" onClick={() => surAction("accuse_whatsapp")} className={`${BOUTON_CREUX} min-h-14 w-full`}>
             WhatsApp
           </button>
         </div>
@@ -215,7 +240,7 @@ export function Maintenant({
             </Button>
           )}
           {principale?.ia && CE_QUE_FAIT_L_IA[principale.id] && (
-            <p className="truncate pt-1 text-center text-sm text-steel sm:order-last sm:w-full sm:pt-0 sm:text-left">
+            <p className="pt-1 text-center text-sm text-steel sm:order-last sm:w-full sm:pt-0 sm:text-left">
               {CE_QUE_FAIT_L_IA[principale.id]}
             </p>
           )}
@@ -234,10 +259,10 @@ export function Maintenant({
       {/* Un point qui demande une décision : un point orange, une ligne, et
           son action en bouton texte. */}
       {alerte && (
-        <div className="mt-4 border-t border-ink/15 pt-3">
-          <p className="flex items-center gap-2 text-sm text-ink">
-            <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
-            <span className="truncate">{alerte.texte}</span>
+        <div className="mt-4 border-t border-gris-clair pt-3">
+          <p className="flex items-start gap-2 text-[15px] text-ink">
+            <span aria-hidden className="mt-[7px] h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
+            <span>{alerte.texte}</span>
           </p>
           <BoutonAction
             action={alerte.action}
@@ -250,7 +275,7 @@ export function Maintenant({
       )}
 
       <div aria-live="polite">
-        {erreur && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+        {erreur && <p className={`mt-3 ${ERREUR}`}>{erreur}</p>}
       </div>
       {propositions}
     </section>
@@ -259,12 +284,12 @@ export function Maintenant({
 
 // ------------------------------------------------------------ À faire
 
-const formatRappel = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
+const formatRappel = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short", day: "numeric", month: "short" });
 
 // Le point d'importance, en tokens (règle 10 : aucun hexadécimal). Une
 // tâche ordinaire n'a pas de point : seul ce qui presse se signale.
 const POINT_IMPORTANCE: Partial<Record<ImportanceNote, string>> = {
-  rouge: "bg-signal-fonce dark:bg-signal-clair",
+  rouge: "bg-signal-fonce",
   orange: "bg-alerte-orange",
 };
 
@@ -276,13 +301,13 @@ function LigneTache({ note, surCocher }: { note: Note; surCocher: () => void }) 
     <>
       <span className="flex min-w-0 items-center gap-2">
         {point && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${point}`} />}
-        <span className="truncate text-base text-ink">{note.titre}</span>
+        <span className="line-clamp-2 text-[17px] leading-snug text-ink">{note.titre}</span>
       </span>
       {note.rappel_a && (
-        <span className="block truncate text-sm text-steel">
-          {enRetard ? <span className="font-semibold text-signal-fonce dark:text-signal-clair">Retard</span> : "Rappel"}
+        <span className={`block ${SECONDAIRE}`}>
+          {enRetard ? <span className="font-semibold text-signal-fonce">Retard</span> : "Rappel"}
           {" · "}
-          {formatRappel.format(new Date(note.rappel_a)).replace(":", " h ").replace(/ h 00$/, " h")}
+          {dateEtHeure(note.rappel_a, formatRappel)}
         </span>
       )}
     </>
@@ -297,7 +322,7 @@ function LigneTache({ note, surCocher }: { note: Note; surCocher: () => void }) 
           aria-label={`Fait : ${note.titre}`}
           className={`group -ml-3 grid h-12 w-12 shrink-0 place-items-center rounded-full ${FOCUS}`}
         >
-          <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-ink/40 text-transparent motion-safe:transition-colors group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes">
+          <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-steel/60 text-transparent motion-safe:transition-colors group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes">
             <IconeCoche className="h-3.5 w-3.5" />
           </span>
         </button>
@@ -306,15 +331,15 @@ function LigneTache({ note, surCocher }: { note: Note; surCocher: () => void }) 
             type="button"
             onClick={() => setOuverte((v) => !v)}
             aria-expanded={ouverte}
-            className={`flex min-h-12 min-w-0 flex-1 flex-col justify-center rounded-xl text-left ${FOCUS}`}
+            className={`flex min-h-12 min-w-0 flex-1 flex-col justify-center rounded-[14px] py-1 text-left ${FOCUS}`}
           >
             {contenu}
           </button>
         ) : (
-          <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center">{contenu}</div>
+          <div className="flex min-h-12 min-w-0 flex-1 flex-col justify-center py-1">{contenu}</div>
         )}
       </div>
-      {ouverte && note.description && <p className="pb-2 pl-11 whitespace-pre-line text-sm text-steel">{note.description}</p>}
+      {ouverte && note.description && <p className={`whitespace-pre-line pb-2 pl-11 ${SECONDAIRE}`}>{note.description}</p>}
     </li>
   );
 }
@@ -364,21 +389,21 @@ export function AFaire({
       {proposition}
 
       {total > 0 && (
-        <ul className="mt-1 divide-y divide-ink/15">
+        <ul className="mt-1 divide-y divide-gris-clair">
           {rdvAVenir.map((r) => (
             <li key={r.id} className="py-1">
               <Link
                 href={`/dashboard/planning/nouveau?eventId=${r.id}`}
-                className={`flex min-h-12 items-center gap-1 rounded-xl active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+                className={`flex min-h-12 items-center gap-1 rounded-[14px] py-1 active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
               >
                 <span className="-ml-3 grid h-12 w-12 shrink-0 place-items-center">
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-ink/10 text-ink">
-                    <IconeCalendrier className="h-3.5 w-3.5" />
+                  <span className="grid h-7 w-7 place-items-center rounded-full bg-paper-warm text-ink">
+                    <IconeCalendrier className="h-4 w-4" />
                   </span>
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-base text-ink">{r.titre}</span>
-                  <span className="block truncate text-sm text-steel">{dateRdv(r.date_heure)}</span>
+                  <span className="line-clamp-2 block text-[17px] leading-snug text-ink">{r.titre}</span>
+                  <span className={`block ${SECONDAIRE}`}>{dateRdv(r.date_heure)}</span>
                 </span>
               </Link>
             </li>
@@ -391,9 +416,9 @@ export function AFaire({
 
       <div aria-live="polite">
         {cochee && (
-          <div className="mt-2 flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
+          <div className="mt-2 flex min-h-12 items-center gap-3 rounded-[14px] bg-succes-fond pl-4 text-[15px] text-ink">
             <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
-            <p className="min-w-0 flex-1 truncate">Fait : {cochee.titre}</p>
+            <p className="line-clamp-2 min-w-0 flex-1 break-words py-1">Fait : {cochee.titre}</p>
             <button type="button" onClick={annuler} className={`shrink-0 ${BOUTON_TEXTE}`}>
               Annuler
             </button>
@@ -407,10 +432,10 @@ export function AFaire({
         <button
           type="button"
           onClick={aVerifier.surOuvrir}
-          className={`${total > 0 || cochee ? "mt-2 border-t border-ink/15" : "mt-1"} -mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+          className={`${total > 0 || cochee ? "mt-2 border-t border-gris-clair" : "mt-1"} -mx-2 flex min-h-14 w-[calc(100%+1rem)] items-center gap-3 rounded-[14px] px-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
         >
-          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">
-            À vérifier avant de chiffrer <span className="font-normal tabular-nums text-steel">· {nbConseils}</span>
+          <span className="flex min-w-0 flex-1 items-baseline gap-2 text-[17px] font-semibold text-ink">
+            À vérifier avant de chiffrer <span className={COMPTEUR}>{nbConseils}</span>
           </span>
           <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
         </button>
@@ -423,8 +448,8 @@ export function AFaire({
 export function ListeConseils({ titre, lignes }: { titre: string; lignes: string[] }) {
   return (
     <div>
-      <p className="text-sm text-steel">{titre}</p>
-      <ul className="mt-1 space-y-1 text-base text-ink">
+      <p className="text-[15px] font-semibold text-ink">{titre}</p>
+      <ul className="mt-1.5 space-y-1.5 text-base text-ink">
         {lignes.map((l) => (
           <li key={l}>· {l}</li>
         ))}
@@ -491,7 +516,7 @@ export function ARetenir({
       <Titre
         action={
           enregistre ? (
-            <span className="inline-flex items-center gap-1.5 text-sm text-ink" aria-live="polite">
+            <span className="inline-flex items-center gap-1.5 text-[15px] text-steel" aria-live="polite">
               <IconeCoche className="h-4 w-4 text-succes" /> Enregistré
             </span>
           ) : undefined
@@ -499,7 +524,7 @@ export function ARetenir({
       >
         À retenir
       </Titre>
-      <label className="mt-2 block">
+      <label className="mt-3 block">
         <span className="sr-only">À retenir sur ce chantier</span>
         <textarea
           ref={zone}
@@ -508,7 +533,8 @@ export function ARetenir({
           onBlur={surEnregistrerMemo}
           rows={2}
           placeholder="Code du portail, mesures, choix du client…"
-          className="w-full resize-none rounded-2xl bg-paper-warm px-3 py-2.5 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:bg-paper focus:outline-none focus:ring-2 focus:ring-ink"
+          // Design v3 (24/10) : un champ = surface et contour fin (on voit où taper).
+          className={`${CHAMP} block resize-none py-3 leading-relaxed`}
         />
       </label>
       {erreur}
@@ -523,13 +549,16 @@ export function ARetenir({
  *  total. Décorative. */
 function MiniatureFeuille() {
   return (
-    <span aria-hidden className="flex h-[3.75rem] w-12 shrink-0 flex-col gap-[3px] rounded-md bg-surface p-1.5 shadow-[0_1px_3px_rgb(0_0_0/0.12)] ring-1 ring-ink/10">
-      <span className="h-1 w-5 rounded-full bg-signal" />
-      <span className="mt-1 h-[2px] w-full rounded-full bg-ink/15" />
-      <span className="h-[2px] w-4/5 rounded-full bg-ink/15" />
-      <span className="h-[2px] w-full rounded-full bg-ink/15" />
-      <span className="h-[2px] w-3/5 rounded-full bg-ink/15" />
-      <span className="mt-auto h-1 w-5 self-end rounded-full bg-ink/40" />
+    // Design v3 (24/10) : neutre (plus de trait saumon ni d'ombre maison),
+    // posée dans une tuile en creux comme les icônes du Carnet.
+    <span aria-hidden className="grid h-14 w-12 shrink-0 place-items-center rounded-[12px] bg-paper-warm">
+      <span className="flex h-10 w-8 flex-col gap-[3px] rounded-[4px] bg-surface p-1.5 ring-1 ring-gris-clair">
+        <span className="h-1 w-4 rounded-full bg-ink" />
+        <span className="mt-0.5 h-[2px] w-full rounded-full bg-gris-clair" />
+        <span className="h-[2px] w-4/5 rounded-full bg-gris-clair" />
+        <span className="h-[2px] w-full rounded-full bg-gris-clair" />
+        <span className="mt-auto h-1 w-3 self-end rounded-full bg-steel" />
+      </span>
     </span>
   );
 }
@@ -555,22 +584,21 @@ export function Argent({
       <button
         type="button"
         onClick={surOuvrirDevis}
-        className={`-mx-2 mt-1 flex min-h-16 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+        className={`-mx-2 mt-2 flex min-h-16 w-[calc(100%+1rem)] items-center gap-3 rounded-[14px] px-2 py-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
       >
         {/* 22/10 (panel) — une feuille en miniature plutôt qu'une icône :
             le devis est un document que le client reçoit, il se voit. */}
         <MiniatureFeuille />
+        {/* Design v3 (24/10) : le montant sur sa propre ligne, jamais coupé
+            (« 8 420,00 € TTC · Accepté · env… » ne tenait pas), le détail
+            sur deux lignes au plus, l'alerte en étiquette. */}
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-base font-semibold text-ink">Devis {devis.numero}</span>
+          <span className="block text-[17px] font-semibold leading-snug text-ink">Devis {devis.numero}</span>
+          <span className={`block whitespace-nowrap text-base ${MONTANT}`}>{devis.montant}</span>
           {devis.alerte ? (
-            <span className="flex items-center gap-2 text-sm text-ink">
-              <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
-              <span className="truncate">{devis.alerte}</span>
-            </span>
+            <span className={`mt-1 ${FORME_ETIQUETTE} ${ETIQUETTE.attention} !whitespace-normal text-left`}>{devis.alerte}</span>
           ) : (
-            <span className="block truncate text-sm text-steel">
-              <span className="font-mono tabular-nums">{devis.montant}</span> · {devis.detail}
-            </span>
+            devis.detail && <span className={`line-clamp-2 block ${SECONDAIRE}`}>{devis.detail}</span>
           )}
         </span>
         <IconeChevron className="h-5 w-5 shrink-0 text-steel" />

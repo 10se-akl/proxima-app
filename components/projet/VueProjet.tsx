@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { statutAffiche } from "@/lib/devis/statut";
-import { dateLongue, formatMontant } from "@/lib/devis/modeleDocument";
+import { dateLongue } from "@/lib/devis/modeleDocument";
+import { BOUTON_CREUX_SUR_TEINTE } from "./Blocs";
+import { BOUTON_PLEIN_LARGE, BOUTON_TEXTE, CARTE, SECONDAIRE, TUILE_ICONE, euros } from "@/components/ui/recettes";
 import type { Devis, EvenementPlanning, EvenementProjet, Note, NoteVocale, Priorite, Projet } from "@/types";
 import { AFaire, ARetenir, Argent, BandeAjout, ListeConseils, Maintenant } from "./Blocs";
 import { Carnet, ID_RECHERCHE_CARNET, SEUIL_RECHERCHE_CARNET } from "./Carnet";
@@ -16,7 +18,7 @@ import { Visionneuse } from "./Visionneuse";
 import { FeuilleMessageClient, tracerMessagePrepare, type DemandeMessage } from "./FeuilleMessageClient";
 import { accuse as accuse_, ouvrirMessage, rappelRdv, type CleMessage, type Signature } from "@/lib/messagesClient";
 import { FeuillePlanifier } from "@/components/planning/FeuillePlanifier";
-import { BOUTON_CONTOUR, FOCUS } from "./Blocs";
+import { FOCUS } from "./Blocs";
 import { IconeCoche } from "./icones";
 import { createClient } from "@/lib/supabase/client";
 import { etatsSommeil, sommeilValable } from "@/lib/projetEnSommeil";
@@ -359,7 +361,7 @@ export function VueProjet({
     new Date(projet.derniere_modification_le as string) > new Date(devis.created_at);
 
   return (
-    <div className={`mx-auto w-full px-4 pb-28 pt-4 sm:px-8 sm:pb-16 sm:pt-8 ${deuxColonnes ? "max-w-6xl" : "max-w-3xl"}`}>
+    <div className={`mx-auto w-full px-4 pb-28 pt-4 sm:px-8 sm:pb-16 sm:pt-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10 ${deuxColonnes ? "max-w-6xl" : "max-w-3xl"}`}>
       <EnTeteProjet
         nomClient={projet.nom_client}
         sousTitre={sousTitre}
@@ -464,7 +466,8 @@ export function VueProjet({
             <Argent
               devis={{
                 numero: devis.numero,
-                montant: `${formatMontant(devis.total_estime)} TTC`,
+                // Design v3 (24/10) : espaces insécables, le montant ne se coupe pas.
+                montant: `${euros(devis.total_estime, true)} TTC`,
                 detail: [
                   statutDevis?.texte,
                   devis.envoye_le ? `envoyé le ${dateSansAnnee(devis.envoye_le, maintenant)}` : null,
@@ -516,12 +519,14 @@ export function VueProjet({
                 key={t.cle}
                 type="button"
                 onClick={t.faire}
-                className="flex min-h-16 flex-col items-start gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
+                // Design v3 (24/10) : des cartes (sans contour), l'icône dans
+                // la tuile neutre commune.
+                className={`flex min-h-16 flex-col items-start gap-3 p-4 text-left active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${CARTE} ${FOCUS}`}
               >
-                <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink/10 text-ink">{t.icone}</span>
+                <span className={`${TUILE_ICONE} h-11 w-11`}>{t.icone}</span>
                 <span>
-                  <span className="block text-base font-semibold text-ink">{t.libelle}</span>
-                  <span className="block text-sm text-steel">{t.sous}</span>
+                  <span className="block text-[17px] font-semibold text-ink">{t.libelle}</span>
+                  <span className={`block ${SECONDAIRE}`}>{t.sous}</span>
                 </span>
               </button>
             ))}
@@ -531,14 +536,14 @@ export function VueProjet({
                 setAjout(null);
                 setPlanifierOuvert(true);
               }}
-              className="flex min-h-16 flex-col items-start gap-3 rounded-2xl bg-surface p-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
+              className={`flex min-h-16 flex-col items-start gap-3 p-4 text-left active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${CARTE} ${FOCUS}`}
             >
-              <span className="grid h-12 w-12 place-items-center rounded-2xl bg-ink/10 text-ink">
+              <span className={`${TUILE_ICONE} h-11 w-11`}>
                 <IconeCalendrier className="h-6 w-6" />
               </span>
               <span>
-                <span className="block text-base font-semibold text-ink">Rendez-vous</span>
-                <span className="block text-sm text-steel">Demain, déjà rempli</span>
+                <span className="block text-[17px] font-semibold text-ink">Rendez-vous</span>
+                <span className={`block ${SECONDAIRE}`}>Demain, déjà rempli</span>
               </span>
             </button>
           </div>
@@ -564,10 +569,10 @@ export function VueProjet({
       {/* Greffe C (duel D, lot 3) : la demande du client, puis ce que
           l'analyse et le métier conseillent de vérifier. */}
       <Feuille ouverte={conseilsOuverts} titre="À vérifier avant de chiffrer" surFermer={() => setConseilsOuverts(false)}>
-        <p className="text-sm text-steel">La demande</p>
-        <p className="mt-1 whitespace-pre-line text-base text-ink">{projet.description}</p>
+        <p className="text-[15px] font-semibold text-steel">La demande</p>
+        <p className="mt-1 whitespace-pre-line text-base leading-relaxed text-ink">{projet.description}</p>
         {conseils && (
-          <div className="mt-4 space-y-4 border-t border-ink/15 pt-4">
+          <div className="mt-5 space-y-5 border-t border-gris-clair pt-5">
             {conseils.infos.length > 0 && <ListeConseils titre="Ce qui manque peut-être" lignes={conseils.infos} />}
             {conseils.questions.length > 0 && <ListeConseils titre="À demander au client" lignes={conseils.questions} />}
             {conseils.checklist.length > 0 && <ListeConseils titre="À vérifier sur place" lignes={conseils.checklist} />}
@@ -578,9 +583,9 @@ export function VueProjet({
       <Feuille ouverte={infosOuvertes} titre="Infos du client" surFermer={() => setInfosOuvertes(false)}>
         {(projet.email_client || (nbAutresProjetsClient ?? 0) > 0) && (
           <div className="mb-4 flex flex-col gap-1 text-base text-ink">
-            {projet.email_client && <p className="truncate">{projet.email_client}</p>}
+            {projet.email_client && <p className="break-all">{projet.email_client}</p>}
             {nbAutresProjetsClient !== null && nbAutresProjetsClient > 0 && (
-              <p className="truncate text-sm text-steel">
+              <p className={SECONDAIRE}>
                 Déjà {nbAutresProjetsClient} autre{nbAutresProjetsClient > 1 ? "s" : ""} chantier{nbAutresProjetsClient > 1 ? "s" : ""} ensemble
               </p>
             )}
@@ -613,15 +618,11 @@ export function VueProjet({
               setConfirmerFin(false);
               surAction("terminer");
             }}
-            className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+            className={BOUTON_PLEIN_LARGE}
           >
             Oui, chantier terminé
           </button>
-          <button
-            type="button"
-            onClick={() => setConfirmerFin(false)}
-            className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-          >
+          <button type="button" onClick={() => setConfirmerFin(false)} className={`${BOUTON_TEXTE} w-full justify-center`}>
             Pas encore
           </button>
         </div>
@@ -648,24 +649,24 @@ export function RdvPlanifie({
   surFermer: () => void;
 }) {
   return (
-    <div aria-live="polite" className="mt-3 rounded-2xl bg-succes/10 p-4">
-      <p className="flex items-center gap-3 text-sm text-ink">
-        <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
-          <IconeCoche className="h-4 w-4" />
-        </span>
-        <span className="min-w-0 truncate">{trace.replace(`${nomClient}, `, "")}</span>
+    // Design v3 (24/10) : la teinte de succès opaque, les gestes en creux
+    // posés en surface (visibles sur la teinte).
+    <div aria-live="polite" className="mt-3 rounded-[20px] bg-succes-fond p-4">
+      <p className="flex items-center gap-3 text-[15px] text-ink">
+        <IconeCoche className="h-5 w-5 shrink-0 text-succes" />
+        <span className="min-w-0">{trace.replace(`${nomClient}, `, "")}</span>
       </p>
       {telephone ? (
         <>
-          <p className="mt-3 truncate text-base font-semibold text-ink">Prévenir {nomClient} ?</p>
+          <p className="mt-3 text-base font-semibold text-ink">Prévenir {nomClient} ?</p>
           <div className="mt-2 grid grid-cols-[1fr_1fr_auto] gap-2">
-            <button type="button" onClick={() => surPrevenir("sms")} className={`${BOUTON_CONTOUR} min-h-12 bg-surface`}>
+            <button type="button" onClick={() => surPrevenir("sms")} className={`${BOUTON_CREUX_SUR_TEINTE} px-3`}>
               SMS
             </button>
-            <button type="button" onClick={() => surPrevenir("whatsapp")} className={`${BOUTON_CONTOUR} min-h-12 bg-surface`}>
+            <button type="button" onClick={() => surPrevenir("whatsapp")} className={`${BOUTON_CREUX_SUR_TEINTE} px-3`}>
               WhatsApp
             </button>
-            <button type="button" onClick={surFermer} className={`min-h-12 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 ${FOCUS}`}>
+            <button type="button" onClick={surFermer} className={BOUTON_TEXTE}>
               Plus tard
             </button>
           </div>

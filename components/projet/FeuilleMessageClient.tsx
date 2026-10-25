@@ -16,6 +16,7 @@ import {
 } from "@/lib/messagesClient";
 import { Feuille } from "./Feuille";
 import { IconeChevron } from "./icones";
+import { BOUTON_CREUX, BOUTON_PLEIN, BOUTON_PLEIN_LARGE, CARTE, CHAMP, ERREUR, FOCUS, LIBELLE } from "@/components/ui/recettes";
 
 // ============================================================
 // « Message au client » (26/09 — « moins mais mieux », lot D).
@@ -173,14 +174,16 @@ export function FeuilleMessageClient({
       {erreur && <p className="text-base text-steel">Le projet n&apos;a pas pu être chargé. Réessayez.</p>}
       {/* Refonte (03/10) — règle 11 : la forme vide d'un message, pas « … ». */}
       {!charge && !erreur && (
+        // Design v3 (24/10) : la forme vide, immobile (pas d'animation en
+        // boucle), aux couleurs du creux.
         <div aria-busy="true" aria-label="Chargement" className="flex flex-col gap-3">
           {[0, 1].map((i) => (
-            <div key={i} className="rounded-[20px] bg-surface p-4 ombre-douce">
-              <div className="h-4 w-24 rounded-full bg-ink/10 motion-safe:animate-pulse" />
-              <div className="mt-2 h-4 w-full rounded-full bg-ink/10 motion-safe:animate-pulse" />
+            <div key={i} className={`${CARTE} p-4`}>
+              <div className="h-4 w-24 rounded-full bg-paper-warm" />
+              <div className="mt-2 h-4 w-full rounded-full bg-paper-warm" />
               <div className="mt-3 grid grid-cols-2 gap-2">
-                <div className="h-12 rounded-xl bg-ink/10 motion-safe:animate-pulse" />
-                <div className="h-12 rounded-xl bg-ink/10 motion-safe:animate-pulse" />
+                <div className="h-12 rounded-[14px] bg-paper-warm" />
+                <div className="h-12 rounded-[14px] bg-paper-warm" />
               </div>
             </div>
           ))}
@@ -197,12 +200,13 @@ export function FeuilleMessageClient({
         />
       )}
       {charge && surEcrireAvecIA && (
+        // Design v3 (24/10) : une carte, comme les messages prêts au-dessus.
         <button
           type="button"
           onClick={surEcrireAvecIA}
-          className="mt-3 flex min-h-16 w-full items-center gap-3 rounded-2xl bg-surface px-4 text-left ring-1 ring-ink/15 active:bg-ink/10 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink sm:hover:bg-ink/5"
+          className={`mt-3 flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${CARTE} ${FOCUS}`}
         >
-          <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">Un message sur mesure</span>
+          <span className="min-w-0 flex-1 text-[17px] font-semibold text-ink">Un message sur mesure</span>
           <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
         </button>
       )}
@@ -245,7 +249,7 @@ export function ContenuMessageClient({
           setErreurNumero(!ok);
         }}
       >
-        <label className="block text-base font-semibold text-ink" htmlFor="telephone-client">
+        <label className={LIBELLE} htmlFor="telephone-client">
           Numéro du client
         </label>
         <input
@@ -256,14 +260,10 @@ export function ContenuMessageClient({
           value={saisie}
           onChange={(e) => setSaisie(e.target.value)}
           placeholder="06 12 34 56 78"
-          className="mt-2 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-4 font-mono text-base tabular-nums text-ink placeholder:text-steel focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15"
+          className={`${CHAMP} tabular-nums`}
         />
-        {erreurNumero && <p className="mt-2 text-sm font-semibold text-signal-fonce dark:text-signal-clair">Numéro incomplet ou non enregistré.</p>}
-        <button
-          type="submit"
-          disabled={enregistrement}
-          className="mt-4 inline-flex w-full min-h-14 items-center justify-center gap-2 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60"
-        >
+        {erreurNumero && <p className={ERREUR}>Numéro incomplet ou non enregistré.</p>}
+        <button type="submit" disabled={enregistrement} className={`mt-4 ${BOUTON_PLEIN_LARGE}`}>
           {enregistrement && <span aria-hidden className="h-3.5 w-3.5 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" />}
           Enregistrer
         </button>
@@ -278,9 +278,9 @@ export function ContenuMessageClient({
   return (
     <ul className="flex flex-col gap-3">
       {suggestions.map((s, rang) => (
-        <li key={s.cle} className="rounded-[20px] bg-surface p-4 ombre-douce">
-          <p className="text-sm text-steel">{LIBELLES[s.cle]}</p>
-          <p className="mt-1 text-base text-ink">
+        <li key={s.cle} className={`${CARTE} p-4`}>
+          <p className="text-[15px] font-semibold text-steel">{LIBELLES[s.cle]}</p>
+          <p className="mt-1 text-base leading-relaxed text-ink">
             {/* À l'écran seulement : « 1 250,00 € » ne se coupe pas en fin de ligne. */}
             {premierePhrase(s.texte, s.cle === "decalage" && demande?.nouvelleDate ? 2 : 1).replace(/(\d) (?=\d{3}\b|€)/g, "$1\u00a0")}
           </p>
@@ -295,11 +295,9 @@ export function ContenuMessageClient({
                 // 08/10 (passe de finition) — un seul bouton plein (règle
                 // 5) : le SMS du premier message, le plus probable. Les
                 // autres sont en contour.
-                className={`min-h-12 rounded-xl text-base font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
-                  canal === "sms" && rang === 0
-                    ? "bg-ink text-paper active:bg-ink/80"
-                    : "text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
-                }`}
+                // Design v3 (24/10) : les autres en creux (un seul style de
+                // secondaire).
+                className={`${canal === "sms" && rang === 0 ? BOUTON_PLEIN : BOUTON_CREUX} w-full px-3`}
               >
                 {canal === "sms" ? "SMS" : "WhatsApp"}
               </button>

@@ -1,4 +1,5 @@
 import type { LigneDevisCalculee } from "@/types";
+import { euros } from "@/components/ui/recettes";
 
 // ============================================================
 // Comment une ligne se lit sur téléphone (refonte du 03/10, duel F lot 3) :
@@ -7,7 +8,9 @@ import type { LigneDevisCalculee } from "@/types";
 // 20) qu'aucune règle ne signale : elle doit se lire sans effort.
 // ============================================================
 
-export const formatEuros = (n: number) => n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+// Design v3 (25/10) : euros() de recettes — « 1 579,00 € » ne se coupe
+// jamais (espaces insécables), centimes sur une ligne de devis.
+export const formatEuros = (n: number) => euros(n, true);
 
 const formatNombre = (n: number) => n.toLocaleString("fr-FR", { maximumFractionDigits: 2 });
 
@@ -25,7 +28,7 @@ type LigneAffichable = Pick<LigneDevisCalculee, "quantite" | "unite" | "prix_uni
  *  alors le montant de la ligne, inutile de le répéter). */
 export function detailLigne(ligne: LigneAffichable): string {
   if (ligne.quantite === 1 && /^forfait$/i.test(ligne.unite.trim())) return "Forfait";
-  const quantite = [formatNombre(ligne.quantite), uniteAccordee(ligne.quantite, ligne.unite)].filter(Boolean).join(" ");
+  const quantite = [formatNombre(ligne.quantite), uniteAccordee(ligne.quantite, ligne.unite)].filter(Boolean).join(" ");
   return `${quantite} × ${formatEuros(ligne.prix_unitaire)}`;
 }
 

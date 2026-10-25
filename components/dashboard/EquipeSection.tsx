@@ -6,6 +6,8 @@ import { lireMembership } from "@/lib/organisation";
 import { Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Feuille } from "@/components/projet/Feuille";
+import { BOUTON_ALERTE, BOUTON_CREUX, BOUTON_TEXTE, ERREUR, SECONDAIRE } from "@/components/ui/recettes";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { lienPartageWhatsApp, messageInvitationEquipe } from "@/lib/messagesClient";
 
 // ============================================================
@@ -26,9 +28,9 @@ import { lienPartageWhatsApp, messageInvitationEquipe } from "@/lib/messagesClie
 type Membre = { userId: string; nom: string; email: string; estProprietaire: boolean; estMoi: boolean };
 type InvitationEnCours = { id: string; prenom: string; email: string; expiree: boolean };
 
-const CLASSE_ALERTE = "text-sm font-semibold text-signal-fonce dark:text-signal-clair";
-const CLASSE_TEXTE_BOUTON =
-  "min-h-12 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink";
+// Design v3 (24/10) : les recettes (ERREUR, BOUTON_TEXTE).
+const CLASSE_ALERTE = `!mt-0 ${ERREUR}`;
+const CLASSE_TEXTE_BOUTON = `${BOUTON_TEXTE} disabled:opacity-60`;
 // La phrase validée par le fondateur (03/10) : c'est une promesse.
 const PHRASE_PROMESSE = "Elle verra tout, comme vous : devis, prix, factures.";
 
@@ -234,9 +236,14 @@ export function EquipeSection() {
 
   if (chargement) {
     return (
-      <div aria-busy="true" aria-label="Chargement de l'équipe" className="flex flex-col gap-2">
-        <div className="h-16 rounded-2xl bg-ink/10 motion-safe:animate-pulse" />
-        <div className="h-16 rounded-2xl bg-ink/10 motion-safe:animate-pulse" />
+      // Design v3 (24/10) : les lignes de membres, vidées.
+      <div aria-busy="true" aria-label="Chargement de l'équipe" className="flex flex-col divide-y divide-gris-clair">
+        {[0, 1].map((i) => (
+          <div key={i} className="flex min-h-16 flex-col justify-center gap-2 py-2">
+            <Skeleton className="h-4 w-40 rounded-full" />
+            <Skeleton className="h-3.5 w-56 max-w-full rounded-full" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -245,9 +252,9 @@ export function EquipeSection() {
     return (
       <div className="flex flex-col items-start gap-3">
         <p className={CLASSE_ALERTE}>L&apos;équipe n&apos;a pas pu être chargée.</p>
-        <Button variant="ghost" onClick={charger}>
+        <button type="button" onClick={charger} className={BOUTON_CREUX}>
           Réessayer
-        </Button>
+        </button>
       </div>
     );
   }
@@ -257,40 +264,40 @@ export function EquipeSection() {
 
   return (
     <div className="flex flex-col gap-6">
-      <ul className="divide-y divide-ink/10" aria-label="Équipe">
+      <ul className="divide-y divide-gris-clair" aria-label="Équipe">
         {membres.map((m) => (
           <li key={m.userId} className="flex min-h-16 items-center gap-3 py-2">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-semibold text-ink">
+              <p className="line-clamp-2 break-words text-[17px] font-semibold text-ink">
                 {m.nom}
                 {m.estMoi ? ", vous" : ""}
               </p>
-              {m.email && <p className="truncate text-sm text-steel">{m.email}</p>}
+              {m.email && <p className={`truncate ${SECONDAIRE}`}>{m.email}</p>}
             </div>
             {peutGerer && !m.estMoi && !m.estProprietaire && (
-              <Button
-                variant="danger"
-                className="shrink-0"
+              <button
+                type="button"
+                className={BOUTON_ALERTE}
                 onClick={() => {
                   setErreurRetrait(null);
                   setARetirer(m);
                 }}
               >
                 Retirer
-              </Button>
+              </button>
             )}
           </li>
         ))}
         {invitations.map((i) => (
           <li key={i.id} className="flex min-h-16 flex-wrap items-center gap-x-3 gap-y-1 py-2">
             <div className="min-w-0 flex-1">
-              <p className="truncate text-base font-semibold text-ink">
+              <p className="line-clamp-2 break-words text-[17px] font-semibold text-ink">
                 {premierMot(i.prenom)}, {i.expiree ? "invitation expirée" : "en attente"}
               </p>
-              <p className="truncate text-sm text-steel">{i.email}</p>
+              <p className={`truncate ${SECONDAIRE}`}>{i.email}</p>
             </div>
             {peutGerer && (
-              <div className="flex shrink-0 items-center">
+              <div className="-mr-3 flex shrink-0 items-center">
                 <button
                   type="button"
                   className={CLASSE_TEXTE_BOUTON}
@@ -311,7 +318,7 @@ export function EquipeSection() {
             )}
             <div aria-live="polite" className="w-full empty:hidden">
               {retourInvitation?.id === i.id && (
-                <p className={retourInvitation.erreur ? CLASSE_ALERTE : "text-sm text-ink"}>{retourInvitation.texte}</p>
+                <p className={retourInvitation.erreur ? CLASSE_ALERTE : "text-[15px] font-semibold text-succes"}>{retourInvitation.texte}</p>
               )}
             </div>
           </li>
@@ -319,8 +326,8 @@ export function EquipeSection() {
       </ul>
 
       {peutGerer && (
-        <form onSubmit={inviter} className="flex flex-col gap-4">
-          <h3 className="text-base font-semibold text-ink">Inviter quelqu&apos;un</h3>
+        <form onSubmit={inviter} className="flex flex-col gap-4 border-t border-gris-clair pt-5">
+          <h3 className="text-[17px] font-semibold text-ink">Inviter quelqu&apos;un</h3>
           <Field
             label="Prénom et nom"
             required

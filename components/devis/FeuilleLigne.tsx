@@ -9,8 +9,20 @@ import {
   estUniteJour,
 } from "@/lib/moteur-metier/tempsMainOeuvre";
 import type { LigneEditee, TarifsEditeur } from "@/components/devis/EditeurLignes";
-import { formatEuros, libellePrix, nombreSaisi, texteDepuisNombre } from "@/components/devis/formatLigne";
+import { libellePrix, nombreSaisi, texteDepuisNombre } from "@/components/devis/formatLigne";
 import { estPrixCompyo } from "@/lib/devis/qualite";
+import {
+  AIDE,
+  BOUTON_ALERTE,
+  BOUTON_PLEIN_LARGE,
+  BOUTON_TEXTE,
+  CHAMP,
+  CREUX,
+  FOCUS,
+  LIBELLE,
+  MONTANT,
+  euros,
+} from "@/components/ui/recettes";
 
 // ============================================================
 // La feuille d'une ligne (refonte du 03/10, duel F lot 3) : toucher une
@@ -28,13 +40,16 @@ import { estPrixCompyo } from "@/lib/devis/qualite";
 // pousse que des nombres : sinon le champ sauterait à chaque touche.
 // ============================================================
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
+// Design v3 (24/10) : les recettes (champ à contour fin, libellé, bouton
+// plein en bas, retrait en bouton d'alerte jamais plein) ; les − / + sont
+// des boutons en creux de 56 px. 25/10 : rayon 20 (grand bouton), hauteur
+// minimale plutôt que fixe (le texte agrandi ne déborde plus).
+const BOUTON_PAS = `grid min-h-14 w-14 shrink-0 place-items-center rounded-[20px] bg-paper-warm text-2xl font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/[0.08] motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${FOCUS}`;
 
-const BOUTON_PAS = `grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-surface font-mono text-2xl font-semibold text-ink ring-1 ring-inset ring-ink/30 active:bg-ink/10 ${FOCUS}`;
-
-const CHAMP =
-  "flex h-14 min-w-0 flex-1 items-center gap-2 rounded-2xl bg-paper px-4 ring-1 ring-inset ring-ink/30 focus-within:ring-2 focus-within:ring-ink";
+// Le champ chiffré : contour lisible (jeton `contour`), l'unité à droite,
+// chiffres à chasse fixe.
+const CHAMP_CHIFFRE =
+  "flex min-h-14 min-w-0 flex-1 items-center gap-2 rounded-[14px] bg-surface px-4 ring-1 ring-inset ring-contour focus-within:ring-2 focus-within:ring-ink";
 
 export function FeuilleLigne({
   ligne,
@@ -127,11 +142,11 @@ function ContenuLigne({
   return (
     <div>
       {calculee ? (
-        <p className="text-base text-steel">Calculée pour atteindre votre minimum d&apos;heures.</p>
+        <p className="text-base text-steel [text-wrap:pretty]">Calculée pour atteindre votre minimum d&apos;heures.</p>
       ) : (
         <>
-          <div className="mb-4">
-            <label htmlFor={idDescription} className="text-sm text-steel">
+          <div className="mb-5">
+            <label htmlFor={idDescription} className={LIBELLE}>
               Ce qui est fait
             </label>
             <textarea
@@ -141,24 +156,24 @@ function ContenuLigne({
               autoFocus={!ligne.description.trim()}
               rows={2}
               placeholder="Ex : Remplacement du siphon"
-              className="mt-1 w-full resize-none rounded-2xl bg-paper px-4 py-3 text-base text-ink ring-1 ring-inset ring-ink/30 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
+              className={`${CHAMP} resize-none py-3 leading-snug`}
             />
           </div>
           <div>
-            <label htmlFor={idQuantite} className="text-sm text-steel">
+            <label htmlFor={idQuantite} className={LIBELLE}>
               Quantité
             </label>
-            <div className="mt-1 flex gap-2">
+            <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => bougerQuantite(-1)}
                 aria-label="Une unité de moins"
                 disabled={ligne.quantite <= 0}
-                className={`${BOUTON_PAS} disabled:opacity-40`}
+                className={BOUTON_PAS}
               >
                 −
               </button>
-              <div className={CHAMP}>
+              <div className={CHAMP_CHIFFRE}>
                 <input
                   id={idQuantite}
                   value={texteQuantite}
@@ -168,9 +183,9 @@ function ContenuLigne({
                   inputMode="decimal"
                   enterKeyHint="done"
                   autoComplete="off"
-                  className="min-w-0 flex-1 bg-transparent font-mono text-xl tabular-nums text-ink outline-none"
+                  className="min-w-0 flex-1 bg-transparent text-xl font-semibold tabular-nums text-ink outline-none"
                 />
-                <span className="shrink-0 text-sm text-steel">{ligne.unite}</span>
+                <span className="shrink-0 text-[15px] text-steel">{ligne.unite}</span>
               </div>
               <button type="button" onClick={() => bougerQuantite(1)} aria-label="Une unité de plus" className={BOUTON_PAS}>
                 +
@@ -178,11 +193,11 @@ function ContenuLigne({
             </div>
           </div>
 
-          <div className="mt-4">
-            <label htmlFor={idPrix} className="text-sm text-steel">
+          <div className="mt-5">
+            <label htmlFor={idPrix} className={LIBELLE}>
               {libellePrix(ligne.unite)}
             </label>
-            <div className={`${CHAMP} mt-1 w-full flex-none`}>
+            <div className={`${CHAMP_CHIFFRE} w-full flex-none`}>
               <input
                 id={idPrix}
                 value={textePrix}
@@ -192,60 +207,48 @@ function ContenuLigne({
                 inputMode="decimal"
                 enterKeyHint="done"
                 autoComplete="off"
-                className="min-w-0 flex-1 bg-transparent font-mono text-xl tabular-nums text-ink outline-none"
+                className="min-w-0 flex-1 bg-transparent text-xl font-semibold tabular-nums text-ink outline-none"
               />
-              <span className="shrink-0 text-sm text-steel">€</span>
+              <span className="shrink-0 text-[15px] text-steel">€</span>
             </div>
             {/* Refonte (03/10, duel F lot 4) — ce prix n'est pas le vôtre : il
                 disparaît dès que vous en tapez un. */}
-            {estPrixCompyo(ligne) && <p className="mt-1 text-sm text-steel">Prix de référence Compyo, à ajuster.</p>}
+            {estPrixCompyo(ligne) && <p className={AIDE}>Prix de référence Compyo, à ajuster.</p>}
           </div>
         </>
       )}
 
-      <div className="mt-4 flex min-h-12 items-baseline justify-between gap-3">
-        <span className="text-sm text-steel">Cette ligne</span>
-        <span className="font-mono text-xl font-semibold tabular-nums text-ink">{formatEuros(ligne.total)}</span>
+      <div className="mt-5 flex min-h-12 items-baseline justify-between gap-3 border-t border-gris-clair pt-4">
+        <span className="text-[15px] text-steel">Cette ligne</span>
+        <span className={`whitespace-nowrap text-[28px] leading-tight tracking-[-0.02em] ${MONTANT} font-bold`}>
+          {euros(ligne.total, true)}
+        </span>
       </div>
 
-      <div className="mt-2 flex flex-col gap-2">
-        <button
-          type="button"
-          onClick={surFermer}
-          className={`min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 ${FOCUS}`}
-        >
-          Enregistrer
-        </button>
-
+      {/* Design v3 (24/10) — le retrait d'abord (en creux d'alerte, avec sa
+          question), « Enregistrer » tout en bas, sous le pouce. */}
+      <div className="mt-4 flex flex-col gap-3">
         {question ? (
-          <div className="rounded-[20px] bg-surface p-4 ombre-douce">
+          <div className={`${CREUX} p-4`}>
             <p className="text-base font-semibold text-ink">Retirer cette ligne ?</p>
             <div className="mt-3 flex flex-col gap-2">
-              <button
-                type="button"
-                onClick={() => surRetirer(ligne.cle)}
-                className={`min-h-12 w-full rounded-2xl px-4 text-base font-semibold text-signal-fonce ring-1 ring-inset ring-signal-fonce/50 active:bg-signal-fonce/10 dark:text-signal-clair dark:ring-signal-clair/50 ${FOCUS}`}
-              >
+              <button type="button" onClick={() => surRetirer(ligne.cle)} className={`${BOUTON_ALERTE} w-full`}>
                 Oui, la retirer
               </button>
-              <button
-                type="button"
-                onClick={() => setQuestion(false)}
-                className={`min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 ${FOCUS}`}
-              >
+              <button type="button" onClick={() => setQuestion(false)} className={`${BOUTON_TEXTE} w-full justify-center`}>
                 Non, la garder
               </button>
             </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={() => setQuestion(true)}
-            className={`min-h-12 w-full rounded-2xl px-4 text-base font-semibold text-signal-fonce ring-1 ring-inset ring-signal-fonce/50 active:bg-signal-fonce/10 dark:text-signal-clair dark:ring-signal-clair/50 ${FOCUS}`}
-          >
+          <button type="button" onClick={() => setQuestion(true)} className={`${BOUTON_ALERTE} w-full`}>
             Retirer cette ligne
           </button>
         )}
+
+        <button type="button" onClick={surFermer} className={BOUTON_PLEIN_LARGE}>
+          Enregistrer
+        </button>
       </div>
     </div>
   );

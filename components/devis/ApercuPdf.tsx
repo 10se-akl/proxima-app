@@ -164,36 +164,38 @@ export function ApercuPdf({ modele, delai = 450 }: { modele: ModeleDevis; delai?
         // chargement, navigateur trop ancien) : on montre le même devis en
         // version web plutôt qu'un écran vide.
         <div>
-          <p className="mb-3 rounded-xl border border-alerte-orange/30 bg-alerte-orange/5 px-3 py-2 text-xs text-ink/70">
+          <p className="mb-3 rounded-[20px] bg-alerte-fond px-4 py-3 text-[15px] text-ink [text-wrap:pretty]">
             L&apos;aperçu PDF n&apos;a pas pu s&apos;afficher. Voici le même devis en version web.
           </p>
           <DocumentDevis modele={modele} id="devis-apercu-secours" />
         </div>
       ) : pages.length === 0 ? (
-        <div className="aspect-[210/297] w-full animate-pulse rounded-md bg-surface ring-1 ring-ink/10">
-          <p className="pt-[40%] text-center text-xs text-ink/40">Préparation du PDF…</p>
+        // Design v3 (24/10) : une page blanche calme, sans clignotement en
+        // boucle.
+        <div className="aspect-[210/297] w-full rounded-[4px] bg-surface ombre-douce">
+          <p className="pt-[40%] text-center text-[15px] text-steel">Préparation du PDF…</p>
         </div>
       ) : (
-        <div className={`space-y-4 transition-opacity duration-200 ${etat === "mise_a_jour" ? "opacity-75" : ""}`}>
+        <div className={`space-y-4 motion-safe:transition-opacity motion-safe:duration-200 ${etat === "mise_a_jour" ? "opacity-75" : ""}`}>
           {pages.map((url, i) => (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               key={i}
               src={url}
               alt={`Page ${i + 1} sur ${pages.length} du devis`}
-              className="block w-full rounded-[3px] bg-white shadow-[0_1px_2px_rgb(0_0_0/0.06),0_10px_30px_-12px_rgb(0_0_0/0.25)] ring-1 ring-black/5"
+              className="block w-full rounded-[4px] bg-surface ombre-douce"
             />
           ))}
         </div>
       )}
 
       {etat === "mise_a_jour" && pages.length > 0 && (
-        <span className="absolute right-3 top-3 rounded-full bg-anthracite/85 px-2.5 py-1 text-[11px] text-white">
+        <span className="absolute right-3 top-3 rounded-full bg-ink px-3 py-1 text-[13px] font-semibold text-paper">
           Mise à jour…
         </span>
       )}
       {etat === "erreur" && pages.length > 0 && (
-        <p className="mt-2 text-xs text-signal">
+        <p className="mt-2 text-sm text-signal-fonce [text-wrap:pretty]">
           La dernière modification n&apos;a pas pu être affichée. Elle sera reprise à la prochaine.
         </p>
       )}

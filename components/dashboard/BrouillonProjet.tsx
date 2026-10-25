@@ -3,6 +3,7 @@
 import { useId, useState, type ReactNode } from "react";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { IconeCrayon } from "@/components/projet/icones";
+import { BOUTON_PLEIN_LARGE, BOUTON_TEXTE, CHAMP as CHAMP_V3, CREUX, ERREUR, ETIQUETTE, FORME_ETIQUETTE, GROUPE, SECONDAIRE, TITRE_ECRAN, CASE } from "@/components/ui/recettes";
 import type { BrouillonProjet as TypeBrouillonProjet, NiveauConfiance, TypeChantier } from "@/types";
 
 // ============================================================
@@ -49,10 +50,9 @@ const TYPES_CHANTIER: TypeChantier[] = [
   "autre",
 ];
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
-const CHAMP =
-  "mt-1.5 min-h-12 w-full rounded-xl bg-paper px-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink";
+// Design v3 (24/10) : le champ des recettes (contour fin, 48 px), posé sous
+// son libellé.
+const CHAMP = `mt-1.5 ${CHAMP_V3}`;
 
 type Props = {
   brouillon: TypeBrouillonProjet;
@@ -83,16 +83,18 @@ function Ligne({
   children: (id: string) => ReactNode;
 }) {
   const id = useId();
+  // Design v3 (24/10) : « à compléter » / « à vérifier » deviennent des
+  // étiquettes sobres (teinte opaque), plus du texte orange accolé.
   const mention =
     confiance === "absent" ? (
-      <span className="font-semibold text-signal-fonce dark:text-signal-clair"> · à compléter</span>
+      <span className={`${FORME_ETIQUETTE} ${ETIQUETTE.attention}`}>À compléter</span>
     ) : confiance === "deduit" ? (
-      <span> · à vérifier</span>
+      <span className={`${FORME_ETIQUETTE} ${ETIQUETTE.neutre}`}>À vérifier</span>
     ) : null;
   if (ouverte) {
     return (
-      <li className="py-3">
-        <label htmlFor={id} className="block text-sm text-steel">
+      <li className="px-4 py-3">
+        <label htmlFor={id} className={`flex flex-wrap items-center gap-2 ${SECONDAIRE}`}>
           {libelle}
           {mention}
         </label>
@@ -105,14 +107,14 @@ function Ligne({
       <button
         type="button"
         onClick={surOuvrir}
-        className={`-mx-2 flex min-h-16 w-[calc(100%+1rem)] items-center gap-3 rounded-xl px-2 py-2 text-left active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+        className={`flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink`}
       >
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-sm text-steel">
+          <span className={`flex flex-wrap items-center gap-2 ${SECONDAIRE}`}>
             {libelle}
             {mention}
           </span>
-          <span className="block truncate text-base text-ink">{apercu}</span>
+          <span className="mt-0.5 line-clamp-2 block break-words text-[17px] leading-snug text-ink">{apercu}</span>
         </span>
         <IconeCrayon className="h-5 w-5 shrink-0 text-steel" />
         <span className="sr-only">Modifier</span>
@@ -168,10 +170,12 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
 
   return (
     <div>
-      <h1 className="font-display text-3xl font-semibold text-ink">{titre}</h1>
-      <p className="mt-1 truncate text-base text-steel">{sousTitre}</p>
+      <h1 className={TITRE_ECRAN}>{titre}</h1>
+      <p className="mt-1 text-base text-steel">{sousTitre}</p>
 
-      <ul className="mt-5 divide-y divide-ink/15 rounded-2xl bg-surface px-4 ring-1 ring-ink/15">
+      {/* Design v3 (24/10) : le récapitulatif en liste groupée (surface,
+          ombre douce, filets fins), plus de contour. */}
+      <ul className={`mt-6 ${GROUPE}`}>
         <Ligne
           libelle="Client"
           confiance={valeurs.nomClient.confiance}
@@ -297,12 +301,12 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
         )}
       </ul>
 
-      <label className="mt-3 flex min-h-12 cursor-pointer items-center gap-3 text-base text-ink">
+      <label className="mt-3 flex min-h-12 cursor-pointer items-center gap-3 px-1 text-base text-ink">
         <input
           type="checkbox"
           checked={valeurs.priorite.valeur === "urgent"}
           onChange={(e) => majChamp("priorite", e.target.checked ? "urgent" : "normal")}
-          className="h-5 w-5 rounded border-ink/30 accent-ink"
+          className={CASE}
         />
         Urgent
       </label>
@@ -313,18 +317,18 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
             type="button"
             onClick={() => setTexteOuvert((v) => !v)}
             aria-expanded={texteOuvert}
-            className={`-ml-3 inline-flex min-h-12 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 ${FOCUS}`}
+            className={`-ml-2 ${BOUTON_TEXTE}`}
           >
             {texteOuvert ? "Masquer le message" : "Voir le message"}
           </button>
           {texteOuvert && (
-            <p className="mt-1 whitespace-pre-wrap rounded-2xl bg-paper-warm p-4 text-base text-ink">{valeurs.texteOrigine}</p>
+            <p className={`mt-1 whitespace-pre-wrap break-words p-4 text-base text-ink ${CREUX}`}>{valeurs.texteOrigine}</p>
           )}
         </div>
       )}
 
       <div aria-live="polite">
-        {erreur && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+        {erreur && <p className={`mt-3 ${ERREUR}`}>{erreur}</p>}
       </div>
 
       {/* Sur téléphone, le bouton reste sous le pouce pendant qu'on relit,
@@ -334,7 +338,9 @@ export function BrouillonProjetForm({ brouillon, onValider, validationEnCours, e
           type="button"
           onClick={() => onValider(valeurs)}
           disabled={validationEnCours}
-          className={`min-h-14 w-full rounded-2xl bg-ink px-8 text-base font-semibold text-paper shadow-[0_10px_30px_-12px_rgb(var(--c-ink)/0.6)] active:bg-ink/80 disabled:opacity-60 sm:w-auto sm:shadow-none ${FOCUS}`}
+          // Design v3 (24/10) : le bouton plein large des recettes, sans
+          // l'ombre arbitraire d'avant.
+          className={`${BOUTON_PLEIN_LARGE} sm:w-auto sm:px-8`}
         >
           {validationEnCours ? "Création…" : "Créer le projet"}
         </button>

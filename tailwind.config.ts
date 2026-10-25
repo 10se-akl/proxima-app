@@ -31,6 +31,8 @@ const config: Config = {
         "signal-fonce": "rgb(var(--c-signal-fonce) / <alpha-value>)",
         steel: "rgb(var(--c-steel) / <alpha-value>)",
         "gris-clair": "rgb(var(--c-gris-clair) / <alpha-value>)",
+        // 25/10 — le contour d'un champ (3:1 au moins, WCAG 1.4.11).
+        contour: "rgb(var(--c-contour) / <alpha-value>)",
         // Nouveau : pour les blocs volontairement toujours sombres (pied de
         // page, section "Pourquoi Compyo") qui doivent rester un accent
         // anthracite constant, dans les DEUX modes — contrairement à "ink"

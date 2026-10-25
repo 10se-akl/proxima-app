@@ -7,6 +7,7 @@ import { getOrganisationId } from "@/lib/organisation";
 import { FormulaireNote } from "@/components/notes/FormulaireNote";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import { SquelettePage } from "@/components/ui/Skeleton";
+import { TITRE_ECRAN } from "@/components/ui/recettes";
 
 type ProjetLeger = { id: string; nom_client: string };
 
@@ -83,8 +84,9 @@ function NouvelleNoteForm() {
   }
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg mx-auto">
-      <h1 className="mb-6 font-display text-2xl font-semibold text-ink">Nouvelle note</h1>
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg mx-auto lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
+      {/* Design v3 (24/10) : le titre d'écran commun (TITRE_ECRAN). */}
+      <h1 className={`mb-6 ${TITRE_ECRAN}`}>Nouvelle note</h1>
       <FormulaireNote projetIdFixe={projetIdFixe} nomProjetFixe={nomProjetFixe} projets={projets} />
     </div>
   );

@@ -1,26 +1,29 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useId, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
-import { Field, TextareaField } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
+import {
+  BOUTON_CREUX,
+  BOUTON_ICONE,
+  BOUTON_PLEIN_LARGE,
+  BOUTON_TEXTE,
+  CARTE_PLEINE,
+  CHAMP,
+  ERREUR,
+  LIBELLE,
+  TITRE_ECRAN,
+  puce,
+} from "@/components/ui/recettes";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { TypeEvenement, Priorite } from "@/types";
 import { SquelettePage } from "@/components/ui/Skeleton";
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 import { chargerCreneauParDefaut, titreParDefaut } from "@/components/planning/creneau";
 import { cheminPrecedent, revenir } from "@/components/navigation/LienPrecedent";
-
-const COULEUR_PRIORITE: Record<Priorite, string> = {
-  urgent: "bg-signal-fonce dark:bg-signal-clair",
-  important: "bg-alerte-orange",
-  normal: "bg-succes",
-};
 
 type ProjetLeger = { id: string; nom_client: string; priorite: Priorite; type_chantier: string | null };
 
@@ -57,6 +60,12 @@ function NouvelEvenementForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
+  // Les libellés reliés à leurs champs (Design v3, 24/10 : champs natifs
+  // aux recettes CHAMP / LIBELLE au lieu de Field / TextareaField).
+  const idTitre = useId();
+  const idDate = useId();
+  const idHeure = useId();
+  const idNotes = useId();
 
   const eventId = searchParams.get("eventId");
   const enModeEdition = Boolean(eventId);
@@ -365,6 +374,7 @@ function NouvelEvenementForm() {
         organisationId,
         type: "rdv_planifie",
         titre: enModeEdition ? "Rendez-vous modifié" : "Rendez-vous planifié",
+        // Une donnée écrite au journal : son format ne change pas.
         detail: `${titre} — ${new Date(dateHeure).toLocaleDateString("fr-FR", {
           weekday: "long",
           day: "numeric",
@@ -411,10 +421,8 @@ function NouvelEvenementForm() {
   }
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg">
-      <h1 className="font-display text-2xl font-semibold text-ink">
-        {enModeEdition ? "Modifier l'événement" : "Ajouter au planning"}
-      </h1>
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-lg lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
+      <h1 className={`${TITRE_ECRAN} [text-wrap:balance]`}>{enModeEdition ? "Modifier l'événement" : "Ajouter au planning"}</h1>
 
       {erreurChargement ? (
         // Sprint Robustesse (30/08) — page bloquée évitée : à la place du
@@ -433,16 +441,18 @@ function NouvelEvenementForm() {
           }}
         />
       ) : (
-      <Card className="mt-5 p-4 sm:mt-8 sm:p-6">
+      // Design v3 (24/10) : le formulaire dans une carte (CARTE_PLEINE), les
+      // choix rapides en puce(), les champs en CHAMP, un seul plein en bas.
+      // Les pastilles de priorité (rouge, orange, vert) devant chaque
+      // chantier sont retirées : de la couleur sans mot, ici sans usage.
+      <div className={`mt-5 sm:mt-8 sm:p-6 ${CARTE_PLEINE}`}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          <div className="flex gap-2">
+          <div className="flex gap-2" role="group" aria-label="Type">
             <button
               type="button"
               onClick={() => setType("rendez_vous")}
               aria-pressed={type === "rendez_vous"}
-              className={`min-h-12 flex-1 rounded-xl px-4 text-base font-semibold motion-safe:transition-colors ${
-                type === "rendez_vous" ? "bg-ink text-paper" : "text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5"
-              }`}
+              className={`flex-1 justify-center ${puce(type === "rendez_vous")}`}
             >
               Rendez-vous
             </button>
@@ -450,44 +460,31 @@ function NouvelEvenementForm() {
               type="button"
               onClick={() => setType("tache")}
               aria-pressed={type === "tache"}
-              className={`min-h-12 flex-1 rounded-xl px-4 text-base font-semibold motion-safe:transition-colors ${
-                type === "tache" ? "bg-ink text-paper" : "text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5"
-              }`}
+              className={`flex-1 justify-center ${puce(type === "tache")}`}
             >
               Tâche
             </button>
           </div>
 
           <div>
-            <p className="mb-1.5 block text-sm text-steel">Chantier (facultatif)</p>
+            <p className={LIBELLE}>Chantier (facultatif)</p>
 
             {projetSelectionne && (
-              <div className="flex items-center gap-2 mb-2">
-                <span
-                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_PRIORITE[projetSelectionne.priorite]}`}
-                />
-                <Avatar nom={projetSelectionne.nom_client || "?"} taille={22} />
-                <span className="min-w-0 truncate text-base text-ink">{projetSelectionne.nom_client}</span>
-                <button
-                  type="button"
-                  onClick={() => setDemandeId("")}
-                  className="inline-flex min-h-12 shrink-0 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-                >
+              <div className="mb-2 flex items-center gap-2.5">
+                <Avatar nom={projetSelectionne.nom_client || "?"} taille={32} />
+                <span className="min-w-0 flex-1 break-words text-base font-semibold text-ink">{projetSelectionne.nom_client}</span>
+                <button type="button" onClick={() => setDemandeId("")} className={`shrink-0 ${BOUTON_TEXTE}`}>
                   Retirer
                 </button>
               </div>
             )}
 
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setSelecteurOuvert(!selecteurOuvert)}
-            >
+            <button type="button" onClick={() => setSelecteurOuvert(!selecteurOuvert)} className={BOUTON_CREUX}>
               {projetSelectionne ? "Changer de chantier" : "Choisir un chantier"}
-            </Button>
+            </button>
 
             {selecteurOuvert && (
-              <div className="mt-2 max-h-64 overflow-y-auto rounded-xl ring-1 ring-inset ring-ink/15">
+              <div className="mt-2 max-h-64 divide-y divide-gris-clair overflow-y-auto rounded-[14px] ring-1 ring-inset ring-contour">
                 {projets.length === 0 && (
                   <p className="p-3 text-base text-steel">Aucun projet en cours.</p>
                 )}
@@ -496,12 +493,9 @@ function NouvelEvenementForm() {
                     key={p.id}
                     type="button"
                     onClick={() => choisirProjet(p)}
-                    className="flex min-h-12 w-full items-center gap-2.5 border-b border-ink/15 px-3 text-left text-base text-ink last:border-b-0 active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5"
+                    className="flex min-h-12 w-full items-center gap-2.5 px-3 text-left text-base text-ink active:bg-ink/[0.06] motion-safe:transition-colors sm:hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
                   >
-                    <span
-                      className={`w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_PRIORITE[p.priorite]}`}
-                    />
-                    <Avatar nom={p.nom_client || "?"} taille={22} />
+                    <Avatar nom={p.nom_client || "?"} taille={28} />
                     {p.nom_client}
                   </button>
                 ))}
@@ -509,30 +503,48 @@ function NouvelEvenementForm() {
             )}
           </div>
 
-          <Field
-            label="Titre"
-            required
-            placeholder={type === "rendez_vous" ? "Ex : Chantier Dupont" : "Ex : Rappeler Durand"}
-            value={titre}
-            onChange={(e) => setTitre(e.target.value)}
-          />
+          <div>
+            <label htmlFor={idTitre} className={LIBELLE}>
+              Titre
+            </label>
+            <input
+              id={idTitre}
+              required
+              placeholder={type === "rendez_vous" ? "Ex : Chantier Dupont" : "Ex : Rappeler Durand"}
+              value={titre}
+              onChange={(e) => setTitre(e.target.value)}
+              className={CHAMP}
+            />
+          </div>
 
-          <div className="grid grid-cols-2 gap-5">
-            <Field
-              label="Date"
-              type="date"
-              required
-              min={enModeEdition ? undefined : dateLocaleAAAAMMJJ(new Date())}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-            <Field
-              label="Heure"
-              type="time"
-              required
-              value={heure}
-              onChange={(e) => setHeure(e.target.value)}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor={idDate} className={LIBELLE}>
+                Date
+              </label>
+              <input
+                id={idDate}
+                type="date"
+                required
+                min={enModeEdition ? undefined : dateLocaleAAAAMMJJ(new Date())}
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className={CHAMP}
+              />
+            </div>
+            <div>
+              <label htmlFor={idHeure} className={LIBELLE}>
+                Heure
+              </label>
+              <input
+                id={idHeure}
+                type="time"
+                required
+                value={heure}
+                onChange={(e) => setHeure(e.target.value)}
+                className={CHAMP}
+              />
+            </div>
           </div>
 
           {/* 27/09 — La durée en un appui (30 min, 1 h, 2 h, demi-journée,
@@ -542,12 +554,13 @@ function NouvelEvenementForm() {
               est toujours écrite. */}
           {type === "rendez_vous" && (
             <fieldset>
-              <legend className="mb-1.5 block text-sm text-steel">Durée</legend>
+              <legend className={LIBELLE}>Durée</legend>
               <div className="flex flex-wrap gap-2">
                 {[
-                  { minutes: 30, libelle: "30 min" },
-                  { minutes: 60, libelle: "1 h" },
-                  { minutes: 120, libelle: "2 h" },
+                  // 25/10 : espace insécable entre le nombre et l'unité.
+                  { minutes: 30, libelle: "30 min" },
+                  { minutes: 60, libelle: "1 h" },
+                  { minutes: 120, libelle: "2 h" },
                   { minutes: 240, libelle: "½ journée" },
                   { minutes: 480, libelle: "Journée" },
                 ].map((d) => (
@@ -556,9 +569,7 @@ function NouvelEvenementForm() {
                     type="button"
                     aria-pressed={dureeMinutes === d.minutes}
                     onClick={() => setDureeMinutes(d.minutes)}
-                    className={`min-h-12 rounded-full px-4 text-base font-semibold motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
-                      dureeMinutes === d.minutes ? "bg-ink text-paper" : "text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5"
-                    }`}
+                    className={puce(dureeMinutes === d.minutes)}
                   >
                     {d.libelle}
                   </button>
@@ -570,21 +581,21 @@ function NouvelEvenementForm() {
                   aria-label="15 minutes de moins"
                   onClick={() => setDureeMinutes((m) => Math.max(15, m - 15))}
                   disabled={dureeMinutes <= 15}
-                  className="grid h-12 w-12 place-items-center rounded-full text-xl text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                  className={`bg-paper-warm text-xl disabled:opacity-60 ${BOUTON_ICONE}`}
                 >
                   −
                 </button>
-                <span className="min-w-[5.5rem] text-center font-mono text-base tabular-nums text-ink" aria-live="polite">
+                <span className="min-w-[5.5rem] text-center text-base font-semibold tabular-nums text-ink" aria-live="polite">
                   {dureeMinutes >= 60
-                    ? `${Math.floor(dureeMinutes / 60)} h${dureeMinutes % 60 ? ` ${String(dureeMinutes % 60).padStart(2, "0")}` : ""}`
-                    : `${dureeMinutes} min`}
+                    ? `${Math.floor(dureeMinutes / 60)} h${dureeMinutes % 60 ? ` ${String(dureeMinutes % 60).padStart(2, "0")}` : ""}`
+                    : `${dureeMinutes} min`}
                 </span>
                 <button
                   type="button"
                   aria-label="15 minutes de plus"
                   onClick={() => setDureeMinutes((m) => Math.min(1440, m + 15))}
                   disabled={dureeMinutes >= 1440}
-                  className="grid h-12 w-12 place-items-center rounded-full text-xl text-ink ring-1 ring-inset ring-ink/15 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+                  className={`bg-paper-warm text-xl disabled:opacity-60 ${BOUTON_ICONE}`}
                 >
                   +
                 </button>
@@ -592,24 +603,26 @@ function NouvelEvenementForm() {
             </fieldset>
           )}
 
-          <TextareaField
-            label="Notes (optionnel)"
-            rows={2}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-          />
+          <div>
+            <label htmlFor={idNotes} className={LIBELLE}>
+              Notes (optionnel)
+            </label>
+            <textarea
+              id={idNotes}
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className={`${CHAMP} resize-none py-3`}
+            />
+          </div>
 
           {erreur && (
-            <p aria-live="polite" className="text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+            <p aria-live="polite" className={ERREUR}>
               {erreur}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={chargement}
-            className="w-full min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper sm:w-auto sm:px-8"
-          >
+          <button type="submit" disabled={chargement} className={BOUTON_PLEIN_LARGE}>
             {chargement
               ? "Enregistrement…"
               : enModeEdition
@@ -619,7 +632,7 @@ function NouvelEvenementForm() {
               : "Ajouter le rendez-vous"}
           </button>
         </form>
-      </Card>
+      </div>
       )}
 
       {prevenir && (

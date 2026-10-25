@@ -2,7 +2,19 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/Button";
+import { IconeFermer, IconeRetour } from "@/components/projet/icones";
+import {
+  BOUTON_ICONE,
+  BOUTON_PLEIN,
+  BOUTON_PLEIN_LARGE,
+  BOUTON_TEXTE,
+  CHAMP,
+  ERREUR,
+  FOCUS,
+  SECONDAIRE,
+  TITRE_SECTION,
+  TUILE_ICONE,
+} from "@/components/ui/recettes";
 import { CATEGORIES, trouverCategorie, type Categorie, type SousCategorie } from "@/lib/retours/taxonomie";
 
 // ============================================================
@@ -128,64 +140,62 @@ function ModaleRetour({ onFermer }: { onFermer: () => void }) {
     }
   }
 
+  // Design v3 (24/10) : la même feuille que les autres (coins de 28 px,
+  // fond papier, ombre-feuille, voile sans flou), le titre sans capitales
+  // espacées, la progression à l'encre, les choix en cartes (surface +
+  // ombre douce) et un seul bouton plein par étape.
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-ink/40 backdrop-blur-sm p-0 sm:p-6"
-      onClick={onFermer}
-    >
+    <div className="fixed inset-0 z-50 flex items-end justify-center p-0 sm:items-center sm:p-6" onClick={onFermer}>
+      <div aria-hidden className="absolute inset-0 feuille-voile bg-black/40 dark:bg-black/60" />
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="titre-retour"
         onClick={(e) => e.stopPropagation()}
         // pb calculé séparément du p-6 de base : cette feuille colle au
-        // bord bas de l'écran sur mobile (rounded-t-3xl, pas de rounded en
-        // bas) — sans cette marge, son dernier bouton se retrouverait
-        // juste au-dessus de la barre de geste du téléphone, difficile à
+        // bord bas de l'écran sur mobile (coins arrondis en haut seulement)
+        // — sans cette marge, son dernier bouton se retrouverait juste
+        // au-dessus de la barre de geste du téléphone, difficile à
         // atteindre proprement du pouce.
-        className="fr-modale-entree w-full sm:max-w-lg bg-paper rounded-t-3xl sm:rounded-3xl border border-ink/10 shadow-2xl p-6 sm:p-7 max-h-[90vh] overflow-y-auto [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:[padding-bottom:1.75rem]"
+        className="fr-modale-entree relative max-h-[90vh] w-full overflow-y-auto rounded-t-[28px] bg-paper p-6 ombre-feuille [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:max-w-lg sm:rounded-[28px] sm:p-7 sm:[padding-bottom:1.75rem]"
       >
         {confirme ? (
           <div className="py-8 text-center">
-            <div className="fr-check-pop mx-auto mb-3 grid h-14 w-14 place-items-center rounded-full bg-signal/10 text-2xl">
-              ✓
+            <div className="fr-check-pop mx-auto mb-4 grid h-14 w-14 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden>
+              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
             </div>
-            <p className="font-display text-lg font-semibold">Merci pour votre retour</p>
-            <p className="mt-1.5 text-sm text-ink/60">
+            <p id="titre-retour" className={TITRE_SECTION}>Merci pour votre retour</p>
+            <p className={`mt-1.5 ${SECONDAIRE}`}>
               Il vient d&apos;être rattaché à la carte mentale de Compyo.
             </p>
-            <Button onClick={onFermer} className="mt-5 !px-5 !py-2.5">
+            <button type="button" onClick={onFermer} className={`mt-6 ${BOUTON_PLEIN}`}>
               Fermer
-            </Button>
+            </button>
           </div>
         ) : (
           <>
-            <div className="flex items-start justify-between gap-3 mb-5">
-              <div className="flex-1">
-                <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-1">
-                  Avis &amp; idées
-                </p>
-                <h2 className="font-display text-lg font-semibold">
+            <div className="mb-5 flex items-start justify-between gap-3">
+              <div className="flex-1 pt-1">
+                <p className={`mb-1 ${SECONDAIRE}`}>Avis &amp; idées</p>
+                <h2 id="titre-retour" className={TITRE_SECTION}>
                   Un souci, une idée ? Dites-nous tout
                 </h2>
               </div>
-              <button
-                type="button"
-                onClick={onFermer}
-                aria-label="Fermer"
-                className="shrink-0 text-ink/40 hover:text-ink/70 text-xl leading-none"
-              >
-                ×
+              <button type="button" onClick={onFermer} aria-label="Fermer" className={`-mr-2 -mt-1 text-steel ${BOUTON_ICONE}`}>
+                <IconeFermer className="h-5 w-5" />
               </button>
             </div>
 
             {/* Progression — 4 segments, l'étape "sous-catégorie" reste
                 affichée même quand elle est sautée, pour ne pas faire
                 sauter la barre de façon déroutante. */}
-            <div className="flex gap-1.5 mb-6">
+            <div className="mb-6 flex gap-1.5" aria-label={`Étape ${etape} sur ${NB_ETAPES}`}>
               {Array.from({ length: NB_ETAPES }, (_, i) => i + 1).map((n) => (
                 <div
                   key={n}
-                  className={`fr-progres-segment h-1 flex-1 rounded-full ${
-                    n <= etape ? "bg-signal" : "bg-ink/10"
-                  }`}
+                  className={`fr-progres-segment h-1.5 flex-1 rounded-full ${n <= etape ? "bg-ink" : "bg-gris-clair"}`}
                 />
               ))}
             </div>
@@ -234,6 +244,16 @@ function ModaleRetour({ onFermer }: { onFermer: () => void }) {
   );
 }
 
+/** La question d'une étape (17 semi-gras) et son aide éventuelle. */
+function Question({ texte, aide }: { texte: string; aide?: string }) {
+  return (
+    <div className="mb-4">
+      <p className="text-[17px] font-semibold leading-snug text-ink">{texte}</p>
+      {aide && <p className={`mt-0.5 ${SECONDAIRE}`}>{aide}</p>}
+    </div>
+  );
+}
+
 function EtapeCategorie({
   onChoisir,
   categorieSlug,
@@ -243,27 +263,27 @@ function EtapeCategorie({
 }) {
   return (
     <div className="fr-etape-entree">
-      <p className="text-sm font-medium text-ink/80 mb-4">Quel est le sujet de votre retour ?</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-        {CATEGORIES.map((c) => (
-          <button
-            key={c.slug}
-            type="button"
-            onClick={() => onChoisir(c)}
-            className={`fr-carte ${
-              categorieSlug === c.slug ? "fr-carte-selectionnee" : ""
-            } flex flex-col items-center justify-center gap-2 rounded-2xl border px-3 py-5 text-center ${
-              categorieSlug === c.slug
-                ? "border-signal bg-signal/10"
-                : "border-ink/10 bg-surface hover:border-ink/25"
-            }`}
-          >
-            <span className="text-2xl" aria-hidden="true">
-              {c.icone}
-            </span>
-            <span className="text-xs font-medium text-ink/80">{c.label}</span>
-          </button>
-        ))}
+      <Question texte="Quel est le sujet de votre retour ?" />
+      <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3">
+        {CATEGORIES.map((c) => {
+          const choisi = categorieSlug === c.slug;
+          return (
+            <button
+              key={c.slug}
+              type="button"
+              onClick={() => onChoisir(c)}
+              aria-pressed={choisi}
+              className={`flex min-h-[6.5rem] flex-col items-center justify-center gap-2 rounded-[20px] px-3 py-4 text-center motion-safe:transition-colors ${FOCUS} ${
+                choisi ? "bg-ink text-paper" : "bg-surface text-ink ombre-douce active:bg-paper-warm sm:hover:bg-paper-warm/60"
+              }`}
+            >
+              <span className={`${TUILE_ICONE} text-xl ${choisi ? "!bg-paper/15 !text-paper" : ""}`} aria-hidden="true">
+                {c.icone}
+              </span>
+              <span className="text-[15px] font-semibold leading-snug">{c.label}</span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -283,30 +303,30 @@ function EtapeSousCategorie({
   return (
     <div className="fr-etape-entree">
       <BoutonRetourEtape onClick={onRetour} />
-      <p className="text-sm font-medium text-ink/80 mb-4">
-        <span aria-hidden="true">{categorie.icone}</span> {categorie.label} — précisez
-      </p>
-      <div className="flex flex-col gap-2">
-        {categorie.sousCategories.map((s) => (
-          <button
-            key={s.slug}
-            type="button"
-            onClick={() => onChoisir(s)}
-            className={`fr-carte flex items-center gap-3 rounded-xl border px-4 py-3 text-left text-sm ${
-              sousCategorieSlug === s.slug
-                ? "border-signal bg-signal/10 text-signal-fonce font-medium"
-                : "border-ink/10 bg-surface hover:border-ink/25 text-ink/80"
-            }`}
-          >
-            <span
-              className={`h-2 w-2 shrink-0 rounded-full ${
-                sousCategorieSlug === s.slug ? "bg-signal" : "bg-ink/20"
+      <Question texte={`${categorie.label} — précisez`} />
+      <div className="overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-gris-clair">
+        {categorie.sousCategories.map((s) => {
+          const choisi = sousCategorieSlug === s.slug;
+          return (
+            <button
+              key={s.slug}
+              type="button"
+              onClick={() => onChoisir(s)}
+              aria-pressed={choisi}
+              className={`flex min-h-14 w-full items-center gap-3 px-4 py-3 text-left text-base motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink ${
+                choisi ? "bg-paper-warm font-semibold text-ink" : "text-ink active:bg-ink/10 sm:hover:bg-ink/5"
               }`}
-              aria-hidden="true"
-            />
-            {s.label}
-          </button>
-        ))}
+            >
+              <span
+                className={`grid h-5 w-5 shrink-0 place-items-center rounded-full border-2 ${choisi ? "border-ink" : "border-steel"}`}
+                aria-hidden="true"
+              >
+                {choisi && <span className="h-2.5 w-2.5 rounded-full bg-ink" />}
+              </span>
+              {s.label}
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -326,19 +346,14 @@ function EtapeImportance({
   return (
     <div className="fr-etape-entree">
       <BoutonRetourEtape onClick={onRetour} />
-      <p className="text-sm font-medium text-ink/80 mb-1">Quelle importance a ce problème pour vous ?</p>
-      <p className="text-xs text-ink/40 mb-6">Un simple repère pour nous aider à prioriser.</p>
+      <Question texte="Quelle importance a ce problème pour vous ?" aide="Un simple repère pour nous aider à prioriser." />
 
-      <div className="flex flex-col items-center gap-4">
-        <div
-          className="grid h-16 w-16 place-items-center rounded-full text-xl font-display font-semibold transition-colors"
-          style={{
-            backgroundColor: `rgba(201, 107, 74, ${0.12 + (importance / 10) * 0.35})`,
-            color: "rgb(var(--c-signal-fonce))",
-          }}
-        >
+      {/* Design v3 (24/10) : le chiffre en grand, à l'encre (plus de pastille
+          saumon dont la teinte variait), et le curseur natif à l'encre. */}
+      <div className="flex flex-col items-center gap-3">
+        <p className="font-display text-4xl font-bold tabular-nums tracking-[-0.03em] text-ink" aria-hidden>
           {importance}
-        </div>
+        </p>
         <input
           type="range"
           min={1}
@@ -346,17 +361,18 @@ function EtapeImportance({
           step={1}
           value={importance}
           onChange={(e) => onChange(Number(e.target.value))}
-          className="fr-slider w-full"
+          aria-label="Importance, de 1 à 10"
+          className="h-12 w-full cursor-pointer accent-ink"
         />
-        <div className="flex w-full justify-between text-[11px] text-ink/40">
+        <div className="flex w-full justify-between text-[13px] text-steel">
           <span>1 · Pas important</span>
           <span>10 · Bloquant</span>
         </div>
       </div>
 
-      <Button onClick={onContinuer} className="mt-7 w-full justify-center">
+      <button type="button" onClick={onContinuer} className={`mt-7 ${BOUTON_PLEIN_LARGE}`}>
         Continuer
-      </Button>
+      </button>
     </div>
   );
 }
@@ -383,48 +399,46 @@ function EtapePrecisions({
   return (
     <div className="fr-etape-entree">
       <BoutonRetourEtape onClick={onRetour} />
-      <p className="text-sm font-medium text-ink/80 mb-1">Avez-vous quelque chose à ajouter ?</p>
-      <p className="text-xs text-ink/40 mb-4">Entièrement facultatif.</p>
+      <Question texte="Avez-vous quelque chose à ajouter ?" aide="Entièrement facultatif." />
 
       <textarea
         rows={4}
         placeholder="Décrivez la situation si vous voulez en dire plus…"
         value={texte}
         onChange={(e) => onTexteChange(e.target.value)}
-        className="w-full rounded-2xl border border-ink/15 bg-surface px-4 py-3 text-sm text-ink placeholder:text-ink/35 transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
+        aria-label="Précisions"
+        className={`${CHAMP} min-h-[7.5rem] resize-none py-3`}
       />
 
       <div className="mt-3">
         {fichier ? (
-          <div className="flex items-center justify-between gap-3 rounded-xl border border-ink/10 bg-surface px-3.5 py-2.5">
-            <span className="truncate text-xs text-ink/70">{fichier.name}</span>
-            <button
-              type="button"
-              onClick={() => onFichierChange(null)}
-              className="shrink-0 text-xs text-ink/40 hover:text-ink/70"
-            >
+          <div className="flex min-h-12 items-center justify-between gap-3 rounded-[14px] bg-paper-warm pl-4">
+            <span className="min-w-0 truncate text-[15px] text-ink">{fichier.name}</span>
+            <button type="button" onClick={() => onFichierChange(null)} className={`shrink-0 ${BOUTON_TEXTE}`}>
               Retirer
             </button>
           </div>
         ) : (
-          <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-ink/20 px-3.5 py-3 text-xs text-ink/50 transition-colors hover:border-ink/35 hover:text-ink/70">
-            <span aria-hidden="true">📎</span>
-            Joindre une capture d&apos;écran ou une photo (optionnel)
+          <label className="flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-paper-warm px-5 py-3 text-center text-[15px] font-semibold text-ink focus-within:ring-2 focus-within:ring-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="h-5 w-5 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 11.5l-7.8 7.8a5 5 0 0 1-7.1-7.1l8.5-8.5a3.3 3.3 0 0 1 4.7 4.7l-8.5 8.5a1.7 1.7 0 0 1-2.4-2.4l7.8-7.8" />
+            </svg>
+            Joindre une capture ou une photo (facultatif)
             <input
               type="file"
               accept="image/*"
-              className="hidden"
+              className="sr-only"
               onChange={(e) => onFichierChange(e.target.files?.[0] ?? null)}
             />
           </label>
         )}
       </div>
 
-      {erreur && <p className="mt-3 text-sm text-signal">{erreur}</p>}
+      {erreur && <p className={`mt-3 ${ERREUR}`}>{erreur}</p>}
 
-      <Button onClick={onEnvoyer} disabled={envoi} className="mt-5 w-full justify-center">
+      <button type="button" onClick={onEnvoyer} disabled={envoi} className={`mt-5 ${BOUTON_PLEIN_LARGE}`}>
         {envoi ? "Envoi en cours…" : "Envoyer mon retour"}
-      </Button>
+      </button>
     </div>
   );
 }
@@ -434,9 +448,10 @@ function BoutonRetourEtape({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      className="mb-3 inline-flex items-center gap-1 text-xs text-ink/40 hover:text-ink/70 transition-colors"
+      className={`-ml-3 mb-2 inline-flex min-h-12 items-center gap-1.5 rounded-full px-3 text-[15px] font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors ${FOCUS}`}
     >
-      ← Retour
+      <IconeRetour className="h-4 w-4" />
+      Retour
     </button>
   );
 }

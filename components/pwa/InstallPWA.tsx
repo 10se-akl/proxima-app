@@ -16,6 +16,8 @@ import {
   installationBloqueeParAndroid,
   type MoteurRestreint,
 } from "@/lib/pwa/plateforme";
+import { IconeInstaller } from "@/components/ui/Icones";
+import { BOUTON_CREUX, BOUTON_PLEIN, BOUTON_TEXTE, SECONDAIRE, TUILE_ICONE } from "@/components/ui/recettes";
 
 // Sprint Beta Final (27/08) — 🔴F : texte d'instructions par navigateur
 // restreint (voir lib/pwa/plateforme.ts pour le pourquoi de chaque cas).
@@ -224,31 +226,34 @@ export function InstallPWA() {
   // et sur iOS, où cet événement n'existe pas.
   const enUnGeste = !echecInstallation && (installationDirecte || (!modeIOS && !moteurRestreint));
 
+  // Design v3 (24/10) : une carte (surface, ombre des feuilles, sans
+  // contour), la tuile d'icône neutre au lieu du saumon et de l'émoji, des
+  // textes à 15 px au moins, un bouton plein et un « Plus tard » en creux.
   return (
     <div className="pwa-carte-entree fixed inset-x-4 z-50 sm:inset-x-auto sm:right-6 sm:w-96 [bottom:calc(1rem+var(--barre-bas,0px)+env(safe-area-inset-bottom))] sm:[bottom:calc(1.5rem+env(safe-area-inset-bottom))]">
-      <div className="rounded-2xl border border-ink/10 bg-surface shadow-lg shadow-ink/10 p-4">
+      <div className="rounded-[20px] bg-surface p-4 ombre-feuille">
         {installationReussie ? (
           <div className="flex items-center gap-3 py-1">
-            <span className="text-xl" aria-hidden="true">
-              ✓
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden="true">
+              <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
             </span>
-            <p className="text-sm font-medium text-ink">
+            <p className="text-[15px] font-semibold text-ink">
               Compyo s&apos;installe sur votre téléphone…
             </p>
           </div>
         ) : (
           <>
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 shrink-0 rounded-xl bg-signal/10 border border-signal/20 flex items-center justify-center">
-                <span className="text-lg" aria-hidden="true">
-                  📲
-                </span>
-              </div>
+              <span className={TUILE_ICONE} aria-hidden="true">
+                <IconeInstaller taille={20} />
+              </span>
               <div className="min-w-0">
-                <p className="text-sm font-semibold text-ink">
+                <p className="text-[17px] font-semibold leading-snug text-ink">
                   {plateforme === "desktop" ? "Installer Compyo sur cet ordinateur" : "Installer Compyo"}
                 </p>
-                <p className="mt-1 text-xs text-ink/60 leading-relaxed">
+                <p className={`mt-1 leading-snug ${SECONDAIRE}`}>
                   {/* Sans enUnGeste : le clic a échoué, ou c'est un
                       navigateur restreint, ou iOS. */}
                   {enUnGeste
@@ -265,20 +270,14 @@ export function InstallPWA() {
                     /installer donne le pas-à-pas complet du navigateur
                     détecté, et le diagnostic à nous envoyer si ça coince. */}
                 {!enUnGeste && (
-                  <a
-                    href="/installer"
-                    className="mt-1.5 inline-block text-xs font-medium text-signal underline underline-offset-2"
-                  >
+                  <a href="/installer" className={`-ml-3 ${BOUTON_TEXTE}`}>
                     Voir le pas-à-pas
                   </a>
                 )}
               </div>
             </div>
-            <div className="mt-3 flex gap-2 justify-end">
-              <button
-                onClick={fermer}
-                className="text-xs font-medium text-ink/50 hover:text-ink px-3 py-2 transition-colors"
-              >
+            <div className="mt-3 flex justify-end gap-2">
+              <button type="button" onClick={fermer} className={BOUTON_CREUX}>
                 Plus tard
               </button>
               {/*
@@ -292,18 +291,11 @@ export function InstallPWA() {
                 savait installer Compyo en un bouton.
               */}
               {enUnGeste ? (
-                <button
-                  onClick={installer}
-                  disabled={installationEnCours}
-                  className="text-xs font-medium bg-ink text-paper rounded-lg px-3.5 py-2 transition-colors hover:bg-signal disabled:opacity-60"
-                >
+                <button type="button" onClick={installer} disabled={installationEnCours} className={BOUTON_PLEIN}>
                   {installationEnCours ? "Installation…" : "Installer"}
                 </button>
               ) : (
-                <button
-                  onClick={fermer}
-                  className="text-xs font-medium bg-ink text-paper rounded-lg px-3.5 py-2 transition-colors hover:bg-signal"
-                >
+                <button type="button" onClick={fermer} className={BOUTON_PLEIN}>
                   J&apos;ai compris
                 </button>
               )}

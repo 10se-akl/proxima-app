@@ -8,6 +8,7 @@ import { IconeChevron } from "@/components/projet/icones";
 import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
 import type { ProjetAPlanifier } from "./FeuillePlanifier";
 import { jourEnLettres, type CleJour } from "./semaine";
+import { BOUTON_CREUX, BOUTON_TEXTE, GROUPE, SECONDAIRE } from "@/components/ui/recettes";
 
 // ============================================================
 // Le « + » d'un jour vide : pour quel chantier ? (refonte 03/10, duel G,
@@ -61,14 +62,17 @@ export function ChoisirChantier({
 
   return (
     <Feuille ouverte={!!jour} titre="Quel chantier ?" surFermer={surFermer}>
-      <p className="text-base text-steel first-letter:uppercase">{jour ? jourEnLettres(jour) : ""}</p>
+      <p className={`${SECONDAIRE} first-letter:uppercase`}>{jour ? jourEnLettres(jour) : ""}</p>
 
-      <div className="mt-3 flex flex-col gap-2">
+      {/* Design v3 (24/10) : les chantiers en liste groupée (une carte,
+          des filets), plus un cadre par ligne ; le chargement est immobile
+          (pas d'animation en boucle). */}
+      <div className="mt-3">
         {lignes === null && !erreur && (
-          <div aria-busy="true" aria-label="Chargement" className="flex flex-col gap-2">
+          <div aria-busy="true" aria-label="Chargement" className={GROUPE}>
             {[0, 1, 2].map((i) => (
-              <div key={i} className="flex min-h-16 items-center rounded-2xl bg-surface px-4 ring-1 ring-ink/15">
-                <div className="h-4 w-40 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+              <div key={i} className="flex min-h-16 items-center px-4">
+                <div className="h-4 w-40 rounded-full bg-paper-warm" />
               </div>
             ))}
           </div>
@@ -77,11 +81,7 @@ export function ChoisirChantier({
         {erreur && (
           <div className="flex items-center justify-between gap-3">
             <p className="text-base text-steel">Chantiers non chargés.</p>
-            <button
-              type="button"
-              onClick={() => setEssai((n) => n + 1)}
-              className="min-h-12 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
-            >
+            <button type="button" onClick={() => setEssai((n) => n + 1)} className={BOUTON_CREUX}>
               Réessayer
             </button>
           </div>
@@ -89,28 +89,29 @@ export function ChoisirChantier({
 
         {lignes?.length === 0 && <p className="text-base text-steel">Aucun chantier en cours.</p>}
 
-        {lignes?.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => surChoisir(p)}
-            className="flex min-h-16 w-full items-center gap-3 rounded-2xl bg-surface px-4 py-3 text-left ring-1 ring-ink/15 motion-safe:transition-colors active:bg-ink/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block truncate text-base font-semibold text-ink">{p.nom_client}</span>
-              {LABEL_TYPE_CHANTIER[p.type_chantier ?? "autre"] && (
-                <span className="block truncate text-sm text-steel">{LABEL_TYPE_CHANTIER[p.type_chantier ?? "autre"]}</span>
-              )}
-            </span>
-            <IconeChevron className="h-4 w-4 shrink-0 text-ink" />
-          </button>
-        ))}
+        {lignes && lignes.length > 0 && (
+          <div className={GROUPE}>
+            {lignes.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => surChoisir(p)}
+                className="flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left motion-safe:transition-colors active:bg-ink/[0.06] sm:hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
+              >
+                <span className="min-w-0 flex-1">
+                  <span className="block break-words text-[17px] font-semibold text-ink">{p.nom_client}</span>
+                  {LABEL_TYPE_CHANTIER[p.type_chantier ?? "autre"] && (
+                    <span className="block text-[15px] text-steel">{LABEL_TYPE_CHANTIER[p.type_chantier ?? "autre"]}</span>
+                  )}
+                </span>
+                <IconeChevron className="h-4 w-4 shrink-0 text-steel" />
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      <Link
-        href={`/dashboard/planning/nouveau?date=${jour ?? ""}`}
-        className="mt-2 inline-flex min-h-12 items-center text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-      >
+      <Link href={`/dashboard/planning/nouveau?date=${jour ?? ""}`} className={`-ml-3 mt-2 ${BOUTON_TEXTE}`}>
         Autre…
       </Link>
     </Feuille>

@@ -10,7 +10,8 @@ import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 import { IconeChevron, IconeLieu, IconeMessage, IconeTelephone } from "@/components/projet/icones";
 import { useChangerRendezVous } from "./ChangerRendezVous";
 import { changerStatutEvenement, type EvenementAvecProjet } from "./actionsEvenement";
-import { heureEnLettres } from "./semaine";
+import { heure } from "@/lib/heure";
+import { BOUTON_TEXTE, ERREUR, GROUPE, TUILE_ACTION } from "@/components/ui/recettes";
 
 // ============================================================
 // Ce qu'on peut faire d'un rendez-vous, sur téléphone (refonte 03/10, duel
@@ -25,8 +26,17 @@ import { heureEnLettres } from "./semaine";
 // créneau est libéré. Il reste au menu de la grille de l'ordinateur.
 // ============================================================
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
+// Design v3 (24/10) : les trois gestes en TUILE_ACTION (creux, sans contour) ;
+// un geste impossible (pas de téléphone, pas d'adresse) garde sa place mais
+// en simple trait, sans fond. Les lignes en GROUPE, les gestes rares en
+// BOUTON_TEXTE.
+const TUILE_INACTIVE =
+  "flex min-h-[4rem] flex-col items-center justify-center gap-1 rounded-[20px] px-2 text-[15px] font-semibold text-steel ring-1 ring-inset ring-gris-clair";
+// Design v3 (25/10) : « Annuler le rendez-vous » n'est plus un lien
+// souligné : la forme de BOUTON_TEXTE (sans soulignement), en orange foncé
+// parce que le geste défait quelque chose.
+const BOUTON_TEXTE_ALERTE = BOUTON_TEXTE.replace("text-ink ", "text-signal-fonce disabled:opacity-60 ");
+const LIGNE = `flex w-full min-h-14 items-center justify-between gap-3 px-4 text-left text-[17px] font-semibold text-ink active:bg-ink/[0.06] sm:hover:bg-ink/[0.03] motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink`;
 
 /** Un titre de feuille tient sur une ligne à 360 px (règle 2). */
 function abreger(texte: string, max: number) {
@@ -56,7 +66,7 @@ export function ActionsRendezVous({
   const fait = evenement.statut === "termine";
   const telephone = evenement.demandes?.telephone_client;
   const adresse = evenement.demandes?.adresse_client;
-  const titre = `${heureEnLettres(evenement.date_heure)} · ${abreger(evenement.demandes?.nom_client ?? evenement.titre, 26)}`;
+  const titre = `${heure(evenement.date_heure)} · ${abreger(evenement.demandes?.nom_client ?? evenement.titre, 26)}`;
 
   async function basculerFait() {
     setEnCours(true);
@@ -71,10 +81,9 @@ export function ActionsRendezVous({
     router.refresh();
   }
 
-  const tuile = `flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface text-base font-semibold text-ink ring-1 ring-ink/15 active:bg-ink/10 ${FOCUS}`;
-  const tuileInactive =
-    "flex min-h-[4.5rem] flex-col items-center justify-center gap-1.5 rounded-2xl bg-surface text-base font-semibold text-steel ring-1 ring-ink/15";
-  const ligne = `flex w-full min-h-14 items-center justify-between gap-3 border-b border-ink/15 text-left text-base font-semibold text-ink last:border-b-0 active:bg-ink/10 ${FOCUS}`;
+  const tuile = TUILE_ACTION;
+  const tuileInactive = TUILE_INACTIVE;
+  const ligne = LIGNE;
 
   return (
     <>
@@ -111,32 +120,29 @@ export function ActionsRendezVous({
           </div>
         )}
 
-        <div className={evenement.demande_id ? "mt-3" : ""}>
+        <div className={`${GROUPE} ${evenement.demande_id ? "mt-3" : ""}`}>
           <button type="button" disabled={enCours} onClick={() => void basculerFait()} className={ligne}>
             {fait ? "Remettre à faire" : "C'est fait"}
-            <IconeChevron className="h-4 w-4 text-ink" />
+            <IconeChevron className="h-4 w-4 text-steel" />
           </button>
           {evenement.demande_id && (
             <Link href={`/dashboard/demandes/${evenement.demande_id}`} className={ligne}>
               Ouvrir le projet
-              <IconeChevron className="h-4 w-4 text-ink" />
+              <IconeChevron className="h-4 w-4 text-steel" />
             </Link>
           )}
           {evenement.statut !== "annule" && (
             <button type="button" disabled={enCours} onClick={changer.ouvrirDeplacer} className={ligne}>
               Déplacer
-              <IconeChevron className="h-4 w-4 text-ink" />
+              <IconeChevron className="h-4 w-4 text-steel" />
             </button>
           )}
         </div>
 
         {/* Les gestes rares, à l'écart. « Modifier » (le formulaire : titre,
             durée, notes) n'est plus une ligne mais un lien, à côté d'« Annuler ». */}
-        <div className="mt-4 flex flex-wrap gap-x-6">
-          <Link
-            href={`/dashboard/planning/nouveau?eventId=${evenement.id}`}
-            className="inline-flex min-h-12 items-center text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-          >
+        <div className="-ml-3 mt-3 flex flex-wrap gap-x-2">
+          <Link href={`/dashboard/planning/nouveau?eventId=${evenement.id}`} className={BOUTON_TEXTE}>
             Modifier
           </Link>
           {evenement.statut !== "annule" && (
@@ -144,13 +150,13 @@ export function ActionsRendezVous({
               type="button"
               disabled={enCours}
               onClick={changer.ouvrirAnnuler}
-              className="inline-flex min-h-12 items-center text-base font-semibold text-signal-fonce underline decoration-signal-fonce/30 underline-offset-4 dark:text-signal-clair dark:decoration-signal-clair/30"
+              className={BOUTON_TEXTE_ALERTE}
             >
               Annuler le rendez-vous
             </button>
           )}
         </div>
-        <p aria-live="polite" className="mt-1 min-h-5 text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+        <p aria-live="polite" className={`${ERREUR} min-h-5`}>
           {erreur ? "Pas enregistré. Réessayez." : ""}
         </p>
       </Feuille>

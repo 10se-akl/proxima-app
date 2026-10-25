@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, type ReactNode } from "react";
-import { EnTeteColonnes, LigneDocument, formatEuros } from "@/components/dashboard/LigneDocument";
+import { EnTeteColonnes, LigneDocument } from "@/components/dashboard/LigneDocument";
 import { resumerAEncaisser } from "@/lib/argent";
 import { aujourdhuiParis } from "@/lib/moisParis";
 import { IconeDocument } from "@/components/ui/Icones";
-import { CLASSE_CHAMP_NUIT, EnTetePage, classePuceNuit } from "@/components/ui/EnTetePage";
-import { Pastille } from "@/components/ui/Pastille";
-import { IconeEuro } from "@/components/projet/icones";
+import Link from "next/link";
+import { EnTetePage } from "@/components/ui/EnTetePage";
+import { BOUTON_CREUX, CARTE, CHAMP, SECONDAIRE, TUILE_ICONE, euros, puce } from "@/components/ui/recettes";
 import type { Facture } from "@/types";
 
 type FactureAvecClient = Pick<
@@ -76,10 +76,13 @@ export function ListeFacturesRecherchable({
   factures,
   filtreInitial,
   actions,
+  pied,
 }: {
   factures: FactureAvecClient[];
-  /** Les boutons de l'en-tête (l'export comptable). */
+  /** Les boutons de l'en-tête (l'export comptable, sur ordinateur). */
   actions?: ReactNode;
+  /** 25/10 — sous la liste (l'export comptable, sur téléphone). */
+  pied?: ReactNode;
   /** La valeur de ?statut= dans l'adresse. */
   filtreInitial?: string | null;
 }) {
@@ -102,12 +105,7 @@ export function ListeFacturesRecherchable({
     <div>
       <EnTetePage
         titre="Factures"
-        sousTitre={aEncaisser.nombre > 0 ? `${nombre} · ${formatEuros(aEncaisser.total)} TTC à encaisser` : nombre}
-        icone={
-          <Pastille couleur="violet" taille="grande">
-            <IconeEuro className="h-6 w-6" />
-          </Pastille>
-        }
+        sousTitre={aEncaisser.nombre > 0 ? `${nombre} · ${euros(aEncaisser.total)} TTC à encaisser` : nombre}
         actions={actions}
       >
         <input
@@ -116,19 +114,21 @@ export function ListeFacturesRecherchable({
           onChange={(e) => setRecherche(e.target.value)}
           placeholder="Client, numéro de facture…"
           aria-label="Rechercher une facture"
-          className={CLASSE_CHAMP_NUIT}
+          className={CHAMP}
         />
 
         {/* 27/09 — Des pastilles au pouce (44 px) sur une seule rangée qui
             défile, plutôt que de petites étiquettes de 24 px sur deux lignes. */}
-        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+        {/* Design v3 (24/10) : la rangée déborde jusqu'au bord de l'écran
+            (16 px, puis 20 px dès 400 px, comme la grille de la page). */}
+        <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] min-[400px]:-mx-5 min-[400px]:px-5 sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
           {LABEL_STATUT_FILTRE.map((f) => (
             <button
               key={f.cle}
               type="button"
               onClick={() => setFiltre(f.cle)}
               aria-pressed={filtre === f.cle}
-              className={`shrink-0 ${classePuceNuit(filtre === f.cle)}`}
+              className={puce(filtre === f.cle)}
             >
               {f.label}
             </button>
@@ -136,21 +136,36 @@ export function ListeFacturesRecherchable({
         </div>
       </EnTetePage>
 
-      {/* Refonte visuelle (04/10) : la liste dans une carte, chaque ligne
-          un cran plus sombre, comme « Mes projets » sur l'accueil. */}
-      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce">
-        {filtres.length > 0 && <EnTeteColonnes />}
-        <div className="divide-y divide-ink/[0.08]">
+      {/* Refonte visuelle (04/10) : la liste dans une carte. Design v3
+          (24/10) : la carte des recettes, les lignes séparées du filet. */}
+      <div className={`mt-5 overflow-hidden ${CARTE}`}>
+        {filtres.length > 0 && (
+          <div className="lg:border-b lg:border-gris-clair">
+            <EnTeteColonnes />
+          </div>
+        )}
+        <div className="divide-y divide-gris-clair">
         {filtres.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
-              <IconeDocument taille={20} className="text-signal" />
+          // Design v3 (24/10) : l'état vide — une tuile d'icône neutre, une
+          // phrase, un geste (en creux : le plein reste au [+] de la barre).
+          <div className="flex flex-col items-center px-5 py-10 text-center">
+            <span className={TUILE_ICONE} aria-hidden>
+              <IconeDocument taille={20} />
             </span>
-            <p className="text-sm text-ink/50">
+            <p className={`mt-3 max-w-xs ${SECONDAIRE}`}>
               {factures.length === 0
                 ? "Aucune facture pour le moment. Créez-en une depuis un projet dont le devis a été accepté."
                 : "Aucune facture pour ce filtre."}
             </p>
+            {factures.length === 0 ? (
+              <Link href="/dashboard/demandes" className={`mt-4 ${BOUTON_CREUX}`}>
+                Voir mes projets
+              </Link>
+            ) : (
+              <button type="button" onClick={() => { setFiltre("tous"); setRecherche(""); }} className={`mt-4 ${BOUTON_CREUX}`}>
+                Voir toutes les factures
+              </button>
+            )}
           </div>
         ) : (
           <>
@@ -169,6 +184,7 @@ export function ListeFacturesRecherchable({
         )}
         </div>
       </div>
+      {pied}
     </div>
   );
 }

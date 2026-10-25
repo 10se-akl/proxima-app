@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui/Card";
+import { IconeChevron } from "@/components/projet/icones";
+import { BOUTON_TEXTE, CARTE_PLEINE, FOCUS } from "@/components/ui/recettes";
 import type { EvaluationDevis, PointQualite } from "@/lib/devis/qualite";
 import { COMPLETIONS, CompletionMention, type ContexteCompletion } from "./CompletionMention";
 
@@ -19,66 +20,59 @@ import { COMPLETIONS, CompletionMention, type ContexteCompletion } from "./Compl
 // champ (une TVA contradictoire).
 // ============================================================
 
-function couleur(score: number) {
-  if (score >= 90) return { texte: "text-succes", anneau: "rgb(var(--c-succes))" };
-  if (score >= 70) return { texte: "text-alerte-orange", anneau: "rgb(var(--c-alerte-orange))" };
-  return { texte: "text-signal", anneau: "rgb(var(--c-signal))" };
-}
-
-function Anneau({ score }: { score: number }) {
-  const rayon = 22;
-  const circonference = 2 * Math.PI * rayon;
+// Design v3 (25/10) : plus d'anneau ni de pourcentage. « 30 » dans un
+// anneau rouge sonnait comme une note sanctionnée ; l'artisan veut savoir
+// combien de points regarder, pas sa note. Le pourcentage reste calculé
+// (lib/devis/qualite) mais ne s'affiche plus ici.
+function Pastille({ aVerifier }: { aVerifier: number }) {
+  const ok = aVerifier === 0;
   return (
-    <div className="relative h-14 w-14 shrink-0">
-      <svg viewBox="0 0 52 52" className="h-full w-full -rotate-90">
-        <circle cx="26" cy="26" r={rayon} fill="none" stroke="rgb(var(--c-ink) / 0.1)" strokeWidth="4" />
-        <circle
-          cx="26"
-          cy="26"
-          r={rayon}
-          fill="none"
-          stroke={couleur(score).anneau}
-          strokeWidth="4"
-          strokeLinecap="round"
-          strokeDasharray={`${(circonference * score) / 100} ${circonference}`}
-        />
-      </svg>
-      <span
-        className={`absolute inset-0 grid place-items-center text-[13px] font-semibold ${couleur(score).texte}`}
-      >
-        {score}
-      </span>
-    </div>
+    <span
+      aria-hidden
+      className={`grid h-10 w-10 shrink-0 place-items-center rounded-full text-base font-bold ${
+        ok ? "bg-succes-fond text-succes" : "bg-alerte-fond text-alerte-orange"
+      }`}
+    >
+      {ok ? "✓" : "!"}
+    </span>
   );
 }
 
 function Ligne({ point, completion }: { point: PointQualite; completion?: ContexteCompletion }) {
   const surPlace = point.niveau !== "ok" && completion && COMPLETIONS[point.id];
   const icone = point.niveau === "ok" ? "✓" : point.niveau === "attention" ? "!" : "•";
+  // Design v3 (24/10) : des teintes opaques d'état (≥ 5,9:1), plus des
+  // couleurs à 12 % d'opacité.
   const style =
     point.niveau === "ok"
-      ? "bg-succes/12 text-succes"
+      ? "bg-succes-fond text-succes"
       : point.niveau === "attention"
-        ? "bg-signal/12 text-signal"
+        ? "bg-signal-fond text-signal-fonce"
         : "bg-alerte-fond text-alerte-orange";
   return (
-    <li className="flex gap-3 py-2">
-      <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full text-[11px] font-bold ${style}`}>
+    <li className="flex gap-3 py-3">
+      <span className={`mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full text-[13px] font-bold ${style}`} aria-hidden>
         {icone}
       </span>
       <div className="min-w-0 flex-1">
-        <p className={`text-sm ${point.niveau === "ok" ? "text-ink/55" : "font-medium text-ink"}`}>{point.libelle}</p>
+        {/* L'état n'était porté que par la couleur de la pastille : on le dit
+            aussi au lecteur d'écran. */}
+        <p className={`text-base [text-wrap:pretty] ${point.niveau === "ok" ? "text-steel" : "font-semibold text-ink"}`}>
+          <span className="sr-only">{point.niveau === "ok" ? "OK : " : "À corriger : "}</span>
+          {point.libelle}
+        </p>
         {surPlace ? (
           <CompletionMention pointId={point.id} contexte={completion} />
         ) : (
-          point.niveau !== "ok" && <p className="mt-0.5 text-xs leading-relaxed text-ink/60">{point.detail}</p>
+          point.niveau !== "ok" && <p className="mt-0.5 text-[15px] leading-relaxed text-steel [text-wrap:pretty]">{point.detail}</p>
         )}
         {point.lien && !surPlace && (
           <Link
             href={point.lien.href}
-            className="mt-1 inline-block text-xs font-medium text-signal underline-offset-2 hover:underline max-sm:mt-0 max-sm:inline-flex max-sm:min-h-11 max-sm:items-center"
+            className={`-ml-3 ${BOUTON_TEXTE}`}
           >
-            {point.lien.texte} →
+            {point.lien.texte}
+            <IconeChevron className="h-4 w-4 text-steel" />
           </Link>
         )}
       </div>
@@ -97,41 +91,47 @@ export function ScoreDevis({ evaluation, completion }: { evaluation: EvaluationD
     });
 
   return (
-    <Card className="p-5">
+    <div className={CARTE_PLEINE}>
+      {/* Design v3 (24/10) : plus de capitales espacées ni de gris pâle ;
+          le chevron des autres listes au lieu du triangle. */}
       <button
         type="button"
         onClick={() => setOuvert((o) => !o)}
         aria-expanded={ouvert}
-        className="flex w-full items-center gap-4 text-left"
+        className={`-m-2 flex w-[calc(100%+1rem)] items-center gap-4 rounded-[20px] p-2 text-left ${FOCUS}`}
       >
-        <Anneau score={evaluation.score} />
+        <Pastille aVerifier={evaluation.aVerifier} />
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-ink/50">Avant d&apos;envoyer</p>
-          <p className="mt-0.5 font-display text-[17px] font-semibold">
+          <p className="text-[15px] text-steel">Avant d&apos;envoyer</p>
+          <p
+            className={`mt-0.5 font-display text-[17px] font-semibold ${
+              evaluation.aVerifier === 0 ? "text-succes" : "text-alerte-orange"
+            }`}
+          >
             {evaluation.aVerifier === 0
               ? "Tout est en ordre"
-              : `${evaluation.aVerifier} point${evaluation.aVerifier > 1 ? "s" : ""} à vérifier`}
+              : `${evaluation.aVerifier} point${evaluation.aVerifier > 1 ? "s" : ""} à vérifier`}
           </p>
-          <p className="text-xs text-ink/50">
-            Conformité du document : {evaluation.score} %. Vous restez libre d&apos;envoyer ce devis tel quel.
+          <p className="mt-0.5 text-sm text-steel [text-wrap:pretty]">
+            Vous restez libre d&apos;envoyer ce devis tel quel.
           </p>
         </div>
-        <span className={`shrink-0 text-ink/40 transition-transform ${ouvert ? "" : "-rotate-90"}`}>▾</span>
+        <IconeChevron
+          className={`h-5 w-5 shrink-0 text-steel motion-safe:transition-transform ${ouvert ? "rotate-90" : ""}`}
+        />
       </button>
 
       {ouvert && (
-        <div className="mt-4 border-t border-ink/10 pt-2">
-          <ul className="divide-y divide-ink/5">
+        <div className="mt-4 border-t border-gris-clair pt-1">
+          <ul className="divide-y divide-gris-clair">
             {aTrier(evaluation.conformite).map((p) => (
               <Ligne key={p.id} point={p} completion={completion} />
             ))}
           </ul>
           {evaluation.lisibilite.length > 0 && (
             <>
-              <p className="mt-4 text-xs font-medium uppercase tracking-wider text-ink/50">
-                Ce que votre client comprendra
-              </p>
-              <ul className="divide-y divide-ink/5">
+              <p className="mt-5 text-base font-semibold text-ink">Ce que votre client comprendra</p>
+              <ul className="divide-y divide-gris-clair">
                 {aTrier(evaluation.lisibilite).map((p) => (
                   <Ligne key={p.id} point={p} completion={completion} />
                 ))}
@@ -140,6 +140,6 @@ export function ScoreDevis({ evaluation, completion }: { evaluation: EvaluationD
           )}
         </div>
       )}
-    </Card>
+    </div>
   );
 }

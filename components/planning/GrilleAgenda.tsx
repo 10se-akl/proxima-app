@@ -15,6 +15,12 @@ import { TYPES_CHANTIER_METEO_SENSIBLES, type RisqueMeteoJour } from "@/lib/mete
 import { FeuilleMessageClient } from "@/components/projet/FeuilleMessageClient";
 import { useChangerRendezVous } from "./ChangerRendezVous";
 import { quoiDuRendezVous } from "./semaine";
+import { CARTE } from "@/components/ui/recettes";
+import { heure as ecrireHeure, heureEnMots } from "@/lib/heure";
+
+// Design v3 (24/10) : une ligne du menu d'un rendez-vous, 48 px, à l'encre.
+const LIGNE_MENU =
+  "flex min-h-12 w-full items-center px-4 text-left text-[15px] font-medium text-ink motion-safe:transition-colors sm:hover:bg-paper-warm disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink";
 
 // Plage par défaut : couvre une journée de travail classique sans obliger
 // à scroller pour un artisan qui n'a jamais de rendez-vous hors de ces
@@ -41,14 +47,22 @@ const COULEUR_PRIORITE: Record<Priorite, string> = {
   normal: "bg-paper-warm border-steel",
 };
 
-const COULEUR_TACHE_SANS_PROJET = "bg-surface border-gris-clair";
+// 25/10 : filet `contour` (gris-clair ne se voyait pas sur la surface).
+const COULEUR_TACHE_SANS_PROJET = "bg-surface border-contour";
 
-const LEGENDE: { libelle: string; filet: string }[] = [
-  { libelle: "Urgent", filet: "bg-signal" },
-  { libelle: "Important", filet: "bg-alerte-orange" },
-  { libelle: "Normal", filet: "bg-steel" },
-  { libelle: "Sans projet", filet: "bg-gris-clair" },
+// Design v3 (25/10) : la légende montre un bloc en miniature (la teinte ET
+// le filet), pas un trait de 4 px où « Urgent » (signal) et « Important »
+// (alerte-orange) se confondaient. Mêmes classes que COULEUR_PRIORITE.
+const LEGENDE: { libelle: string; echantillon: string }[] = [
+  { libelle: "Urgent", echantillon: COULEUR_PRIORITE.urgent },
+  { libelle: "Important", echantillon: COULEUR_PRIORITE.important },
+  { libelle: "Normal", echantillon: COULEUR_PRIORITE.normal },
+  { libelle: "Sans projet", echantillon: COULEUR_TACHE_SANS_PROJET },
 ];
+
+// Design v3 (25/10) : « Bernard-Lefèvre » ne se coupe plus au trait d'union
+// (trait d'union insécable, U+2011) ; le nom passe à la ligne entre les mots.
+const sansCoupureAuTrait = (t: string) => t.replace(/-/g, "\u2011");
 
 function estPasse(jour: Date) {
   const debutAujourdhui = new Date();
@@ -244,9 +258,13 @@ function BlocEvenement({
           setMenuOuvert(!menuOuvert);
         }}
         style={{ height: hauteur }}
-        className={`flex w-full items-start text-left px-2 py-1 border-l-4 text-ink text-xs leading-tight overflow-hidden rounded-md transition-all duration-150 hover:shadow-sm ${couleur} ${
-          termine ? "opacity-40 line-through" : ""
-        } ${annule ? "opacity-35 line-through italic" : ""}`}
+        // Design v3 (24/10) : 13 px (plus de 12), pas d'ombre au survol ni de
+        // transition-all ; un anneau de focus clavier.
+        // Design v3 (25/10) : un rendez-vous terminé ou annulé n'est plus
+        // pâli par opacité (illisible) : teinte neutre, texte acier barré.
+        className={`flex w-full items-start overflow-hidden rounded-lg border-l-4 px-2 py-1 text-left text-[13px] leading-tight hover:brightness-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+          termine || annule ? "bg-paper border-gris-clair text-steel line-through" : `${couleur} text-ink`
+        }`}
         title={
           alerteMeteo
             ? `⚠️ Météo à risque (${meteo?.resume}) — ${evenement.titre}`
@@ -257,10 +275,11 @@ function BlocEvenement({
             de huit heures, le texte flottait au milieu). */}
         <span className="block min-w-0">
           <span className="tabular-nums text-steel">
-            {date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+            {ecrireHeure(date)}
           </span>{" "}
-          {alerteMeteo && <span aria-hidden>⚠️ </span>}
-          <span className="font-semibold">{qui ?? evenement.titre}</span>
+          {/* Design v3 (24/10) : le mot en orange foncé plutôt qu'un émoji. */}
+          {alerteMeteo && <span className="font-semibold text-signal-fonce">Météo · </span>}
+          <span className="break-words font-semibold [hyphens:none]">{sansCoupureAuTrait(qui ?? evenement.titre)}</span>
           {qui && quoi && quoi !== qui && <span className="text-steel"> · {quoi}</span>}
         </span>
       </button>
@@ -277,8 +296,11 @@ function BlocEvenement({
               (44px, norme tactile Apple/Google) avec le texte centré
               verticalement via flex, pour absorber l'imprécision du doigt
               sur un écran de chantier. */}
+          {/* Design v3 (24/10) : une carte posée en ombre-feuille, des lignes
+              de 48 px séparées d'un filet, le texte à l'encre (plus d'encre
+              pâlie à 80 %). */}
           <div
-            className={`absolute z-30 rounded-xl bg-surface border border-ink/15 shadow-lg overflow-hidden text-sm w-56 ${
+            className={`absolute z-30 w-60 divide-y divide-gris-clair overflow-hidden ${CARTE} ombre-feuille ${
               alignMenuADroite ? "right-0" : "left-0"
             } ${alignMenuEnHaut ? "bottom-full mb-1" : "top-full mt-1"}`}
           >
@@ -291,16 +313,13 @@ function BlocEvenement({
                   setMenuOuvert(false);
                   setMessageOuvert(true);
                 }}
-                className="w-full min-h-12 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink font-medium border-b border-ink/5"
+                className={`${LIGNE_MENU} font-semibold`}
               >
                 {alerteMeteo ? "Prévenir le client (météo)" : "Prévenir le client"}
               </button>
             )}
             {evenement.demande_id && (
-              <button
-                onClick={() => router.push(`/dashboard/demandes/${evenement.demande_id}`)}
-                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
-              >
+              <button onClick={() => router.push(`/dashboard/demandes/${evenement.demande_id}`)} className={LIGNE_MENU}>
                 Ouvrir le projet
               </button>
             )}
@@ -310,22 +329,15 @@ function BlocEvenement({
                   setMenuOuvert(false);
                   changer.ouvrirDeplacer();
                 }}
-                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+                className={LIGNE_MENU}
               >
                 Déplacer
               </button>
             )}
-            <button
-              onClick={() => router.push(`/dashboard/planning/nouveau?eventId=${evenement.id}`)}
-              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
-            >
+            <button onClick={() => router.push(`/dashboard/planning/nouveau?eventId=${evenement.id}`)} className={LIGNE_MENU}>
               Modifier
             </button>
-            <button
-              onClick={basculerTermine}
-              disabled={enCours || annule}
-              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5 disabled:opacity-40"
-            >
+            <button onClick={basculerTermine} disabled={enCours || annule} className={LIGNE_MENU}>
               {termine ? "Marquer à faire" : "Marquer terminé"}
             </button>
             {!annule && (
@@ -335,20 +347,21 @@ function BlocEvenement({
                   changer.ouvrirAnnuler();
                 }}
                 disabled={enCours}
-                className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-paper text-ink/80 border-b border-ink/5"
+                className={LIGNE_MENU}
               >
                 Annuler ce rendez-vous
               </button>
             )}
+            {/* Supprimer garde sa confirmation du navigateur (window.confirm). */}
             <button
               onClick={supprimer}
               disabled={enCours}
-              className="w-full min-h-11 flex items-center text-left px-3 py-2 transition-colors hover:bg-signal-fond text-signal-fonce"
+              className="flex min-h-12 w-full items-center px-4 text-left text-[15px] font-semibold text-signal-fonce motion-safe:transition-colors sm:hover:bg-signal-fond disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
             >
               Supprimer
             </button>
             {erreur && (
-              <p className="px-3 py-2 text-xs text-signal border-t border-ink/5">
+              <p className="px-4 py-2.5 text-sm font-semibold text-signal-fonce">
                 Échec de l&apos;action. Réessayez.
               </p>
             )}
@@ -401,34 +414,37 @@ export function GrilleAgenda({
     <ul aria-label="Légende des couleurs" className="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 px-1 text-sm text-steel">
       {LEGENDE.map((l) => (
         <li key={l.libelle} className="inline-flex items-center gap-1.5">
-          <span aria-hidden className={`h-3.5 w-1 rounded-full ${l.filet}`} />
+          <span aria-hidden className={`h-4 w-5 rounded-[4px] border-l-4 ${l.echantillon}`} />
           {l.libelle}
         </li>
       ))}
     </ul>
-    <div className="rounded-2xl border border-ink/10 bg-surface overflow-x-auto">
+    {/* Design v3 (24/10) : la grille dans une carte (surface + ombre
+        douce, sans contour), des filets en gris-clair. */}
+    <div className={`overflow-x-auto ${CARTE}`}>
       <div className="min-w-[700px]">
-        <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-ink/10">
+        <div className="grid grid-cols-[56px_repeat(7,1fr)] border-b border-gris-clair">
           <div />
           {jours.map((jour) => {
             const estAujourdhui = estMemeJour(jour, new Date());
             const passe = estPasse(jour);
             return (
-              <div
-                key={jour.toISOString()}
-                className={`px-2 py-3 text-center border-l border-ink/10 ${
-                  estAujourdhui ? "bg-paper" : ""
-                } ${passe ? "opacity-45" : ""}`}
-              >
-                <p className="font-mono text-[10px] uppercase tracking-wider text-steel">
+              <div key={jour.toISOString()} className="border-l border-gris-clair px-2 py-3 text-center">
+                {/* Design v3 (24/10) : plus de capitales espacées en 10 px ;
+                    « Lun. » en 13 px. Aujourd'hui : le numéro dans un rond
+                    à l'encre (même forme que sur le téléphone, 25/10). Un
+                    jour passé passe en acier, pas en opacité. */}
+                <p className="text-[13px] text-steel first-letter:uppercase">
                   {jour.toLocaleDateString("fr-FR", { weekday: "short" })}
                 </p>
-                <p
-                  className={`mt-0.5 text-sm ${
-                    estAujourdhui ? "font-semibold text-signal" : "text-ink/70"
-                  }`}
-                >
-                  {jour.getDate()}
+                <p className="mt-1">
+                  <span
+                    className={`inline-grid h-8 min-w-[2rem] place-items-center rounded-full px-1.5 text-base tabular-nums ${
+                      estAujourdhui ? "bg-ink font-semibold text-paper" : passe ? "text-steel" : "font-semibold text-ink"
+                    }`}
+                  >
+                    {jour.getDate()}
+                  </span>
                 </p>
               </div>
             );
@@ -443,7 +459,7 @@ export function GrilleAgenda({
                 style={{ height: HAUTEUR_HEURE }}
                 className="text-right pr-2 -translate-y-2"
               >
-                <span className="font-mono text-[10px] text-ink/40">{h}h</span>
+                <span className="text-[13px] tabular-nums text-steel">{heureEnMots(h, 0)}</span>
               </div>
             ))}
           </div>
@@ -465,15 +481,13 @@ export function GrilleAgenda({
             return (
               <div
                 key={jour.toISOString()}
-                className={`relative border-l border-ink/10 ${
-                  estPasse(jour) ? "bg-ink/[0.02]" : ""
-                }`}
+                className={`relative border-l border-gris-clair ${estPasse(jour) ? "bg-paper" : ""}`}
                 style={{ height: HAUTEUR_HEURE * heures.length }}
               >
                 {heures.map((h) => (
                   <div
                     key={h}
-                    className="border-t border-ink/5"
+                    className="border-t border-gris-clair/60"
                     style={{ height: HAUTEUR_HEURE }}
                   />
                 ))}

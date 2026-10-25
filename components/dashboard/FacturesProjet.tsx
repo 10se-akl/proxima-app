@@ -3,17 +3,29 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/Button";
-import { Field } from "@/components/ui/Input";
 import { ErreurInline } from "@/components/ui/EtatErreur";
 import { FacturePreview } from "@/components/dashboard/FacturePreview";
 import type { Devis, Facture } from "@/types";
 import { montantAcompte as calculerAcompteSigne } from "@/lib/devis/mentionsLegales";
-import { montantFrancais } from "@/lib/messagesClient";
 import { Feuille } from "@/components/projet/Feuille";
-import { BOUTON_TEXTE } from "@/components/projet/Blocs";
+import { BOUTON_CREUX_SUR_TEINTE, BOUTON_TEXTE } from "@/components/projet/Blocs";
+import {
+  BOUTON_ALERTE,
+  BOUTON_PLEIN_LARGE,
+  CHAMP,
+  ETIQUETTE,
+  FORME_ETIQUETTE,
+  LIBELLE,
+  MONTANT,
+  SECONDAIRE,
+  euros,
+  type Ton,
+} from "@/components/ui/recettes";
 
+// Design v3 (24/10) : les montants passent par euros() (espaces
+// insécables : « 1 250,00 € » ne se coupe jamais).
 function formatEuros(n: number) {
-  return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  return euros(n, true);
 }
 
 const LIBELLE_TYPE: Record<Facture["type"], string> = {
@@ -22,12 +34,12 @@ const LIBELLE_TYPE: Record<Facture["type"], string> = {
   avoir: "Avoir",
 };
 
-// Refonte (03/10) — règles 4 et 10 : deux tons de texte ; « Payée »
-// s'écrit en encre (plus en terracotta).
-const LIBELLE_STATUT: Record<Facture["statut"], { texte: string; classe: string }> = {
-  emise: { texte: "À encaisser", classe: "text-steel" },
-  payee: { texte: "Payée", classe: "font-semibold text-ink" },
-  annulee: { texte: "Annulée", classe: "text-steel" },
+// Design v3 (24/10) — l'état d'une facture en étiquette : payée en vert
+// (l'argent est rentré), à encaisser en « à faire », annulée en neutre.
+const LIBELLE_STATUT: Record<Facture["statut"], { texte: string; ton: Ton }> = {
+  emise: { texte: "À encaisser", ton: "attention" },
+  payee: { texte: "Payée", ton: "succes" },
+  annulee: { texte: "Annulée", ton: "neutre" },
 };
 
 // ============================================================
@@ -213,7 +225,7 @@ export function FacturesProjet({
 
   // Règle 11 : la forme vide d'une ligne, pas un mot.
   if (chargement) {
-    return <div className="mt-2 h-16 rounded-2xl bg-ink/10 motion-safe:animate-pulse" aria-busy="true" aria-label="Chargement des factures" />;
+    return <div className="mt-3 h-16 rounded-[14px] bg-paper-warm" aria-busy="true" aria-label="Chargement des factures" />;
   }
 
   // Somme SANS filtrer sur le statut, volontairement : une facture annulée
@@ -241,28 +253,28 @@ export function FacturesProjet({
         />
       )}
 
-      {!erreurChargement && factures.length === 0 && <p className="mt-2 text-base text-steel">Aucune facture.</p>}
+      {!erreurChargement && factures.length === 0 && <p className={`mt-2 ${SECONDAIRE}`}>Aucune facture.</p>}
 
       {factures.length > 0 && (
-        <div className="mt-1 divide-y divide-ink/15 border-t border-ink/15">
+        <div className="mt-2 divide-y divide-gris-clair border-t border-gris-clair">
           {factures.map((f) => (
-            <div key={f.id} className="py-2">
-              <div className="flex min-h-12 items-center justify-between gap-3">
+            <div key={f.id} className="py-3">
+              <div className="flex min-h-12 items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-base font-semibold text-ink">
-                    {LIBELLE_TYPE[f.type]} n° {f.numero}
+                  <p className="text-base font-semibold leading-snug text-ink">
+                    {LIBELLE_TYPE[f.type]} n°&nbsp;{f.numero}
                   </p>
-                  <p className="truncate text-sm text-steel">
-                    {new Date(f.date_emission).toLocaleDateString("fr-FR")} ·{" "}
+                  <p className={`mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 ${SECONDAIRE}`}>
+                    <span className="tabular-nums">{new Date(f.date_emission).toLocaleDateString("fr-FR")}</span>
                     {/* Un avoir est créé « émis » : il annule, il ne s'encaisse pas. */}
                     {f.type === "avoir" && f.statut === "emise" ? (
-                      <span className="text-steel">Avoir émis</span>
+                      <span className={`${FORME_ETIQUETTE} ${ETIQUETTE.neutre}`}>Avoir émis</span>
                     ) : (
-                      <span className={LIBELLE_STATUT[f.statut].classe}>{LIBELLE_STATUT[f.statut].texte}</span>
+                      <span className={`${FORME_ETIQUETTE} ${ETIQUETTE[LIBELLE_STATUT[f.statut].ton]}`}>{LIBELLE_STATUT[f.statut].texte}</span>
                     )}
                   </p>
                 </div>
-                <p className="shrink-0 font-mono text-base tabular-nums text-ink">{formatEuros(f.total_ttc)}</p>
+                <p className={`shrink-0 whitespace-nowrap text-base ${MONTANT}`}>{formatEuros(f.total_ttc)}</p>
               </div>
               <div className="-ml-3 flex flex-wrap">
                 <button
@@ -320,8 +332,8 @@ export function FacturesProjet({
       )}
 
       {soldeRestant > 0 && (
-        <p className="mt-3 truncate text-sm text-steel">
-          Reste à facturer : <span className="font-mono tabular-nums text-ink">{formatEuros(soldeRestant)}</span>
+        <p className={`mt-3 ${SECONDAIRE}`}>
+          Reste à facturer : <span className={`whitespace-nowrap ${MONTANT}`}>{formatEuros(soldeRestant)}</span>
         </p>
       )}
 
@@ -330,7 +342,7 @@ export function FacturesProjet({
       <div className="mt-3 flex flex-wrap gap-2">
         {soldeRestant > 0 && !afficherFormAcompte && (
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => {
               // 21/09 — Pré-rempli avec l'acompte SIGNÉ (« 30 %, soit
               // 307,31 € »), calculé par la même fonction que le devis :
@@ -349,7 +361,7 @@ export function FacturesProjet({
         )}
         {soldeRestant > 0 && (
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => setQuestion({ genre: "solde" })}
             loading={creationEnCours === "facture"}
           >
@@ -359,21 +371,31 @@ export function FacturesProjet({
       </div>
 
       {afficherFormAcompte && (
+        // Design v3 (24/10) : le champ commun (surface, contour fin) ; « Créer »
+        // en creux, le bouton plein de l'écran reste celui de « Maintenant ».
         <div className="mt-3 flex items-end gap-3">
-          <Field
-            label="Montant de l'acompte (€ TTC)"
-            type="number"
-            step="0.01"
-            min={0}
-            value={montantAcompte}
-            onChange={(e) => {
-              setMontantAcompte(e.target.value);
-              // L'avertissement porte sur le montant affiché : on le retire
-              // dès que celui-ci change.
-              setDepassement(null);
-            }}
-          />
+          <div className="min-w-0 flex-1">
+            <label htmlFor={`montant-acompte-${devis.id}`} className={LIBELLE}>
+              Montant de l&apos;acompte (€ TTC)
+            </label>
+            <input
+              id={`montant-acompte-${devis.id}`}
+              type="number"
+              inputMode="decimal"
+              step="0.01"
+              min={0}
+              value={montantAcompte}
+              onChange={(e) => {
+                setMontantAcompte(e.target.value);
+                // L'avertissement porte sur le montant affiché : on le retire
+                // dès que celui-ci change.
+                setDepassement(null);
+              }}
+              className={`${CHAMP} tabular-nums`}
+            />
+          </div>
           <Button
+            variant="secondary"
             onClick={() => creerFacture("acompte")}
             loading={creationEnCours === "acompte" && !depassement}
             disabled={depassement !== null}
@@ -384,20 +406,28 @@ export function FacturesProjet({
       )}
 
       {afficherFormAcompte && depassement && (
-        <div role="alert" className="mt-3 rounded-xl border border-alerte-orange/40 bg-alerte-orange/10 px-4 py-3">
-          <p className="text-sm font-medium text-ink">Attention : cet acompte dépasse le devis.</p>
-          <p className="mt-1 text-sm text-steel">
+        <div role="alert" className="mt-3 rounded-[16px] bg-alerte-fond p-4">
+          <p className="text-[15px] font-semibold text-alerte-orange">Attention : cet acompte dépasse le devis.</p>
+          <p className="mt-1 text-[15px] text-ink">
             Avec lui, {formatEuros(depassement.total)} seront facturés sur un devis de {formatEuros(depassement.plafond)}
             {depassement.deja > 0 ? ` (dont ${formatEuros(depassement.deja)} déjà en acompte)` : ""}. La facture de solde ne sera
             plus possible sur ce devis.
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button onClick={() => creerFacture("acompte", true)} loading={creationEnCours === "acompte"}>
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => creerFacture("acompte", true)}
+              disabled={creationEnCours === "acompte"}
+              className={BOUTON_CREUX_SUR_TEINTE}
+            >
+              {creationEnCours === "acompte" && (
+                <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />
+              )}
               {creationEnCours === "acompte" ? "Création…" : "Créer quand même"}
-            </Button>
-            <Button variant="ghost" onClick={() => setDepassement(null)} disabled={creationEnCours !== null}>
+            </button>
+            <button type="button" onClick={() => setDepassement(null)} disabled={creationEnCours !== null} className={BOUTON_TEXTE}>
               Corriger le montant
-            </Button>
+            </button>
           </div>
         </div>
       )}
@@ -410,7 +440,7 @@ export function FacturesProjet({
 
       <Feuille
         ouverte={question !== null}
-        titre={question?.genre === "avoir" ? "Annuler cette facture ?" : `Facture de solde : ${montantFrancais(soldeRestant)} € ?`}
+        titre={question?.genre === "avoir" ? "Annuler cette facture ?" : `Facture de solde : ${formatEuros(soldeRestant)} ?`}
         surFermer={() => setQuestion(null)}
       >
         <p className="text-base text-steel">
@@ -425,7 +455,7 @@ export function FacturesProjet({
                 setQuestion(null);
                 void creerAvoir(id);
               }}
-              className="min-h-12 w-full rounded-2xl px-4 text-base font-semibold text-signal-fonce ring-1 ring-inset ring-signal-fonce/50 dark:text-signal-clair dark:ring-signal-clair/50"
+              className={`${BOUTON_ALERTE} min-h-14 w-full`}
             >
               Créer l&apos;avoir
             </button>
@@ -436,7 +466,7 @@ export function FacturesProjet({
                 setQuestion(null);
                 void creerFacture("facture");
               }}
-              className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80"
+              className={BOUTON_PLEIN_LARGE}
             >
               Créer la facture
             </button>
@@ -444,7 +474,7 @@ export function FacturesProjet({
           <button
             type="button"
             onClick={() => setQuestion(null)}
-            className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+            className={`${BOUTON_TEXTE} w-full`}
           >
             {question?.genre === "avoir" ? "Garder la facture" : "Pas maintenant"}
           </button>

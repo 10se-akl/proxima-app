@@ -7,6 +7,7 @@ import {
   estDejaInstallee,
   peutProposerInstallation,
 } from "@/lib/pwa/installPrompt";
+import { BOUTON_ICONE, BOUTON_TEXTE, BOUTON_ICONE_DISCRET } from "@/components/ui/recettes";
 
 // ============================================================
 // Petit lien texte, discret par nature — pas un bouton mis en avant —
@@ -58,7 +59,9 @@ export function BoutonInstallerDiscret({
         onClick={() => demanderAffichageManuel()}
         title="Installer l'application"
         aria-label="Installer l'application"
-        className={className || "text-white/60 hover:text-white transition-colors"}
+        // Design v3 (24/10) : plus de blanc translucide hérité de la barre
+        // bleu nuit ; par défaut, le bouton icône des recettes en gris lisible.
+        className={className || BOUTON_ICONE_DISCRET}
       >
         <IconeInstaller taille={19} />
       </button>
@@ -69,7 +72,7 @@ export function BoutonInstallerDiscret({
     <button
       type="button"
       onClick={() => demanderAffichageManuel()}
-      className={`text-xs text-white/60 hover:text-white underline ${className}`}
+      className={`${BOUTON_TEXTE} ${className}`}
     >
       Installer l&apos;application
     </button>

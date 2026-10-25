@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import {
+  AIDE,
+  BOUTON_CREUX,
+  BOUTON_PLEIN,
+  BOUTON_TEXTE,
+  CARTE,
+  SECONDAIRE,
+  TITRE_SECTION,
+} from "@/components/ui/recettes";
 import {
   declencherInstallation,
   estDejaInstallee,
@@ -83,7 +91,7 @@ function instructions(moteur: MoteurRestreint, plateforme: Plateforme): string[]
     // affiché au-dessus est le vrai chemin.
     if (installationBloqueeParAndroid()) {
       return [
-        "Appuyez sur le bouton orange ci-dessus : cette même page s'ouvre dans Chrome.",
+        "Appuyez sur « Ouvrir cette page dans Chrome », ci-dessus : cette même page s'ouvre dans Chrome.",
         "Dans Chrome, appuyez sur « Installer Compyo ». Cette fois, Android acceptera.",
         "Si le bouton ne fait rien, c'est que Chrome n'est pas installé sur ce téléphone : copiez l'adresse ci-dessous et ouvrez-la dans un autre navigateur.",
       ];
@@ -255,17 +263,19 @@ export function AssistantInstallation() {
 
   const etapes = instructions(moteur, plateforme);
 
+  // Design v3 (24/10) : une carte (surface, ombre douce, sans contour), des
+  // titres de bloc, le texte en gris lisible (plus d'opacité d'encre), les
+  // numéros d'étape en tuile neutre (plus de saumon), un seul bouton plein,
+  // le reste en creux ou en bouton texte, et rien sous 13 px.
   return (
     <div className="mx-auto max-w-xl px-5 sm:px-8">
-      <div className="rounded-2xl border border-ink/10 bg-surface p-6 sm:p-8">
-        {etat === "chargement" && (
-          <p className="text-sm text-ink/50">Vérification de votre navigateur…</p>
-        )}
+      <div className={`p-6 sm:p-8 ${CARTE}`}>
+        {etat === "chargement" && <p className={SECONDAIRE}>Vérification de votre navigateur…</p>}
 
         {etat === "reussie" && (
           <div>
-            <p className="font-display text-xl font-semibold text-ink">C&apos;est installé.</p>
-            <p className="mt-2 text-sm text-ink/60 leading-relaxed">
+            <p className={TITRE_SECTION}>C&apos;est installé.</p>
+            <p className={`mt-2 leading-relaxed ${SECONDAIRE}`}>
               Compyo est maintenant sur votre écran d&apos;accueil, avec vos autres applications.
               Ouvrez-le depuis son icône : plus de barre d&apos;adresse, plus de navigateur.
             </p>
@@ -274,8 +284,8 @@ export function AssistantInstallation() {
 
         {etat === "deja-installee" && (
           <div>
-            <p className="font-display text-xl font-semibold text-ink">Compyo est déjà installé.</p>
-            <p className="mt-2 text-sm text-ink/60 leading-relaxed">
+            <p className={TITRE_SECTION}>Compyo est déjà installé.</p>
+            <p className={`mt-2 leading-relaxed ${SECONDAIRE}`}>
               Vous lisez cette page depuis l&apos;application. Rien à faire de plus.
             </p>
           </div>
@@ -283,18 +293,18 @@ export function AssistantInstallation() {
 
         {etat === "prete" && (
           <div>
-            <p className="font-display text-xl font-semibold text-ink">
+            <p className={TITRE_SECTION}>
               {plateforme === "desktop" ? "Installer Compyo sur cet ordinateur" : "Installer Compyo sur ce téléphone"}
             </p>
-            <p className="mt-2 text-sm text-ink/60 leading-relaxed">
+            <p className={`mt-2 leading-relaxed ${SECONDAIRE}`}>
               {plateforme === "desktop"
                 ? "Compyo s'ouvrira dans sa propre fenêtre, depuis votre bureau ou votre barre des tâches."
                 : "Compyo s'ajoute à votre écran d'accueil, comme une vraie application : un appui et c'est ouvert, même avec une mauvaise connexion."}
             </p>
-            <Button onClick={installer} loading={enCours} className="mt-6 w-full sm:w-auto">
+            <button type="button" onClick={installer} disabled={enCours} className={`mt-6 w-full sm:w-auto ${BOUTON_PLEIN}`}>
               {enCours ? "Installation…" : "Installer Compyo"}
-            </Button>
-            <p className="mt-3 text-xs text-ink/45">
+            </button>
+            <p className={AIDE}>
               Votre navigateur vous demandera de confirmer. Rien ne s&apos;installe sans votre accord.
             </p>
           </div>
@@ -302,12 +312,12 @@ export function AssistantInstallation() {
 
         {etat === "manuelle" && (
           <div>
-            <p className="font-display text-xl font-semibold text-ink">
+            <p className={TITRE_SECTION}>
               {bloqueParAndroid
                 ? "Samsung Internet ne peut pas installer Compyo"
                 : `Installer Compyo avec ${nomNavigateur(moteur, plateforme)}`}
             </p>
-            <p className="mt-2 text-sm text-ink/60 leading-relaxed">
+            <p className={`mt-2 leading-relaxed ${SECONDAIRE}`}>
               {bloqueParAndroid ? (
                 <>
                   Si vous avez vu « Appli non sécurisée et bloquée », ce n&apos;est pas Compyo :
@@ -326,18 +336,15 @@ export function AssistantInstallation() {
             {/* Le vrai chemin de sortie, avant les explications : un
                 bouton qui rouvre cette page dans Chrome. */}
             {lienChrome && (moteur === "samsung_internet" || bloqueParAndroid) && (
-              <a
-                href={lienChrome}
-                className="mt-5 inline-flex w-full items-center justify-center rounded-xl bg-signal px-5 py-3 text-sm font-medium text-white transition-all hover:scale-[1.02] hover:bg-signal-fonce active:scale-[0.98] sm:w-auto"
-              >
+              <a href={lienChrome} className={`mt-5 w-full sm:w-auto ${BOUTON_PLEIN}`}>
                 Ouvrir cette page dans Chrome
               </a>
             )}
 
             <ol className="mt-5 flex flex-col gap-3">
               {etapes.map((etape, i) => (
-                <li key={i} className="flex gap-3 text-sm text-ink/75 leading-relaxed">
-                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-signal/10 text-xs font-semibold text-signal">
+                <li key={i} className="flex gap-3 text-base leading-relaxed text-ink">
+                  <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-paper-warm text-[13px] font-semibold tabular-nums text-ink">
                     {i + 1}
                   </span>
                   {etape}
@@ -348,19 +355,14 @@ export function AssistantInstallation() {
             {/* Marche partout, même sans Chrome : l'adresse, à coller
                 soi-même dans un autre navigateur. */}
             {plateforme === "android" && (
-              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-ink/10 pt-4">
-                <Button variant="ghost" onClick={copierAdresse} className="px-4 py-2 text-xs">
+              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gris-clair pt-4">
+                <button type="button" onClick={copierAdresse} className={BOUTON_CREUX}>
                   {adresseCopiee ? "Adresse copiée" : "Copier l'adresse de la page"}
-                </Button>
+                </button>
                 {/* Certaines versions de Samsung Internet installent quand
                     même : on ne ferme pas la porte à celles-là. */}
                 {bloqueParAndroid && installationDirectePossible() && (
-                  <button
-                    type="button"
-                    onClick={installer}
-                    disabled={enCours}
-                    className="text-xs text-ink/45 underline underline-offset-2 hover:text-ink disabled:opacity-50"
-                  >
+                  <button type="button" onClick={installer} disabled={enCours} className={`disabled:opacity-60 ${BOUTON_TEXTE}`}>
                     {enCours ? "Installation…" : "Essayer quand même depuis ce navigateur"}
                   </button>
                 )}
@@ -373,25 +375,22 @@ export function AssistantInstallation() {
       {/* Le diagnostic : visible par tous, mais replié. Ce n'est pas de la
           décoration — c'est ce qu'on demande à un bêta-testeur de copier
           quand "ça ne marche pas", plutôt que de deviner à distance. */}
-      <details className="mt-4 rounded-2xl border border-ink/10 bg-surface/60 px-5 py-4">
-        <summary className="flex min-h-11 cursor-pointer items-center text-sm font-medium text-ink/70 hover:text-ink">
+      <details className={`mt-4 px-5 py-3 ${CARTE}`}>
+        <summary className="flex min-h-12 cursor-pointer items-center text-[15px] font-semibold text-ink">
           Ça ne marche pas ? Ouvrez le diagnostic
         </summary>
-        <p className="mt-3 text-xs text-ink/55 leading-relaxed">
+        <p className={`mt-2 leading-relaxed ${SECONDAIRE}`}>
           Voici ce que répond votre navigateur. Copiez ces lignes et envoyez-les-nous : elles disent
           exactement ce qui bloque.
         </p>
-        <pre className="mt-3 overflow-x-auto rounded-xl bg-ink/5 p-3 font-mono text-[11px] leading-relaxed text-ink/70">
+        <pre className="mt-3 overflow-x-auto rounded-[14px] bg-paper-warm p-3 font-mono text-[13px] leading-relaxed text-ink">
           {diagnostic.length ? diagnostic.join("\n") : "Relevé en cours…"}
         </pre>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button variant="ghost" onClick={copierDiagnostic} className="px-4 py-2 text-xs">
+        <div className="mt-3 flex flex-wrap items-center gap-2 pb-1">
+          <button type="button" onClick={copierDiagnostic} className={BOUTON_CREUX}>
             {copie ? "Copié" : "Copier le diagnostic"}
-          </Button>
-          <a
-            href="mailto:proxima.saas@gmail.com?subject=Installation%20Compyo"
-            className="inline-flex min-h-11 items-center text-xs text-ink/50 underline hover:text-ink"
-          >
+          </button>
+          <a href="mailto:proxima.saas@gmail.com?subject=Installation%20Compyo" className={BOUTON_TEXTE}>
             Nous l&apos;envoyer par mail
           </a>
         </div>

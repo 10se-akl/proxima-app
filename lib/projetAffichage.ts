@@ -1,6 +1,7 @@
 import type { Projet, StatutProjet } from "@/types";
 import type { CouleurPastille } from "@/components/ui/Pastille";
 import { LABEL_TYPE_CHANTIER } from "@/lib/libellesChantier";
+import { heure as ecrireHeure } from "@/lib/heure";
 
 // ============================================================
 // Comment un projet se présente dans une liste (refonte visuelle 04/10) :
@@ -57,10 +58,9 @@ export function quoiDe(p: Pick<Projet, "type_chantier" | "description">): string
 
 const JOUR_MS = 86400000;
 const CLE_JOUR = new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris" });
-const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", minute: "2-digit" });
 const JOUR_SEMAINE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short" });
 const DATE_COURTE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short" });
-const heureCourte = (d: Date) => HEURE.format(d).replace(":", "h").replace(/h00$/, "h");
+const heureCourte = (d: Date) => ecrireHeure(d);
 
 /** « Rendez-vous aujourd'hui à 14h », « … demain à 9h », « … lun. à 14h »,
  *  « … 12 oct. à 14h » (heure de Paris). */

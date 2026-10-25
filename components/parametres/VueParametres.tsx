@@ -15,9 +15,8 @@ import {
   type FormulaireParametres,
 } from "@/lib/parametres";
 import { IconeChevron } from "@/components/projet/icones";
-import { EnTetePage } from "@/components/ui/EnTetePage";
-import { Pastille } from "@/components/ui/Pastille";
-import { IconeParametres } from "@/components/ui/Icones";
+import { CLASSE_PAGE_ETROITE, EnTetePage } from "@/components/ui/EnTetePage";
+import { AIDE, BOUTON_CREUX, BOUTON_PLEIN, BOUTON_TEXTE, CREUX, ERREUR, ETIQUETTE, FORME_ETIQUETTE, GROUPE, LIBELLE } from "@/components/ui/recettes";
 import { Engagements } from "@/components/confiance/Engagements";
 import { effacerBrouillon, ecrireBrouillon, empreinte, lireBrouillon } from "@/lib/brouillonLocal";
 
@@ -220,40 +219,32 @@ export function VueParametres({
   // comme avant (une saisie faite dans un autre groupe n'est pas perdue).
   const piedFormulaire = (
     <div className="mt-6 flex flex-col gap-3">
-      {erreur && <p className="text-sm text-signal-fonce dark:text-signal-clair">{erreur}</p>}
-      {confirme && <p className="text-sm text-steel">Enregistré. Vos prochains devis l&apos;utiliseront.</p>}
-      <button
-        type="submit"
-        disabled={enregistrement}
-        className="min-h-12 self-start rounded-xl bg-ink px-6 text-base font-semibold text-paper active:bg-ink/80 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
-      >
+      {erreur && <p className={`!mt-0 ${ERREUR}`}>{erreur}</p>}
+      {confirme && <p className="text-[15px] font-semibold text-succes">Enregistré. Vos prochains devis l&apos;utiliseront.</p>}
+      {/* Design v3 (24/10) : le seul bouton plein de l'écran (un seul
+          groupe s'ouvre à la fois). */}
+      <button type="submit" disabled={enregistrement} className={`self-start ${BOUTON_PLEIN}`}>
         {enregistrement ? "Enregistrement…" : "Enregistrer"}
       </button>
     </div>
   );
 
   return (
-    <div className="mx-auto px-4 pt-4 pb-8 sm:p-8 max-w-2xl">
-      <EnTetePage
-        titre="Paramètres"
-        sousTitre="Votre entreprise, vos devis, votre équipe."
-        icone={
-          <Pastille couleur="signal" taille="grande">
-            <IconeParametres taille={24} />
-          </Pastille>
-        }
-      />
+    // Design v3 (24/10) : la grille commune (16 px de marge sur téléphone,
+    // 20 dès 400 px), les groupes dans une carte groupée.
+    <div className={CLASSE_PAGE_ETROITE}>
+      <EnTetePage titre="Paramètres" sousTitre="Votre entreprise, vos devis, votre équipe." />
 
       {retrouve && (
-        <div className="mt-4 rounded-xl bg-ink/[0.04] px-4 py-3 text-sm text-ink">
-          <p>Des modifications non enregistrées ont été retrouvées.</p>
-          {erreur && !ouvert && <p className="mt-1 text-signal-fonce dark:text-signal-clair">{erreur}</p>}
-          <div className="mt-1 flex flex-wrap gap-x-5">
+        <div className={`mt-6 px-4 py-3 ${CREUX}`}>
+          <p className="text-[15px] text-ink">Des modifications non enregistrées ont été retrouvées.</p>
+          {erreur && !ouvert && <p className={ERREUR}>{erreur}</p>}
+          <div className="-ml-3 mt-1 flex flex-wrap">
             <button
               type="button"
               onClick={() => formRef.current?.requestSubmit()}
               disabled={enregistrement}
-              className="inline-flex min-h-11 items-center font-semibold text-ink underline underline-offset-4"
+              className={BOUTON_TEXTE}
             >
               {enregistrement ? "Enregistrement…" : "Les enregistrer"}
             </button>
@@ -264,7 +255,7 @@ export function VueParametres({
                 setForm(enregistre);
                 setRetrouve(null);
               }}
-              className="inline-flex min-h-12 items-center text-ink underline decoration-ink/30 underline-offset-4"
+              className={`${BOUTON_TEXTE} font-normal`}
             >
               Les oublier
             </button>
@@ -272,8 +263,8 @@ export function VueParametres({
         </div>
       )}
 
-      <div className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce">
-      <form ref={formRef} onSubmit={handleSubmit}>
+      <div className={`mt-6 ${GROUPE}`}>
+      <form ref={formRef} onSubmit={handleSubmit} className="divide-y divide-gris-clair">
         {groupe(
           "entreprise",
           "Entreprise",
@@ -285,10 +276,10 @@ export function VueParametres({
                 <img
                   src={logoUrl}
                   alt="Logo de l'entreprise"
-                  className="w-16 h-16 rounded-xl object-contain border border-ink/10 bg-surface"
+                  className="h-16 w-16 rounded-[14px] bg-surface object-contain ring-1 ring-inset ring-gris-clair"
                 />
               ) : (
-                <div className="w-16 h-16 rounded-xl grid place-items-center border border-dashed border-ink/15 text-xs text-steel text-center">
+                <div className="grid h-16 w-16 place-items-center rounded-[14px] bg-paper-warm text-center text-[13px] leading-tight text-steel">
                   Aucun logo
                 </div>
               )}
@@ -305,11 +296,11 @@ export function VueParametres({
                 />
                 <label
                   htmlFor="logo-input"
-                  className="inline-flex min-h-12 items-center gap-2 rounded-xl border border-ink/15 text-sm px-4 py-2 transition-colors duration-200 hover:border-signal/30 hover:bg-ink/5 cursor-pointer"
+                  className={`cursor-pointer ${BOUTON_CREUX}`}
                 >
                   {envoiLogo ? "Envoi…" : logoUrl ? "Changer le logo" : "Ajouter un logo"}
                 </label>
-                <p className="mt-1.5 text-sm text-steel">Affiché en haut de chaque devis exporté.</p>
+                <p className={AIDE}>Affiché en haut de chaque devis exporté.</p>
               </div>
             </div>
             <div className="grid sm:grid-cols-2 gap-5">
@@ -346,7 +337,7 @@ export function VueParametres({
           "Mentions légales",
           manques.mentions,
           <>
-            <p className="text-sm text-steel mb-4">Imprimées sur chaque devis et chaque facture. À remplir une seule fois.</p>
+            <p className="mb-4 text-[15px] text-steel">Imprimées sur chaque devis et chaque facture. À remplir une seule fois.</p>
             <div className="grid sm:grid-cols-2 gap-5">
               <Field
                 label="Forme juridique"
@@ -414,21 +405,21 @@ export function VueParametres({
                         tva_pct: franchise ? 0 : form.tva_pct === 0 ? 20 : form.tva_pct,
                       });
                     }}
-                    className="w-5 h-5 rounded border-ink/25 accent-signal"
+                    className="h-5 w-5 shrink-0 rounded accent-ink"
                   />
                   Franchise en base de TVA (art. 293 B du CGI)
                 </label>
               </div>
             </div>
             {estEntrepreneurIndividuel(form.forme_juridique) && (
-              <p className="mt-3 text-sm text-steel">
+              <p className="mt-3 text-[15px] text-steel">
                 Entrepreneur individuel : la mention « EI » sera ajoutée automatiquement à côté de
                 votre nom, comme la loi l&apos;exige.
               </p>
             )}
 
-            <h3 className="mt-7 text-base font-semibold text-ink mb-1">Médiateur de la consommation</h3>
-            <p className="text-sm text-steel mb-4">
+            <h3 className="mb-1 mt-7 text-[17px] font-semibold text-ink">Médiateur de la consommation</h3>
+            <p className="mb-4 text-[15px] text-steel">
               Obligatoire dès que vous travaillez pour des particuliers : vous devez adhérer à un
               médiateur et l&apos;indiquer sur vos devis. Si ce n&apos;est pas encore fait, votre
               fédération professionnelle peut vous en indiquer un.
@@ -455,7 +446,7 @@ export function VueParametres({
           "Assurances",
           manques.assurances,
           <>
-            <p className="text-sm text-steel mb-4">
+            <p className="mb-4 text-[15px] text-steel">
               Obligatoires sur vos devis et vos factures — avec l&apos;assureur <em>et</em> la zone
               couverte. Leur absence est la mention la plus sanctionnée du bâtiment.
             </p>
@@ -523,7 +514,7 @@ export function VueParametres({
               )}
             </div>
             {(ibanVerrouille || bicVerrouille) && (
-              <p className="mt-3 text-sm text-steel">
+              <p className="mt-3 text-[15px] text-steel">
                 {nomProprietaire ? `Seul ${nomProprietaire} peut les changer.` : "Seule la personne qui a ouvert le compte peut les changer."}
               </p>
             )}
@@ -536,7 +527,7 @@ export function VueParametres({
           "Tarifs",
           0,
           <>
-            <p className="text-sm text-steel mb-4">
+            <p className="mb-4 text-[15px] text-steel">
               Utilisés pour calculer chaque devis, sans IA. Le coût journalier ne s&apos;applique
               qu&apos;au-delà d&apos;une journée de travail sur un même poste ; laissez-le vide pour
               toujours facturer à l&apos;heure.
@@ -555,7 +546,7 @@ export function VueParametres({
                   disabled={form.mention_tva_non_applicable}
                 />
                 {form.mention_tva_non_applicable && (
-                  <p className="mt-1.5 text-sm text-steel">
+                  <p className={AIDE}>
                     Franchise en base de TVA : vos devis et factures sont sans TVA.
                   </p>
                 )}
@@ -621,7 +612,7 @@ export function VueParametres({
           "Conditions générales",
           0,
           <>
-            <p className="text-sm text-steel mb-4">
+            <p className="mb-4 text-[15px] text-steel">
               Chaque nouveau devis part avec ces valeurs — vous pouvez toujours les changer devis par devis.
             </p>
             <div className="grid sm:grid-cols-2 gap-5">
@@ -685,8 +676,8 @@ export function VueParametres({
 function ValeurFigee({ libelle, valeur }: { libelle: string; valeur: string }) {
   return (
     <div>
-      <p className="mb-1.5 block text-sm text-steel">{libelle}</p>
-      <p className="flex min-h-12 items-center break-all rounded-xl bg-ink/[0.04] px-3 font-mono text-sm text-ink">
+      <p className={LIBELLE}>{libelle}</p>
+      <p className="flex min-h-12 items-center break-all rounded-[14px] bg-paper-warm px-4 font-mono text-[15px] text-ink">
         {valeur}
       </p>
     </div>
@@ -710,35 +701,33 @@ function GroupeReplie({
   children: ReactNode;
 }) {
   return (
-    <section id={id} className="scroll-mt-20 border-t border-ink/[0.07] [form>&:first-child]:border-t-0">
+    // Design v3 (24/10) : les filets viennent du groupe (divide-y), plus
+    // de bordure propre à chaque section.
+    <section id={id} className="scroll-mt-20">
       <h2>
         <button
           type="button"
           onClick={surBasculer}
           aria-expanded={ouvert}
           aria-controls={`groupe-${id}`}
-          className="flex w-full min-h-14 items-center gap-3 px-4 text-left transition-colors hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal/50 sm:px-5"
+          className="flex min-h-[4.25rem] w-full items-center gap-3 px-4 py-3 text-left active:bg-ink/10 sm:px-5 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
         >
-          <span className="min-w-0 flex-1 text-base font-semibold text-ink">{titre}</span>
-          {/* Texte à l'encre (contraste suffisant en clair comme en sombre),
-              la couleur passe par le fond et la pastille. */}
+          <span className="min-w-0 flex-1 text-[17px] font-semibold leading-snug text-ink">{titre}</span>
+          {/* Design v3 (24/10) : des étiquettes d'état opaques (recettes),
+              sans pastille de couleur décorative. 25/10 : « Complet » prend
+              aussi la forme d'une étiquette (plus de texte coloré nu à côté
+              d'une pastille). */}
           {manque !== null &&
             (manque === 0 ? (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-succes/12 px-2.5 py-1 text-sm text-ink">
-                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-succes" />
-                Complet
-              </span>
+              <span className={`${FORME_ETIQUETTE} ${ETIQUETTE.succes}`}>Complet</span>
             ) : (
-              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-alerte-orange/15 px-2.5 py-1 text-sm text-ink">
-                <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-alerte-orange" />
-                {manque} à compléter
-              </span>
+              <span className={`${FORME_ETIQUETTE} ${ETIQUETTE.attention}`}>{manque} à compléter</span>
             ))}
           <IconeChevron className={`h-4 w-4 shrink-0 text-steel motion-safe:transition-transform ${ouvert ? "rotate-90" : ""}`} />
         </button>
       </h2>
       {ouvert && (
-        <div id={`groupe-${id}`} className="px-4 pb-6 pt-1 sm:px-5">
+        <div id={`groupe-${id}`} className="px-4 pb-6 pt-2 sm:px-5">
           {children}
         </div>
       )}

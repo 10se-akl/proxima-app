@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { BOUTON_PLEIN } from "@/components/ui/recettes";
 
 // ============================================================
 // Bandeau discret "Une nouvelle version de Compyo est disponible", prévenu
@@ -45,17 +46,17 @@ export function MiseAJourPWA() {
 
   return (
     <div className="pwa-carte-entree fixed inset-x-4 top-4 z-50 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-[26rem] [top:calc(1rem+env(safe-area-inset-top))]">
-      <div className="rounded-2xl border border-ink/10 bg-surface shadow-lg shadow-ink/10 px-4 py-3 flex items-center gap-3">
-        <span className="text-lg shrink-0" aria-hidden="true">
-          ✨
-        </span>
-        <p className="text-sm text-ink flex-1 min-w-0">
+      {/* Design v3 (24/10) : une carte (surface, ombre des feuilles, sans
+          contour ni émoji), le texte en 15 px, un vrai bouton de 48 px. */}
+      <div className="flex items-center gap-3 rounded-[20px] bg-surface py-2 pl-4 pr-2 ombre-feuille">
+        <p className="min-w-0 flex-1 text-[15px] leading-snug text-ink">
           Une nouvelle version de Compyo est disponible.
         </p>
         <button
+          type="button"
           onClick={mettreAJour}
           disabled={miseAJourEnCours}
-          className="shrink-0 text-xs font-medium bg-ink text-paper rounded-lg px-3.5 py-2 transition-colors hover:bg-signal disabled:opacity-60"
+          className={`shrink-0 !px-4 text-[15px] ${BOUTON_PLEIN}`}
         >
           {miseAJourEnCours ? "Mise à jour…" : "Mettre à jour"}
         </button>

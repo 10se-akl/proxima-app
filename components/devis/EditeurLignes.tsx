@@ -9,6 +9,8 @@ import {
   estUniteJour,
 } from "@/lib/moteur-metier/tempsMainOeuvre";
 import { avecMinimum, lignesAvecValeur, lignesSansLigne } from "@/components/devis/lignesEdition";
+import { IconeChevron, IconeEtincelle, IconeFermer, IconePlus } from "@/components/projet/icones";
+import { AIDE, BOUTON_CREUX_LARGE, BOUTON_ICONE, BOUTON_TEXTE, CHAMP, ETIQUETTE, FORME_ETIQUETTE, GROUPE, MONTANT, SECONDAIRE, TITRE_CARTE, euros, CHAMP_COMPACT, SELECT, BOUTON_TEXTE_DISCRET, BOUTON_ICONE_DISCRET } from "@/components/ui/recettes";
 
 // Tarifs de l'artisan : sans eux (paramètres pas encore chargés), l'éditeur
 // fonctionne comme avant, sans conversion ni ajustement automatique.
@@ -59,16 +61,28 @@ export function avecLotParDefaut(ligne: LigneEditee, lots: LotDevis[]): LigneEdi
 // sur téléphone ; on les ré-exporte ici pour les écrans qui les importaient.
 export { lignesAvecValeur, lignesSansLigne };
 
-function formatEuros(n: number) {
-  return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
-}
+// Design v3 (24/10) : les montants passent par euros() (espaces insécables,
+// « 1 234,50 € » ne se coupe jamais) ; les champs et boutons par les
+// recettes. Les champs des trois colonnes (quantité, unité, prix) gardent
+// 12 px de marge intérieure au lieu de 16 : à 390 px, chaque colonne fait
+// ~100 px.
+const formatEuros = (n: number) => euros(n, true);
 
-const champ =
-  "w-full rounded-xl border border-ink/15 bg-paper px-2 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15";
-// 27/09 — 48 px sur téléphone (32 px avant) : la croix de suppression est
-// collée au libellé, un pouce ne doit pas la toucher par erreur.
-const boutonIcone =
-  "grid h-12 w-12 shrink-0 place-items-center sm:h-8 sm:w-8 rounded-xl border border-ink/10 text-ink/45 transition-colors hover:border-ink/25 hover:text-ink disabled:opacity-30 disabled:hover:border-ink/10 disabled:hover:text-ink/45";
+const champ = CHAMP_COMPACT;
+// 27/09 — 48 px partout (32 px avant) : la croix de suppression est collée
+// au libellé, un pouce ne doit pas la toucher par erreur.
+const boutonIcone = `${BOUTON_ICONE_DISCRET} disabled:cursor-not-allowed disabled:opacity-40`;
+// Design v3 (25/10) : plus de lien souligné utilisé comme bouton. Une action
+// vraiment discrète (« Retirer le lot ») = le bouton texte, en steel.
+const boutonDiscret = BOUTON_TEXTE.replace("text-ink", "text-steel");
+// Les listes déroulantes : l'apparence maison (chevron steel), le <select>
+// natif. Dans une colonne de ~100 px, un peu moins de marge à gauche et à
+// droite du chevron.
+const selectColonne = SELECT.replace("pl-4 pr-10", "pl-3 pr-9");
+const selectLot = `${SELECT.replace("w-full ", "").replace("pl-4 pr-10", "pl-3 pr-9")} w-auto max-w-[11rem] truncate`;
+const libelleColonne = "mb-1 block text-[13px] font-medium text-steel";
+// La rangée « + Ajouter une ligne », dernière ligne du groupe.
+const rangeeAjout = `flex min-h-14 w-full items-center gap-3 px-4 text-left text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/[0.03] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink`;
 
 export function EditeurLignes({
   lignes,
@@ -223,6 +237,10 @@ export function EditeurLignes({
   }
 
   // ---- rendu -----------------------------------------------------------
+  // Design v3 (24/10) : une ligne = une rangée d'un groupe (carte unique,
+  // filets entre les lignes), plus des cartes bordées empilées. Libellés des
+  // colonnes en 13 px gris lisible (10 px pâle avant), montant de la ligne
+  // en 17 px aligné à droite, chiffres à chasse fixe.
   function carteLigne(ligne: LigneEditee, position: number, nombreDansGroupe: number) {
     // Ligne d'ajustement minimum : calculée, pas saisie (voir
     // avecMinimumAJour). Ses montants sont en lecture seule ; l'artisan
@@ -230,24 +248,25 @@ export function EditeurLignes({
     const ajustement = Boolean(tarifs) && estLigneAjustementMinimum(ligne);
     const uniteTemps = estUniteJour(ligne.unite) ? "jour" : estUniteHeure(ligne.unite) ? "heure" : "autre";
     return (
-      <div key={ligne.cle} className="rounded-xl border border-ink/10 bg-surface p-3 transition-colors hover:border-ink/20">
-        <div className="flex items-start gap-2">
-          {/* Badge discret sur les postes générés par l'IA, les seuls qui
-              méritent vraiment une relecture attentive. */}
-          {!ligne.manuelle && (
-            <span
-              title="Ligne proposée — à relire"
-              className="mt-1.5 shrink-0 rounded-md bg-signal/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-signal"
-            >
-              IA
-            </span>
-          )}
-          {ligne.unite === "jour" && (
+      <div key={ligne.cle} className="px-4 py-4">
+        {/* Design v3 (25/10) : « Proposée par l'IA » n'est plus répétée sur
+            chaque ligne — une seule phrase en tête du lot (voir enteteIA) ;
+            ici, une petite étincelle devant la description suffit. */}
+        {ligne.unite === "jour" && (
+          <div className="mb-2 flex flex-wrap gap-1.5">
             <span
               title="Poste facturé au tarif journalier plutôt qu'horaire"
-              className="mt-1.5 shrink-0 rounded-md bg-steel/10 px-1.5 py-0.5 font-mono text-[10px] font-medium text-steel"
+              className={`${FORME_ETIQUETTE} ${ETIQUETTE.neutre}`}
             >
-              JOUR
+              Tarif journalier
+            </span>
+          </div>
+        )}
+        <div className="flex items-start gap-1">
+          {!ligne.manuelle && (
+            <span className="grid h-12 w-5 shrink-0 place-items-center text-ink" title="Ligne proposée avec l'IA, à relire">
+              <IconeEtincelle className="h-4 w-4" />
+              <span className="sr-only">Ligne proposée avec l&apos;IA</span>
             </span>
           )}
           <input
@@ -255,21 +274,23 @@ export function EditeurLignes({
             onChange={(e) => modifier(ligne.cle, "description", e.target.value)}
             placeholder="Description du poste"
             aria-label="Description du poste"
-            className="flex-1 min-w-0 rounded-xl border border-ink/15 bg-paper px-2.5 py-1.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
+            className={`${CHAMP} min-w-0 flex-1 font-semibold`}
           />
           <button
             type="button"
             onClick={() => supprimer(ligne.cle)}
-            className={`${boutonIcone} hover:!border-signal/30 hover:!text-signal`}
+            className={`${boutonIcone} -mr-2`}
             aria-label="Supprimer cette ligne"
             title="Supprimer cette ligne"
           >
-            ✕
+            <IconeFermer className="h-5 w-5" />
           </button>
         </div>
-        <div className="mt-2 grid grid-cols-3 gap-2">
+        {/* items-end : un libellé sur deux lignes (« Prix unitaire (€) » à
+            390 px) ne décale pas les champs. */}
+        <div className="mt-3 grid grid-cols-3 items-end gap-2">
           <div>
-            <label className="mb-1 block text-[10px] text-ink/40">Quantité</label>
+            <label className={libelleColonne}>Quantité</label>
             <input
               type="number"
               step="0.01"
@@ -282,7 +303,7 @@ export function EditeurLignes({
             />
           </div>
           <div>
-            <label className="mb-1 block text-[10px] text-ink/40">Unité</label>
+            <label className={libelleColonne}>Unité</label>
             {/* Main-d'œuvre : un choix heure / jour qui CONVERTIT le prix,
                 plutôt qu'un texte libre qui le laissait tel quel. */}
             {tarifs && ligne.categorie === "main_oeuvre" && !ajustement ? (
@@ -293,7 +314,7 @@ export function EditeurLignes({
                   if (v === "heure" || v === "jour") changerUniteTemps(ligne.cle, v);
                 }}
                 aria-label="Unité du poste"
-                className={champ}
+                className={selectColonne}
               >
                 <option value="heure">heure</option>
                 <option value="jour">jour</option>
@@ -314,7 +335,7 @@ export function EditeurLignes({
             )}
           </div>
           <div>
-            <label className="mb-1 block text-[10px] text-ink/40">Prix unitaire (€)</label>
+            <label className={libelleColonne}>Prix unitaire (€)</label>
             <input
               type="number"
               step="0.01"
@@ -328,8 +349,8 @@ export function EditeurLignes({
           </div>
         </div>
         {ajustement && tarifs && (
-          <p className="mt-2 text-[11px] leading-relaxed text-ink/50">
-            Calculée automatiquement pour atteindre votre minimum de {tarifs.heures_min_facturables} h
+          <p className={AIDE}>
+            Calculée automatiquement pour atteindre votre minimum de {tarifs.heures_min_facturables}{" "}h
             facturable{tarifs.heures_min_facturables > 1 ? "s" : ""} : elle suit vos heures et
             disparaît dès qu&apos;il est atteint. Supprimez-la si vous ne voulez pas l&apos;appliquer.
           </p>
@@ -337,38 +358,40 @@ export function EditeurLignes({
         {/* Explication proposée par l'IA : l'artisan la garde, la reformule
             ou la retire. Rien à écrire s'il n'en veut pas. */}
         {typeof ligne.explication === "string" && (
-          <div className="mt-2 flex items-center gap-2">
-            <span className="shrink-0 text-[11px] text-ink/40">Pour le client</span>
-            <input
-              value={ligne.explication}
-              onChange={(e) => modifier(ligne.cle, "explication", e.target.value)}
-              placeholder="Explication courte (facultative)"
-              aria-label="Explication de la ligne, visible par le client"
-              className="min-w-0 flex-1 rounded-xl border border-ink/10 bg-paper px-2 py-1 text-xs italic text-ink/70 transition-colors focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/15"
-            />
-            <button
-              type="button"
-              onClick={() => modifier(ligne.cle, "explication", null)}
-              className="shrink-0 text-[11px] text-ink/40 underline-offset-2 transition-colors hover:text-signal hover:underline"
-              title="Retirer cette explication du devis"
-            >
-              Retirer
-            </button>
+          <div className="mt-3">
+            <span className={libelleColonne}>Pour le client</span>
+            <div className="flex items-center gap-1">
+              <input
+                value={ligne.explication}
+                onChange={(e) => modifier(ligne.cle, "explication", e.target.value)}
+                placeholder="Explication courte (facultative)"
+                aria-label="Explication de la ligne, visible par le client"
+                className={`${CHAMP} min-w-0 flex-1 text-[15px]`}
+              />
+              <button
+                type="button"
+                onClick={() => modifier(ligne.cle, "explication", null)}
+                className={`${BOUTON_TEXTE_DISCRET} -mr-3 shrink-0`}
+                title="Retirer cette explication du devis"
+              >
+                Retirer
+              </button>
+            </div>
           </div>
         )}
 
-        <div className="mt-2 flex flex-wrap items-center gap-2">
+        <div className="mt-3 flex flex-wrap items-center gap-1">
           {nombreDansGroupe > 1 && (
             <>
               <button
                 type="button"
                 onClick={() => deplacer(ligne.cle, -1)}
                 disabled={position === 0}
-                className={boutonIcone}
+                className={`${boutonIcone} -ml-3`}
                 aria-label="Monter la ligne"
                 title="Monter"
               >
-                ↑
+                <IconeChevron className="h-5 w-5 -rotate-90" />
               </button>
               <button
                 type="button"
@@ -378,7 +401,7 @@ export function EditeurLignes({
                 aria-label="Descendre la ligne"
                 title="Descendre"
               >
-                ↓
+                <IconeChevron className="h-5 w-5 rotate-90" />
               </button>
             </>
           )}
@@ -387,7 +410,7 @@ export function EditeurLignes({
               value={ligne.lot_id && idsLots.has(ligne.lot_id) ? ligne.lot_id : ""}
               onChange={(e) => changerDeLot(ligne.cle, e.target.value)}
               aria-label="Lot de cette ligne"
-              className="h-8 max-w-[11rem] truncate rounded-xl border border-ink/10 bg-paper px-2 text-xs text-ink/70 focus:border-signal focus:outline-none"
+              className={selectLot}
             >
               {lots.map((lot, i) => (
                 <option key={lot.id} value={lot.id}>
@@ -397,37 +420,45 @@ export function EditeurLignes({
               <option value="">Hors lot</option>
             </select>
           )}
-          <p className="ml-auto font-mono text-sm">{formatEuros(ligne.total)}</p>
+          <p className={`ml-auto whitespace-nowrap pl-2 text-[17px] ${MONTANT}`}>{formatEuros(ligne.total)}</p>
         </div>
       </div>
     );
   }
 
+  // Rendu bien visible le 13/09 : l'artisan doit voir d'emblée qu'il peut
+  // ajouter ses propres lignes, pas seulement accepter celles de l'IA.
+  // Design v3 (24/10) : la dernière rangée du groupe, avec son « + ».
   const boutonAjouter = (lotId: string | null, libelle: string) => (
-    <button
-      type="button"
-      onClick={() => ajouter(lotId)}
-      className="w-full rounded-xl border border-dashed border-ink/25 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:border-signal hover:text-signal"
-    >
+    <button type="button" onClick={() => ajouter(lotId)} className={rangeeAjout}>
+      <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-paper-warm" aria-hidden>
+        <IconePlus className="h-4 w-4" />
+      </span>
       {libelle}
     </button>
   );
+
+  // Design v3 (25/10) : une seule mention de l'IA en tête d'un groupe qui
+  // contient des lignes proposées (au lieu d'une pastille par ligne).
+  const enteteIA = (groupe: LigneEditee[]) =>
+    groupe.some((l) => !l.manuelle) && (
+      <p className="flex min-h-12 items-center gap-2 px-4 py-2 text-[15px] text-steel [text-wrap:pretty]">
+        <IconeEtincelle className="h-4 w-4 shrink-0 text-ink" />
+        Lignes proposées avec l&apos;IA, relisez les prix
+      </p>
+    );
 
   // Sans lots : la liste simple d'avant.
   if (lots.length === 0) {
     return (
       <div>
-        <div className="flex flex-col gap-3">{lignes.map((l, i) => carteLigne(l, i, lignes.length))}</div>
-        {/* Rendu bien visible le 13/09 : l'artisan doit voir d'emblée qu'il
-            peut ajouter ses propres lignes, pas seulement accepter celles
-            de l'IA. */}
-        <div className="mt-3">{boutonAjouter(null, "+ Ajouter une ligne")}</div>
+        <div className={GROUPE}>
+          {enteteIA(lignes)}
+          {lignes.map((l, i) => carteLigne(l, i, lignes.length))}
+          {boutonAjouter(null, "Ajouter une ligne")}
+        </div>
         {lignes.length >= 2 && (
-          <button
-            type="button"
-            onClick={organiserEnLots}
-            className="mt-2 text-xs text-ink/50 underline-offset-2 transition-colors hover:text-signal hover:underline"
-          >
+          <button type="button" onClick={organiserEnLots} className={`${BOUTON_TEXTE} mt-1 text-left`}>
             Organiser en lots (cuisine, salle de bain, électricité…)
           </button>
         )}
@@ -438,99 +469,102 @@ export function EditeurLignes({
   const horsLot = lignes.filter((l) => dansLot(l, null));
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
       {lots.map((lot, indexLot) => {
         const lignesDuLot = lignes.filter((l) => dansLot(l, lot.id));
         const replie = replies.has(lot.id);
         const sousTotal = lignesDuLot.reduce((s, l) => s + Math.round(l.total * 100), 0) / 100;
         return (
-          <section key={lot.id} className="rounded-2xl border border-ink/10 bg-paper-warm/40 p-3">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => basculerRepli(lot.id)}
-                className={boutonIcone}
-                aria-expanded={!replie}
-                aria-label={replie ? "Déplier le lot" : "Replier le lot"}
-                title={replie ? "Déplier" : "Replier"}
-              >
-                <span className={`transition-transform ${replie ? "-rotate-90" : ""}`}>▾</span>
-              </button>
-              <span className="shrink-0 font-mono text-xs text-ink/45">{indexLot + 1}.</span>
-              <input
-                value={lot.nom}
-                onChange={(e) => renommerLot(lot.id, e.target.value)}
-                placeholder="Nom du lot (ex : Salle de bain)"
-                aria-label="Nom du lot"
-                autoFocus={lotAFocaliser === lot.id}
-                onFocus={() => lotAFocaliser === lot.id && setLotAFocaliser(null)}
-                className="min-w-0 flex-1 rounded-xl border border-transparent bg-transparent px-2 py-1.5 text-sm font-semibold transition-colors hover:border-ink/15 focus:border-signal focus:bg-paper focus:outline-none focus:ring-2 focus:ring-signal/15"
-              />
-              <button
-                type="button"
-                onClick={() => deplacerLot(lot.id, -1)}
-                disabled={indexLot === 0}
-                className={boutonIcone}
-                aria-label="Monter le lot"
-                title="Monter le lot"
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                onClick={() => deplacerLot(lot.id, 1)}
-                disabled={indexLot === lots.length - 1}
-                className={boutonIcone}
-                aria-label="Descendre le lot"
-                title="Descendre le lot"
-              >
-                ↓
-              </button>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center justify-between gap-2 pl-10 text-xs text-ink/50">
-              <span>
-                {lignesDuLot.length} ligne{lignesDuLot.length > 1 ? "s" : ""} · sous-total{" "}
-                <span className="font-mono text-ink/70">{formatEuros(sousTotal)}</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => retirerLot(lot.id)}
-                className="underline-offset-2 transition-colors hover:text-signal hover:underline"
-                title="Le lot disparaît, ses lignes sont conservées"
-              >
-                Retirer le lot (garder ses lignes)
-              </button>
-            </div>
-
-            {!replie && (
-              <div className="mt-3 flex flex-col gap-3">
-                {lignesDuLot.map((l, i) => carteLigne(l, i, lignesDuLot.length))}
-                {boutonAjouter(lot.id, "+ Ajouter une ligne à ce lot")}
+          <section key={lot.id}>
+            <div className={GROUPE}>
+              {/* L'en-tête du lot : replier, son nom, le déplacer. */}
+              <div className="flex items-center gap-1 px-2 py-2">
+                <button
+                  type="button"
+                  onClick={() => basculerRepli(lot.id)}
+                  className={boutonIcone}
+                  aria-expanded={!replie}
+                  aria-label={replie ? "Déplier le lot" : "Replier le lot"}
+                  title={replie ? "Déplier" : "Replier"}
+                >
+                  <IconeChevron className={`h-5 w-5 motion-safe:transition-transform ${replie ? "" : "rotate-90"}`} />
+                </button>
+                <span className="shrink-0 pr-1 text-[15px] font-semibold tabular-nums text-steel">{indexLot + 1}.</span>
+                <input
+                  value={lot.nom}
+                  onChange={(e) => renommerLot(lot.id, e.target.value)}
+                  placeholder="Nom du lot (ex : Salle de bain)"
+                  aria-label="Nom du lot"
+                  autoFocus={lotAFocaliser === lot.id}
+                  onFocus={() => lotAFocaliser === lot.id && setLotAFocaliser(null)}
+                  className={`${champ} min-w-0 flex-1 text-[17px] font-semibold`}
+                />
+                <button
+                  type="button"
+                  onClick={() => deplacerLot(lot.id, -1)}
+                  disabled={indexLot === 0}
+                  className={boutonIcone}
+                  aria-label="Monter le lot"
+                  title="Monter le lot"
+                >
+                  <IconeChevron className="h-5 w-5 -rotate-90" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => deplacerLot(lot.id, 1)}
+                  disabled={indexLot === lots.length - 1}
+                  className={boutonIcone}
+                  aria-label="Descendre le lot"
+                  title="Descendre le lot"
+                >
+                  <IconeChevron className="h-5 w-5 rotate-90" />
+                </button>
               </div>
-            )}
+              {/* Le sous-total du lot, lisible même replié. */}
+              <div className="flex min-h-12 items-center justify-between gap-3 px-4 py-2">
+                <span className={SECONDAIRE}>
+                  {lignesDuLot.length} ligne{lignesDuLot.length > 1 ? "s" : ""} · sous-total
+                </span>
+                <span className={`whitespace-nowrap text-[17px] ${MONTANT}`}>{formatEuros(sousTotal)}</span>
+              </div>
+
+              {!replie && (
+                <>
+                  {enteteIA(lignesDuLot)}
+                  {lignesDuLot.map((l, i) => carteLigne(l, i, lignesDuLot.length))}
+                  {boutonAjouter(lot.id, "Ajouter une ligne à ce lot")}
+                </>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => retirerLot(lot.id)}
+              className={`${boutonDiscret} mt-1`}
+              title="Le lot disparaît, ses lignes sont conservées"
+            >
+              Retirer le lot (garder ses lignes)
+            </button>
           </section>
         );
       })}
 
       {horsLot.length > 0 && (
-        <section className="rounded-2xl border border-dashed border-ink/15 p-3">
-          <p className="px-1 text-sm font-semibold text-ink/70">Hors lot</p>
-          <p className="px-1 text-xs text-ink/45">
+        <section>
+          <h3 className={TITRE_CARTE}>Hors lot</h3>
+          <p className={`${SECONDAIRE} mb-2.5 [text-wrap:pretty]`}>
             Apparaissent sur le devis sous « Autres prestations ». Rangez-les dans un lot avec le
             menu de chaque ligne.
           </p>
-          <div className="mt-3 flex flex-col gap-3">
+          <div className={GROUPE}>
+            {enteteIA(horsLot)}
             {horsLot.map((l, i) => carteLigne(l, i, horsLot.length))}
           </div>
         </section>
       )}
 
-      <button
-        type="button"
-        onClick={nouveauLot}
-        className="w-full rounded-xl border border-dashed border-ink/25 px-4 py-2.5 text-sm font-medium text-ink/70 transition-colors hover:border-signal hover:text-signal"
-      >
-        + Nouveau lot
+      <button type="button" onClick={nouveauLot} className={BOUTON_CREUX_LARGE}>
+        <IconePlus className="h-5 w-5" />
+        Nouveau lot
       </button>
     </div>
   );

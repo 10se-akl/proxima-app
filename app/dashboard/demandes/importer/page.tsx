@@ -10,6 +10,8 @@ import {
 } from "@/components/dashboard/CorrespondanceProjetExistant";
 import type { BrouillonProjet } from "@/types";
 import { extraireTelephone } from "@/lib/clients/extraireTelephone";
+import { IconeEtincelle } from "@/components/projet/icones";
+import { BOUTON_CREUX_LARGE, BOUTON_PLEIN_LARGE, CHAMP, ERREUR, SECONDAIRE, TITRE_ECRAN } from "@/components/ui/recettes";
 
 // 13/10 — si l'IA échoue (indisponible, quota, délai), « Coller un
 // message » ne s'arrête plus sur « L'analyse a échoué » : la relecture
@@ -236,7 +238,7 @@ export default function ImporterMessagePage() {
   // silencieux (même composant que le parcours de partage Android).
   if (correspondances.length > 0) {
     return (
-      <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
+      <div className="mx-auto max-w-lg px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
         <CorrespondanceProjetExistant
           correspondances={correspondances}
           onChoisir={ajouterAuProjet}
@@ -251,7 +253,7 @@ export default function ImporterMessagePage() {
 
   if (brouillon) {
     return (
-      <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
+      <div className="mx-auto max-w-2xl px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
         <BrouillonProjetForm
           brouillon={brouillon}
           onValider={creerProjet}
@@ -262,49 +264,53 @@ export default function ImporterMessagePage() {
     );
   }
 
+  // Design v3 (24/10) : un écran calme — le titre, une grande zone pour le
+  // message, et le bouton plein collé en bas, au-dessus de la barre (ou du
+  // clavier : la barre se retire quand on écrit, voir app/globals.css). L'IA
+  // se signale sous le bouton : l'étincelle, « avec l'IA », et la relecture.
   return (
-    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-2xl">
-      <h1 className="font-display text-2xl font-semibold text-ink">Coller un message</h1>
+    <div className="mx-auto max-w-2xl px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
+      <h1 className={TITRE_ECRAN}>Coller un message</h1>
       <p className="mt-1 text-base text-steel">Le message du client, tel quel.</p>
 
-      <div className="mt-5">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          {/* 27/09 — Un appui pour coller le message copié : avec des gants,
-              l'appui long dans un champ puis « Coller » est un vrai effort.
-              Si le téléphone refuse l'accès au presse-papiers, le champ
-              reste là, comme avant. */}
-          {!message.trim() && (
-            <button
-              type="button"
-              onClick={async () => {
-                try {
-                  const texte = await navigator.clipboard.readText();
-                  if (texte.trim()) setMessage(texte);
-                } catch {
-                  // Accès refusé : on colle à la main dans le champ.
-                }
-              }}
-              className="w-full min-h-14 rounded-2xl text-[16px] font-semibold text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-            >
-              Coller le message copié
-            </button>
-          )}
-          <textarea
-            required
-            rows={8}
-            placeholder={`Exemple :\n\nBonjour, je me présente M. Dupont. J'aimerais refaire ma salle de bain. Vous seriez dispo mardi vers 14h pour passer voir ? Mon numéro : 06 12 34 56 78`}
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            aria-label="Message du client"
-            className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
-          />
+      <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
+        {/* 27/09 — Un appui pour coller le message copié : avec des gants,
+            l'appui long dans un champ puis « Coller » est un vrai effort.
+            Si le téléphone refuse l'accès au presse-papiers, le champ
+            reste là, comme avant. */}
+        {!message.trim() && (
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const texte = await navigator.clipboard.readText();
+                if (texte.trim()) setMessage(texte);
+              } catch {
+                // Accès refusé : on colle à la main dans le champ.
+              }
+            }}
+            className={BOUTON_CREUX_LARGE}
+          >
+            Coller le message copié
+          </button>
+        )}
+        <textarea
+          required
+          rows={9}
+          placeholder={`Exemple :\n\nBonjour, je me présente M. Dupont. J'aimerais refaire ma salle de bain. Vous seriez dispo mardi vers 14h pour passer voir ? Mon numéro : 06 12 34 56 78`}
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          aria-label="Message du client"
+          className={`${CHAMP} min-h-[14rem] resize-none py-3 leading-relaxed`}
+        />
 
-          {erreur && <p className="text-sm text-signal">{erreur}</p>}
+        {erreur && <p className={ERREUR}>{erreur}</p>}
 
+        <div className="sticky bottom-[calc(var(--barre-bas,0px)+env(safe-area-inset-bottom)+1rem)] z-10 -mx-4 bg-paper px-4 pb-1 pt-2 sm:static sm:mx-0 sm:bg-transparent sm:p-0">
           <button
             type="submit"
             disabled={chargement || rechercheEnCours}
-            className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 sm:w-auto sm:px-8"
+            className={`${BOUTON_PLEIN_LARGE} sm:w-auto sm:px-8`}
           >
             {rechercheEnCours
               ? "Un instant…"
@@ -312,8 +318,12 @@ export default function ImporterMessagePage() {
                 ? "Préparation du projet…"
                 : "Préparer le projet"}
           </button>
-        </form>
-      </div>
+          <p className={`mt-2 flex items-center gap-1.5 ${SECONDAIRE}`}>
+            <IconeEtincelle className="h-4 w-4 shrink-0 text-ink" />
+            Préparé avec l&apos;IA. Vous relisez avant de créer.
+          </p>
+        </div>
+      </form>
     </div>
   );
 }

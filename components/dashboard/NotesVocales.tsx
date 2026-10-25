@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/Button";
 import { BOUTON_CONTOUR, BOUTON_TEXTE } from "@/components/projet/Blocs";
 import type { NoteVocale } from "@/types";
+import { dateEtHeure } from "@/lib/heure";
+import { CHAMP, ERREUR, SECONDAIRE } from "@/components/ui/recettes";
 
 // La reconnaissance vocale sait aussi s'interrompre sans rien rendre
 // (abort) : c'est ce qu'il faut quand la feuille se ferme.
@@ -277,15 +279,17 @@ export function NotesVocales({
   return (
     <div>
       {enregistrement && (
-        <p className="flex items-center gap-2 text-sm text-ink" aria-live="polite">
-          <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-signal-fonce motion-safe:animate-pulse dark:bg-signal-clair" />
+        // Design v3 (24/10) : le point d'écoute reste fixe (pas d'animation
+        // en boucle) ; la phrase dit que le micro est ouvert.
+        <p className="flex items-center gap-2 text-[15px] font-semibold text-ink" aria-live="polite">
+          <span aria-hidden className="h-2.5 w-2.5 shrink-0 rounded-full bg-signal" />
           J&apos;écoute… Parlez, le texte s&apos;écrit ici.
         </p>
       )}
 
       <div aria-live="polite">
-        {erreur && <p className="text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
-        {brouillonRestaure && !erreur && <p className="text-sm text-steel">Retrouvé sur ce téléphone. Relisez avant d&apos;ajouter.</p>}
+        {erreur && <p className={ERREUR}>{erreur}</p>}
+        {brouillonRestaure && !erreur && <p className={SECONDAIRE}>Retrouvé sur ce téléphone. Relisez avant d&apos;ajouter.</p>}
       </div>
 
       {montrerChamp && (
@@ -306,7 +310,7 @@ export function NotesVocales({
           }}
           rows={4}
           placeholder={editionManuelle ? "Ex : deux chevrons à remplacer…" : undefined}
-          className="mt-2 w-full resize-none rounded-2xl bg-surface p-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
+          className={`${CHAMP} mt-3 block resize-none py-3 leading-relaxed`}
         />
       )}
 
@@ -323,7 +327,7 @@ export function NotesVocales({
               Ajouter au projet
             </Button>
             {ClasseReconnaissance && (
-              <button type="button" onClick={demarrer} disabled={sauvegarde} className={BOUTON_CONTOUR}>
+              <button type="button" onClick={demarrer} disabled={sauvegarde} className={`${BOUTON_CONTOUR} w-full`}>
                 Dicter la suite
               </button>
             )}
@@ -359,6 +363,9 @@ export function NotesVocales({
 // repli, une seule note suffit à rendre toute la fiche projet interminable
 // à faire défiler. Repliée par défaut au-delà de ~280 caractères.
 const LONGUEUR_APERCU = 280;
+/** 25/10 — « 3 oct. 2026 à 14 h 30 » (lib/heure.ts) au lieu de
+ *  « 03/10/2026 14:30:12 ». */
+const DATE_NOTE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short", year: "numeric" });
 
 function NoteVocaleItem({ note }: { note: NoteVocale }) {
   const [etendue, setEtendue] = useState(false);
@@ -369,14 +376,14 @@ function NoteVocaleItem({ note }: { note: NoteVocale }) {
       : note.transcription;
 
   return (
-    <div className="border-l-2 border-ink/15 pl-3">
-      <p className="whitespace-pre-line text-sm text-ink">{texteAffiche}</p>
+    <div className="border-l-2 border-gris-clair pl-3">
+      <p className="whitespace-pre-line text-base leading-relaxed text-ink">{texteAffiche}</p>
       {estLongue && (
         <button type="button" onClick={() => setEtendue(!etendue)} className={`-ml-3 ${BOUTON_TEXTE}`}>
           {etendue ? "Afficher moins" : "Afficher plus"}
         </button>
       )}
-      <p className="mt-1 font-mono text-xs tabular-nums text-steel">{new Date(note.created_at).toLocaleString("fr-FR")}</p>
+      <p className={`mt-1 tabular-nums ${SECONDAIRE}`}>{dateEtHeure(note.created_at, DATE_NOTE)}</p>
     </div>
   );
 }

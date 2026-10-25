@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { Button } from "@/components/ui/Button";
+import { BOUTON_TEXTE, CARTE_PLEINE, ERREUR, SECONDAIRE, TITRE_ECRAN } from "@/components/ui/recettes";
+import { heure as ecrireHeure, heureLue } from "@/lib/heure";
 
 type RdvPropose = { date: string; heure: string };
 
@@ -106,9 +108,7 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
     if (conflit) {
       setTraitementRdv(false);
       setErreur(
-        `Créneau déjà pris : "${conflit.titre}" à ${new Date(
-          conflit.date_heure
-        ).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}. Choisissez un autre horaire.`
+        `Créneau déjà pris : « ${conflit.titre} » à ${ecrireHeure(conflit.date_heure)}. Choisissez un autre horaire.`
       );
       return;
     }
@@ -144,6 +144,8 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
       organisationId,
       type: "rdv_planifie",
       titre: "Rendez-vous planifié",
+      // Une donnée écrite au journal : son format ne change pas (refonte
+      // visuelle seulement).
       detail: dateHeure.toLocaleDateString("fr-FR", {
         weekday: "long",
         day: "numeric",
@@ -172,30 +174,30 @@ export function ConfirmationRdv({ projetId, nomClient, rdv }: Props) {
   });
 
   return (
-    <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
-      <h1 className="font-display text-3xl font-semibold text-ink">Projet créé</h1>
-      <section className="mt-6 rounded-[20px] bg-surface p-5 ombre-douce">
-        <p className="text-base text-ink">
+    <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
+      <h1 className={TITRE_ECRAN}>Projet créé</h1>
+      <section className={`mt-6 ${CARTE_PLEINE}`}>
+        <p className="text-[17px] leading-snug text-ink">
           {nomClient} propose le <span className="font-semibold">{dateFormatee}</span> à{" "}
-          <span className="font-mono font-semibold tabular-nums">{rdv.heure}</span>.
+          <span className="font-semibold tabular-nums">{heureLue(rdv.heure)}</span>.
         </p>
-        <p className="mt-1 text-sm text-steel">Ce créneau vous convient ?</p>
+        <p className={`mt-1 ${SECONDAIRE}`}>Ce créneau vous convient ?</p>
         <div className="mt-5 flex flex-col gap-2 sm:flex-row">
           <Button onClick={accepterRdv} loading={traitementRdv} className="min-h-14 w-full sm:w-auto">
             Accepter ce créneau
           </Button>
-          <Button variant="ghost" onClick={proposerAutreDate} disabled={traitementRdv}>
+          <Button variant="secondary" onClick={proposerAutreDate} disabled={traitementRdv} className="min-h-14 w-full sm:w-auto">
             Choisir une autre date
           </Button>
         </div>
         <div aria-live="polite">
-          {erreur && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+          {erreur && <p className={`mt-3 ${ERREUR}`}>{erreur}</p>}
         </div>
       </section>
       <Link
         href={`/dashboard/demandes/${projetId}?cree=1`}
         replace
-        className="-ml-3 mt-2 inline-flex min-h-12 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+        className={`-ml-3 mt-2 ${BOUTON_TEXTE}`}
       >
         Voir le projet sans planifier
       </Link>

@@ -6,7 +6,8 @@ import { enregistrerEvenement } from "@/lib/timeline";
 import { getOrganisationId } from "@/lib/organisation";
 import { compresserPhoto } from "@/lib/images/compresserPhoto";
 import { IconeCoche } from "@/components/projet/icones";
-import { BOUTON_CONTOUR, BOUTON_TEXTE } from "@/components/projet/Blocs";
+import { BOUTON_CONTOUR, BOUTON_CREUX_SUR_TEINTE, BOUTON_TEXTE } from "@/components/projet/Blocs";
+import { BOUTON_PLEIN_LARGE, ERREUR } from "@/components/ui/recettes";
 
 // ============================================================
 // Refonte (03/10, duel D lot 2) — prendre une photo depuis la fiche, en
@@ -223,9 +224,9 @@ export function EtatEnvoiPhotos({ envoi, surVoir }: { envoi: EnvoiPhotos; surVoi
   return (
     <div aria-live="polite">
       {envoi.ajoutees > 0 && (
-        <div className="mt-2 flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
+        <div className="mt-2 flex min-h-12 items-center gap-3 rounded-[14px] bg-succes-fond pl-4 text-[15px] text-ink">
           <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
-          <p className="min-w-0 flex-1 truncate">
+          <p className="line-clamp-2 min-w-0 flex-1 break-words py-1">
             {photos(envoi.ajoutees)} ajoutée{envoi.ajoutees > 1 ? "s" : ""}
           </p>
           {surVoir && (
@@ -236,11 +237,12 @@ export function EtatEnvoiPhotos({ envoi, surVoir }: { envoi: EnvoiPhotos; surVoi
         </div>
       )}
       {envoi.erreur && (
-        <div className="mt-2 flex min-h-12 items-center gap-3 rounded-2xl bg-paper-warm pl-4 pr-1 text-sm">
-          <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
-          <p className="min-w-0 flex-1 truncate font-semibold text-signal-fonce dark:text-signal-clair">{envoi.erreur}</p>
+        // Design v3 (24/10) : la teinte d'alerte opaque, « Réessayer » en
+        // creux posé en surface (visible sur la teinte).
+        <div className="mt-2 flex min-h-14 items-center gap-3 rounded-[14px] bg-signal-fond py-1 pl-4 pr-1 text-[15px]">
+          <p className="min-w-0 flex-1 font-semibold text-signal-fonce">{envoi.erreur}</p>
           {envoi.enAttente.length > 0 && (
-            <button type="button" onClick={envoi.reessayer} className={`shrink-0 ${BOUTON_CONTOUR}`}>
+            <button type="button" onClick={envoi.reessayer} className={`shrink-0 ${BOUTON_CREUX_SUR_TEINTE} px-4`}>
               Réessayer
             </button>
           )}
@@ -348,7 +350,7 @@ export function PhotosProjet({
         <label
           htmlFor={idChampAppareil(demandeId)}
           aria-disabled={envoi.envoi}
-          className={`inline-flex min-h-14 cursor-pointer items-center justify-center gap-2 rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 ${envoi.envoi ? "pointer-events-none opacity-60" : ""}`}
+          className={`${BOUTON_PLEIN_LARGE} cursor-pointer sm:w-auto ${envoi.envoi ? "pointer-events-none opacity-60" : ""}`}
         >
           {envoi.envoi && (
             <span className="h-4 w-4 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />
@@ -358,7 +360,7 @@ export function PhotosProjet({
         <label
           htmlFor={`photos-galerie-${demandeId}`}
           aria-disabled={envoi.envoi}
-          className={`${BOUTON_CONTOUR} cursor-pointer ${envoi.envoi ? "pointer-events-none opacity-60" : ""}`}
+          className={`${BOUTON_CONTOUR} min-h-14 cursor-pointer ${envoi.envoi ? "pointer-events-none opacity-60" : ""}`}
         >
           Choisir dans la galerie
         </label>
@@ -366,7 +368,7 @@ export function PhotosProjet({
 
       <EtatEnvoiPhotos envoi={envoi} />
       <div aria-live="polite">
-        {erreur && <p className="mt-2 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+        {erreur && <p className={ERREUR}>{erreur}</p>}
       </div>
 
       {/*
@@ -378,7 +380,7 @@ export function PhotosProjet({
       */}
       {erreurUrls && chemins.length > 0 && (
         <div className="mt-4 flex items-center gap-3 text-sm">
-          <span className="min-w-0 flex-1 font-semibold text-signal-fonce dark:text-signal-clair">Photos pas chargées.</span>
+          <span className="min-w-0 flex-1 font-semibold text-signal-fonce">Photos pas chargées.</span>
           <button type="button" onClick={() => void chargerUrls()} className={`shrink-0 ${BOUTON_CONTOUR}`}>
             Réessayer
           </button>
@@ -386,14 +388,16 @@ export function PhotosProjet({
       )}
 
       {!erreurUrls && chemins.length > 0 && (
-        <div className="mt-4 grid grid-cols-3 gap-2 sm:grid-cols-4">
+        // Design v3 (24/10) : vignettes au rayon 12, sans contour ; la place
+        // vide d'une photo qui charge est immobile, en creux.
+        <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-4">
           {chemins.map((chemin) => (
-            <div key={chemin} className="relative aspect-square overflow-hidden rounded-2xl bg-paper ring-1 ring-ink/15">
+            <div key={chemin} className="relative aspect-square overflow-hidden rounded-[12px] bg-paper-warm">
               {urls[chemin] ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={urls[chemin]} alt="Photo du projet" className="h-full w-full object-cover" />
               ) : (
-                <div className="h-full w-full bg-ink/10 motion-safe:animate-pulse" />
+                <div className="h-full w-full bg-paper-warm" />
               )}
               {/*
                 Sprint Beta Final (27/08) — 🔴E : toujours visible (pas de
@@ -403,11 +407,11 @@ export function PhotosProjet({
               <button
                 type="button"
                 onClick={() => supprimerPhoto(chemin)}
-                className="absolute right-0 top-0 grid h-12 w-12 place-items-center focus-visible:outline-none"
+                className="group absolute right-0 top-0 grid h-12 w-12 place-items-center focus-visible:outline-none"
                 title="Supprimer"
                 aria-label="Supprimer cette photo"
               >
-                <span className="grid h-8 w-8 place-items-center rounded-full bg-ink/70 text-sm text-paper">✕</span>
+                <span className="grid h-8 w-8 place-items-center rounded-full bg-black/60 text-[15px] text-white group-focus-visible:ring-2 group-focus-visible:ring-white">✕</span>
               </button>
             </div>
           ))}

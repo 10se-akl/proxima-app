@@ -71,10 +71,11 @@ export function PropositionUrgence({
   }
 
   return (
-    <div className="mt-4 border-t border-ink/15 pt-3">
-      <p className="flex items-center gap-2 text-base font-semibold text-ink">
-        <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
-        <span className="truncate">Ça a l&apos;air urgent, d&apos;après vos notes.</span>
+    // Design v3 (24/10) : filet commun, la phrase entière (plus coupée).
+    <div className="mt-4 border-t border-gris-clair pt-3">
+      <p className="flex items-start gap-2 text-base font-semibold text-ink">
+        <span aria-hidden className="mt-2 h-2 w-2 shrink-0 rounded-full bg-alerte-orange" />
+        <span>Ça a l&apos;air urgent, d&apos;après vos notes.</span>
       </p>
       <div className="mt-2 flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => repondre("oui")} disabled={enCours} className={BOUTON_CONTOUR}>
@@ -88,7 +89,8 @@ export function PropositionUrgence({
         type="button"
         onClick={() => repondre("auto")}
         disabled={enCours}
-        className="-ml-3 inline-flex min-h-12 items-center px-3 text-sm text-steel underline decoration-ink/30 underline-offset-4 disabled:opacity-60"
+        // 25/10 — un bouton texte des recettes (plus de lien souligné).
+        className={`-ml-3 text-left ${BOUTON_TEXTE}`}
       >
         La prochaine fois, passer en urgent sans demander
       </button>

@@ -15,6 +15,9 @@ const base = (taille: number) => ({
   strokeWidth: 1.75,
   strokeLinecap: "round" as const,
   strokeLinejoin: "round" as const,
+  // Décoratives : le texte à côté (ou l'aria-label du bouton) dit tout.
+  "aria-hidden": true,
+  focusable: "false" as const,
 });
 
 export function IconeAccueil({ className, taille = 18 }: Props) {

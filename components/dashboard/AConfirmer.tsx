@@ -7,9 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { marquerRendezVousDuChantierFaits } from "@/components/planning/actionsEvenement";
 import { getOrganisationId } from "@/lib/organisation";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Avatar } from "@/components/ui/Avatar";
+import { BOUTON_CREUX, BOUTON_PLEIN, COMPTEUR, ERREUR, GROUPE, SECONDAIRE, TITRE_SECTION, FOCUS } from "@/components/ui/recettes";
 import { FeuilleDeplacer, type EvenementADeplacer } from "@/components/planning/FeuilleDeplacer";
 import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/FeuilleMessageClient";
 import { vibrer, vibrerEchec } from "@/lib/retour";
@@ -27,6 +25,12 @@ type EvenementAConfirmer = {
   date_heure: string;
   demandes?: { nom_client?: string } | null;
 };
+
+// Design v3 (24/10) : les questions sont des lignes d'une liste groupée
+// (surface, ombre douce, filets fins) ; les réponses sont des pastilles
+// en creux posées sur la ligne, comme « Oui · Pas encore » à l'accueil ;
+// plus d'avatar coloré ni de capitales espacées.
+const PASTILLE = `inline-flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full bg-paper-warm px-4 text-[15px] font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/[0.08] disabled:opacity-60 motion-safe:transition-colors ${FOCUS}`;
 
 // 26/09 (lot B) — `integre` : rendu sans son propre titre, à l'intérieur
 // du bloc « À confirmer » de l'accueil, qui le fusionne avec la clôture
@@ -169,105 +173,88 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
   if (restants.length === 0) return feuilles;
 
   const liste = (
-      <div className="flex flex-col gap-2">
-        {restants.map((e) =>
-          proposerPlanification.has(e.id) ? (
-            <Card key={e.id} className="p-4">
-              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
-                {e.demandes?.nom_client && (
-                  <Avatar nom={e.demandes.nom_client} taille={22} />
-                )}
-                D&apos;accord. Voulez-vous planifier le prochain rendez-vous pour{" "}
-                <span className="font-semibold">
-                  {e.demandes?.nom_client ?? "ce projet"}
-                </span>{" "}
-                ?
-              </p>
-              <div className="mt-3 flex gap-2">
-                {e.demande_id && (
-                  <Link href={`/dashboard/planning/nouveau?projetId=${e.demande_id}`}>
-                    <Button>+ Planifier un rendez-vous</Button>
-                  </Link>
-                )}
-                <Button
-                  variant="ghost"
-                  onClick={() => setTraites((s) => new Set(s).add(e.id))}
-                >
-                  Plus tard
-                </Button>
-              </div>
-            </Card>
-          ) : proposerCloture.has(e.id) ? (
-            <Card key={e.id} className="p-4">
-              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
-                {e.demandes?.nom_client && (
-                  <Avatar nom={e.demandes.nom_client} taille={22} />
-                )}
-                Le chantier{" "}
-                <span className="font-semibold">
-                  {e.demandes?.nom_client ?? "concerné"}
-                </span>{" "}
-                est-il aussi terminé ?
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Button
-                  onClick={() => cloturerProjet(e, true)}
-                  disabled={clotureEnCours === e.id}
-                >
-                  {clotureEnCours === e.id ? "…" : "✓ Oui, chantier terminé"}
-                </Button>
-                <Button variant="ghost" onClick={() => cloturerProjet(e, false)}>
-                  Non, pas encore
-                </Button>
-              </div>
-              {erreurId === e.id && (
-                <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">
-                  La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
-                </p>
+    <div className={GROUPE}>
+      {restants.map((e) =>
+        proposerPlanification.has(e.id) ? (
+          <div key={e.id} className="px-4 py-4">
+            <p className="text-base text-ink">
+              D&apos;accord. Voulez-vous planifier le prochain rendez-vous pour{" "}
+              <span className="font-semibold">{e.demandes?.nom_client ?? "ce projet"}</span> ?
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              {e.demande_id && (
+                <Link href={`/dashboard/planning/nouveau?projetId=${e.demande_id}`} className={BOUTON_PLEIN}>
+                  Planifier un rendez-vous
+                </Link>
               )}
-            </Card>
-          ) : (
-            <Card key={e.id} className="p-3 pl-4">
-              <div className="flex items-center gap-2">
-                <p className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-medium text-ink">
-                    {e.demandes?.nom_client ?? e.titre}
-                  </span>
-                  <span className="block truncate text-[13px] text-ink/55">
-                    Fait ? {e.demandes?.nom_client ? `${e.titre} · ` : ""}
-                    {new Date(e.date_heure).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                  </span>
-                </p>
-                <button type="button" onClick={() => confirmerFait(e)} disabled={traitementId === e.id} className="min-h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper transition disabled:opacity-50">
-                  {traitementId === e.id ? "…" : "Oui"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setADeplacer({
-                      id: e.id,
-                      titre: e.titre,
-                      date_heure: e.date_heure,
-                      nomClient: e.demandes?.nom_client,
-                      demandeId: e.demande_id,
-                      rdv: e.type !== "tache",
-                    })
-                  }
-                  className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink"
-                >
-                  Non
-                </button>
-              </div>
+              <button type="button" className={BOUTON_CREUX} onClick={() => setTraites((s) => new Set(s).add(e.id))}>
+                Plus tard
+              </button>
+            </div>
+          </div>
+        ) : proposerCloture.has(e.id) ? (
+          <div key={e.id} className="px-4 py-4">
+            <p className="text-base text-ink">
+              Le chantier <span className="font-semibold">{e.demandes?.nom_client ?? "concerné"}</span> est-il aussi
+              terminé ?
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className={BOUTON_PLEIN}
+                onClick={() => cloturerProjet(e, true)}
+                disabled={clotureEnCours === e.id}
+              >
+                {clotureEnCours === e.id ? "…" : "Oui, chantier terminé"}
+              </button>
+              <button type="button" className={BOUTON_CREUX} onClick={() => cloturerProjet(e, false)}>
+                Non, pas encore
+              </button>
+            </div>
+            {erreurId === e.id && (
+              <p className={ERREUR}>La mise à jour n&apos;a pas pu être enregistrée. Réessayez.</p>
+            )}
+          </div>
+        ) : (
+          <div key={e.id} className="flex min-h-[4.25rem] flex-col justify-center py-2.5 pl-4 pr-3">
+            <div className="flex items-center gap-2">
+              <p className="min-w-0 flex-1">
+                <span className="line-clamp-2 block break-words text-[17px] font-semibold leading-snug text-ink">
+                  {e.demandes?.nom_client ?? e.titre}
+                </span>
+                <span className={`line-clamp-2 block ${SECONDAIRE}`}>
+                  Fait ? {e.demandes?.nom_client ? `${e.titre} · ` : ""}
+                  {new Date(e.date_heure).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                </span>
+              </p>
+              <button type="button" onClick={() => confirmerFait(e)} disabled={traitementId === e.id} className={PASTILLE}>
+                {traitementId === e.id ? "…" : "Oui"}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  setADeplacer({
+                    id: e.id,
+                    titre: e.titre,
+                    date_heure: e.date_heure,
+                    nomClient: e.demandes?.nom_client,
+                    demandeId: e.demande_id,
+                    rdv: e.type !== "tache",
+                  })
+                }
+                className={PASTILLE}
+              >
+                Non
+              </button>
+            </div>
 
-              {erreurId === e.id && (
-                <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">
-                  La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
-                </p>
-              )}
-            </Card>
-          )
-        )}
-      </div>
+            {erreurId === e.id && (
+              <p className={ERREUR}>La mise à jour n&apos;a pas pu être enregistrée. Réessayez.</p>
+            )}
+          </div>
+        )
+      )}
+    </div>
   );
 
   if (integre)
@@ -279,7 +266,10 @@ export function AConfirmer({ evenements, integre = false }: { evenements: Evenem
     );
   return (
     <div className="mt-8">
-      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">À confirmer</p>
+      <h2 className={`mb-2.5 flex items-baseline gap-2 px-1 tracking-[-0.02em] ${TITRE_SECTION}`}>
+        À confirmer
+        <span className={COMPTEUR}>{restants.length}</span>
+      </h2>
       {liste}
       {feuilles}
     </div>

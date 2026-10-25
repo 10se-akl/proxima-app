@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { euros } from "@/components/ui/recettes";
 
 // ============================================================
 // L'argent du mois, en haut de l'accueil (22/10, panel de 18 faux clients).
@@ -19,8 +20,6 @@ export type ChiffresDuMois = {
   aEncaisser: { total: number; enRetard: number };
 };
 
-const euros = (n: number) =>
-  n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0, minimumFractionDigits: 0 });
 
 export function ChiffresMois({ chiffres }: { chiffres: ChiffresDuMois | null }) {
   if (!chiffres) return null;
@@ -52,8 +51,10 @@ export function ChiffresMois({ chiffres }: { chiffres: ChiffresDuMois | null }) 
         </span>
       )}
       <span className="mt-4 block border-t border-gris-clair pt-3 text-[15px] leading-snug text-steel">
-        {nomMois.charAt(0).toUpperCase() + nomMois.slice(1)} : <span className="font-semibold tabular-nums text-ink">{euros(signe)}</span> signés ·{" "}
-        <span className="font-semibold tabular-nums text-succes">{euros(encaisse)}</span> encaissés
+        {nomMois.charAt(0).toUpperCase() + nomMois.slice(1)} : {/* 25/10 — chaque montant reste collé à son mot : la ligne se coupe
+            au « · », jamais avant « encaissés ». */}
+        <span className="whitespace-nowrap"><span className="font-semibold tabular-nums text-ink">{euros(signe)}</span> signés</span> ·{" "}
+        <span className="whitespace-nowrap"><span className="font-semibold tabular-nums text-succes">{euros(encaisse)}</span> encaissés</span>
       </span>
     </Link>
   );

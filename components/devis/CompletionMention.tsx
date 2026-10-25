@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { completerParametres, type FormulaireParametres } from "@/lib/parametres";
 import type { ParametresEntreprise } from "@/types";
+import { BOUTON_CREUX, BOUTON_PLEIN_LARGE, CHAMP, ERREUR, LIBELLE } from "@/components/ui/recettes";
 
 // ============================================================
 // Compléter une mention sur place (26/09 — « moins mais mieux », lot F).
@@ -77,7 +78,18 @@ export type ContexteCompletion = {
   enregistrer?: (modifications: Partial<FormulaireParametres>) => Promise<{ erreur: string | null; parametres: ParametresEntreprise | null }>;
 };
 
-export function CompletionMention({ pointId, contexte }: { pointId: string; contexte: ContexteCompletion }) {
+export function CompletionMention({
+  pointId,
+  contexte,
+  principal = false,
+}: {
+  pointId: string;
+  contexte: ContexteCompletion;
+  /** Design v3 (24/10) : seule action d'une feuille → bouton plein, pleine
+   *  largeur ; dans le score (à côté de « Valider »), il reste en creux
+   *  pour garder un seul bouton plein par écran. */
+  principal?: boolean;
+}) {
   const definition = COMPLETIONS[pointId];
   const idBase = useId();
   // Prérempli avec ce qui est déjà connu (l'assureur sans le numéro…).
@@ -121,13 +133,13 @@ export function CompletionMention({ pointId, contexte }: { pointId: string; cont
 
   return (
     <form onSubmit={enregistrer} className="mt-1">
-      <p className="text-[13px] leading-snug text-ink/65">{definition.raison}</p>
-      <div className="mt-2.5 grid gap-2.5 sm:grid-cols-2">
+      <p className="text-[15px] leading-snug text-steel [text-wrap:pretty]">{definition.raison}</p>
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
         {definition.champs.map((c) => (
           <div key={c.cle}>
-            <label htmlFor={`${idBase}-${c.cle}`} className="block text-[12.5px] font-medium text-ink/70">
+            <label htmlFor={`${idBase}-${c.cle}`} className={LIBELLE}>
               {c.label}
-              {facultatif(c) && <span className="font-normal text-ink/45"> (facultatif)</span>}
+              {facultatif(c) && <span className="font-normal text-steel"> (facultatif)</span>}
             </label>
             <input
               id={`${idBase}-${c.cle}`}
@@ -136,19 +148,26 @@ export function CompletionMention({ pointId, contexte }: { pointId: string; cont
               value={valeurs[c.cle] ?? ""}
               onChange={(ev) => setValeurs((v) => ({ ...v, [c.cle]: ev.target.value }))}
               placeholder={c.placeholder}
-              className="mt-1 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-3 text-[16px] text-ink focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/20"
+              className={CHAMP}
             />
           </div>
         ))}
       </div>
-      {erreur && <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">{erreur}</p>}
-      <button
-        type="submit"
-        disabled={!complet || enCours}
-        className="mt-3 min-h-12 w-full rounded-xl bg-ink px-5 text-[15px] font-semibold text-paper transition disabled:opacity-40 sm:w-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-      >
-        {enCours ? "…" : "Enregistrer"}
-      </button>
+      {erreur && <p className={ERREUR}>{erreur}</p>}
+      {/* Design v3 (25/10) : dans le score, six « Enregistrer » grisés
+          s'empilaient sur ordinateur. Le bouton n'apparaît qu'une fois les
+          champs remplis (même condition qu'avant pour l'activer : `complet`) ;
+          tant qu'il n'y a rien à enregistrer, rien ne s'affiche. Dans une
+          feuille (seule action), il reste visible, désactivé. */}
+      {(principal || complet || enCours) && (
+        <button
+          type="submit"
+          disabled={!complet || enCours}
+          className={`mt-4 ${principal ? BOUTON_PLEIN_LARGE : `${BOUTON_CREUX} w-full sm:w-auto`}`}
+        >
+          {enCours ? "Enregistrement…" : "Enregistrer"}
+        </button>
+      )}
     </form>
   );
 }

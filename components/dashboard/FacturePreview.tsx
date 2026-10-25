@@ -1,16 +1,21 @@
 import { Button } from "@/components/ui/Button";
 import { identiteJuridique, mentionsAssurances, nomEntreprise } from "@/lib/devis/mentionsLegales";
 import { formatQuantite } from "@/lib/devis/modeleDocument";
+import { euros } from "@/components/ui/recettes";
 import type { Facture } from "@/types";
 
+// Design v3 (25/10) : un montant de document, avec centimes, par euros()
+// des recettes (espace insécable lisible entre les milliers, jamais coupé).
 function formatEuros(n: number) {
-  return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
+  return euros(n, true);
 }
 
+// Design v3 (24/10) : en minuscules, comme le titre « Devis » du devis —
+// plus de capitales qui crient.
 const LIBELLE_TYPE: Record<Facture["type"], string> = {
-  facture: "FACTURE",
-  acompte: "FACTURE D'ACOMPTE",
-  avoir: "AVOIR",
+  facture: "Facture",
+  acompte: "Facture d'acompte",
+  avoir: "Avoir",
 };
 
 // ============================================================
@@ -33,6 +38,12 @@ const LIBELLE_TYPE: Record<Facture["type"], string> = {
 // ⚠️ Ce document est un support de facturation, pas une transmission
 // électronique conforme à la réforme 2026 (PDP/PPF) — voir le rapport
 // livré à Axel pour ce qui reste à faire côté partenariat externe.
+//
+// Design v3 (24/10) : la facture devient un document papier, comme le
+// devis (.document-papier : blanc et encre, même en mode sombre) — encre
+// seule, secondaire en `steel` (plus de gris par transparence ni de
+// chasse fixe), total TTC en gros sous un trait d'encre, mentions en
+// 12-13 px lisibles. Ordre des informations et textes légaux inchangés.
 // ============================================================
 export function FacturePreview({
   facture,
@@ -52,132 +63,148 @@ export function FacturePreview({
 
   return (
     <div>
-      <div id="facture-imprimable" className="doc-imprimable rounded-2xl border border-ink/10 overflow-hidden">
-        <div className="flex items-start justify-between gap-4 px-5 py-4 border-b border-ink/10">
-          <div className="flex items-start gap-3">
+      <article
+        id="facture-imprimable"
+        className="document-papier doc-imprimable rounded-[14px] bg-surface px-5 py-6 text-[15px] leading-relaxed text-ink ring-1 ring-inset ring-gris-clair sm:rounded-[6px] sm:px-8 sm:py-8 sm:text-[14px]"
+      >
+        <header className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex min-w-0 items-start gap-3">
             {logoUrl && (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={logoUrl} alt="" className="w-12 h-12 object-contain shrink-0" />
+              <img src={logoUrl} alt="" className="h-12 w-12 shrink-0 object-contain" />
             )}
-            <div>
-              <p className="font-semibold">{nomEntreprise(m, "—")}</p>
-              {m.adresse && <p className="text-xs text-ink/50 mt-0.5">{m.adresse}</p>}
+            <div className="min-w-0">
+              <p className="break-words font-display text-[17px] font-bold leading-snug text-ink">
+                {nomEntreprise(m, "—")}
+              </p>
+              {m.adresse && <p className="mt-0.5 text-steel">{m.adresse}</p>}
               {(m.telephone || m.email) && (
-                <p className="text-xs text-ink/50">{[m.telephone, m.email].filter(Boolean).join(" · ")}</p>
+                <p className="break-words text-steel">{[m.telephone, m.email].filter(Boolean).join(" · ")}</p>
               )}
               {/* 17/09 — mêmes mentions, même formulation que le devis
                   (lib/devis/mentionsLegales.ts) : RCS, capital, RM, RC Pro
                   et zone de couverture de la décennale manquaient. */}
-              <p className="text-[11px] text-ink/50 mt-1">{identiteJuridique(m).join(" · ")}</p>
+              <p className="mt-1.5 text-[13px] leading-relaxed text-steel print:text-[12px]">{identiteJuridique(m).join(" · ")}</p>
               {mentionsAssurances(m).map((ligne) => (
-                <p key={ligne} className="text-[11px] text-ink/50 mt-0.5">
+                <p key={ligne} className="mt-0.5 text-[13px] leading-relaxed text-steel print:text-[12px]">
                   {ligne}
                 </p>
               ))}
             </div>
           </div>
-          <div className="text-right shrink-0">
-            <p className="font-mono text-xs font-semibold text-signal">{LIBELLE_TYPE[facture.type]}</p>
-            <p className="font-mono text-[11px] text-ink/50 mt-0.5">N° {facture.numero}</p>
-            <p className="text-sm text-ink/70 mt-2">Client : {nomClient}</p>
-            {telephoneClient && <p className="text-xs text-ink/50">{telephoneClient}</p>}
-            {adresseClient && <p className="text-xs text-ink/50 max-w-[220px]">{adresseClient}</p>}
-            <p className="font-mono text-[11px] text-ink/50 mt-1">
+          <div className="shrink-0 sm:max-w-[240px] sm:text-right">
+            <p className="font-display text-[24px] font-bold leading-tight tracking-[-0.02em] text-ink">
+              {LIBELLE_TYPE[facture.type]}
+            </p>
+            <p className="mt-1 text-steel">
+              N° <span className="font-semibold tabular-nums text-ink">{facture.numero}</span>
+            </p>
+            <p className="mt-3 text-ink">
+              <span className="text-steel">Client{"\u00a0"}: </span>
+              <span className="font-semibold">{nomClient}</span>
+            </p>
+            {telephoneClient && <p className="tabular-nums text-ink">{telephoneClient}</p>}
+            {adresseClient && <p className="text-ink">{adresseClient}</p>}
+            <p className="mt-3 tabular-nums text-steel">
               Émise le {new Date(facture.date_emission).toLocaleDateString("fr-FR")}
             </p>
             {facture.date_echeance && (
-              <p className="font-mono text-[11px] text-ink/50">
+              <p className="tabular-nums text-steel">
                 Échéance le {new Date(facture.date_echeance).toLocaleDateString("fr-FR")}
               </p>
             )}
           </div>
-        </div>
+        </header>
 
         {estAvoir && (
-          <p className="px-5 py-2 bg-signal-fond text-signal-fonce text-xs font-medium">
+          <p className="mt-6 rounded-[8px] border border-steel px-4 py-2.5 text-[14px] font-medium text-ink">
             Cet avoir annule la facture n° {facture.facture_liee_id ? "correspondante" : ""} — les montants ci-dessous
             viennent en déduction.
           </p>
         )}
 
-        <div className="divide-y divide-ink/5">
+        <div className="mt-6 divide-y divide-gris-clair border-y border-gris-clair">
           {facture.lignes.map((ligne, i) => (
-            <div key={i} className="px-5 py-3 text-sm">
+            <div key={i} className="break-inside-avoid py-3.5">
               {/* Audit "vérification systématique" (10/09) — même correctif
                   que DevisPreview.tsx : min-w-0/shrink-0 pour enrouler le
-                  texte au lieu d'un débordement invisible sous
-                  overflow-hidden. */}
-              <div className="flex items-start justify-between gap-3">
-                <p className="text-ink/80 min-w-0">{ligne.description}</p>
-                <span className="font-mono shrink-0 whitespace-nowrap">{formatEuros(ligne.total)}</span>
+                  texte au lieu d'un débordement invisible. */}
+              <div className="flex items-baseline justify-between gap-4">
+                <p className="min-w-0 break-words text-ink">{ligne.description}</p>
+                <span className="shrink-0 whitespace-nowrap font-semibold tabular-nums text-ink">
+                  {formatEuros(ligne.total)}
+                </span>
               </div>
               {/* Quantité et prix unitaire HT : obligatoires sur une facture. */}
-              <p className="text-xs text-ink/50 mt-0.5 tabular-nums">
-                {formatQuantite(ligne.quantite)} {ligne.unite} × {formatEuros(ligne.prix_unitaire)} HT
+              <p className="mt-1 text-[13px] tabular-nums text-steel">
+                {formatQuantite(ligne.quantite).replace(/\u202f/g, "\u00a0")}{"\u00a0"}{ligne.unite} × {formatEuros(ligne.prix_unitaire)}{"\u00a0"}HT
               </p>
               {/* Note de calcul interne (anciennes factures) : visible par
                   l'artisan, jamais imprimée pour le client. */}
               {ligne.detail_calcul && (
-                <p className="text-xs text-ink/40 font-mono mt-0.5 masquer-impression">{ligne.detail_calcul}</p>
+                <p className="masquer-impression mt-0.5 text-[13px] text-steel">{ligne.detail_calcul}</p>
               )}
             </div>
           ))}
         </div>
 
-        <div className="px-5 py-4 border-t border-ink/10 bg-paper text-sm space-y-1.5">
-          <div className="flex items-center justify-between text-ink/60">
-            <span>Total HT</span>
-            <span className="font-mono">{formatEuros(facture.sous_total_ht)}</span>
-          </div>
-          {/* 21/09 — Ce qui s'affiche = ce qui est enregistré. Avant,
-              la mention de franchise masquait la TVA même quand la facture
-              en contenait une (devis resté à 20 %) : écran à 1 000 €, base
-              à 1 200 €. Seule une facture réellement à 0 % dit « non
-              applicable » ; les nouvelles le sont toujours en franchise. */}
-          {m.mention_tva_non_applicable && facture.tva_pct === 0 ? (
-            <div className="flex items-center justify-between text-ink/60">
-              <span>TVA</span>
-              <span className="font-mono text-xs">Non applicable, art. 293 B du CGI</span>
+        <div className="mt-5 flex justify-end break-inside-avoid">
+          <div className="w-full sm:w-80">
+            <div className="space-y-1">
+              <div className="flex items-baseline justify-between gap-4">
+                <span className="text-steel">Total HT</span>
+                <span className="whitespace-nowrap tabular-nums text-ink">{formatEuros(facture.sous_total_ht)}</span>
+              </div>
+              {/* 21/09 — Ce qui s'affiche = ce qui est enregistré. Avant,
+                  la mention de franchise masquait la TVA même quand la facture
+                  en contenait une (devis resté à 20 %) : écran à 1 000 €, base
+                  à 1 200 €. Seule une facture réellement à 0 % dit « non
+                  applicable » ; les nouvelles le sont toujours en franchise. */}
+              {m.mention_tva_non_applicable && facture.tva_pct === 0 ? (
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="text-steel">TVA</span>
+                  <span className="text-right text-[13px] text-steel">Non applicable, art. 293 B du CGI</span>
+                </div>
+              ) : (
+                <div className="flex items-baseline justify-between gap-4">
+                  <span className="text-steel">TVA ({facture.tva_pct}{"\u00a0"}%)</span>
+                  <span className="whitespace-nowrap tabular-nums text-ink">{formatEuros(facture.montant_tva)}</span>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="flex items-center justify-between text-ink/60">
-              <span>TVA ({facture.tva_pct}%)</span>
-              <span className="font-mono">{formatEuros(facture.montant_tva)}</span>
+            <div className="mt-3 flex items-baseline justify-between gap-4 border-t-2 border-ink pt-3">
+              <span className="font-semibold text-ink">Total TTC</span>
+              <span className="whitespace-nowrap font-display text-[24px] font-bold leading-none tracking-[-0.02em] tabular-nums text-ink">
+                {formatEuros(facture.total_ttc)}
+              </span>
             </div>
-          )}
-          <div className="flex items-center justify-between font-semibold pt-2 border-t border-ink/10">
-            <span>Total TTC</span>
-            <span className="font-mono text-lg">
-              {formatEuros(facture.total_ttc)}
-            </span>
           </div>
         </div>
 
         {!estAvoir && (m.iban || m.bic) && (
-          <div className="px-5 py-3 border-t border-ink/10 text-xs text-ink/60">
-            <p className="font-medium text-ink/70 mb-0.5">Coordonnées de paiement</p>
-            {m.iban && <p className="font-mono">IBAN : {m.iban}</p>}
-            {m.bic && <p className="font-mono">BIC : {m.bic}</p>}
+          <div className="mt-6 break-inside-avoid break-words text-[13px] text-steel">
+            <p className="font-semibold text-ink">Coordonnées de paiement</p>
+            {m.iban && <p className="tabular-nums">IBAN{"\u00a0"}: {m.iban}</p>}
+            {m.bic && <p>BIC{"\u00a0"}: {m.bic}</p>}
           </div>
         )}
 
-        {m.mention_tva_reduite && (
-          <p className="px-5 py-3 border-t border-ink/10 text-[11px] text-ink/50 leading-relaxed">
-            {m.mention_tva_reduite}
-          </p>
+        {(m.mention_tva_reduite || !estAvoir) && (
+          <footer className="mt-8 space-y-2 border-t border-gris-clair pt-4 text-[13px] leading-relaxed text-steel [text-wrap:pretty] print:text-[12px]">
+            {m.mention_tva_reduite && <p>{m.mention_tva_reduite}</p>}
+            {!estAvoir && (
+              <p>
+                En cas de retard de paiement, des pénalités au taux de refinancement de la Banque centrale européenne
+                majoré de 10 points sont exigibles de plein droit (article L441-10 du Code de commerce) ; pour un client
+                professionnel, s&apos;y ajoute une indemnité forfaitaire pour frais de recouvrement de 40&nbsp;€ (article
+                D441-5). Pas d&apos;escompte pour paiement anticipé.
+              </p>
+            )}
+          </footer>
         )}
+      </article>
 
-        {!estAvoir && (
-          <p className="px-5 py-3 border-t border-ink/10 text-[10.5px] text-ink/40 leading-relaxed">
-            En cas de retard de paiement, des pénalités au taux de refinancement de la Banque centrale européenne
-            majoré de 10 points sont exigibles de plein droit (article L441-10 du Code de commerce) ; pour un client
-            professionnel, s&apos;y ajoute une indemnité forfaitaire pour frais de recouvrement de 40 € (article
-            D441-5). Pas d&apos;escompte pour paiement anticipé.
-          </p>
-        )}
-      </div>
-
-      <Button variant="ghost" className="mt-4" onClick={() => window.print()}>
+      <Button variant="secondary" className="mt-4" onClick={() => window.print()}>
         Exporter en PDF
       </Button>
     </div>

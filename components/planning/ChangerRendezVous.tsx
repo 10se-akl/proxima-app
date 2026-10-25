@@ -8,6 +8,7 @@ import { FeuilleMessageClient, type DemandeMessage } from "@/components/projet/F
 import { vibrer, vibrerEchec } from "@/lib/retour";
 import { FeuilleDeplacer } from "./FeuilleDeplacer";
 import { changerStatutEvenement, type EvenementAvecProjet } from "./actionsEvenement";
+import { BOUTON_ALERTE, BOUTON_PLEIN_LARGE, BOUTON_TEXTE, ERREUR } from "@/components/ui/recettes";
 
 // ============================================================
 // Déplacer ou annuler un rendez-vous, et prévenir le client (refonte 03/10,
@@ -117,34 +118,24 @@ export function useChangerRendezVous(
       />
 
       <Feuille ouverte={mode === "annuler"} titre="Annuler le rendez-vous ?" surFermer={fermerQuestion}>
+        {/* Design v3 (24/10) : un seul plein (« Annuler et prévenir »),
+            l'annulation sèche en bouton d'alerte (teinte opaque, jamais
+            pleine), « Garder » en lien. */}
         <div className="flex flex-col gap-2">
           {rdvClient && (
-            <button
-              type="button"
-              disabled={enCours}
-              onClick={() => void annuler(true)}
-              className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
-            >
-              <span className="block truncate">Annuler et prévenir {nomClient ?? "le client"}</span>
+            <button type="button" disabled={enCours} onClick={() => void annuler(true)} className={`py-3 ${BOUTON_PLEIN_LARGE}`}>
+              {/* Design v3 (25/10) : le nom du client ne disparaît jamais. */}
+              <span className="line-clamp-2 break-words text-center">Annuler et prévenir {nomClient ?? "le client"}</span>
             </button>
           )}
-          <button
-            type="button"
-            disabled={enCours}
-            onClick={() => void annuler(false)}
-            className="min-h-12 w-full rounded-2xl px-4 text-base font-semibold text-signal-fonce ring-1 ring-inset ring-signal-fonce/50 disabled:opacity-60 dark:text-signal-clair dark:ring-signal-clair/50"
-          >
+          <button type="button" disabled={enCours} onClick={() => void annuler(false)} className={`w-full ${BOUTON_ALERTE}`}>
             {rdvClient ? "Annuler sans prévenir" : "Annuler"}
           </button>
-          <button
-            type="button"
-            onClick={fermerQuestion}
-            className="min-h-12 w-full px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-          >
+          <button type="button" onClick={fermerQuestion} className={`w-full justify-center ${BOUTON_TEXTE}`}>
             Garder
           </button>
         </div>
-        <p aria-live="polite" className="mt-3 min-h-5 text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+        <p aria-live="polite" className={`${ERREUR} min-h-5`}>
           {erreur ? "Pas enregistré. Réessayez." : ""}
         </p>
       </Feuille>

@@ -30,7 +30,7 @@ export function BandeauReseau() {
   return (
     <div aria-live="polite">
       {horsLigne && (
-        <p className="flex min-h-10 items-center gap-2 bg-paper-warm px-4 text-sm font-semibold text-ink">
+        <p className="flex min-h-11 items-center gap-2 bg-paper-warm px-4 text-[15px] font-semibold text-ink">
           <span className="h-2 w-2 shrink-0 rounded-full bg-alerte-orange" aria-hidden="true" />
           Pas de réseau.
         </p>

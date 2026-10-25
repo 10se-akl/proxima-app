@@ -25,7 +25,8 @@ import {
   IconePhoto,
   IconePoint,
 } from "./icones";
-import { Pastille } from "@/components/ui/Pastille";
+import { BOUTON_TEXTE, CARTE, CHAMP, COMPTEUR, FOCUS, SECONDAIRE, TITRE_CARTE, TUILE_ICONE, puce } from "@/components/ui/recettes";
+import { heure as ecrireHeure } from "@/lib/heure";
 
 // ============================================================
 // Le Carnet (24/09) — voir entreesCarnet.ts pour la logique.
@@ -41,15 +42,13 @@ import { Pastille } from "@/components/ui/Pastille";
 // ancienne entrée. Règles 3, 4, 9 et 17 : tailles, encre, 48 px.
 // ============================================================
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
 
-const formatHeure = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", minute: "2-digit" });
+
 const formatJourSemaine = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short" });
 const formatJourMois = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short" });
 
 function heure(iso: string) {
-  return formatHeure.format(new Date(iso)).replace(":", " h ");
+  return ecrireHeure(iso);
 }
 
 function quand(iso: string, maintenant: Date): string {
@@ -89,7 +88,7 @@ function surligner(texte: string, mots: string[]): ReactNode {
       const bout = caracteres.slice(debut, i).join("");
       morceaux.push(
         marque[debut] ? (
-          <mark key={debut} className="rounded-sm bg-signal/25 px-0.5 text-inherit">
+          <mark key={debut} className="rounded-sm bg-alerte-fond px-0.5 text-inherit">
             {bout}
           </mark>
         ) : (
@@ -102,21 +101,21 @@ function surligner(texte: string, mots: string[]): ReactNode {
   return morceaux;
 }
 
-// Les icônes sont en encre (règle 9) ; seule la coche d'une tâche faite
-// garde sa pastille verte (règle 10).
+// Les icônes sont en encre (règle 9). Design v3 (24/10) : toutes dans la
+// même tuile neutre en creux (40 × 40, rayon 12) — plus de pastille de
+// couleur, même pour une tâche faite (la coche suffit à la dire).
 function IconeEntree({ e }: { e: EntreeCarnet }) {
-  const base = "grid h-8 w-8 shrink-0 place-items-center rounded-full ring-4 ring-paper";
-  const neutre = `${base} bg-ink/10 text-ink`;
-  if (e.type === "vocal") return <span className={neutre}><IconeMicro className="h-4 w-4" /></span>;
-  if (e.type === "photos") return <span className={neutre}><IconePhoto className="h-4 w-4" /></span>;
-  if (e.type === "fait") return <span className={`${base} bg-succes/10 text-succes`}><IconeCoche className="h-4 w-4" /></span>;
-  if (e.type === "rdv") return <span className={neutre}><IconeCalendrier className="h-4 w-4" /></span>;
-  if (e.type === "demande") return <span className={neutre}><IconeMessage className="h-4 w-4" /></span>;
+  const tuile = TUILE_ICONE;
+  if (e.type === "vocal") return <span className={tuile}><IconeMicro className="h-5 w-5" /></span>;
+  if (e.type === "photos") return <span className={tuile}><IconePhoto className="h-5 w-5" /></span>;
+  if (e.type === "fait") return <span className={tuile}><IconeCoche className="h-5 w-5" /></span>;
+  if (e.type === "rdv") return <span className={tuile}><IconeCalendrier className="h-5 w-5" /></span>;
+  if (e.type === "demande") return <span className={tuile}><IconeMessage className="h-5 w-5" /></span>;
   const t = e.typeEvenement ?? "";
-  if (t.startsWith("devis") || t === "analyse_ia") return <span className={neutre}><IconeDocument className="h-4 w-4" /></span>;
-  if (t === "message_prepare") return <span className={neutre}><IconeMessage className="h-4 w-4" /></span>;
-  if (t.startsWith("facture") || t === "avoir_cree") return <span className={neutre}><IconeEuro className="h-4 w-4" /></span>;
-  return <span className={`${base} bg-paper text-steel`}><IconePoint className="h-4 w-4" /></span>;
+  if (t.startsWith("devis") || t === "analyse_ia") return <span className={tuile}><IconeDocument className="h-5 w-5" /></span>;
+  if (t === "message_prepare") return <span className={tuile}><IconeMessage className="h-5 w-5" /></span>;
+  if (t.startsWith("facture") || t === "avoir_cree") return <span className={tuile}><IconeEuro className="h-5 w-5" /></span>;
+  return <span className={`${tuile} text-steel`}><IconePoint className="h-5 w-5" /></span>;
 }
 
 const LONGUEUR_APERCU = 180;
@@ -142,11 +141,13 @@ function Entree({
   const complet = deplie || !long || mots.length > 0;
 
   return (
-    <li className="relative flex gap-3 pb-5 last:pb-1">
+    // Design v3 (24/10) : des lignes aérées (tuile 40 px, titre en 17,
+    // date en secondaire), sans fil vertical.
+    <li className="flex gap-3 py-3">
       <IconeEntree e={e} />
-      <div className="min-w-0 flex-1 pt-1">
+      <div className="min-w-0 flex-1 pt-2">
         <div className="flex items-baseline justify-between gap-3">
-          <p className={`min-w-0 truncate ${discret ? "text-sm text-steel" : "text-base font-semibold text-ink"}`}>
+          <p className={`min-w-0 line-clamp-2 leading-snug ${discret ? "text-[15px] text-steel" : "text-[17px] font-semibold text-ink"}`}>
             {e.auteur ? (
               <>
                 <span className="font-semibold text-ink">{surligner(e.auteur, mots)}</span>
@@ -157,19 +158,19 @@ function Entree({
               surligner(e.titre, mots)
             )}
           </p>
-          <time dateTime={e.date} className="shrink-0 font-mono text-sm tabular-nums text-steel">
+          <time dateTime={e.date} className={`shrink-0 whitespace-nowrap tabular-nums ${SECONDAIRE}`}>
             {quand(e.date, maintenant)}
           </time>
         </div>
 
         {e.texte && (
-          <div className={`mt-1 ${discret ? "text-sm text-steel" : "text-base text-ink"}`}>
+          <div className={`mt-1 ${discret ? SECONDAIRE : "text-base leading-relaxed text-ink"}`}>
             <p className={`whitespace-pre-line ${complet ? "" : "line-clamp-3"}`}>{surligner(e.texte, mots)}</p>
           </div>
         )}
         {e.complement && complet && (
-          <div className="mt-2 border-l-2 border-ink/15 pl-3">
-            <p className="inline-flex items-center gap-1.5 text-sm text-steel">
+          <div className="mt-2 border-l-2 border-gris-clair pl-3">
+            <p className={`inline-flex items-center gap-1.5 ${SECONDAIRE}`}>
               <IconeEtincelle className="h-4 w-4 text-ink" />
               {e.complement.titre}
             </p>
@@ -180,7 +181,7 @@ function Entree({
           <button
             type="button"
             onClick={() => setDeplie((v) => !v)}
-            className={`-ml-3 inline-flex min-h-12 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 ${FOCUS}`}
+            className={`-ml-3 ${BOUTON_TEXTE}`}
           >
             {deplie ? "Réduire" : "Lire la suite"}
           </button>
@@ -194,7 +195,7 @@ function Entree({
                 type="button"
                 onClick={() => surOuvrirPhoto(e.photos!, i)}
                 aria-label={`Voir la photo ${i + 1} sur ${e.photos!.length}`}
-                className={`h-16 w-16 overflow-hidden rounded-2xl bg-ink/10 ring-1 ring-ink/15 active:opacity-80 sm:h-[4.5rem] sm:w-[4.5rem] ${FOCUS}`}
+                className={`h-16 w-16 overflow-hidden rounded-[12px] bg-paper-warm active:opacity-80 sm:h-[4.5rem] sm:w-[4.5rem] ${FOCUS}`}
               >
                 {urlsPhotos[chemin] ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -206,7 +207,7 @@ function Entree({
               <button
                 type="button"
                 onClick={() => surOuvrirPhoto(e.photos!, 5)}
-                className={`grid h-16 w-16 place-items-center rounded-2xl bg-ink/10 text-sm font-semibold text-ink ring-1 ring-ink/15 sm:h-[4.5rem] sm:w-[4.5rem] ${FOCUS}`}
+                className={`grid h-16 w-16 place-items-center rounded-[12px] bg-paper-warm text-[15px] font-semibold tabular-nums text-ink sm:h-[4.5rem] sm:w-[4.5rem] ${FOCUS}`}
               >
                 +{e.photos.length - 5}
               </button>
@@ -294,10 +295,12 @@ export function Carnet({
   return (
     // Refonte visuelle (04/10) : le Carnet dans une carte, comme les blocs
     // de l'accueil.
-    <section aria-labelledby="titre-carnet" className="rounded-[20px] bg-surface p-4 ombre-douce sm:p-5">
-      <h2 id="titre-carnet" className="flex items-center gap-2.5 font-display text-xl font-semibold text-ink">
+    // Design v3 (24/10) : même carte, même titre et même compteur que les
+    // blocs du Point (plus de pastille autour du nombre).
+    <section aria-labelledby="titre-carnet" className={`${CARTE} p-5 sm:p-6`}>
+      <h2 id="titre-carnet" className={`flex min-h-8 items-baseline gap-2 ${TITRE_CARTE}`}>
         Carnet
-        <span className="rounded-full bg-ink/[0.07] px-2 py-0.5 font-sans text-xs font-semibold tabular-nums text-steel">{entrees.length}</span>
+        <span className={COMPTEUR}>{entrees.length}</span>
       </h2>
 
       {/* 22/10 (panel) — « Photos · 24 » sans une seule image : « on ne
@@ -309,26 +312,29 @@ export function Carnet({
           type="button"
           onClick={photos.surOuvrir}
           aria-label={photos.nombre > 1 ? `Voir les ${photos.nombre} photos` : "Voir la photo"}
-          className={`mt-3 block w-full rounded-2xl text-left active:opacity-90 ${FOCUS}`}
+          className={`mt-3 block w-full rounded-[20px] text-left active:opacity-90 ${FOCUS}`}
         >
-          <span className="flex min-h-10 items-center gap-2 px-1">
+          <span className="flex min-h-12 items-center gap-2">
             <IconePhoto className="h-5 w-5 shrink-0 text-ink" />
-            <span className="min-w-0 flex-1 truncate text-base font-semibold text-ink">
-              Photos <span className="font-normal tabular-nums text-steel">· {photos.nombre}</span>
+            <span className="flex min-w-0 flex-1 items-baseline gap-2 text-[17px] font-semibold text-ink">
+              Photos <span className={COMPTEUR}>{photos.nombre}</span>
             </span>
             <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
           </span>
           {photos.vignettes.length > 0 && (
-            <span className="mt-1.5 grid grid-cols-4 gap-1.5" aria-hidden>
+            <span className="mt-1 grid grid-cols-4 gap-2" aria-hidden>
               {photos.vignettes.slice(0, 4).map((u, i) => {
                 const reste = photos.nombre - 4;
                 const derniere = i === 3 && reste > 0;
                 return (
-                  <span key={u} className="relative block aspect-square overflow-hidden rounded-xl bg-ink/[0.07]">
+                  // 25/10 — l'image est posée en absolu sur toute la case
+                  // carrée (object-cover) : elle la remplit quelle que soit
+                  // sa proportion, sans bande vide.
+                  <span key={u} className="relative block aspect-square w-full overflow-hidden rounded-[12px] bg-paper-warm">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={u} alt="" loading="lazy" className="h-full w-full object-cover" />
+                    <img src={u} alt="" loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
                     {derniere && (
-                      <span className="absolute inset-0 grid place-items-center bg-ink/55 font-display text-lg font-bold text-white">+{reste}</span>
+                      <span className="absolute inset-0 grid place-items-center bg-black/55 font-display text-lg font-bold tabular-nums text-white">+{reste}</span>
                     )}
                   </span>
                 );
@@ -339,7 +345,7 @@ export function Carnet({
       )}
 
       {avecRecherche && (
-        <div className="mt-3 flex flex-col gap-2.5 sm:flex-row sm:items-center">
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center">
           <label className="relative block flex-1">
             <span className="sr-only">Chercher dans le carnet</span>
             <IconeLoupe className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-steel" />
@@ -348,12 +354,12 @@ export function Carnet({
               type="search"
               value={recherche}
               onChange={(ev) => setRecherche(ev.target.value)}
-              placeholder="Chercher : mesure, code, fenêtre…"
-              className="min-h-12 w-full rounded-2xl bg-paper/70 pl-10 pr-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink"
+              placeholder="Chercher dans le carnet"
+              className={`${CHAMP} pl-11`}
             />
           </label>
           {avecFiltres && (
-            <div role="group" aria-label="Filtrer le carnet" className="-mx-1 flex gap-1 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <div role="group" aria-label="Filtrer le carnet" className="-mx-1 flex gap-2 overflow-x-auto px-1 py-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
               {filtres.map((f) => {
                 const actif = filtre === f.cle;
                 return (
@@ -362,9 +368,7 @@ export function Carnet({
                     type="button"
                     aria-pressed={actif}
                     onClick={() => setFiltre(f.cle)}
-                    className={`min-h-12 shrink-0 rounded-full px-4 text-sm font-semibold ${FOCUS} ${
-                      actif ? "bg-ink text-paper" : "text-ink active:bg-ink/10 sm:hover:bg-ink/5"
-                    }`}
+                    className={`${puce(actif)} min-h-12`}
                   >
                     {f.libelle}
                     <span className={`ml-1.5 font-normal tabular-nums ${actif ? "text-paper" : "text-steel"}`}>{f.n}</span>
@@ -379,27 +383,34 @@ export function Carnet({
       <div className="mt-4">
         {entrees.length === 0 && <p className="py-4 text-base text-steel">Rien encore.</p>}
         {entrees.length > 0 && visibles.length === 0 && (
-          <p className="truncate py-6 text-center text-base text-steel">Rien ne correspond{cherche ? ` à « ${recherche.trim()} »` : ""}.</p>
+          <p className="break-words py-6 text-center text-base text-steel">Rien ne correspond{cherche ? ` à « ${recherche.trim()} »` : ""}.</p>
         )}
 
         {periodes.map((p) => {
           const ouverte = cherche || ouvertes.has(p.cle);
           return (
-            <div key={p.cle} className="border-t border-ink/15 first:border-t-0">
+            <div key={p.cle} className="border-t border-gris-clair first:border-t-0">
+              {/* Design v3 (24/10) : la période en 17, son résumé dessous en
+                  secondaire (deux lignes au plus) plutôt que coupé à droite. */}
               <button
                 type="button"
                 onClick={() => basculer(p.cle)}
                 aria-expanded={ouverte}
                 disabled={cherche}
-                className="group flex min-h-12 w-full items-center gap-2 py-3 text-left focus-visible:outline-none"
+                // 25/10 — le focus clavier entoure toute la ligne (il ne
+                // soulignait que le titre).
+                className="flex min-h-14 w-full items-center gap-3 rounded-[14px] py-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
               >
-                <IconeChevron className={`h-5 w-5 shrink-0 text-steel motion-safe:transition-transform ${ouverte ? "rotate-90" : ""} ${cherche ? "opacity-0" : ""}`} />
-                <span className="shrink-0 text-base font-semibold text-ink group-focus-visible:underline">{p.libelle}</span>
-                <span className="min-w-0 truncate text-sm text-steel">{ouverte ? `${p.entrees.length}` : resumePeriode(p.entrees)}</span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[17px] font-semibold leading-snug text-ink">{p.libelle}</span>
+                  <span className={`line-clamp-2 block ${SECONDAIRE}`}>
+                    {ouverte ? `${p.entrees.length} entrée${p.entrees.length > 1 ? "s" : ""}` : resumePeriode(p.entrees)}
+                  </span>
+                </span>
+                <IconeChevron className={`h-5 w-5 shrink-0 text-steel motion-safe:transition-transform ${ouverte ? "-rotate-90" : "rotate-90"} ${cherche ? "opacity-0" : ""}`} />
               </button>
               {ouverte && (
-                <ol className="relative pb-3 pl-0">
-                  <span aria-hidden className="absolute bottom-4 left-4 top-2 w-px bg-ink/15" />
+                <ol className="divide-y divide-gris-clair pb-2">
                   {p.entrees.map((e) => (
                     <Entree key={e.id} e={e} mots={mots} maintenant={maintenant} urlsPhotos={urlsPhotos} surOuvrirPhoto={surOuvrirPhoto} />
                   ))}

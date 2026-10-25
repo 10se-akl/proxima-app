@@ -1,3 +1,6 @@
+import { dateEtHeure } from "@/lib/heure";
+
+const JOUR_MOIS = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short" });
 export type TimelineItem = {
   date: string;
   label: string;
@@ -10,24 +13,20 @@ export type TimelineItem = {
 // amont (voir lib/timeline.ts et app/dashboard/demandes/[id]/page.tsx).
 export function Timeline({ items }: { items: TimelineItem[] }) {
   if (items.length === 0) {
-    return <p className="text-sm text-ink/40">Aucun événement pour l&apos;instant.</p>;
+    // Design v3 (24/10) : le gris de texte unique, plus d'opacité d'encre.
+    return <p className="text-[15px] text-steel">Aucun événement pour l&apos;instant.</p>;
   }
 
   return (
     <div className="flex flex-col gap-3">
       {items.map((item, i) => (
-        <div key={i} className="flex gap-3 text-sm">
-          <span className="font-mono text-xs text-ink/40 w-32 shrink-0 pt-0.5">
-            {new Date(item.date).toLocaleDateString("fr-FR", {
-              day: "numeric",
-              month: "short",
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
+        <div key={i} className="flex gap-3 text-[15px]">
+          <span className="w-32 shrink-0 tabular-nums text-steel">
+            {dateEtHeure(item.date, JOUR_MOIS)}
           </span>
           <div>
-            <p className="text-ink/80">{item.label}</p>
-            {item.detail && <p className="text-ink/50 text-xs mt-0.5">{item.detail}</p>}
+            <p className="text-ink">{item.label}</p>
+            {item.detail && <p className="mt-0.5 text-sm text-steel">{item.detail}</p>}
           </div>
         </div>
       ))}

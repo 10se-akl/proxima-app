@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
-import { listerRappelsAVoir, marquerNoteTerminee, marquerNoteVue, COULEUR_POINT_IMPORTANCE } from "@/lib/notes";
+import { listerRappelsAVoir, marquerNoteTerminee, marquerNoteVue } from "@/lib/notes";
+import { BOUTON_CREUX_LARGE, BOUTON_PLEIN_LARGE, ERREUR, ETIQUETTE, FORME_ETIQUETTE } from "@/components/ui/recettes";
 import type { Note } from "@/types";
 
 // ============================================================
@@ -130,41 +131,38 @@ export function FenetreRappel({
   surFait: () => void;
   surPlusTard: () => void;
 }) {
+  const etiquette =
+    note.importance === "rouge" ? ETIQUETTE.urgent : note.importance === "orange" ? ETIQUETTE.attention : null;
   return (
+    // Design v3 (24/10) : voile sans flou (comme les feuilles), la fenêtre
+    // en surface + ombre-feuille, coins de 28 px ; l'importance en étiquette
+    // qui dit le mot (plus de point de couleur seul, vert compris) ; deux
+    // gros boutons de 56 px, un seul plein.
     <div
-      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center bg-ink/40 backdrop-blur-sm p-0 sm:p-6"
+      className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 p-0 dark:bg-black/60 sm:items-center sm:p-6"
       role="alertdialog"
       aria-modal="true"
       aria-label="Rappel"
     >
-      <div className="w-full sm:max-w-sm bg-paper rounded-t-3xl sm:rounded-3xl border border-ink/10 shadow-2xl p-6 [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:[padding-bottom:1.5rem]">
-        <div className="flex items-start gap-3">
-          <span
-            className={`mt-1.5 w-2.5 h-2.5 rounded-full shrink-0 ${COULEUR_POINT_IMPORTANCE[note.importance]}`}
-            aria-hidden="true"
-          />
-          <div className="min-w-0 flex-1">
-            {/* 08/10 (passe de finition) — le langage de l'application : un
-                surtitre en acier, le rappel en titre de feuille, le client
-                en détail, sans « Projet : ». */}
-            <p className="mb-1 text-sm text-steel">
-              Rappel{note.demandes?.nom_client ? ` · ${note.demandes.nom_client}` : ""}
-            </p>
-            <p className="font-display text-xl font-semibold text-ink">{note.titre}</p>
-            {note.description && (
-              <p className="mt-2 whitespace-pre-wrap text-base text-ink">{note.description}</p>
-            )}
-          </div>
-        </div>
+      <div className="w-full rounded-t-[28px] bg-surface p-6 ombre-feuille [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:max-w-sm sm:rounded-[28px] sm:[padding-bottom:1.5rem]">
+        {/* 08/10 (passe de finition) — le langage de l'application : un
+            surtitre en acier, le rappel en titre de feuille, le client
+            en détail, sans « Projet : ». */}
+        <p className="mb-1 flex flex-wrap items-center gap-2 text-[15px] text-steel">
+          <span>Rappel{note.demandes?.nom_client ? ` · ${note.demandes.nom_client}` : ""}</span>
+          {etiquette && <span className={`${FORME_ETIQUETTE} ${etiquette}`}>Important</span>}
+        </p>
+        <p className="break-words font-display text-xl font-semibold text-ink [text-wrap:balance]">{note.titre}</p>
+        {note.description && <p className="mt-2 whitespace-pre-wrap text-base text-ink [text-wrap:pretty]">{note.description}</p>}
 
         {reste > 0 && (
-          <p className="mt-4 text-sm text-steel">
+          <p className="mt-4 text-[15px] text-steel">
             Puis {reste} autre{reste > 1 ? "s" : ""} rappel{reste > 1 ? "s" : ""}.
           </p>
         )}
 
         {erreur && (
-          <p aria-live="polite" className="mt-4 text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+          <p aria-live="polite" className={`mt-4 ${ERREUR}`}>
             Pas enregistré. Réessayez.
           </p>
         )}
@@ -177,16 +175,11 @@ export function FenetreRappel({
               surFait();
             }}
             disabled={enCours}
-            className="min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+            className={BOUTON_PLEIN_LARGE}
           >
             C&apos;est fait
           </button>
-          <button
-            type="button"
-            onClick={surPlusTard}
-            disabled={enCours}
-            className="min-h-14 rounded-2xl text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10 motion-safe:transition-colors disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
-          >
+          <button type="button" onClick={surPlusTard} disabled={enCours} className={BOUTON_CREUX_LARGE}>
             Plus tard
           </button>
         </div>

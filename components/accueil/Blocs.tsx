@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BOUTON_TEXTE, COMPTEUR, TITRE_SECTION } from "@/components/ui/recettes";
 
 // ============================================================
 // Les briques de l'accueil (26/09 — « moins mais mieux », lot B).
@@ -20,9 +21,11 @@ export const LIGNES_MAX = 5;
  *  icône, le titre seul ; `icone` reste accepté pour ne rien casser). */
 export function TitreBloc({ titre, nombre }: { titre: string; nombre: number; icone?: ReactNode }) {
   return (
-    <h2 className="flex items-baseline gap-2 px-1 font-display text-xl font-bold tracking-[-0.02em] text-ink">
+    // 25/10 — les recettes communes : le même titre et le même compteur
+    // que « À faire » (le compteur était en 14 px ici, en 15 ailleurs).
+    <h2 className={`flex items-baseline gap-2 ${TITRE_SECTION}`}>
       {titre}
-      <span className="font-sans text-sm font-normal tabular-nums tracking-normal text-steel">{nombre}</span>
+      <span className={COMPTEUR}>{nombre}</span>
     </h2>
   );
 }
@@ -37,9 +40,10 @@ export const CLASSE_CARTE_BLOC = "mt-8";
  *  autour de chaque ligne. */
 export const CLASSE_GROUPE = "mt-2.5 overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-ink/[0.08]";
 
-/** « Voir les N », « Tous les devis »… : un bouton texte (règle 6). */
-export const CLASSE_BOUTON_TEXTE =
-  "inline-flex min-h-12 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink";
+/** « Voir les N », « Tous les devis »… : un bouton texte (règle 6).
+ *  25/10 — la recette commune : encre, sans soulignement (on ne souligne
+ *  que dans un texte courant). */
+export const CLASSE_BOUTON_TEXTE = BOUTON_TEXTE;
 
 export function BlocAccueil({
   titre,
@@ -74,6 +78,7 @@ export function LigneAccueil({
   href,
   repere,
   repereAccent = false,
+  repereEtroit = false,
   principal,
   secondaire,
   alerte,
@@ -82,6 +87,9 @@ export function LigneAccueil({
   href: string;
   repere?: string;
   repereAccent?: boolean;
+  /** 25/10 — des repères courts (« 6 j », « hier ») : colonne de 48 px au
+   *  lieu de 56 (« 14 h 30 » demande les 56). */
+  repereEtroit?: boolean;
   principal: string;
   secondaire?: string;
   /** « Pas enregistré » : remplace le détail, en texte d'alerte (règle 13). */
@@ -99,7 +107,7 @@ export function LigneAccueil({
       >
         {repere && (
           <span
-            className={`min-w-[3.5rem] shrink-0 whitespace-nowrap font-display text-base font-bold tabular-nums ${
+            className={`${repereEtroit ? "min-w-12" : "min-w-[3.5rem]"} shrink-0 whitespace-nowrap font-display text-base font-bold tabular-nums ${
               repereAccent ? "text-signal-fonce dark:text-signal-clair" : "text-ink"
             }`}
           >
@@ -107,13 +115,19 @@ export function LigneAccueil({
           </span>
         )}
         <span className="min-w-0 flex-1">
-          <span className="line-clamp-2 block text-[17px] font-semibold leading-snug text-ink">{principal}</span>
+          <span className="line-clamp-2 block break-words text-[17px] font-semibold leading-snug text-ink">{principal}</span>
           {alerte ? (
-            <span className="block truncate text-sm font-semibold text-signal-fonce dark:text-signal-clair">{alerte}</span>
+            <span className="line-clamp-2 block break-words text-sm font-semibold text-signal-fonce dark:text-signal-clair">{alerte}</span>
           ) : (
             // 23/10 — sur deux lignes plutôt que coupé (« Sans réponse · 3 se… ») :
             // à côté de deux boutons, la place manque sur téléphone.
-            secondaire && <span className="line-clamp-2 block text-sm text-steel">{secondaire}</span>
+            // 25/10 — la fin courte (« · 3 sem. ») ne se coupe jamais : elle passe
+            // à la ligne d'un bloc, avec son point médian.
+            secondaire && (
+              <span className="line-clamp-2 block text-sm text-steel">
+                {typeof secondaire === "string" ? sansCoupureFinale(secondaire) : secondaire}
+              </span>
+            )
           )}
         </span>
       </Link>
@@ -144,4 +158,14 @@ export function FinRelancer({ href }: { href: string }) {
       Relancer
     </Link>
   );
+}
+
+/** « Sans réponse · 3 sem. » : le dernier morceau après « · », s'il est
+ *  court, reste d'un seul tenant avec son point (espaces insécables). */
+function sansCoupureFinale(texte: string): string {
+  const i = texte.lastIndexOf(" · ");
+  if (i < 0) return texte;
+  const fin = texte.slice(i + 3);
+  if (fin.length > 16) return texte;
+  return `${texte.slice(0, i)} · ${fin.replace(/ /g, " ")}`;
 }

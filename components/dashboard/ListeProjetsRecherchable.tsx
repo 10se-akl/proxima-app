@@ -5,8 +5,8 @@ import { useSearchParams } from "next/navigation";
 import { DemandeCard } from "@/components/dashboard/DemandeCard";
 import { IconeDossier } from "@/components/ui/Icones";
 import { BoutonCapture } from "@/components/accueil/BoutonCapture";
-import { CLASSE_CHAMP_NUIT, EnTetePage } from "@/components/ui/EnTetePage";
-import { Pastille } from "@/components/ui/Pastille";
+import { EnTetePage } from "@/components/ui/EnTetePage";
+import { BOUTON_CREUX, BOUTON_TEXTE, GROUPE, SECONDAIRE, CHAMP, TUILE_ICONE } from "@/components/ui/recettes";
 import type { Projet } from "@/types";
 
 export function ListeProjetsRecherchable({
@@ -63,11 +63,6 @@ export function ListeProjetsRecherchable({
       <EnTetePage
         titre="Projets"
         sousTitre={enCours === 0 ? "Aucun projet en cours" : enCours === 1 ? "1 projet en cours" : `${enCours} projets en cours`}
-        icone={
-          <Pastille couleur="signal" taille="grande">
-            <IconeDossier taille={24} />
-          </Pastille>
-        }
       >
         <input
           type="search"
@@ -75,25 +70,33 @@ export function ListeProjetsRecherchable({
           onChange={(e) => setRecherche(e.target.value)}
           placeholder="Nom, téléphone, adresse…"
           aria-label="Rechercher un projet"
-          className={CLASSE_CHAMP_NUIT}
+          className={CHAMP}
         />
       </EnTetePage>
 
       {astuce && <div className="mt-4">{astuce}</div>}
 
       {/* Refonte visuelle (04/10) : la liste dans une carte, comme Devis et
-          Factures. */}
-      <ul className="mt-5 overflow-hidden rounded-[20px] bg-surface ombre-douce divide-y divide-ink/[0.08]">
+          Factures. Design v3 (24/10) : la carte groupée des recettes. */}
+      <ul className={`mt-5 ${GROUPE}`}>
         {filtres.length === 0 ? (
-          <li className="flex flex-col items-center gap-3 py-6 text-center">
-            <span className="flex items-center justify-center w-10 h-10 rounded-full bg-signal/10">
-              <IconeDossier taille={20} className="text-signal" />
+          <li className="flex flex-col items-center px-5 py-10 text-center">
+            <span className={TUILE_ICONE} aria-hidden>
+              <IconeDossier taille={20} />
             </span>
-            <p className="text-sm text-ink/50">
+            <p className={`mt-3 max-w-xs ${SECONDAIRE}`}>
               {projets.length === 0 ? "Aucun projet pour le moment." : "Aucun résultat pour cette recherche."}
             </p>
             {/* L'état vide ouvre la même feuille que le [+] de la navigation. */}
-            {projets.length === 0 && <BoutonCapture />}
+            {projets.length === 0 ? (
+              <div className="mt-4">
+                <BoutonCapture />
+              </div>
+            ) : recherche.trim() ? (
+              <button type="button" onClick={() => setRecherche("")} className={`mt-4 ${BOUTON_CREUX}`}>
+                Effacer la recherche
+              </button>
+            ) : null}
           </li>
         ) : (
           tries.map((p) => <DemandeCard key={p.id} demande={p} photo={photos[p.id] ?? null} info={infos[p.id] ?? null} />)
@@ -106,7 +109,7 @@ export function ListeProjetsRecherchable({
         <button
           type="button"
           onClick={() => setAfficherTermines(!afficherTermines)}
-          className="mt-4 inline-flex min-h-12 items-center text-[14px] font-medium text-ink/65 underline underline-offset-4 hover:text-ink"
+          className={`-ml-3 mt-2 ${BOUTON_TEXTE}`}
         >
           {afficherTermines
             ? "Masquer les projets terminés"

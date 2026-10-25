@@ -4,6 +4,7 @@ import { calculerActivite } from "@/lib/activite";
 import { estimerTempsGagne } from "@/lib/bilan-mensuel";
 import { avant, bornes, depuisCle, memeMois, moisCourant } from "@/lib/moisParis";
 import { VueBilan } from "@/components/dashboard/VueBilan";
+import { CLASSE_PAGE_ETROITE } from "@/components/ui/EnTetePage";
 
 // ============================================================
 // Le bilan (refonte du 21/09).
@@ -35,8 +36,9 @@ export default async function BilanPage({ searchParams }: { searchParams: { mois
 
   if (!organisationId) {
     return (
-      <div className="p-8 max-w-2xl mx-auto">
-        <p className="text-sm text-ink/50">Aucune organisation associée à ce compte.</p>
+      // Design v3 (24/10) : la grille commune.
+      <div className={CLASSE_PAGE_ETROITE}>
+        <p className="text-[15px] text-steel">Aucune organisation associée à ce compte.</p>
       </div>
     );
   }

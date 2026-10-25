@@ -2,7 +2,8 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
-import { IconeCoche, IconeMessage } from "@/components/projet/icones";
+import { IconeCoche, IconeMessage, IconePlus } from "@/components/projet/icones";
+import { BOUTON_CREUX_LARGE, BOUTON_PLEIN_LARGE, BOUTON_TEXTE, TITRE_ECRAN } from "@/components/ui/recettes";
 
 // ============================================================
 // Le mini-tuto du premier lancement (03/10, demande du fondateur).
@@ -22,7 +23,22 @@ import { IconeCoche, IconeMessage } from "@/components/projet/icones";
 // Guide le relance (événement compyo:ouvrir-tuto). À la fin, l'écran
 // d'installation existant (PremierLancement) prend la suite s'il y a lieu
 // (événement compyo:tuto-termine).
+//
+// Design v3 (24/10) : plus rien ne pulse en boucle — ce qu'il faut toucher
+// porte un anneau fixe ; le + et « Nouveau projet » en bleu-nuit comme les
+// vrais ; plus de capitales espacées ; cartes surface + ombre douce ; la
+// carte « Maintenant » sur la nuit, comme à l'accueil.
+//
+// Design v3 (25/10) : le tuto porte lui-même data-da="atelier" (les jetons
+// et la police Inter de l'application, app/globals.css) : c'est le premier
+// écran vu après l'inscription, il ne doit jamais retomber sur le thème du
+// site (Manrope, fond plus clair, encre ardoise), même hors du tableau de
+// bord (banc d'aperçu). « Plus tard » en BOUTON_CREUX_LARGE ; le faux
+// « Nouveau projet » en pilule à l'encre, comme le vrai (BOUTON_PLEIN).
 // ============================================================
+
+/** L'anneau qui montre où toucher (fixe, sans pulsation). */
+const CIBLE = "ring-2 ring-offset-2";
 
 export const CLE_TUTO_VU = "compyo-tuto-premier-projet-vu";
 
@@ -32,7 +48,7 @@ type Choix = "coller" | "photo" | "ecrire";
 const ORDRE: Etape[] = ["intro", "plus", "choix", "lecture", "fiche", "fin"];
 
 const MESSAGE_CLIENT =
-  "Bonjour, je voudrais refaire le plafond de ma cuisine, environ 12 m². Pouvez-vous passer ? Mme Garnier, 06 12 34 56 78";
+  "Bonjour, je voudrais refaire le plafond de ma cuisine, environ 12 m². Pouvez-vous passer ? Mme Garnier, 06 12 34 56 78";
 
 export function tutoDejaVu(): boolean {
   try {
@@ -89,24 +105,25 @@ export function TutoPremierProjet() {
 
   return (
     <div
+      data-da="atelier"
       role="dialog"
       aria-modal="true"
       aria-label="Tuto : créer un projet"
-      className="fixed inset-0 z-[70] flex flex-col bg-paper sm:items-center sm:justify-center sm:bg-ink/40 sm:p-6"
+      className="fixed inset-0 z-[70] flex flex-col bg-paper sm:items-center sm:justify-center sm:bg-black/40 sm:p-6 sm:dark:bg-black/60"
     >
-      <div className="flex h-full w-full flex-col bg-paper sm:h-auto sm:max-h-[92vh] sm:max-w-xl sm:rounded-[1.6rem] sm:shadow-xl md:max-w-4xl">
+      <div className="flex h-full w-full flex-col bg-paper sm:h-auto sm:max-h-[92vh] sm:max-w-xl ombre-feuille sm:rounded-[28px] md:max-w-4xl">
         {/* En-tête : la progression et « Passer » */}
         <div className="flex items-center justify-between px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] sm:px-8 sm:pt-6">
           <div className="flex gap-1.5" aria-label={`Étape ${rang + 1} sur ${ORDRE.length}`}>
             {ORDRE.map((e, i) => (
-              <span key={e} className={`h-1.5 w-6 rounded-full ${i <= rang ? "bg-ink" : "bg-ink/15"}`} />
+              <span key={e} className={`h-1.5 w-6 rounded-full ${i <= rang ? "bg-ink" : "bg-gris-clair"}`} />
             ))}
           </div>
           {etape !== "fin" && (
             <button
               type="button"
               onClick={() => terminer(false)}
-              className="min-h-12 px-2 text-base font-semibold text-steel underline decoration-ink/20 underline-offset-4"
+              className={`-mr-3 ${BOUTON_TEXTE}`}
             >
               Passer
             </button>
@@ -117,7 +134,7 @@ export function TutoPremierProjet() {
           {etape === "intro" && (
             <Ecran
               titre="Créons un projet ensemble."
-              sousTitre="Pour de faux : rien n'est enregistré."
+              sousTitre={"Pour de faux : rien n'est enregistré."}
               action={<BoutonPlein onClick={() => setEtape("plus")}>C&apos;est parti</BoutonPlein>}
             >
               <Maquette>
@@ -134,22 +151,22 @@ export function TutoPremierProjet() {
 
           {etape === "plus" &&
             (grand ? (
-              <Ecran titre="Cliquez sur « Nouveau projet »." sousTitre="En haut à gauche : c'est par là qu'arrive tout nouveau projet.">
+              <Ecran titre="Cliquez sur « Nouveau projet »." sousTitre={"En haut à gauche : c'est par là qu'arrive tout nouveau projet."}>
                 <Fenetre
                   bouton={
                     <button
                       type="button"
                       onClick={() => setEtape("choix")}
-                      className="flex min-h-9 w-full items-center justify-center gap-1.5 rounded-lg bg-signal text-xs font-semibold text-white ring-2 ring-signal/40 ring-offset-2 ring-offset-paper-warm motion-safe:animate-pulse"
+                      className={`flex min-h-11 w-full items-center justify-center gap-1.5 rounded-full bg-ink text-xs font-semibold text-paper ring-signal ring-offset-surface ${CIBLE}`}
                     >
-                      <span aria-hidden>+</span> Nouveau projet
+                      <IconePlus className="h-3.5 w-3.5" /> Nouveau projet
                     </button>
                   }
                 >
                   <div className="flex-1 px-4 pt-4">
-                    <p className="text-xs uppercase tracking-widest text-steel">Aujourd&apos;hui</p>
-                    <div className="mt-3 h-10 rounded-xl bg-surface ring-1 ring-ink/15" />
-                    <div className="mt-2 h-10 rounded-xl bg-surface ring-1 ring-ink/15" />
+                    <p className="text-sm font-bold text-ink">Aujourd&apos;hui</p>
+                    <div className="mt-3 h-10 rounded-[14px] bg-surface ombre-douce" />
+                    <div className="mt-2 h-10 rounded-[14px] bg-surface ombre-douce" />
                   </div>
                 </Fenetre>
               </Ecran>
@@ -157,23 +174,24 @@ export function TutoPremierProjet() {
               <Ecran titre="Touchez le +" sousTitre="C'est par là qu'arrive tout nouveau projet.">
                 <Telephone>
                   <div className="flex-1 px-4 pt-4">
-                    <p className="text-xs uppercase tracking-widest text-steel">Aujourd&apos;hui</p>
-                    <div className="mt-3 h-14 rounded-2xl bg-surface ring-1 ring-ink/15" />
-                    <div className="mt-2 h-14 rounded-2xl bg-surface ring-1 ring-ink/15" />
+                    <p className="text-base font-bold text-ink">Aujourd&apos;hui</p>
+                    <div className="mt-3 h-14 rounded-[16px] bg-surface ombre-douce" />
+                    <div className="mt-2 h-14 rounded-[16px] bg-surface ombre-douce" />
                   </div>
-                  <div className="relative flex h-16 items-center justify-around border-t border-ink/15 bg-surface">
-                    <span className="h-2 w-10 rounded-full bg-ink/15" />
-                    <span className="h-2 w-10 rounded-full bg-ink/15" />
+                  <div className="relative flex h-16 items-center justify-around border-t border-gris-clair bg-surface">
+                    <span className="h-2 w-10 rounded-full bg-gris-clair" />
+                    <span className="h-2 w-10 rounded-full bg-gris-clair" />
                     <button
                       type="button"
                       onClick={() => setEtape("choix")}
                       aria-label="Nouveau projet"
-                      className="-mt-8 grid h-16 w-16 place-items-center rounded-full border-4 border-paper bg-signal text-3xl font-semibold text-white motion-safe:animate-pulse"
+                      // Le même « + » que la vraie barre du bas (Sidebar.tsx).
+                      className={`-mt-4 grid h-14 w-14 place-items-center rounded-full bg-nuit text-white dark:bg-ink dark:text-paper ring-signal ring-offset-surface ${CIBLE}`}
                     >
-                      +
+                      <IconePlus className="h-7 w-7" />
                     </button>
-                    <span className="h-2 w-10 rounded-full bg-ink/15" />
-                    <span className="h-2 w-10 rounded-full bg-ink/15" />
+                    <span className="h-2 w-10 rounded-full bg-gris-clair" />
+                    <span className="h-2 w-10 rounded-full bg-gris-clair" />
                   </div>
                 </Telephone>
               </Ecran>
@@ -182,9 +200,9 @@ export function TutoPremierProjet() {
           {etape === "choix" && (
             <Ecran titre="Choisissez comment il arrive." sousTitre="Les trois mènent au même projet.">
               <Maquette>
-                <div className={`flex flex-1 flex-col bg-ink/30 ${grand ? "items-center justify-center p-4" : ""}`}>
+                <div className={`flex flex-1 flex-col bg-black/40 ${grand ? "items-center justify-center p-4" : ""}`}>
                   {!grand && <div className="flex-1" />}
-                  <div className={`bg-surface px-3 pb-3 pt-3 ${grand ? "w-full max-w-[17rem] rounded-2xl shadow-xl" : "rounded-t-[1.4rem]"}`}>
+                  <div className={`bg-paper px-3 pb-3 pt-3 ombre-feuille ${grand ? "w-full max-w-[17rem] rounded-[20px]" : "rounded-t-[20px]"}`}>
                     <p className="px-1 pb-2 text-base font-semibold text-ink">Nouveau projet</p>
                     {(
                       [
@@ -200,7 +218,7 @@ export function TutoPremierProjet() {
                           setChoix(cle);
                           setEtape("lecture");
                         }}
-                        className={`flex w-full items-center justify-between border-t border-ink/10 px-2 text-left font-semibold text-ink first:border-t-0 active:bg-ink/10 sm:hover:bg-ink/5 ${grand ? "min-h-11 text-sm" : "min-h-14 text-base"}`}
+                        className={`mt-1.5 flex w-full items-center justify-between rounded-[14px] bg-surface px-3 text-left font-semibold text-ink ombre-douce first:mt-0 active:bg-paper-warm sm:hover:bg-paper-warm/60 motion-safe:transition-colors ${grand ? "min-h-11 text-sm" : "min-h-14 text-base"}`}
                       >
                         {libelle}
                         <span aria-hidden className="text-steel">›</span>
@@ -221,31 +239,31 @@ export function TutoPremierProjet() {
               <Maquette>
                 <div className="flex-1 space-y-3 px-4 pt-4">
                   {choix === "photo" ? (
-                    <div className="rounded-2xl bg-paper-warm p-3">
+                    <div className="rounded-[16px] bg-paper-warm p-3">
                       <p className="text-xs text-steel">Capture d&apos;écran</p>
                       <p className="mt-1 text-sm text-ink">{MESSAGE_CLIENT}</p>
                     </div>
                   ) : choix === "ecrire" ? (
-                    <div className="rounded-2xl bg-paper-warm p-3">
+                    <div className="rounded-[16px] bg-paper-warm p-3">
                       <p className="text-xs text-steel">Vous avez écrit (ou dicté)</p>
-                      <p className="mt-1 text-sm text-ink">Garnier, plafond cuisine 12 m², 06 12 34 56 78</p>
+                      <p className="mt-1 text-sm text-ink">Garnier, plafond cuisine 12&nbsp;m², 06&nbsp;12&nbsp;34&nbsp;56&nbsp;78</p>
                     </div>
                   ) : (
-                    <div className="ml-auto max-w-[85%] rounded-2xl rounded-tr-sm bg-succes/15 p-3">
+                    <div className="ml-auto max-w-[85%] rounded-[16px] rounded-tr-sm bg-succes-fond p-3">
                       <p className="text-sm text-ink">{MESSAGE_CLIENT}</p>
                     </div>
                   )}
                   {lu ? (
-                    <div className="rounded-2xl bg-surface p-3 ring-1 ring-ink/15">
+                    <div className="rounded-[16px] bg-surface px-3 py-1 ombre-douce">
                       <Champ nom="Client" valeur="Mme Garnier" />
-                      <Champ nom="Téléphone" valeur="06 12 34 56 78" />
-                      <Champ nom="Travaux" valeur="Plafond de cuisine, 12 m²" />
+                      <Champ nom="Téléphone" valeur={"06 12 34 56 78"} />
+                      <Champ nom="Travaux" valeur={"Plafond de cuisine, 12 m²"} />
                     </div>
                   ) : (
                     <div className="space-y-2" aria-hidden>
-                      <div className="h-10 rounded-xl bg-ink/10 motion-safe:animate-pulse" />
-                      <div className="h-10 rounded-xl bg-ink/10 motion-safe:animate-pulse" />
-                      <div className="h-10 rounded-xl bg-ink/10 motion-safe:animate-pulse" />
+                      <div className="h-10 rounded-[14px] bg-paper-warm" />
+                      <div className="h-10 rounded-[14px] bg-paper-warm" />
+                      <div className="h-10 rounded-[14px] bg-paper-warm" />
                     </div>
                   )}
                 </div>
@@ -258,16 +276,19 @@ export function TutoPremierProjet() {
               <Maquette>
                 <div className="flex-1 px-4 pt-4">
                   <p className="font-display text-2xl font-semibold text-ink">Mme Garnier</p>
-                  <p className="text-sm text-steel">Plafond de cuisine, 12 m²</p>
-                  <div className="mt-4 rounded-2xl bg-anthracite p-4 text-paper">
-                    <p className="text-xs uppercase tracking-widest text-paper/70">Maintenant</p>
+                  <p className="text-sm text-steel">Plafond de cuisine, 12&nbsp;m²</p>
+                  <div className="mt-4 rounded-[24px] bg-nuit p-4 text-white">
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-signal-clair">
+                      <span aria-hidden className="h-2 w-2 rounded-full bg-signal" />
+                      Maintenant
+                    </p>
                     <p className="mt-1 text-base font-semibold">Nouvelle demande.</p>
                     <button
                       type="button"
                       onClick={() => setEtape("fin")}
-                      className="mt-3 min-h-12 w-full rounded-2xl bg-paper px-4 text-base font-semibold text-ink motion-safe:animate-pulse"
+                      className={`mt-3 min-h-12 w-full rounded-full bg-signal px-4 text-base font-semibold text-white ring-white ring-offset-nuit ${CIBLE}`}
                     >
-                      Répondre : bien reçu
+                      Répondre&nbsp;: bien reçu
                     </button>
                   </div>
                 </div>
@@ -278,22 +299,18 @@ export function TutoPremierProjet() {
           {etape === "fin" && (
             <Ecran
               titre="Bravo, c'est tout."
-              sousTitre="Le message part par vos SMS ou votre WhatsApp : c'est vous qui envoyez."
+              sousTitre={"Le message part par vos SMS ou votre WhatsApp : c'est vous qui envoyez."}
               action={
                 <div className="flex w-full flex-col gap-2">
-                  <BoutonPlein onClick={() => terminer(true)}>À moi : mon premier projet</BoutonPlein>
-                  <button
-                    type="button"
-                    onClick={() => terminer(false)}
-                    className="min-h-12 w-full text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-                  >
+                  <BoutonPlein onClick={() => terminer(true)}>À moi&nbsp;: mon premier projet</BoutonPlein>
+                  <button type="button" onClick={() => terminer(false)} className={BOUTON_CREUX_LARGE}>
                     Plus tard
                   </button>
                 </div>
               }
             >
               <div className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
-                <span className="grid h-16 w-16 place-items-center rounded-full bg-succes/10 text-succes" aria-hidden>
+                <span className="grid h-16 w-16 place-items-center rounded-full bg-succes-fond text-succes" aria-hidden>
                   <IconeCoche className="h-8 w-8" />
                 </span>
                 <ul className="space-y-2 text-base text-ink">
@@ -341,8 +358,8 @@ function Ecran({
   return (
     <div className="flex flex-1 flex-col md:grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] md:items-center md:gap-10">
       <div>
-        <h2 className="font-display text-3xl font-semibold leading-tight text-ink">{titre}</h2>
-        <p className="mt-1 text-base text-steel">{sousTitre}</p>
+        <h2 className={`${TITRE_ECRAN} [text-wrap:balance]`}>{titre}</h2>
+        <p className="mt-1 text-base text-steel [text-wrap:pretty]">{sousTitre}</p>
         {action && <div className="mt-8 hidden md:block">{action}</div>}
       </div>
       <div className="mt-5 flex flex-1 flex-col md:mt-0">{children}</div>
@@ -354,26 +371,28 @@ function Ecran({
 /** Un faux téléphone, pour qu'on comprenne que c'est une démonstration. */
 function Telephone({ children }: { children: ReactNode }) {
   return (
-    <div className="mx-auto flex min-h-[320px] w-full max-w-[300px] flex-1 flex-col overflow-hidden rounded-[1.6rem] bg-paper ring-2 ring-ink/15">
+    <div className="mx-auto flex min-h-[320px] w-full max-w-[300px] flex-1 flex-col overflow-hidden rounded-[28px] bg-paper ring-2 ring-gris-clair">
       {children}
     </div>
   );
 }
 
-/** Une fausse fenêtre de Compyo sur ordinateur : la barre de gauche, bleu
- *  nuit comme la vraie, et la page à droite. `bouton` prend la place de
+/** Une fausse fenêtre de Compyo sur ordinateur : la barre de gauche, claire
+ *  à filet comme la vraie (Design v3), et la page à droite. `bouton` prend la place de
  *  « Nouveau projet » quand c'est lui qu'il faut toucher. */
 function Fenetre({ children, bouton }: { children: ReactNode; bouton?: ReactNode }) {
   return (
-    <div className="flex min-h-[300px] w-full flex-1 overflow-hidden rounded-2xl bg-paper ring-2 ring-ink/15 md:aspect-[16/11] md:min-h-0 md:flex-none">
-      <div className="flex w-[34%] max-w-[11rem] shrink-0 flex-col gap-2 bg-paper-warm p-3" aria-hidden={bouton ? undefined : true}>
+    <div className="flex min-h-[300px] w-full flex-1 overflow-hidden rounded-[20px] bg-paper ring-2 ring-gris-clair md:aspect-[16/11] md:min-h-0 md:flex-none">
+      <div className="flex w-[34%] max-w-[11rem] shrink-0 flex-col gap-2 border-r border-gris-clair bg-surface p-3" aria-hidden={bouton ? undefined : true}>
         <div className="flex items-center gap-1.5 pb-1">
-          <CompyoMark variante="couleur" taille={14} />
+          <span aria-hidden>
+            <CompyoMark variante="couleur" taille={14} />
+          </span>
           <span className="text-xs font-semibold text-ink">Compyo</span>
         </div>
         {bouton ?? (
-          <span className="flex min-h-9 items-center justify-center gap-1.5 rounded-lg bg-signal text-xs font-semibold text-white">
-            <span aria-hidden>+</span> Nouveau projet
+          <span className="flex min-h-11 items-center justify-center gap-1.5 rounded-full bg-ink text-xs font-semibold text-paper">
+            <IconePlus className="h-3.5 w-3.5" /> Nouveau projet
           </span>
         )}
         {["Aujourd'hui", "Projets", "Planning", "Argent"].map((l) => (
@@ -389,20 +408,16 @@ function Fenetre({ children, bouton }: { children: ReactNode; bouton?: ReactNode
 
 function Champ({ nom, valeur }: { nom: string; valeur: string }) {
   return (
-    <p className="flex min-h-10 items-center justify-between gap-3 border-t border-ink/10 text-sm first:border-t-0">
+    <p className="flex min-h-10 items-center justify-between gap-3 border-t border-gris-clair text-sm first:border-t-0">
       <span className="text-steel">{nom}</span>
-      <span className="truncate font-semibold text-ink">{valeur}</span>
+      <span className="min-w-0 break-words text-right font-semibold text-ink">{valeur}</span>
     </p>
   );
 }
 
 function BoutonPlein({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
-    >
+    <button type="button" onClick={onClick} className={BOUTON_PLEIN_LARGE}>
       {children}
     </button>
   );

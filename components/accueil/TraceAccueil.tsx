@@ -140,11 +140,12 @@ function LigneTrace() {
   const { trace, erreurTrace, enCours, annuler } = useTraceAccueil();
   if (!trace) return null;
   return (
-    <div className="flex min-h-14 items-center gap-3 bg-succes/10 pl-4 text-sm text-ink">
+    <div className="flex min-h-14 items-center gap-3 bg-succes/10 py-1 pl-4 text-sm text-ink">
       <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
         <IconeCoche className="h-4 w-4" />
       </span>
-      <span className="min-w-0 flex-1 truncate">{trace.texte}</span>
+      {/* 25/10 — sur deux lignes plutôt que coupé (police agrandie). */}
+      <span className="line-clamp-2 min-w-0 flex-1 break-words">{trace.texte}</span>
       {erreurTrace && (
         <span className="shrink-0 text-sm font-semibold text-signal-fonce dark:text-signal-clair">Pas enregistré</span>
       )}

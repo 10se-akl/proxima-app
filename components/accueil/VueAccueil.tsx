@@ -10,6 +10,7 @@ import { RafraichirAuRetour } from "./RafraichirAuRetour";
 import { EnTeteAccueil } from "./EnTeteAccueil";
 import { ChantiersAccueil, type ChantierAccueil } from "./ChantiersAccueil";
 import { ChiffresMois, type ChiffresDuMois } from "./ChiffresMois";
+import { COMPTEUR, TITRE_SECTION } from "@/components/ui/recettes";
 
 // ============================================================
 // L'affichage de l'accueil, sans aucune requête : app/dashboard/page.tsx
@@ -118,7 +119,7 @@ export function VueAccueil({
   ) : rienDUrgent ? (
     <div className="rounded-[20px] bg-surface px-5 py-4 ombre-douce">
       <p className="text-base font-semibold text-ink">Rien d&apos;urgent.</p>
-      <p className="mt-0.5 truncate text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</p>
+      <p className="mt-0.5 line-clamp-2 break-words text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</p>
     </div>
   ) : null;
 
@@ -127,11 +128,15 @@ export function VueAccueil({
   // dossiers qui attendent (relancer, facturer, planifier). Les gestes et
   // leurs traces ne changent pas (ARegler, TraceAccueil).
   const nbAFaire = aRegler.length + aSuivre.length;
+  // 25/10 — des repères courts (« 6 j », « hier », « lun. ») : la colonne
+  // passe à 48 px ; une heure (« 14 h 30 ») garde ses 56.
+  const reperesCourts = aSuivre.every((l) => l.repere.length <= 4);
   const lignesASuivre = aSuivre.map((l) => (
     <LigneAccueil
       key={l.cle}
       href={l.href}
       repere={l.repere}
+      repereEtroit={reperesCourts}
       principal={l.principal}
       secondaire={l.secondaire}
       fin={l.relance ? <FinRelancer href={l.relance} /> : l.bouton ? <FinLien href={l.bouton.href} libelle={l.bouton.libelle} /> : undefined}
@@ -144,7 +149,7 @@ export function VueAccueil({
     // seule chose), l'argent (la récompense), Aujourd'hui, À faire, trois
     // chantiers. Ordinateur (1280 px et plus) : ce qu'il faut faire à
     // gauche ; l'argent et les chantiers, le contexte, à droite.
-    <div className="mx-auto max-w-2xl px-4 pb-10 pt-6 min-[400px]:px-5 sm:p-10 xl:max-w-6xl">
+    <div className="mx-auto max-w-2xl px-4 pb-10 pt-6 min-[400px]:px-5 sm:p-10 xl:max-w-6xl lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
       <RafraichirAuRetour />
       <EnTeteAccueil dateDuJour={dateDuJour} titre={titre} sousTitre={sousTitre} />
 
@@ -162,16 +167,30 @@ export function VueAccueil({
             </div>
             <section aria-label="À faire" className="order-4 mt-8 xl:order-none">
               {nbAFaire > 0 && (
-                <h2 id="titre-a-faire" className="flex items-baseline gap-2 px-1 font-display text-xl font-bold text-ink">
+                <h2 id="titre-a-faire" className={`flex items-baseline gap-2 ${TITRE_SECTION}`}>
                   À faire
-                  <span className="font-sans text-[15px] font-normal tabular-nums tracking-normal text-steel">{nbAFaire}</span>
+                  <span className={COMPTEUR}>{nbAFaire}</span>
                 </h2>
               )}
               {/* La cible du lien du badge de la barre du bas. */}
               <div id="a-regler" className="scroll-mt-20">
                 <ARegler elements={aRegler} sansTitre />
               </div>
-              {aSuivre.length > 0 && <BlocDepliable titre="À suivre" sansTitre lignes={lignesASuivre} />}
+              {aSuivre.length > 0 && (
+                <>
+                  {/* Deux groupes sous un titre : on dit ce qu'est le second
+                      (critique du 24/10 : « liste ambiguë »). */}
+                  {/* 25/10 — le même titre que « À faire » (c'était un petit
+                      gris, qu'on ne voyait pas comme un titre). */}
+                  {aRegler.length > 0 && (
+                    <h3 className={`mt-8 flex items-baseline gap-2 ${TITRE_SECTION}`}>
+                      Dossiers en attente
+                      <span className={COMPTEUR}>{aSuivre.length}</span>
+                    </h3>
+                  )}
+                  <BlocDepliable titre="À suivre" sansTitre lignes={lignesASuivre} />
+                </>
+              )}
             </section>
           </div>
 
@@ -193,7 +212,9 @@ export function VueAccueil({
  *  une coche ; « Y aller » ouvre l'itinéraire. */
 function Maintenant({ action }: { action: ActionAccueil }) {
   return (
-    <div className="flex min-h-[6rem] items-center overflow-hidden rounded-[24px] bg-nuit text-white">
+    // 25/10 — en sombre, un contour signal à 40 % : la carte ne se fond
+    // plus dans les autres cartes.
+    <div className="flex min-h-[6rem] items-center overflow-hidden rounded-[24px] bg-nuit text-white dark:ring-1 dark:ring-signal/40">
       <Link
         href={action.href}
         className="flex min-w-0 flex-1 items-center self-stretch py-4 pl-5 pr-3 active:bg-white/10 sm:hover:bg-white/[0.04] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-white"
@@ -226,9 +247,9 @@ function Maintenant({ action }: { action: ActionAccueil }) {
 function DemainMatin({ demain, retenir }: { demain: string; retenir: string | null }) {
   return (
     <section aria-label="Demain" className="mt-8">
-      <h2 className="px-1 font-display text-xl font-bold tracking-[-0.02em] text-ink">Demain</h2>
+      <h2 className={TITRE_SECTION}>Demain</h2>
       <div className="mt-2.5 rounded-[20px] bg-surface px-4 py-3.5 ombre-douce">
-        <p className="truncate text-base font-semibold text-ink">{demain}</p>
+        <p className="line-clamp-2 break-words text-base font-semibold text-ink">{demain}</p>
         {retenir && (
           <p className="mt-1 text-sm text-steel">
             <span className="font-semibold text-ink">À retenir : </span>
@@ -248,7 +269,7 @@ function Repos({ demain, retenir = null }: { demain: string | null; retenir?: st
       </span>
       <span className="min-w-0">
         <span className="block font-display text-2xl font-bold tracking-[-0.01em] text-ink">Tout est réglé.</span>
-        <span className="mt-0.5 block truncate text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</span>
+        <span className="mt-0.5 line-clamp-2 block break-words text-sm text-steel">Demain · {demain ?? "Rien de prévu."}</span>
         {retenir && (
           <span className="mt-0.5 block text-sm text-steel">
             <span className="font-semibold text-ink">À retenir : </span>

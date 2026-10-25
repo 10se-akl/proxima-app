@@ -14,7 +14,9 @@ import {
   type SpeechRecognitionInstance,
 } from "@/lib/dictee";
 import { IconeMicro } from "@/components/projet/icones";
+import { AIDE, BOUTON_CREUX, BOUTON_PLEIN_LARGE, CASE, CHAMP, ERREUR, FOCUS, LIBELLE, SELECT, puce } from "@/components/ui/recettes";
 import type { ImportanceNote } from "@/types";
+import { heure as ecrireHeure } from "@/lib/heure";
 
 type ProjetLeger = { id: string; nom_client: string };
 
@@ -63,9 +65,9 @@ function rappelsProposes(maintenant: Date): { cle: Exclude<Rappel, "aucun" | "au
   };
   const liste: { cle: Exclude<Rappel, "aucun" | "autre">; libelle: string; quand: Date }[] = [];
   if (maintenant.getHours() < 17) liste.push({ cle: "soir", libelle: "Ce soir", quand: a(0, 18) });
-  liste.push({ cle: "demain", libelle: "Demain 8 h", quand: a(1, 8) });
+  liste.push({ cle: "demain", libelle: "Demain 8\u00a0h", quand: a(1, 8) });
   const jusquALundi = ((8 - maintenant.getDay()) % 7) || 7;
-  if (jusquALundi > 1) liste.push({ cle: "lundi", libelle: "Lundi 8 h", quand: a(jusquALundi, 8) });
+  if (jusquALundi > 1) liste.push({ cle: "lundi", libelle: "Lundi 8\u00a0h", quand: a(jusquALundi, 8) });
   return liste;
 }
 
@@ -89,8 +91,6 @@ export function decouperNote(texte: string): { titre: string; description: strin
   return { titre, description: suite || null };
 }
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
 
 export function FormulaireNote({
   projetIdFixe,
@@ -340,24 +340,21 @@ export function FormulaireNote({
     }
   }
 
-  const puce = (actif: boolean) =>
-    `min-h-12 rounded-full px-4 text-base font-semibold motion-safe:transition-colors ${FOCUS} ${
-      actif ? "bg-ink text-paper active:bg-ink/80" : "text-ink ring-1 ring-inset ring-ink/30 active:bg-ink/10"
-    }`;
-  const champ =
-    "mt-1.5 min-h-12 w-full rounded-xl bg-paper px-3 text-base text-ink ring-1 ring-inset ring-ink/15 focus:outline-none focus:ring-2 focus:ring-ink";
+  // Design v3 (24/10) : recettes CHAMP / LIBELLE / AIDE / puce(), un seul
+  // plein (Enregistrer) ; la dictée en pastille creuse.
+  const champ = CHAMP;
   const quand = instantRappel();
   const libelleBouton = chargement
     ? "Enregistrement…"
     : quand
-      ? `Enregistrer · rappel ${quand.toLocaleDateString("fr-FR", { weekday: "short" })} ${quand.getHours()} h${quand.getMinutes() ? String(quand.getMinutes()).padStart(2, "0") : ""}`
+      ? `Enregistrer · rappel ${quand.toLocaleDateString("fr-FR", { weekday: "short" })} ${ecrireHeure(quand)}`
       : "Enregistrer";
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       {!projetIdFixe && (
         <div>
-          <label htmlFor={idProjet} className="block text-sm text-steel">
+          <label htmlFor={idProjet} className={LIBELLE}>
             Projet
           </label>
           <select
@@ -367,7 +364,8 @@ export function FormulaireNote({
               setDemandeId(e.target.value);
               setProjetSuggereNom(null);
             }}
-            className={champ}
+            // Design v3 (25/10) : la liste déroulante maison (SELECT).
+            className={SELECT}
           >
             <option value="">Aucun (note générale)</option>
             {(projets ?? []).map((p) => (
@@ -376,17 +374,17 @@ export function FormulaireNote({
               </option>
             ))}
           </select>
-          {projetSuggereNom && <p className="mt-1.5 truncate text-sm text-steel">Rangée dans {projetSuggereNom}, d&apos;après la note.</p>}
+          {projetSuggereNom && <p className={AIDE}>Rangée dans {projetSuggereNom}, d&apos;après la note.</p>}
         </div>
       )}
 
       <div>
-        <label htmlFor={idTexte} className="text-sm text-steel">
+        <label htmlFor={idTexte} className={LIBELLE}>
           {brouillonRestaure ? "Pas encore enregistrée" : "À ne pas oublier"}
         </label>
         {/* Le champ avant le micro dans le document : la feuille donne le
             focus au premier champ, le clavier s'ouvre sur le texte. */}
-        <div className="relative mt-2">
+        <div className="relative">
           <textarea
             id={idTexte}
             ref={zone}
@@ -394,7 +392,7 @@ export function FormulaireNote({
             onChange={(e) => setTexte(e.target.value)}
             rows={3}
             placeholder="Ex : commander les deux robinets noirs"
-            className={`w-full resize-none rounded-2xl bg-surface px-4 py-3 text-base text-ink ring-1 ring-inset ring-ink/15 placeholder:text-steel focus:outline-none focus:ring-2 focus:ring-ink ${ClasseReconnaissance ? "pb-16" : ""}`}
+            className={`${CHAMP} resize-none py-3 ${ClasseReconnaissance ? "pb-16" : ""}`}
           />
           {ClasseReconnaissance &&
             (!enregistrement ? (
@@ -402,18 +400,21 @@ export function FormulaireNote({
                 type="button"
                 onClick={dicter}
                 disabled={dicteeEnCours}
-                className={`absolute bottom-2 right-2 inline-flex min-h-12 items-center gap-2 rounded-full bg-paper px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/30 active:bg-ink/10 disabled:opacity-60 ${FOCUS}`}
+                className={`absolute bottom-2 right-2 ${BOUTON_CREUX}`}
               >
                 <IconeMicro className="h-5 w-5" />
                 {dicteeEnCours ? "Un instant…" : "Dicter"}
               </button>
             ) : (
+              // Design v3 (24/10) : l'enregistrement en cours en teinte
+              // orange (maintenant), plus en plein ; le point ne clignote
+              // plus (pas d'animation en boucle).
               <button
                 type="button"
                 onClick={arreterDictee}
-                className={`absolute bottom-2 right-2 inline-flex min-h-12 items-center gap-2 rounded-full bg-ink px-4 text-base font-semibold text-paper ${FOCUS}`}
+                className={`absolute bottom-2 right-2 inline-flex min-h-12 items-center gap-2 rounded-full bg-signal-fond px-4 text-base font-semibold text-signal-fonce ${FOCUS}`}
               >
-                <span aria-hidden className="h-2 w-2 rounded-full bg-signal motion-safe:animate-pulse" />
+                <span aria-hidden className="h-2.5 w-2.5 rounded-full bg-signal" />
                 J&apos;ai fini
               </button>
             ))}
@@ -421,8 +422,8 @@ export function FormulaireNote({
       </div>
 
       <div>
-        <p className="text-sm text-steel">Me le rappeler</p>
-        <div role="group" aria-label="Me le rappeler" className="mt-2 flex flex-wrap gap-2">
+        <p className={LIBELLE}>Me le rappeler</p>
+        <div role="group" aria-label="Me le rappeler" className="flex flex-wrap gap-2">
           {proposes.map((r) => (
             <button
               key={r.cle}
@@ -449,8 +450,8 @@ export function FormulaireNote({
         </div>
         {rappel === "autre" && (
           <div className="mt-3 grid grid-cols-2 gap-3">
-            <label className="block text-sm text-steel">
-              Jour
+            <label className="block">
+              <span className={LIBELLE}>Jour</span>
               <input
                 type="date"
                 required
@@ -460,8 +461,8 @@ export function FormulaireNote({
                 className={champ}
               />
             </label>
-            <label className="block text-sm text-steel">
-              Heure
+            <label className="block">
+              <span className={LIBELLE}>Heure</span>
               <input type="time" required value={heureRappel} onChange={(e) => setHeureRappel(e.target.value)} className={champ} />
             </label>
           </div>
@@ -473,21 +474,19 @@ export function FormulaireNote({
           type="checkbox"
           checked={importance !== "verte"}
           onChange={(e) => setImportance(e.target.checked ? "rouge" : "verte")}
-          className="h-5 w-5 rounded border-ink/30 accent-ink"
+          className={CASE}
         />
         Important
       </label>
 
       <div aria-live="polite">
-        {erreur && <p className="text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+        {erreur && <p className={ERREUR}>{erreur}</p>}
       </div>
 
-      <button
-        type="submit"
-        disabled={chargement}
-        className={`min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60 sm:w-auto ${FOCUS}`}
-      >
-        <span className="block truncate">{libelleBouton}</span>
+      <button type="submit" disabled={chargement} className={`py-3 ${BOUTON_PLEIN_LARGE}`}>
+        {/* Design v3 (25/10) : le jour et l'heure du rappel ne disparaissent
+            jamais (deux lignes au plus, plus de troncature). */}
+        <span className="line-clamp-2 text-center">{libelleBouton}</span>
       </button>
     </form>
   );

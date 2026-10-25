@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Feuille } from "@/components/projet/Feuille";
 import { vibrer, vibrerEchec } from "@/lib/retour";
 import { ChoisirJour } from "./ChoisirJour";
+import { BOUTON_PLEIN_LARGE, CHAMP, LIBELLE } from "@/components/ui/recettes";
 import { aujourdhuiCle, ajouterJours, heureChamp, instantParis, quandEnLettres, type CleJour } from "./semaine";
 
 // ============================================================
@@ -79,9 +80,6 @@ export function FeuilleDeplacer({
     surDeplace(evenement, nouvelleDate);
   }
 
-  const champ =
-    "mt-1.5 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-3 text-base text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/20";
-
   return (
     <Feuille
       ouverte={!!evenement}
@@ -107,22 +105,20 @@ export function FeuilleDeplacer({
             ignorer={evenement.id}
             creneau={heure ? { heure, duree: evenement.duree_minutes ?? 60 } : null}
           />
-          <label className="block text-sm font-semibold text-ink">
-            Heure
-            <input type="time" required value={heure} onChange={(e) => setHeure(e.target.value)} className={champ} />
+          <label className="block">
+            <span className={LIBELLE}>Heure</span>
+            <input type="time" required value={heure} onChange={(e) => setHeure(e.target.value)} className={CHAMP} />
           </label>
 
-          {/* Le bouton reste sous le pouce même si la liste des jours fait défiler la feuille. */}
-          <div className="sticky bottom-[calc(-1.25rem_-_env(safe-area-inset-bottom))] -mx-5 -mb-[calc(1.25rem_+_env(safe-area-inset-bottom))] border-t border-ink/15 bg-paper px-5 pt-3 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">
-            <p aria-live="polite" className="min-h-5 text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+          {/* Le bouton reste sous le pouce même si la liste des jours fait défiler la feuille.
+              Design v3 (24/10) : filet gris-clair, BOUTON_PLEIN_LARGE. */}
+          <div className="sticky bottom-[calc(-1.25rem_-_env(safe-area-inset-bottom))] -mx-5 -mb-[calc(1.25rem_+_env(safe-area-inset-bottom))] border-t border-gris-clair bg-paper px-5 pt-3 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">
+            <p aria-live="polite" className="min-h-5 text-sm font-semibold text-signal-fonce">
               {erreur}
             </p>
-            <button
-              type="submit"
-              disabled={enCours || !heure}
-              className="mt-1 min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
-            >
-              <span className="block truncate">{enCours ? "…" : `Déplacer à ${quandEnLettres(jour, aujourdhuiCle())}`}</span>
+            <button type="submit" disabled={enCours || !heure} className={`mt-1 py-3 ${BOUTON_PLEIN_LARGE}`}>
+              {/* Design v3 (25/10) : la date à confirmer ne disparaît jamais. */}
+              <span className="line-clamp-2 text-center">{enCours ? "…" : `Déplacer à ${quandEnLettres(jour, aujourdhuiCle())}`}</span>
             </button>
           </div>
         </form>

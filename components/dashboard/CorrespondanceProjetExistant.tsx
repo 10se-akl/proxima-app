@@ -2,6 +2,17 @@
 
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { IconeChevron } from "@/components/projet/icones";
+import {
+  BOUTON_PLEIN_LARGE,
+  BOUTON_TEXTE,
+  CREUX,
+  ERREUR,
+  ETIQUETTE,
+  FORME_ETIQUETTE,
+  GROUPE,
+  SECONDAIRE,
+  TITRE_ECRAN,
+} from "@/components/ui/recettes";
 
 // ============================================================
 // Audit pré-bêta (09/09), point 🔴 n°1 — extrait de app/dashboard/demandes/
@@ -29,9 +40,6 @@ export type ProjetOuvertMatch = {
   statut: string;
 };
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
-
 export function CorrespondanceProjetExistant({
   correspondances,
   onChoisir,
@@ -50,19 +58,23 @@ export function CorrespondanceProjetExistant({
 }) {
   const seul = correspondances.length === 1 ? correspondances[0] : null;
   const nom = correspondances[0]?.nom_client ?? "";
+  // Design v3 (24/10) : une étiquette sobre « Client reconnu », le titre
+  // d'écran sans coupure, le message en creux, les projets en liste groupée
+  // (lignes de 64 px), un seul bouton plein, l'autre choix en bouton texte.
   return (
     <div>
-      <h1 className="truncate font-display text-3xl font-semibold text-ink">
+      <span className={`${FORME_ETIQUETTE} ${ETIQUETTE.succes}`}>Client reconnu</span>
+      <h1 className={`mt-3 break-words ${TITRE_ECRAN}`}>
         {seul ? `C'est ${nom}.` : "Client déjà connu."}
       </h1>
-      <p className="mt-1 truncate text-base text-steel">
+      <p className={`mt-1 ${SECONDAIRE}`}>
         {seul
           ? `Numéro reconnu · ${LABEL_TYPE_CHANTIER[seul.type_chantier] || "projet en cours"}`
           : `${correspondances.length} projets ouverts.`}
       </p>
 
       {extrait?.trim() && (
-        <blockquote className="mt-5 rounded-2xl bg-paper-warm px-4 py-3 text-base text-ink">
+        <blockquote className={`mt-5 px-4 py-3 text-base text-ink ${CREUX}`}>
           <p className="line-clamp-3 whitespace-pre-line">{extrait.trim()}</p>
         </blockquote>
       )}
@@ -72,25 +84,25 @@ export function CorrespondanceProjetExistant({
           type="button"
           onClick={() => onChoisir(seul.id)}
           disabled={enCours}
-          className={`mt-5 min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60 sm:w-auto ${FOCUS}`}
+          className={`mt-6 sm:w-auto ${BOUTON_PLEIN_LARGE}`}
         >
-          <span className="block truncate">{enCours ? "Ajout…" : `Ajouter au projet ${seul.nom_client}`}</span>
+          <span className="block min-w-0 break-words">{enCours ? "Ajout…" : `Ajouter au projet ${seul.nom_client}`}</span>
         </button>
       ) : (
         <>
-          <p className="mt-5 text-sm text-steel">Ajouter au projet :</p>
-          <ul className="mt-2 flex flex-col gap-2">
+          <p className={`mt-6 px-1 ${SECONDAIRE}`}>Ajouter au projet :</p>
+          <ul className={`mt-2 ${GROUPE}`}>
             {correspondances.map((projet) => (
               <li key={projet.id}>
                 <button
                   type="button"
                   onClick={() => onChoisir(projet.id)}
                   disabled={enCours}
-                  className={`flex min-h-16 w-full items-center gap-3 rounded-2xl bg-surface px-4 py-3 text-left ring-1 ring-ink/15 active:bg-ink/10 disabled:opacity-60 sm:hover:bg-ink/5 ${FOCUS}`}
+                  className={`flex min-h-16 w-full items-center gap-3 px-4 py-3 text-left active:bg-ink/10 disabled:opacity-60 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink`}
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block truncate text-base font-semibold text-ink">{projet.nom_client}</span>
-                    <span className="block truncate text-sm text-steel">{LABEL_TYPE_CHANTIER[projet.type_chantier] || "Chantier"}</span>
+                    <span className="block break-words text-[17px] font-semibold leading-snug text-ink">{projet.nom_client}</span>
+                    <span className={`block ${SECONDAIRE}`}>{LABEL_TYPE_CHANTIER[projet.type_chantier] || "Chantier"}</span>
                   </span>
                   <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
                 </button>
@@ -104,12 +116,12 @@ export function CorrespondanceProjetExistant({
         type="button"
         onClick={onCreerNouveau}
         disabled={enCours}
-        className={`mt-3 inline-flex min-h-12 items-center px-0 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4 disabled:opacity-60 ${FOCUS}`}
+        className={`-ml-3 mt-3 disabled:opacity-60 ${BOUTON_TEXTE}`}
       >
         Non, c&apos;est un nouveau projet
       </button>
       <div aria-live="polite">
-        {erreur && <p className="mt-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>}
+        {erreur && <p className={ERREUR}>{erreur}</p>}
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { CLASSE_BOUTON_NUIT, CLASSE_BOUTON_NUIT_SECONDAIRE, EnTetePage } from "@/components/ui/EnTetePage";
-import { Pastille } from "@/components/ui/Pastille";
-import { IconeCalendrier, IconeChevron } from "@/components/projet/icones";
+import { EnTetePage } from "@/components/ui/EnTetePage";
+import { BOUTON_CREUX, BOUTON_ICONE, BOUTON_PLEIN } from "@/components/ui/recettes";
+import { IconeChevron, IconeCoche } from "@/components/projet/icones";
 import { GrilleAgenda } from "@/components/planning/GrilleAgenda";
 import { AgendaMobile } from "@/components/planning/AgendaMobile";
 import { PlanifierDepuisLien } from "@/components/planning/PlanifierDepuisLien";
@@ -101,49 +101,49 @@ export default async function PlanningPage({
   const evenementsSemaine = dans(calendaire);
   const premier = calendaire.jours[0];
   const dernier = calendaire.jours[6];
-  const libelleSemaine = `${numeroDuJour(premier)} ${nomDuMois(premier)} — ${numeroDuJour(dernier)} ${nomDuMois(dernier)}`;
+  // 25/10 : espaces insécables, la date ne se coupe pas entre le jour et le mois.
+  const libelleSemaine = `${numeroDuJour(premier)}\u00a0${nomDuMois(premier)} —\u00a0${numeroDuJour(dernier)}\u00a0${nomDuMois(dernier)}`;
 
   return (
-    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-5xl">
+    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-5xl lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
       <PlanifierDepuisLien projet={projetAPlanifier} />
 
       {searchParams.rdvCree === "1" && (
-        <div className="mb-4 rounded-xl bg-succes/10 border border-succes/30 px-4 py-3 text-sm text-ink/80">
-          ✓ Un rendez-vous a été ajouté au planning à partir du message du client.
+        // Design v3 (24/10) : teinte opaque (succes-fond), plus de contour ni d'encre pâlie.
+        <div className="mb-4 flex items-start gap-3 rounded-[20px] bg-succes-fond px-4 py-3 text-[15px] text-ink">
+          <IconeCoche className="mt-0.5 h-5 w-5 shrink-0 text-succes" />
+          <p>Un rendez-vous a été ajouté au planning à partir du message du client.</p>
         </div>
       )}
 
-      {/* Refonte visuelle (04/10) : l'en-tête bleu nuit. Sur ordinateur, la
-          semaine et ses flèches y vivent ; sur téléphone, les sept jours
-          glissants gardent leurs flèches juste en dessous. */}
+      {/* Le titre posé sur le fond (EnTetePage). Sur ordinateur, la semaine
+          et ses flèches y vivent ; sur téléphone, les sept jours glissants
+          gardent leurs flèches juste en dessous.
+          Design v3 (24/10) : flèches en BOUTON_ICONE, « Aujourd'hui » en
+          creux, « + Ajouter » seul plein de l'écran. */}
       <EnTetePage
         titre="Planning"
         sousTitre={<span className="hidden lg:inline">{libelleSemaine}</span>}
-        icone={
-          <Pastille couleur="bleu" taille="grande">
-            <IconeCalendrier className="h-6 w-6" />
-          </Pastille>
-        }
         actions={
           <>
             <Link
               href={`/dashboard/planning?semaine=${offset - 1}`}
               aria-label="Semaine précédente"
-              className={`hidden lg:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
+              className={`hidden lg:grid ${BOUTON_ICONE}`}
             >
               <IconeChevron className="h-5 w-5 rotate-180" />
             </Link>
-            <Link href="/dashboard/planning" className={`hidden lg:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE}`}>
+            <Link href="/dashboard/planning" className={`hidden lg:inline-flex ${BOUTON_CREUX}`}>
               Aujourd&apos;hui
             </Link>
             <Link
               href={`/dashboard/planning?semaine=${offset + 1}`}
               aria-label="Semaine suivante"
-              className={`hidden lg:inline-flex ${CLASSE_BOUTON_NUIT_SECONDAIRE} !px-3`}
+              className={`hidden lg:grid ${BOUTON_ICONE}`}
             >
               <IconeChevron className="h-5 w-5" />
             </Link>
-            <Link href="/dashboard/planning/nouveau" className={CLASSE_BOUTON_NUIT}>
+            <Link href="/dashboard/planning/nouveau" className={BOUTON_PLEIN}>
               + Ajouter
             </Link>
           </>
@@ -161,37 +161,28 @@ export default async function PlanningPage({
       </div>
 
       <div className="hidden lg:block">
-      <div className="mt-5 flex flex-wrap items-center gap-4 text-xs text-ink/60">
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#C23B22]" /> Urgent
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#D9861A]" /> Important
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-[#2F8F5B]" /> Normal
-        </span>
-        <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full bg-ink/40" /> Tâche sans projet
-        </span>
+        {/* Design v3 (24/10) : la légende en hexadécimal (pastilles rouge,
+            orange, vert) faisait doublon avec celle de la grille
+            (GrilleAgenda, LEGENDE, en jetons) et ne prenait pas les mêmes
+            couleurs : retirée. Reste la phrase météo, quand elle sert. */}
         {Object.values(alertesMeteo).some((m) => m.risque) && (
-          <span className="flex items-center gap-1.5">
-            ⚠️ Météo à risque sur un chantier extérieur — cliquez le rendez-vous pour prévenir le client
-          </span>
+          <p className="mt-5 text-[15px] text-steel">
+            <span className="font-semibold text-signal-fonce">Météo à risque</span> sur un chantier extérieur&nbsp;:
+            cliquez le rendez-vous pour prévenir le client.
+          </p>
         )}
-      </div>
 
-      {/* Audit pré-bêta (09/09), point 🟡 n°24 — convention calendrier
-          standard : sans ce message, une semaine vide donnait une grille
-          totalement nue sans confirmer que c'est bien "rien de prévu" et
-          pas un chargement raté. */}
-      {evenementsSemaine.length === 0 && (
-        <p className="mt-4 text-sm text-ink/40">Rien de prévu cette semaine.</p>
-      )}
+        {/* Audit pré-bêta (09/09), point 🟡 n°24 — convention calendrier
+            standard : sans ce message, une semaine vide donnait une grille
+            totalement nue sans confirmer que c'est bien "rien de prévu" et
+            pas un chargement raté. */}
+        {evenementsSemaine.length === 0 && (
+          <p className="mt-4 text-[15px] text-steel">Rien de prévu cette semaine.</p>
+        )}
 
-      <div className="mt-4">
-        <GrilleAgenda jours={joursSemaine} evenements={evenementsSemaine} meteoParJour={alertesMeteo} />
-      </div>
+        <div className="mt-5">
+          <GrilleAgenda jours={joursSemaine} evenements={evenementsSemaine} meteoParJour={alertesMeteo} />
+        </div>
       </div>
     </div>
   );

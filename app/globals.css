@@ -18,6 +18,9 @@
   --c-ink: 31 41 55; /* anthracite, texte principal en mode clair */
   --c-steel: 92 112 128;
   --c-gris-clair: 232 232 232;
+  --c-contour: 130 127 121;
+  --chevron-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23424855' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  --coche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F6F5F2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   --c-signal: 201 107 74; /* terracotta */
   --c-signal-clair: 232 197 182;
   --c-signal-fonce: 168 86 58;
@@ -70,6 +73,7 @@
   --c-ink: 241 245 249;
   --c-steel: 148 163 189;
   --c-gris-clair: 37 51 77;
+  --c-contour: 118 116 111;
   --c-surface: 21 33 55; /* cartes, un cran plus clair que le fond */
   --c-nuit: 10 17 31;
 }
@@ -96,6 +100,7 @@
   --c-ink: 245 243 240;
   --c-steel: 168 156 145;
   --c-gris-clair: 50 42 36;
+  --c-contour: 118 116 111;
   --c-surface: 36 30 26;
 }
 
@@ -497,13 +502,22 @@
 /* Le devis (components/devis/DocumentDevis.tsx) reste un document papier
    en mode sombre aussi : mêmes valeurs que :root, redéclarées au plus près
    pour l'emporter sur .dark (même principe que .theme-sombre-fixe). */
+/* Design v3 (24/10) : le document reste une page blanche à l'encre, dans
+   les deux thèmes, avec les valeurs claires du design v3. */
 .document-papier {
-  --c-paper: 250 248 245;
-  --c-paper-warm: 243 237 230;
-  --c-ink: 31 41 55;
-  --c-steel: 92 112 128;
-  --c-gris-clair: 232 232 232;
+  --c-paper: 246 245 242;
+  --c-paper-warm: 237 235 230;
+  --c-ink: 20 25 36;
+  --c-steel: 66 72 85;
+  --c-gris-clair: 226 224 219;
+  --c-contour: 130 127 121;
   --c-surface: 255 255 255;
+  --c-signal: 184 76 36;
+  --c-signal-fonce: 146 58 24;
+  --c-succes: 18 96 58;
+  --c-succes-fond: 226 242 232;
+  --c-alerte-fond: 251 239 216;
+  --c-signal-fond: 251 234 225;
   color-scheme: light;
 }
 @media print {
@@ -627,6 +641,10 @@
    assez discrète pour ne jamais ressembler à une popup intrusive. */
 .pwa-carte-entree {
   animation: pwa-monter 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+/* 25/10 (audit) : pas de glissé si le téléphone demande moins de mouvement. */
+@media (prefers-reduced-motion: reduce) {
+  .pwa-carte-entree { animation: none; }
 }
 @keyframes pwa-monter {
   from { opacity: 0; transform: translateY(12px); }
@@ -833,8 +851,10 @@ html:has([data-da="atelier"]) {
   --c-paper-warm: 237 235 230; /* creux : boutons secondaires, champs, pilule active */
   --c-surface: 255 255 255; /* cartes */
   --c-ink: 20 25 36; /* encre bleu-nuit : texte, boutons pleins (17,6:1) */
-  --c-steel: 74 80 93; /* le seul gris de texte (8,1:1 sur blanc, 7,4:1 sur le fond) */
-  --c-gris-clair: 226 224 219; /* filets */
+  /* 25/10 (audit) : un cran plus foncé, AAA aussi sur les creux (7,7:1). */
+  --c-steel: 66 72 85; /* le seul gris de texte (9,2:1 sur blanc, 8,4:1 sur le fond) */
+  --c-gris-clair: 226 224 219; /* filets (décor seulement) */
+  --c-contour: 130 127 121; /* contour des champs, gris chaud : 4:1, on voit où taper (WCAG 1.4.11) */
   --c-nuit: 23 31 48; /* la carte « Maintenant », le + */
   --c-anthracite: 23 31 48;
   --c-signal: 184 76 36; /* orange brûlé : maintenant, urgent (blanc dessus 5,1:1) */
@@ -853,6 +873,9 @@ html:has([data-da="atelier"]) {
   /* Deux élévations : les cartes, puis les feuilles et menus. */
   --ombre-douce: 0 0 0 1px rgb(20 25 36 / 0.04), 0 1px 2px rgb(20 25 36 / 0.04), 0 6px 16px -4px rgb(20 25 36 / 0.07);
   --ombre-feuille: 0 -8px 32px -12px rgb(20 25 36 / 0.25);
+  --coche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F6F5F2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  /* Le chevron des listes déroulantes (recettes : SELECT), en steel. */
+  --chevron-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23424855' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 html.dark:has([data-da="atelier"]) {
   color-scheme: dark;
@@ -860,8 +883,9 @@ html.dark:has([data-da="atelier"]) {
   --c-paper-warm: 38 41 48;
   --c-surface: 25 27 32;
   --c-ink: 237 236 232; /* jamais de blanc pur */
-  --c-steel: 164 168 178; /* 7,2:1 sur la surface */
+  --c-steel: 180 184 194; /* 8,7:1 sur la surface, 7,3:1 sur les creux */
   --c-gris-clair: 44 47 54;
+  --c-contour: 118 116 111; /* 3,7:1 sur la surface */
   --c-nuit: 40 45 58; /* « Maintenant » : un palier plus haut, légèrement bleu */
   --c-anthracite: 40 45 58;
   --c-signal: 184 76 36; /* même orange plein, blanc dessus 5,1:1 */
@@ -879,6 +903,8 @@ html.dark:has([data-da="atelier"]) {
   /* En sombre, pas d'ombre : le relief vient des paliers de surface. */
   --ombre-douce: inset 0 1px 0 rgb(255 255 255 / 0.04);
   --ombre-feuille: inset 0 1px 0 rgb(255 255 255 / 0.06);
+  --coche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%230E0F12' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+  --chevron-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23B4B8C2' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
 }
 
 /* Une seule police, Inter (next/font, app/layout.tsx), pour le texte, les
@@ -904,6 +930,8 @@ html:has([data-da="atelier"]) .font-display {
 /* Plancher de lisibilité (accessibilité, 23/10) : rien sous 13 px dans
    l'application, sauf le document du devis, qui garde sa mise en page
    d'impression. */
+/* Attention (audit 25/10) : seuls hover: et dark: (deux classes) passent
+   au-dessus de ce plancher ; une variante de largeur (sm:, lg:) NON. */
 /* :where() garde la force d'une seule classe : un hover:, sm: ou dark: posé
    sur l'élément l'emporte toujours. text-xs passe par la variable --t-xs
    (tailwind.config.ts). */
@@ -944,4 +972,26 @@ html:has([data-da="atelier"]) :is(.backdrop-blur, .backdrop-blur-sm, .backdrop-b
 }
 .ombre-feuille {
   box-shadow: var(--ombre-feuille);
+}
+
+/* Design v3 (24/10) — ouvrir une fiche « pousse » l'écran : 180 ms
+   d'apparition, opacité et 8 px de glissement, rien si l'artisan a demandé
+   moins d'animations (app/dashboard/demandes/[id]/template.tsx). */
+@media (prefers-reduced-motion: no-preference) {
+  .entree-ecran {
+    /* backwards, pas both : une animation qui reste appliquée fait du
+       conteneur la référence des éléments « fixed » (la visionneuse photo
+       s'ouvrait hors de l'écran). */
+    animation: entree-ecran 180ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  }
+}
+@keyframes entree-ecran {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }

@@ -7,6 +7,17 @@ import { getOrganisationId } from "@/lib/organisation";
 import { Button } from "@/components/ui/Button";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { IconeRetour } from "@/components/projet/icones";
+import {
+  BOUTON_TEXTE,
+  CARTE_PLEINE,
+  FOCUS,
+  FORME_ETIQUETTE,
+  MONTANT,
+  SECONDAIRE,
+  TITRE_ECRAN,
+  euros,
+} from "@/components/ui/recettes";
 import { ValiderDevis } from "@/components/dashboard/ValiderDevis";
 import { ApercuPdf } from "@/components/devis/ApercuPdf";
 import { SuiviDevis, type ProjetDuDevis } from "@/components/devis/SuiviDevis";
@@ -20,7 +31,6 @@ import { adresseEspaceDevis, marquerDevisEnvoye } from "@/lib/devis/actions";
 import { mentionsEffectives, nomEntreprise } from "@/lib/devis/mentionsLegales";
 import {
   construireModeleDevis,
-  formatMontant,
   sourceDepuisDevis,
   type SourceDocumentDevis,
 } from "@/lib/devis/modeleDocument";
@@ -147,8 +157,8 @@ export function EspaceDevis({ devisId }: { devisId: string }) {
   if (etat === "introuvable") {
     return (
       <div className="px-4 py-10 sm:px-8">
-        <p className="text-sm text-ink/70">Ce devis n&apos;existe pas, ou vous n&apos;y avez pas accès.</p>
-        <Link href="/dashboard/devis" className="mt-3 inline-block text-sm text-signal underline-offset-2 hover:underline">
+        <p className="text-base text-steel">Ce devis n&apos;existe pas, ou vous n&apos;y avez pas accès.</p>
+        <Link href="/dashboard/devis" className={`${BOUTON_TEXTE} -ml-3 mt-2`}>
           Voir tous les devis
         </Link>
       </div>
@@ -278,7 +288,7 @@ export function VueEspaceDevis({
     }
   }
 
-  // Le score (anneau, points à vérifier) : seulement tant qu'on peut encore
+  // Le score (points à vérifier) : seulement tant qu'on peut encore
   // corriger. Au brouillon, c'est ValiderDevis qui le place au-dessus de
   // l'éditeur complet (sur téléphone, il n'apparaît qu'avec lui : la revue
   // n'a plus d'anneau) ; à l'étape « à envoyer », il garde sa place d'avant.
@@ -292,15 +302,18 @@ export function VueEspaceDevis({
     ) : null;
 
   return (
-    <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-8">
+    <div className="min-w-0 px-4 py-6 sm:px-8 sm:py-8 lg:max-w-6xl lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
       {/* Refonte (03/10, duel F lot 3) — sur téléphone, le brouillon a sa
           propre revue (components/devis/RevueDevis.tsx), avec son retour au
           projet, son numéro et son total : on ne les montre pas deux fois. */}
+      {/* Design v3 (24/10) : le retour en 15 px lisible (12 px pâle avant),
+          le titre d'écran, l'état en étiquette, le total en chiffres fixes. */}
       <Link
         href={`/dashboard/demandes/${projet.id}`}
-        className={`inline-flex min-h-11 items-center text-xs text-ink/50 transition-colors hover:text-ink ${masqueTelephone}`}
+        className={`-ml-2 inline-flex min-h-12 items-center gap-1 rounded-full pl-2 pr-3 text-[15px] font-semibold text-steel motion-safe:transition-colors sm:hover:text-ink ${FOCUS} ${masqueTelephone}`}
       >
-        ← Projet · {projet.nom_client}
+        <IconeRetour className="h-4 w-4 shrink-0" />
+        Projet&nbsp;· {projet.nom_client}
       </Link>
 
       <div className={`mt-2 flex flex-wrap items-end justify-between gap-4 ${masqueTelephone}`}>
@@ -309,20 +322,24 @@ export function VueEspaceDevis({
         <div className="min-w-0 flex-1">
           <div>
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="font-display text-3xl font-bold tracking-[-0.02em] text-ink">Devis n° {devis.numero}</h1>
-              <span className={`rounded-full px-2.5 py-0.5 text-sm font-semibold ${statut.classe}`}>{statut.texte}</span>
+              <h1 className={`${TITRE_ECRAN} [text-wrap:balance]`}>Devis n°&nbsp;{devis.numero}</h1>
+              <span className={`${FORME_ETIQUETTE} ${statut.classe}`}>{statut.texte}</span>
             </div>
-            <p className="mt-1 text-base text-steel">
-              {projet.nom_client} · <span className="font-semibold text-ink">{formatMontant(totalAffiche)} TTC</span>
+            <p className={`${SECONDAIRE} mt-1`}>
+              {projet.nom_client} ·{" "}
+              <span className={`whitespace-nowrap text-[17px] ${MONTANT}`}>{euros(totalAffiche, true)}&nbsp;TTC</span>
             </p>
             {versions.length > 0 && (
-              <p className="mt-1 text-sm text-steel">
-                Autres versions :{" "}
+              <p className={`${SECONDAIRE} mt-1`}>
+                Autres versions&nbsp;:{" "}
                 {versions.map((v, i) => (
                   <span key={v.id}>
                     {i > 0 && ", "}
-                    <Link href={adresseEspaceDevis(v.id)} className="underline-offset-2 hover:text-ink hover:underline">
-                      n° {v.numero}
+                    <Link
+                      href={adresseEspaceDevis(v.id)}
+                      className={`font-semibold text-ink underline decoration-ink/30 underline-offset-4 ${FOCUS}`}
+                    >
+                      n°&nbsp;{v.numero}
                     </Link>
                   </span>
                 ))}
@@ -332,7 +349,7 @@ export function VueEspaceDevis({
         </div>
         <div className="flex flex-wrap gap-2">
           <Button
-            variant="ghost"
+            variant="secondary"
             onClick={() => actionPdf("telechargement")}
             loading={pdfEnCours === "telechargement"}
             disabled={pdfEnCours !== null}
@@ -342,7 +359,7 @@ export function VueEspaceDevis({
           </Button>
           {partageFichier && !estBrouillon && (
             <Button
-              variant="ghost"
+              variant="secondary"
               onClick={() => actionPdf("partage")}
               loading={pdfEnCours === "partage"}
               disabled={pdfEnCours !== null}
@@ -352,25 +369,38 @@ export function VueEspaceDevis({
           )}
         </div>
       </div>
-      {erreurPdf && <p className={`mt-2 text-sm text-signal ${masqueTelephone}`}>{erreurPdf}</p>}
+      {erreurPdf && (
+        <p role="alert" className={`mt-2 text-[15px] font-semibold text-signal-fonce ${masqueTelephone}`}>
+          {erreurPdf}
+        </p>
+      )}
+      {/* Design v3 (24/10) : la question est une carte ; « Oui » reste en
+          creux (le bouton plein de l'écran est celui de l'envoi, plus bas). */}
       {questionEnvoi && devis.statut === "a_valider" && (
-        <div className="mt-3 rounded-xl border border-ink/10 bg-surface px-4 py-3">
-          <p className="text-sm font-medium text-ink">Ce devis est parti chez le client ?</p>
-          <p className="mt-0.5 text-xs text-ink/50">Il sera noté envoyé et figé tel quel.</p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Button onClick={noterEnvoye} loading={envoiEnCours} disabled={envoiEnCours}>
+        <div className={`${CARTE_PLEINE} mt-4`}>
+          <p className="text-[17px] font-semibold text-ink">Ce devis est parti chez le client ?</p>
+          <p className={`${SECONDAIRE} mt-0.5`}>Il sera noté envoyé et figé tel quel.</p>
+          <div className="mt-4 flex flex-wrap items-center gap-2">
+            <Button variant="secondary" onClick={noterEnvoye} loading={envoiEnCours} disabled={envoiEnCours}>
               Oui, il est envoyé
             </Button>
-            <Button variant="ghost" onClick={() => setQuestionEnvoi(false)} disabled={envoiEnCours}>
+            <button
+              type="button"
+              onClick={() => setQuestionEnvoi(false)}
+              disabled={envoiEnCours}
+              className={BOUTON_TEXTE}
+            >
               Pas encore
-            </Button>
+            </button>
           </div>
-          {erreurEnvoi && <p className="mt-2 text-sm text-signal">{erreurEnvoi}</p>}
+          {erreurEnvoi && <p role="alert" className="mt-2 text-[15px] font-semibold text-signal-fonce">{erreurEnvoi}</p>}
         </div>
       )}
 
       {estBrouillon && (
-        <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl border border-ink/10 bg-surface p-1 max-sm:hidden xl:hidden" role="tablist">
+        // Design v3 (24/10) : une bascule en creux, l'onglet actif en surface.
+        // 25/10 : en pilule, comme tout bouton compact.
+        <div className="mt-6 grid grid-cols-2 gap-1 rounded-full bg-paper-warm p-1 max-sm:hidden xl:hidden" role="tablist">
           {(
             [
               ["edition", "Modifier"],
@@ -383,8 +413,8 @@ export function VueEspaceDevis({
               role="tab"
               aria-selected={vue === cle}
               onClick={() => setVue(cle)}
-              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                vue === cle ? "bg-ink text-paper" : "text-ink/60 hover:text-ink"
+              className={`min-h-11 rounded-full px-3 text-[15px] font-semibold motion-safe:transition-colors ${FOCUS} ${
+                vue === cle ? "bg-surface text-ink ombre-douce" : "text-steel sm:hover:text-ink"
               }`}
             >
               {libelle}
@@ -447,7 +477,7 @@ export function VueEspaceDevis({
           className={`min-w-0 xl:sticky xl:top-6 ${estBrouillon ? "max-sm:hidden" : ""} ${estBrouillon && vue === "edition" ? "hidden xl:block" : ""}`}
           aria-label="Aperçu du PDF"
         >
-          <p className="mb-3 text-xs text-ink/45">
+          <p className={`${SECONDAIRE} mb-3`}>
             {estBrouillon
               ? "Aperçu exact du PDF, mis à jour à chaque modification."
               : "Le PDF tel que votre client le reçoit."}

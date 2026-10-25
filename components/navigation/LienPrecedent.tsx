@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { IconeRetour } from "@/components/projet/icones";
+import { FOCUS } from "@/components/ui/recettes";
 
 // ============================================================
 // « Retour » sur les pages secondaires (04/10, retour d'Axel après la
@@ -168,11 +169,12 @@ export function LienPrecedent() {
   if (!parent) return null;
 
   return (
-    <div className="px-4 pt-2 sm:px-8 sm:pt-5">
+    <div className="px-4 pt-2 sm:px-8 sm:pt-5 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:max-w-6xl lg:px-10">
       <button
         type="button"
         onClick={() => (precedent ? revenir(router) : router.push(parent))}
-        className="-ml-2 inline-flex min-h-12 items-center gap-1 rounded-xl pl-1 pr-3 text-base text-steel active:bg-ink/10 sm:hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+        // Design v3 (24/10) : rayon 14 des boutons, appui en couleur.
+        className={`-ml-2 inline-flex min-h-12 items-center gap-1 rounded-full pl-1 pr-3 text-base font-medium text-steel active:bg-ink/10 sm:hover:text-ink motion-safe:transition-colors ${FOCUS}`}
       >
         <IconeRetour className="h-5 w-5" /> Retour
       </button>

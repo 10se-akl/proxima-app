@@ -1,5 +1,7 @@
 import type { Devis, StatutProjet } from "@/types";
 import { cleJour } from "./entreesCarnet";
+import { heure as ecrireHeure } from "@/lib/heure";
+import { euros } from "@/components/ui/recettes";
 
 // ============================================================
 // « Maintenant » (24/09) — où en est le projet, et la prochaine chose à
@@ -90,21 +92,20 @@ export type EtatProjet = {
   accuse?: "cree" | "recu" | null;
 };
 
-const formatEuros = (n: number) =>
-  `${n.toLocaleString("fr-FR", { minimumFractionDigits: Number.isInteger(n) ? 0 : 2, maximumFractionDigits: 2 })} €`;
+// 25/10 — par euros() des recettes : le montant ne se coupe plus en fin de
+// ligne (centimes seulement s'il y en a, comme avant).
+const formatEuros = (n: number) => euros(n, !Number.isInteger(n));
 
 const formatRdv = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
   weekday: "short",
   day: "numeric",
   month: "long",
-  hour: "numeric",
-  minute: "2-digit",
 });
 const formatDate = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "long" });
 
 export function dateRdv(iso: string): string {
-  return formatRdv.format(new Date(iso)).replace(" à ", ", ").replace(":", " h ").replace(/ h 00$/, " h");
+  return `${formatRdv.format(new Date(iso))}, ${ecrireHeure(iso)}`;
 }
 
 function joursDepuis(iso: string, maintenant: Date): number {
@@ -142,13 +143,12 @@ export function prochaineAction(e: EtatProjet): ProchaineAction {
 }
 
 const formatJourCourt = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short" });
-const formatHeure = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", minute: "2-digit" });
 
 /** 06/10 — le prochain passage tient sur la ligne à 360 px : « demain
  *  8 h », « jeu. 14 h 30 » dans la semaine, la date complète au-delà. */
 export function passageCourt(iso: string, maintenant: Date): string {
   const jours = -joursDepuis(iso, maintenant);
-  const heure = formatHeure.format(new Date(iso)).replace(":", " h ").replace(/ h 00$/, " h");
+  const heure = ecrireHeure(iso);
   if (jours === 0) return `aujourd'hui ${heure}`;
   if (jours === 1) return `demain ${heure}`;
   if (jours > 1 && jours < 7) return `${formatJourCourt.format(new Date(iso))} ${heure}`;

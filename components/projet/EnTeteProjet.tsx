@@ -1,12 +1,23 @@
 "use client";
 
 import { Cordeau } from "@/components/ui/Cordeau";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { revenir, useLibelleRetour } from "@/components/navigation/LienPrecedent";
 import type { Priorite, StatutProjet } from "@/types";
 import { IconeLieu, IconeLoupe, IconeMessage, IconePoints, IconeRetour, IconeTelephone } from "./icones";
+import { Feuille } from "./Feuille";
+import { Priorite as MarquePriorite } from "@/components/ui/Priorite";
+import {
+  BOUTON_ICONE,
+  FOCUS,
+  GROUPE,
+  LIBELLE,
+  TITRE_ECRAN,
+  TUILE_ACTION,
+  puce,
+} from "@/components/ui/recettes";
 
 // ============================================================
 // L'en-tête de la fiche projet (24/09).
@@ -23,8 +34,7 @@ import { IconeLieu, IconeLoupe, IconeMessage, IconePoints, IconeRetour, IconeTel
 // trois en terracotta) ; chaque entrée du menu fait 48 px.
 // ============================================================
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
+
 
 const ETAPES: { libelle: string; statuts: StatutProjet[] }[] = [
   { libelle: "Demande", statuts: ["nouveau", "analyse"] },
@@ -40,80 +50,73 @@ export type EntreeMenu =
   | { type: "priorite"; valeur: Priorite; surChoisir: (p: Priorite) => void }
   | { type: "separateur" };
 
+/** Les entrées du menu, coupées en groupes aux séparateurs. */
+function grouper(entrees: EntreeMenu[]): Exclude<EntreeMenu, { type: "separateur" }>[][] {
+  const groupes: Exclude<EntreeMenu, { type: "separateur" }>[][] = [[]];
+  for (const e of entrees) {
+    if (e.type === "separateur") {
+      if (groupes[groupes.length - 1].length > 0) groupes.push([]);
+    } else if (e.type === "priorite") {
+      // 25/10 — la priorité forme toujours son propre groupe, pour garder
+      // son libellé visible « Priorité » (elle était mêlée à « Modifier les
+      // infos du client » et perdait son titre).
+      if (groupes[groupes.length - 1].length > 0) groupes.push([]);
+      groupes[groupes.length - 1].push(e);
+      groupes.push([]);
+    } else groupes[groupes.length - 1].push(e);
+  }
+  return groupes.filter((g) => g.length > 0);
+}
+
+/** Design v3 (24/10) — le menu « … » devient une feuille du bas, au
+ *  pouce (docs/design-v3.md, « Restes à faire ») : mêmes entrées, même
+ *  ordre, mêmes actions (EntreeMenu ne change pas). La priorité en trois
+ *  pastilles, les actions en lignes de 52 px groupées sur une carte, la
+ *  clôture seule en bas, en orange. La feuille gère l'Échap, le focus et le
+ *  geste retour ; choisir referme la feuille puis lance l'action (une autre
+ *  feuille peut s'ouvrir dans le même geste, voir lib/retourFeuilles.ts). */
 function Menu({ entrees }: { entrees: EntreeMenu[] }) {
   const [ouvert, setOuvert] = useState(false);
-  const zone = useRef<HTMLDivElement>(null);
-  const bouton = useRef<HTMLButtonElement>(null);
-
-  useEffect(() => {
-    if (!ouvert) return;
-    const dehors = (e: PointerEvent) => {
-      if (zone.current && !zone.current.contains(e.target as Node)) setOuvert(false);
-    };
-    const touche = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        setOuvert(false);
-        bouton.current?.focus();
-      }
-    };
-    document.addEventListener("pointerdown", dehors);
-    document.addEventListener("keydown", touche);
-    zone.current?.querySelector<HTMLElement>("[role=menuitem], [role=menuitemradio]")?.focus();
-    return () => {
-      document.removeEventListener("pointerdown", dehors);
-      document.removeEventListener("keydown", touche);
-    };
-  }, [ouvert]);
 
   const choisir = (f: () => void) => {
     setOuvert(false);
     f();
   };
 
-  const item = "flex min-h-12 w-full items-center px-4 text-left text-base active:bg-ink/10 sm:hover:bg-ink/5 focus-visible:bg-ink/10 focus-visible:outline-none";
+  const ligne = `flex min-h-[3.25rem] w-full items-center px-4 text-left text-[17px] active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink disabled:opacity-60`;
 
   return (
-    <div ref={zone} className="relative">
+    <>
       <button
-        ref={bouton}
         type="button"
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={ouvert}
         aria-label="Plus d'actions"
-        onClick={() => setOuvert((v) => !v)}
-        className={`grid h-12 w-12 place-items-center rounded-full text-ink active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+        onClick={() => setOuvert(true)}
+        className={BOUTON_ICONE}
       >
         <IconePoints className="h-6 w-6" />
       </button>
-      {ouvert && (
-        <div
-          role="menu"
-          className="absolute right-0 top-12 z-40 w-[18rem] max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl bg-surface py-1.5 shadow-xl ring-1 ring-ink/15"
-          onKeyDown={(e) => {
-            if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
-            e.preventDefault();
-            const items = [...(zone.current?.querySelectorAll<HTMLElement>("[role=menuitem]:not([disabled]), [role=menuitemradio]") ?? [])];
-            const i = items.indexOf(document.activeElement as HTMLElement);
-            items[(i + (e.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus();
-          }}
-        >
-          {entrees.map((e, i) => {
-            if (e.type === "separateur") return <div key={i} role="separator" className="my-1.5 border-t border-ink/15" />;
-            if (e.type === "priorite") {
+      <Feuille ouverte={ouvert} titre="Plus d'actions" surFermer={() => setOuvert(false)}>
+        <div className="flex flex-col gap-4">
+          {grouper(entrees).map((groupe, g) => {
+            // La priorité : trois pastilles, l'active à l'encre.
+            if (groupe.length === 1 && groupe[0].type === "priorite") {
+              const e = groupe[0];
               return (
-                <div key={i} className="px-3 py-2">
-                  <p className="mb-1.5 text-sm text-steel">Priorité</p>
-                  <div className="grid grid-cols-3 gap-1 rounded-2xl bg-ink/10 p-1">
+                <div key={g}>
+                  <p className={LIBELLE} id="titre-priorite">
+                    Priorité
+                  </p>
+                  <div role="radiogroup" aria-labelledby="titre-priorite" className="flex flex-wrap gap-2">
                     {(["urgent", "important", "normal"] as const).map((p) => (
                       <button
                         key={p}
                         type="button"
-                        role="menuitemradio"
+                        role="radio"
                         aria-checked={e.valeur === p}
                         onClick={() => choisir(() => e.surChoisir(p))}
-                        className={`min-h-12 rounded-xl px-1 text-sm font-semibold ${FOCUS} ${
-                          e.valeur === p ? "bg-surface text-ink ring-1 ring-ink/15" : "text-steel"
-                        }`}
+                        className={`${puce(e.valeur === p)} min-h-12`}
                       >
                         {p === "urgent" ? "Urgent" : p === "important" ? "Important" : "Normal"}
                       </button>
@@ -122,31 +125,54 @@ function Menu({ entrees }: { entrees: EntreeMenu[] }) {
                 </div>
               );
             }
-            if (e.type === "lien") {
-              return (
-                <Link key={i} href={e.href} role="menuitem" className={`${item} text-ink`}>
-                  {e.libelle}
-                </Link>
-              );
-            }
             return (
-              <button
-                key={i}
-                type="button"
-                role="menuitem"
-                disabled={e.desactive}
-                onClick={() => choisir(e.surChoisir)}
-                className={`${item} disabled:opacity-60 ${
-                  e.attention ? "font-semibold text-signal-fonce dark:text-signal-clair" : "text-ink"
-                }`}
-              >
-                {e.libelle}
-              </button>
+              <div key={g} className={GROUPE}>
+                {groupe.map((e, i) => {
+                  if (e.type === "priorite") {
+                    // Une priorité mêlée à d'autres entrées (pas le cas
+                    // aujourd'hui) : une ligne de pastilles dans le groupe.
+                    return (
+                      <div key={i} role="radiogroup" aria-label="Priorité" className="flex flex-wrap gap-2 px-4 py-3">
+                        {(["urgent", "important", "normal"] as const).map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            role="radio"
+                            aria-checked={e.valeur === p}
+                            onClick={() => choisir(() => e.surChoisir(p))}
+                            className={`${puce(e.valeur === p)} min-h-12`}
+                          >
+                            {p === "urgent" ? "Urgent" : p === "important" ? "Important" : "Normal"}
+                          </button>
+                        ))}
+                      </div>
+                    );
+                  }
+                  if (e.type === "lien") {
+                    return (
+                      <Link key={i} href={e.href} className={`${ligne} text-ink`}>
+                        {e.libelle}
+                      </Link>
+                    );
+                  }
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      disabled={e.desactive}
+                      onClick={() => choisir(e.surChoisir)}
+                      className={`${ligne} ${e.attention ? "font-semibold text-signal-fonce" : "text-ink"}`}
+                    >
+                      {e.libelle}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </div>
-      )}
-    </div>
+      </Feuille>
+    </>
   );
 }
 
@@ -182,11 +208,12 @@ export function EnTeteProjet({
   // liste. Le lien dit maintenant d'où l'on vient et y ramène ; d'ailleurs
   // (lien direct, notification), il reste « ‹ Projets ».
   const libelleRetour = useLibelleRetour();
-  const classeRetour = `-ml-2 inline-flex min-h-12 items-center gap-1 rounded-xl pl-1 pr-3 text-base text-steel active:bg-ink/10 ${FOCUS}`;
-  // Refonte visuelle (04/10) : les trois gestes sont posés sur la carte
-  // bleu nuit, en verre clair.
+  const classeRetour = `-ml-2 inline-flex min-h-12 items-center gap-1 rounded-full pl-1 pr-3 text-base font-medium text-steel active:bg-ink/10 sm:hover:text-ink motion-safe:transition-colors ${FOCUS}`;
   // Atelier (22/10) : les trois gestes en creux, posés sur le fond.
-  const tuile = `flex min-h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl bg-paper-warm px-2 py-2 text-sm font-semibold text-ink active:scale-[0.97] motion-safe:transition sm:min-h-12 sm:flex-row sm:gap-2 sm:rounded-full sm:px-4 sm:hover:bg-ink/[0.08] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink`;
+  // Design v3 (24/10) : la tuile d'action commune (icône au-dessus, mot
+  // dessous, 64 px) ; sur ordinateur, icône et mot sur une ligne.
+  const tuile = `${TUILE_ACTION} py-2 sm:min-h-12 sm:flex-row sm:gap-2 sm:px-5`;
+  const etapeLisible = `Étape ${etape + 1} sur ${ETAPES.length}`;
 
   return (
     <header>
@@ -206,7 +233,7 @@ export function EnTeteProjet({
               type="button"
               onClick={surChercher}
               aria-label="Chercher dans ce projet"
-              className={`grid h-12 w-12 place-items-center rounded-full text-ink active:bg-ink/10 sm:hover:bg-ink/5 ${FOCUS}`}
+              className={BOUTON_ICONE}
             >
               <IconeLoupe className="h-6 w-6" />
             </button>
@@ -219,16 +246,14 @@ export function EnTeteProjet({
           le fond (plus de carte bleu nuit à halos). */}
       <div className="mt-2">
         <div>
-          <h1 className="truncate font-display text-3xl font-semibold tracking-[-0.025em] text-ink sm:text-4xl">{nomClient}</h1>
+          {/* Design v3 (24/10) : le nom passe à la ligne plutôt que d'être
+              coupé ; « quoi · où » aussi (deux lignes au plus). */}
+          <h1 className={`break-words ${TITRE_ECRAN}`}>{nomClient}</h1>
           {(sousTitre || priorite !== "normal") && (
-            <p className="mt-1 flex min-w-0 items-center gap-2 text-base text-steel">
-              {priorite === "urgent" && (
-                <span className="shrink-0 rounded-full bg-signal/15 px-2.5 py-0.5 text-sm font-semibold text-signal-fonce">Urgent</span>
-              )}
-              {priorite === "important" && (
-                <span className="shrink-0 rounded-full bg-paper-warm px-2.5 py-0.5 text-sm font-semibold text-ink">Important</span>
-              )}
-              <span className="truncate">{sousTitre}</span>
+            <p className="mt-1.5 flex min-w-0 items-start gap-2 text-[17px] leading-snug text-steel">
+              {/* 25/10 — la priorité s'écrit comme dans les listes : point + mot. */}
+              <MarquePriorite niveau={priorite} className="mt-0.5" />
+              <span className="line-clamp-2 min-w-0">{sousTitre}</span>
             </p>
           )}
 
@@ -236,7 +261,7 @@ export function EnTeteProjet({
               une ligne, en trois boutons égaux (« Itinéraire » partait seul à
               la ligne). */}
           {(telephone || adresse || surMessage) && (
-            <div className="mt-4 grid auto-cols-fr grid-flow-col gap-2 sm:flex sm:flex-wrap">
+            <div className="mt-5 grid auto-cols-fr grid-flow-col gap-2 sm:flex sm:flex-wrap">
               {telephone && (
                 <a href={`tel:${telephone.replace(/\s/g, "")}`} className={tuile}>
                   <IconeTelephone className="h-6 w-6 sm:h-5 sm:w-5" /> Appeler
@@ -255,23 +280,29 @@ export function EnTeteProjet({
                   className={`${tuile} max-w-full`}
                 >
                   <IconeLieu className="h-6 w-6 shrink-0 sm:h-5 sm:w-5" />
-                  <span className="truncate">Itinéraire</span>
+                  Itinéraire
                 </a>
               )}
             </div>
           )}
 
           {/* La progression : cinq étapes, la courante nommée. */}
-          <div className="mt-5" aria-label={`Étape : ${ETAPES[etape].libelle}`}>
+          {/* Design v3 (24/10) : l'étape se lit en clair sous le cordeau
+              (« Chantier · étape 4 sur 5 ») ; sur ordinateur, les cinq
+              étapes nommées, la courante à l'encre. */}
+          <div className="mt-6" role="group" aria-label={`${ETAPES[etape].libelle}, ${etapeLisible.toLowerCase()}`}>
             <Cordeau statut={statut} taille="grand" />
-            <div className="mt-1.5 hidden justify-between text-sm sm:flex" aria-hidden>
+            <div className="mt-2 hidden justify-between text-[15px] sm:flex" aria-hidden>
               {ETAPES.map((e, i) => (
                 <span key={e.libelle} className={i === etape ? "font-semibold text-ink" : "text-steel"}>
                   {e.libelle}
                 </span>
               ))}
             </div>
-            <p className="mt-1.5 text-sm font-semibold text-ink sm:hidden">{ETAPES[etape].libelle}</p>
+            <p className="mt-2 text-[15px] sm:hidden" aria-hidden>
+              <span className="font-semibold text-ink">{ETAPES[etape].libelle}</span>
+              <span className="text-steel"> · {etapeLisible.toLowerCase()}</span>
+            </p>
           </div>
         </div>
       </div>

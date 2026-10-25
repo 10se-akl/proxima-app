@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Feuille } from "@/components/projet/Feuille";
 import { IconeChevron, IconeCrayon, IconeDocument, IconePhoto } from "@/components/projet/icones";
 import { IconeNote } from "@/components/ui/Icones";
+import { CARTE, FOCUS, SECONDAIRE, TUILE_ICONE } from "@/components/ui/recettes";
 
 // ============================================================
 // La capture d'un nouveau projet — ce qu'ouvre le bouton [+] de la
@@ -62,21 +63,23 @@ const NOTE: Choix = {
   ia: false,
 };
 
+// Design v3 (24/10) : chaque porte est une carte (surface + ombre douce, plus
+// de contour), haute de 76 px : tuile d'icône neutre de 48 px, titre en
+// 17 semi-gras, une ligne de détail en gris lisible. La même ligne sert à
+// l'accueil d'un compte neuf (components/accueil/PremiersPas.tsx).
 export function LigneChoix({ c, surFermer }: { c: Choix; surFermer: () => void }) {
   return (
     <Link
       href={c.href}
       onClick={surFermer}
-      className="flex min-h-[4.75rem] items-center gap-4 rounded-2xl bg-surface px-4 py-3 ring-1 ring-ink/15 active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+      className={`${CARTE} flex min-h-[4.75rem] items-center gap-4 px-4 py-3 active:bg-paper-warm sm:hover:bg-paper-warm/60 motion-safe:transition-colors ${FOCUS}`}
     >
-      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-ink/[0.06] text-ink">{c.icone}</span>
+      <span className={`${TUILE_ICONE} !h-12 !w-12`}>{c.icone}</span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2 text-base font-semibold text-ink">
-          {c.libelle}
-        </span>
-        <span className="mt-0.5 block text-sm leading-snug text-steel">{c.detail}</span>
+        <span className="block text-[17px] font-semibold leading-snug text-ink">{c.libelle}</span>
+        <span className={`mt-0.5 block leading-snug ${SECONDAIRE}`}>{c.detail}</span>
       </span>
-      <IconeChevron className="h-4 w-4 shrink-0 text-steel" />
+      <IconeChevron className="h-5 w-5 shrink-0 text-steel" />
     </Link>
   );
 }
@@ -84,15 +87,17 @@ export function LigneChoix({ c, surFermer }: { c: Choix; surFermer: () => void }
 export function FeuilleCapture({ ouverte, surFermer }: { ouverte: boolean; surFermer: () => void }) {
   return (
     <Feuille ouverte={ouverte} titre="Nouveau projet" surFermer={surFermer}>
-      <ul className="flex flex-col gap-2.5">
+      <ul className="flex flex-col gap-3">
         {CHOIX_CAPTURE.map((c) => (
           <li key={c.href}>
             <LigneChoix c={c} surFermer={surFermer} />
           </li>
         ))}
       </ul>
-      {/* À part : ce n'est pas un projet. */}
-      <div className="mt-4 border-t border-ink/15 pt-4">
+      {/* À part : ce n'est pas un projet. Design v3 (24/10) : un vide et un
+          petit titre plutôt qu'un filet. */}
+      <p className={`mt-6 px-1 ${SECONDAIRE}`}>Autre chose</p>
+      <div className="mt-2">
         <LigneChoix c={NOTE} surFermer={surFermer} />
       </div>
     </Feuille>

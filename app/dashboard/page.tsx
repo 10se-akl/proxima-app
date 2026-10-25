@@ -11,6 +11,8 @@ import { aujourdhuiParis, minuitParis, moisCourant, nomMois } from "@/lib/moisPa
 import { chiffresDuMoisEnCours } from "@/lib/activite";
 import type { ChiffresDuMois } from "@/components/accueil/ChiffresMois";
 import { aplatirClient, calculerArgent, JOURS_PAUSE_RELANCE } from "@/lib/argent";
+// Design v3 : un montant ne se coupe jamais (espaces insécables).
+import { euros } from "@/components/ui/recettes";
 import {
   JOURS_A_PLANIFIER,
   JOURS_AVANT_EXPIRATION,
@@ -20,6 +22,7 @@ import {
   joursAvantExpiration,
   raisonSommeil,
 } from "@/lib/projetEnSommeil";
+import { heure as ecrireHeure } from "@/lib/heure";
 
 // ============================================================
 // L'accueil (26/09 — « moins mais mieux », lot B ; refonte 03/10 — duel C,
@@ -61,8 +64,8 @@ const JOURS_PARTAGE_VISIBLE = 7;
 // chaque clic : elle doit toujours être recalculée, jamais servie en cache.
 export const dynamic = "force-dynamic";
 
-const HEURE_PARIS = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "numeric", minute: "2-digit" });
-const heureCourte = (iso: string) => HEURE_PARIS.format(new Date(iso)).replace(":", "h").replace(/h00$/, "h");
+// 25/10 — « 9 h », « 14 h 30 » : une seule écriture de l'heure (lib/heure.ts).
+const heureCourte = (iso: string) => ecrireHeure(iso);
 const CLE_JOUR = new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris" });
 const JOUR_SEMAINE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", weekday: "short" });
 const DATE_COURTE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "short" });
@@ -81,7 +84,6 @@ function quand(iso: string, maintenant: Date): string {
 const CHANTIERS_VISIBLES = 3;
 /** « Ça dort » : pas plus de trois questions à la fois sur l'accueil. */
 const DORMANTS_MAX = 3;
-const euros = (n: number) => n.toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 0, maximumFractionDigits: 0 });
 
 /** Le même, en cinq signes au plus, pour la colonne du repère : « 14h30 »,
  *  « hier », « lun. », « 29/09 ». */
@@ -468,7 +470,7 @@ export default async function DashboardHome() {
     if (!d?.envoye_le) return null;
     const reste = joursAvantExpiration(d, maintenant);
     if (reste === null || reste < 0 || reste > JOURS_AVANT_EXPIRATION) return null;
-    return reste === 0 ? "Devis valable jusqu'à ce soir" : `Devis valable encore ${reste} j`;
+    return reste === 0 ? "Devis valable jusqu'à ce soir" : `Devis valable encore ${reste} j`;
   };
   // Une v2 laisse la v1 « envoyée » : une seule relance par projet, la
   // dernière version (relecture du 23/10).
@@ -522,7 +524,11 @@ export default async function DashboardHome() {
         id: l.id,
         jours: l.jours,
         principal: l.nom,
-        secondaire: parAuteur(l.genre === "devis" ? expiration(l.id) ?? l.quoi : l.quoi, l.artisanId) as string,
+        // Design v3 : le montant en jeu se lit sur la ligne (« Devis sans réponse · 4 820 € »).
+        secondaire: parAuteur(
+          [l.genre === "devis" ? expiration(l.id) ?? l.quoi : l.quoi, l.montant ? euros(l.montant) : null].filter(Boolean).join(" · "),
+          l.artisanId
+        ) as string,
         action: `Relancer ${l.nom}`,
         href: l.href,
         relance: l.relance,
@@ -584,7 +590,7 @@ export default async function DashboardHome() {
   ]
     // Le plus ancien d'abord.
     .sort((a, b) => b.jours - a.jours)
-    .map(({ jours, ...l }) => ({ ...l, repere: `${jours} j` }));
+    .map(({ jours, ...l }) => ({ ...l, repere: `${jours} j` }));
   // Les messages reçus et pas rangés passent en tête : ils restent parmi
   // les cinq lignes visibles, et la page de partage relance la recherche
   // du client et l'IA.

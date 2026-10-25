@@ -23,7 +23,7 @@ const VARIANTS: Record<Variant, string> = {
   // Fond plein (pas juste une bordure colorée) pour que ce soit visible
   // même avec un contraste dégradé en extérieur.
   danger:
-    "bg-transparent text-signal-fonce ring-1 ring-inset ring-signal-fonce/50 active:bg-signal-fonce/10 dark:text-signal-clair dark:ring-signal-clair/50",
+    "bg-transparent text-signal-fonce ring-1 ring-inset ring-signal-fonce active:bg-signal-fonce/10 dark:text-signal-clair dark:ring-signal-clair",
 };
 
 // rounded-xl + léger scale/ombre au survol, cohérent avec le reste de
@@ -41,6 +41,8 @@ const VARIANTS: Record<Variant, string> = {
 // de dupliquer `disabled={chargement}` en plus de `loading={chargement}`
 // dans les appelants), et reste optionnel — les boutons existants sans ce
 // prop ne changent pas de comportement.
+// 25/10 — la pilule, comme tout bouton compact (recettes.ts) ; le contour
+// d'alerte plein (3:1 au moins, il était à 2,4:1).
 export function Button({
   variant = "primary",
   className = "",
@@ -52,7 +54,7 @@ export function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-[14px] px-5 text-base font-semibold motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-base font-semibold motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${VARIANTS[variant]} ${className}`}
       {...props}
     >
       {loading && (

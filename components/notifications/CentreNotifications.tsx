@@ -7,12 +7,15 @@ import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation, marquerNoteTerminee } from "@/lib/notes";
 import { IconeCloche } from "@/components/ui/Icones";
 import { IconeCoche } from "@/components/projet/icones";
+import { BOUTON_CREUX, BOUTON_TEXTE, CARTE, ERREUR, FOCUS, TITRE_SECTION } from "@/components/ui/recettes";
 import type { ImportanceNote, Note } from "@/types";
+import { dateEtHeure } from "@/lib/heure";
 
 // Le point d'importance, en tokens : seul ce qui presse se signale (comme
-// « À faire » sur la fiche projet).
+// « À faire » sur la fiche projet). Design v3 (24/10) : deux points sobres,
+// l'orange « maintenant » et l'ambre « à faire ».
 const POINT_IMPORTANCE: Partial<Record<ImportanceNote, string>> = {
-  rouge: "bg-signal-fonce dark:bg-signal-clair",
+  rouge: "bg-signal",
   orange: "bg-alerte-orange",
 };
 
@@ -21,10 +24,8 @@ const formatRappel = new Intl.DateTimeFormat("fr-FR", {
   weekday: "short",
   day: "numeric",
   month: "short",
-  hour: "numeric",
-  minute: "2-digit",
 });
-const quandRappel = (iso: string) => formatRappel.format(new Date(iso)).replace(":", " h ").replace(/ h 00$/, " h");
+const quandRappel = (iso: string) => dateEtHeure(iso, formatRappel);
 
 // ============================================================
 // Centre de notifications (point du brief "Notifications intelligentes") :
@@ -141,13 +142,13 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
         }}
         title="Notifications"
         aria-label="Notifications"
-        className={`relative grid place-items-center rounded-lg text-steel hover:text-ink hover:bg-ink/[0.05] transition-colors ${
-          vers === "bas" ? "w-12 h-12" : "w-11 h-11"
+        className={`relative grid place-items-center rounded-full text-ink active:bg-ink/10 sm:hover:bg-ink/[0.06] motion-safe:transition-colors ${FOCUS} ${
+          vers === "bas" ? "h-12 w-12" : "h-11 w-11"
         }`}
       >
-        <IconeCloche taille={17} />
+        <IconeCloche taille={20} />
         {enRetard.length > 0 && (
-          <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-signal" />
+          <span aria-hidden className="absolute right-2.5 top-2.5 h-2 w-2 rounded-full bg-signal ring-2 ring-paper" />
         )}
       </button>
 
@@ -162,37 +163,39 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
         // pour ce qu'on lit, l'heure du rappel sous chaque ligne, une
         // coche de 48 px avec la trace « Fait : … · Annuler », un squelette
         // au lieu de « Chargement… », et plus d'emoji.
+        //
+        // Design v3 (24/10) : le panneau est une carte (surface, ombre douce)
+        // posée sur l'ombre des feuilles — deux couches, pour garder les
+        // deux ombres sans ombre arbitraire. Lignes de 60 px séparées d'un
+        // filet fin, squelette immobile, secondaire en creux.
         <div
-          className={`absolute z-30 max-h-[28rem] overflow-y-auto rounded-2xl bg-surface shadow-lg shadow-ink/10 ring-1 ring-ink/15 ${
+          className={`absolute z-30 rounded-[20px] ombre-feuille ${
             vers === "bas" ? "right-0 top-full mt-2 w-[min(22rem,calc(100vw-2rem))]" : "left-0 bottom-full mb-2 w-[22rem]"
           }`}
         >
-          <p className="px-4 pb-1 pt-4 font-display text-xl font-semibold text-ink">Rappels</p>
+        <div className={`max-h-[28rem] overflow-y-auto ${CARTE}`}>
+          <p className={`px-4 pb-2 pt-4 ${TITRE_SECTION}`}>Rappels</p>
           {chargement ? (
             <div className="flex flex-col gap-3 px-4 pb-4 pt-2" aria-hidden>
-              <div className="h-4 w-3/4 rounded-full bg-ink/10 motion-safe:animate-pulse" />
-              <div className="h-4 w-1/2 rounded-full bg-ink/10 motion-safe:animate-pulse" />
+              <div className="h-4 w-3/4 rounded-full bg-paper-warm" />
+              <div className="h-4 w-1/2 rounded-full bg-paper-warm" />
             </div>
           ) : erreurChargement ? (
-            <div className="flex items-center justify-between gap-3 px-4 pb-3">
-              <p className="min-w-0 truncate text-sm text-steel">Rappels indisponibles.</p>
-              <button
-                type="button"
-                onClick={charger}
-                className="min-h-12 shrink-0 rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
-              >
+            <div className="flex items-center justify-between gap-3 px-4 pb-4">
+              <p className="min-w-0 text-[15px] text-steel">Rappels indisponibles.</p>
+              <button type="button" onClick={charger} className={`shrink-0 ${BOUTON_CREUX}`}>
                 Réessayer
               </button>
             </div>
           ) : notes.length === 0 && !cochee ? (
             <p className="px-4 pb-4 pt-1 text-base text-steel">Rien en attente.</p>
           ) : (
-            <ul className="px-1 pb-2">
+            <ul className="divide-y divide-gris-clair border-t border-gris-clair">
               {[...enRetard, ...aVenir].map((note) => {
                 const retard = Boolean(note.rappel_a && new Date(note.rappel_a).getTime() < maintenant);
                 const point = POINT_IMPORTANCE[note.importance];
                 return (
-                  <li key={note.id} className="flex items-center gap-1">
+                  <li key={note.id} className="flex min-h-[3.75rem] items-center gap-1 pl-1">
                     {/* Un rond de 24 px dans une cible de 48. */}
                     <button
                       type="button"
@@ -200,21 +203,21 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
                       aria-label={`Fait : ${note.titre}`}
                       className="group grid h-12 w-12 shrink-0 place-items-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink"
                     >
-                      <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-ink/40 text-transparent motion-safe:transition-colors group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes">
+                      <span className="grid h-6 w-6 place-items-center rounded-full border-2 border-steel text-transparent motion-safe:transition-colors group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes">
                         <IconeCoche className="h-3.5 w-3.5" />
                       </span>
                     </button>
                     <Link
                       href={note.demande_id ? `/dashboard/demandes/${note.demande_id}` : "/dashboard/notes"}
                       onClick={() => setOuvert(false)}
-                      className="flex min-h-14 min-w-0 flex-1 flex-col justify-center rounded-xl pr-3 active:bg-ink/10 sm:hover:bg-ink/5"
+                      className="flex min-h-[3.75rem] min-w-0 flex-1 flex-col justify-center py-2 pr-4 active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
                     >
                       <span className="flex min-w-0 items-center gap-2">
                         {point && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${point}`} />}
-                        <span className="truncate text-base text-ink">{note.titre}</span>
+                        <span className="line-clamp-2 text-base font-semibold leading-snug text-ink">{note.titre}</span>
                       </span>
-                      <span className="block truncate text-sm text-steel">
-                        {retard ? <span className="font-semibold text-signal-fonce dark:text-signal-clair">Retard</span> : "Rappel"}
+                      <span className="block text-sm text-steel">
+                        {retard ? <span className="font-semibold text-signal-fonce">Retard</span> : "Rappel"}
                         {note.rappel_a && ` · ${quandRappel(note.rappel_a)}`}
                         {note.demandes?.nom_client && ` · ${note.demandes.nom_client}`}
                       </span>
@@ -226,19 +229,15 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
           )}
           <div aria-live="polite">
             {cochee && (
-              <div className="mx-3 mb-3 flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
+              <div className="mx-3 my-3 flex min-h-12 items-center gap-3 rounded-[14px] bg-succes-fond pl-4 text-[15px] text-ink">
                 <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
                 <p className="min-w-0 flex-1 truncate">Fait : {cochee.titre}</p>
-                <button
-                  type="button"
-                  onClick={annuler}
-                  className="inline-flex min-h-12 shrink-0 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-                >
+                <button type="button" onClick={annuler} className={`shrink-0 ${BOUTON_TEXTE}`}>
                   Annuler
                 </button>
               </div>
             )}
-            {erreurTerminer && <p className="px-4 pb-3 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreurTerminer}</p>}
+            {erreurTerminer && <p className={`px-4 pb-3 ${ERREUR}`}>{erreurTerminer}</p>}
           </div>
           {/* Refonte (03/10 — duel B, lot 3) : sans « Plus », c'est la porte
               de toutes les notes. Elle passe de 12 px de texte pâle à une
@@ -246,10 +245,11 @@ export function CentreNotifications({ vers = "haut" }: { vers?: "haut" | "bas" }
           <Link
             href="/dashboard/notes"
             onClick={() => setOuvert(false)}
-            className="flex min-h-12 items-center border-t border-ink/15 px-4 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors"
+            className="flex min-h-14 items-center border-t border-gris-clair px-4 text-base font-semibold text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink"
           >
             Voir toutes les notes
           </Link>
+        </div>
         </div>
       )}
     </div>

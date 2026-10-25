@@ -7,9 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { marquerRendezVousDuChantierFaits } from "@/components/planning/actionsEvenement";
 import { getOrganisationId } from "@/lib/organisation";
-import { Card } from "@/components/ui/Card";
-import { Button } from "@/components/ui/Button";
-import { Avatar } from "@/components/ui/Avatar";
+import { BOUTON_CREUX, BOUTON_PLEIN, BOUTON_TEXTE, CARTE, ERREUR, SECONDAIRE, TITRE_SECTION } from "@/components/ui/recettes";
 import { vibrer, vibrerEchec } from "@/lib/retour";
 
 type ProjetAConfirmer = { id: string; nom_client: string };
@@ -131,41 +129,38 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
       <div className="flex flex-col gap-2">
         {restants.map((p) =>
           proposerPlanification.has(p.id) ? (
-            <Card key={p.id} className="p-4">
-              <p className="text-sm text-ink/80 flex items-center gap-2 flex-wrap">
-                <Avatar nom={p.nom_client || "?"} taille={22} />
+            // Design v3 (24/10) : une carte, sans avatar coloré ; un lien
+            // plein (pas un bouton dans un lien) et « Plus tard » en texte.
+            <div key={p.id} className={`${CARTE} p-4`}>
+              <p className="text-base text-ink">
                 D&apos;accord. Voulez-vous planifier le prochain rendez-vous pour{" "}
                 <span className="font-semibold">{p.nom_client}</span> ?
               </p>
-              <div className="mt-3 flex gap-2">
-                <Link href={`/dashboard/planning/nouveau?projetId=${p.id}`}>
-                  <Button>+ Planifier un rendez-vous</Button>
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <Link href={`/dashboard/planning/nouveau?projetId=${p.id}`} className={BOUTON_PLEIN}>
+                  Planifier un rendez-vous
                 </Link>
-                <Button variant="ghost" onClick={() => setTraites((s) => new Set(s).add(p.id))}>
+                <button type="button" onClick={() => setTraites((s) => new Set(s).add(p.id))} className={BOUTON_TEXTE}>
                   Plus tard
-                </Button>
+                </button>
               </div>
-            </Card>
+            </div>
           ) : (
-            <Card key={p.id} className="p-3 pl-4">
+            <div key={p.id} className={`${CARTE} p-3 pl-4`}>
               <div className="flex items-center gap-2">
                 <p className="min-w-0 flex-1">
-                  <span className="block truncate text-[15px] font-medium text-ink">{p.nom_client}</span>
-                  <span className="block truncate text-[13px] text-ink/55">Chantier terminé ?</span>
+                  <span className="line-clamp-2 block break-words text-[17px] font-semibold text-ink">{p.nom_client}</span>
+                  <span className={`block ${SECONDAIRE}`}>Chantier terminé ?</span>
                 </p>
-                <button type="button" onClick={() => marquerTermine(p)} disabled={enCours === p.id} className="min-h-12 shrink-0 rounded-xl bg-ink px-4 text-[15px] font-semibold text-paper transition disabled:opacity-50">
+                <button type="button" onClick={() => marquerTermine(p)} disabled={enCours === p.id} className={`${BOUTON_CREUX} shrink-0 px-4`}>
                   {enCours === p.id ? "…" : "Oui"}
                 </button>
-                <button type="button" onClick={() => pasEncore(p)} disabled={enCours === p.id} className="min-h-12 shrink-0 rounded-xl px-3.5 text-[15px] font-medium text-ink/70 ring-1 ring-ink/15 transition hover:text-ink disabled:opacity-50">
+                <button type="button" onClick={() => pasEncore(p)} disabled={enCours === p.id} className={`${BOUTON_TEXTE} shrink-0`}>
                   Pas encore
                 </button>
               </div>
-              {erreurId === p.id && (
-                <p className="mt-2 text-[13px] text-signal-fonce dark:text-signal-clair">
-                  La mise à jour n&apos;a pas pu être enregistrée. Réessayez.
-                </p>
-              )}
-            </Card>
+              {erreurId === p.id && <p className={ERREUR}>La mise à jour n&apos;a pas pu être enregistrée. Réessayez.</p>}
+            </div>
           )
         )}
       </div>
@@ -174,7 +169,7 @@ export function ConfirmerClotureProjet({ projets, integre = false }: { projets: 
   if (integre) return liste;
   return (
     <div className="mt-8">
-      <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">Chantiers à confirmer</p>
+      <h2 className={`mb-3 px-1 ${TITRE_SECTION}`}>Chantiers à confirmer</h2>
       {liste}
     </div>
   );

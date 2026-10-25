@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { IconeCoche } from "@/components/projet/icones";
+import { ETIQUETTE, FOCUS, FORME_ETIQUETTE } from "@/components/ui/recettes";
 import type { ImportanceNote, Note } from "@/types";
+import { dateEtHeure } from "@/lib/heure";
 
 // ============================================================
 // Une note dans la page Notes.
@@ -16,26 +18,24 @@ import type { ImportanceNote, Note } from "@/types";
 // « Aujourd'hui »…) dit déjà quand : la ligne ne le répète pas.
 // ============================================================
 
-// Le point d'importance, en tokens : seul ce qui presse se signale.
-const POINT_IMPORTANCE: Partial<Record<ImportanceNote, string>> = {
-  rouge: "bg-signal-fonce dark:bg-signal-clair",
-  orange: "bg-alerte-orange",
+// Design v3 (24/10) — la note est une LIGNE d'une liste groupée (GROUPE,
+// posé par la page) : plus de cadre ni de fond à elle. L'importance n'est
+// plus un point de couleur seul, mais une étiquette sobre qui dit le mot ;
+// seul ce qui presse se signale.
+const ETIQUETTE_IMPORTANCE: Partial<Record<ImportanceNote, string>> = {
+  rouge: ETIQUETTE.urgent,
+  orange: ETIQUETTE.attention,
 };
-
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
 
 const formatRappel = new Intl.DateTimeFormat("fr-FR", {
   timeZone: "Europe/Paris",
   weekday: "short",
   day: "numeric",
   month: "short",
-  hour: "numeric",
-  minute: "2-digit",
 });
 
 function quandRappel(iso: string): string {
-  return formatRappel.format(new Date(iso)).replace(":", " h ").replace(/ h 00$/, " h");
+  return dateEtHeure(iso, formatRappel);
 }
 
 export function NoteCard({
@@ -50,24 +50,28 @@ export function NoteCard({
   className?: string;
 }) {
   const estTerminee = note.statut === "terminee";
-  const nomProjet = afficherProjet ? note.demandes?.nom_client : null;
-  const point = POINT_IMPORTANCE[note.importance];
+  // Design v3 (25/10) : « Bernard-Lefèvre » ne se coupe plus au trait
+  // d'union (trait d'union insécable, U+2011).
+  const nomProjet = afficherProjet ? note.demandes?.nom_client?.replace(/-/g, "\u2011") : null;
+  const etiquette = estTerminee ? undefined : ETIQUETTE_IMPORTANCE[note.importance];
   const detail = [note.rappel_a ? quandRappel(note.rappel_a) : null, nomProjet].filter(Boolean).join(" · ");
 
   const texte = (
     <>
-      <span className="flex min-w-0 items-center gap-2">
-        {point && !estTerminee && <span aria-hidden className={`h-2 w-2 shrink-0 rounded-full ${point}`} />}
-        <span className={`truncate text-base text-ink ${estTerminee ? "line-through" : ""}`}>{note.titre}</span>
-      </span>
-      {detail && <span className="block truncate text-sm text-steel">{detail}</span>}
-      {note.description && <span className="mt-0.5 line-clamp-2 whitespace-pre-line text-sm text-steel">{note.description}</span>}
+      <span className={`block break-words text-[17px] leading-snug text-ink [text-wrap:pretty] ${estTerminee ? "line-through" : ""}`}>{note.titre}</span>
+      {(etiquette || detail) && (
+        <span className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+          {etiquette && <span className={`${FORME_ETIQUETTE} ${etiquette}`}>Important</span>}
+          {detail && <span className="break-words text-[15px] text-steel [hyphens:none]">{detail}</span>}
+        </span>
+      )}
+      {note.description && <span className="mt-0.5 line-clamp-2 whitespace-pre-line text-[15px] text-steel">{note.description}</span>}
     </>
   );
-  const classeTexte = "flex min-h-14 min-w-0 flex-1 flex-col justify-center py-1.5 pr-3";
+  const classeTexte = "flex min-h-14 min-w-0 flex-1 flex-col justify-center py-2.5 pr-4";
 
   return (
-    <div className={`flex items-center gap-1 rounded-2xl bg-paper/70 ring-1 ring-ink/10 ${className}`}>
+    <div className={`flex items-center gap-1 ${className}`}>
       {onTerminer ? (
         // Un rond de 24 px dans une cible de 48.
         <button
@@ -77,13 +81,15 @@ export function NoteCard({
             onTerminer(note.id, !estTerminee);
           }}
           aria-label={estTerminee ? `Pas fait : ${note.titre}` : `Fait : ${note.titre}`}
-          className={`group grid h-12 w-12 shrink-0 place-items-center self-start rounded-full mt-1 ${FOCUS}`}
+          className={`group ml-1 mt-1 grid h-12 w-12 shrink-0 place-items-center self-start rounded-full ${FOCUS}`}
         >
+          {/* Design v3 (24/10) : le rond au trait acier (8:1), plus l'encre
+              à 40 % qui passait sous 3:1. */}
           <span
             className={`grid h-6 w-6 place-items-center rounded-full border-2 motion-safe:transition-colors ${
               estTerminee
                 ? "border-succes bg-succes text-white dark:text-nuit"
-                : "border-ink/40 text-transparent group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes"
+                : "border-steel text-transparent group-active:border-succes group-active:text-succes sm:group-hover:border-succes sm:group-hover:text-succes"
             }`}
           >
             <IconeCoche className="h-3.5 w-3.5" />
@@ -95,12 +101,14 @@ export function NoteCard({
       {note.demande_id ? (
         <Link
           href={`/dashboard/demandes/${note.demande_id}`}
-          className={`${classeTexte} rounded-xl active:bg-ink/10 motion-safe:transition-colors sm:hover:bg-ink/5 ${FOCUS}`}
+          className={`${classeTexte} rounded-[14px] pl-1 active:bg-ink/[0.06] motion-safe:transition-colors sm:hover:bg-ink/[0.03] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink`}
         >
           {texte}
         </Link>
       ) : (
-        <div className={classeTexte}>{texte}</div>
+        // 25/10 — même retrait que la version lien (pl-1) : les titres des
+        // notes sans projet s'alignaient 4 px plus à gauche.
+        <div className={`${classeTexte} pl-1`}>{texte}</div>
       )}
     </div>
   );

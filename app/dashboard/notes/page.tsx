@@ -6,12 +6,10 @@ import { createClient } from "@/lib/supabase/client";
 import { getOrganisationId } from "@/lib/organisation";
 import { listerNotesActivesOrganisation, marquerNoteTerminee } from "@/lib/notes";
 import { NoteCard } from "@/components/notes/NoteCard";
-import { Button } from "@/components/ui/Button";
 import { IconeNote } from "@/components/ui/Icones";
-import { CLASSE_BOUTON_NUIT, EnTetePage, classePuceNuit } from "@/components/ui/EnTetePage";
-import { Pastille, type CouleurPastille } from "@/components/ui/Pastille";
-import { TitreBloc, CLASSE_CARTE_BLOC } from "@/components/accueil/Blocs";
-import { IconeCalendrier, IconeCloche, IconeCoche, IconeCrayon } from "@/components/projet/icones";
+import { EnTetePage } from "@/components/ui/EnTetePage";
+import { BOUTON_CREUX, BOUTON_PLEIN, BOUTON_TEXTE, COMPTEUR, ERREUR, GROUPE, TITRE_SECTION, puce } from "@/components/ui/recettes";
+import { IconeCoche } from "@/components/projet/icones";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { Note } from "@/types";
 import { SquelettePage } from "@/components/ui/Skeleton";
@@ -105,14 +103,12 @@ export default function NotesPage() {
 
   const trace = (groupe: string) =>
     cochee?.groupe === groupe ? (
-      <div className="flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 pl-4 text-sm text-ink">
-        <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
-        <p className="min-w-0 flex-1 truncate">Fait : {cochee.note.titre}</p>
-        <button
-          type="button"
-          onClick={annuler}
-          className="inline-flex min-h-12 shrink-0 items-center px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
-        >
+      // Design v3 (24/10) : une ligne du groupe, en teinte opaque (succes-fond).
+      <div className="flex min-h-14 items-center gap-3 bg-succes-fond pl-4 text-[15px] text-ink">
+        <IconeCoche className="h-5 w-5 shrink-0 text-succes" />
+        {/* 25/10 : le titre entier sur deux lignes au plus (plus de troncature). */}
+        <p className="line-clamp-2 min-w-0 flex-1 break-words py-2">Fait&nbsp;: {cochee.note.titre}</p>
+        <button type="button" onClick={annuler} className={`shrink-0 ${BOUTON_TEXTE}`}>
           Annuler
         </button>
       </div>
@@ -154,19 +150,15 @@ export default function NotesPage() {
   }
 
   return (
-    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-3xl mx-auto">
-      {/* Refonte visuelle (04/10) : l'en-tête bleu nuit, les chantiers en
-          filtres dedans. */}
+    <div className="px-4 pt-5 pb-8 sm:p-8 max-w-3xl mx-auto lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
+      {/* Le titre posé sur le fond (EnTetePage, TITRE_ECRAN), les chantiers
+          en filtres dessous. Design v3 (24/10) : recettes BOUTON_PLEIN et
+          puce(), plus de pastille d'icône. */}
       <EnTetePage
         titre="Notes"
         sousTitre={notes.length === 0 ? "Aucune note" : notes.length === 1 ? "1 note" : `${notes.length} notes`}
-        icone={
-          <Pastille couleur="orange" taille="grande">
-            <IconeCrayon className="h-6 w-6" />
-          </Pastille>
-        }
         actions={
-          <Link href="/dashboard/notes/nouvelle" className={CLASSE_BOUTON_NUIT}>
+          <Link href="/dashboard/notes/nouvelle" className={BOUTON_PLEIN}>
             Nouvelle note
           </Link>
         }
@@ -174,8 +166,8 @@ export default function NotesPage() {
         {projetsPresents.length > 0 && (
           // 27/09 — Une rangée qui défile : avec vingt chantiers, les
           // pastilles ne remplissent plus l'écran sur quatre lignes.
-          <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
-            <button type="button" onClick={() => setFiltreProjet("")} className={`shrink-0 ${classePuceNuit(filtreProjet === "")}`}>
+          <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden">
+            <button type="button" onClick={() => setFiltreProjet("")} className={puce(filtreProjet === "")}>
               Tous
             </button>
             {projetsPresents.map(([id, nom]) => (
@@ -183,7 +175,7 @@ export default function NotesPage() {
                 key={id}
                 type="button"
                 onClick={() => setFiltreProjet(id)}
-                className={`shrink-0 whitespace-nowrap ${classePuceNuit(filtreProjet === id)}`}
+                className={`whitespace-nowrap ${puce(filtreProjet === id)}`}
               >
                 {nom}
               </button>
@@ -193,32 +185,34 @@ export default function NotesPage() {
       </EnTetePage>
 
       <div aria-live="polite">
-        {erreurTerminer && <p className="mt-4 text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreurTerminer}</p>}
+        {erreurTerminer && <p className={`mt-4 ${ERREUR}`}>{erreurTerminer}</p>}
       </div>
 
       {notesFiltrees.length === 0 && !cochee ? (
+        // Design v3 (24/10) : l'état vide en tuile neutre et bouton creux
+        // (le plein reste « Nouvelle note », en haut).
         <div className="mt-10 flex flex-col items-center gap-3 py-10 text-center">
-          <span className="flex items-center justify-center w-12 h-12 rounded-full bg-signal/10">
-            <IconeNote taille={22} className="text-signal" />
+          <span className="grid h-12 w-12 place-items-center rounded-full bg-paper-warm text-ink">
+            <IconeNote taille={22} />
           </span>
           <p className="text-base text-steel">Aucune note.</p>
-          <Link href="/dashboard/notes/nouvelle">
-            <Button variant="ghost">Créer votre première note</Button>
+          <Link href="/dashboard/notes/nouvelle" className={BOUTON_CREUX}>
+            Créer votre première note
           </Link>
         </div>
       ) : (
         <div>
           {(enRetard.length > 0 || cochee?.groupe === "En retard") && (
-            <GroupeNotes titre="En retard" notes={enRetard} onTerminer={terminer} trace={trace("En retard")} couleur="orange" icone={<IconeCloche className="h-4 w-4" />} />
+            <GroupeNotes titre="En retard" notes={enRetard} onTerminer={terminer} trace={trace("En retard")} />
           )}
           {(aujourdhui.length > 0 || cochee?.groupe === "Aujourd'hui") && (
-            <GroupeNotes titre="Aujourd'hui" notes={aujourdhui} onTerminer={terminer} trace={trace("Aujourd'hui")} couleur="bleu" icone={<IconeCalendrier className="h-4 w-4" />} />
+            <GroupeNotes titre="Aujourd'hui" notes={aujourdhui} onTerminer={terminer} trace={trace("Aujourd'hui")} />
           )}
           {(aVenir.length > 0 || cochee?.groupe === "À venir") && (
-            <GroupeNotes titre="À venir" notes={aVenir} onTerminer={terminer} trace={trace("À venir")} couleur="violet" icone={<IconeCalendrier className="h-4 w-4" />} />
+            <GroupeNotes titre="À venir" notes={aVenir} onTerminer={terminer} trace={trace("À venir")} />
           )}
           {(sansRappel.length > 0 || cochee?.groupe === "Sans rappel") && (
-            <GroupeNotes titre="Sans rappel" notes={sansRappel} onTerminer={terminer} trace={trace("Sans rappel")} couleur="signal" icone={<IconeCrayon className="h-4 w-4" />} />
+            <GroupeNotes titre="Sans rappel" notes={sansRappel} onTerminer={terminer} trace={trace("Sans rappel")} />
           )}
         </div>
       )}
@@ -226,36 +220,28 @@ export default function NotesPage() {
   );
 }
 
-/** Un groupe de notes : une carte, son titre et sa pastille (refonte
- *  visuelle 04/10, comme les blocs de l'accueil). */
+/** Un groupe de notes : son titre et son compteur, puis les notes en liste
+ *  groupée. Design v3 (24/10) : une seule carte (GROUPE) par groupe, des
+ *  filets entre les notes, plus de pastille de couleur décorative. */
 function GroupeNotes({
   titre,
   notes,
   onTerminer,
   trace,
-  couleur,
-  icone,
 }: {
   titre: string;
   notes: Note[];
   onTerminer: (id: string, terminee: boolean, groupe: string) => void;
   /** « Fait : … · Annuler », quand la note cochée était dans ce groupe. */
   trace: React.ReactNode;
-  couleur: CouleurPastille;
-  icone: React.ReactNode;
 }) {
   return (
-    <section aria-label={titre} className={CLASSE_CARTE_BLOC}>
-      <TitreBloc
-        titre={titre}
-        nombre={notes.length}
-        icone={
-          <Pastille couleur={couleur} variante="doux" taille="petite">
-            {icone}
-          </Pastille>
-        }
-      />
-      <div className="mt-2.5 flex flex-col gap-2">
+    <section aria-label={titre} className="mt-8">
+      <h2 className={`flex items-baseline gap-2 tracking-[-0.02em] ${TITRE_SECTION}`}>
+        {titre}
+        <span className={COMPTEUR}>{notes.length}</span>
+      </h2>
+      <div className={`mt-2.5 ${GROUPE}`}>
         {notes.map((note) => (
           <NoteCard key={note.id} note={note} onTerminer={(id, terminee) => onTerminer(id, terminee, titre)} />
         ))}

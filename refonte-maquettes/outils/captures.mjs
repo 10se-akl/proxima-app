@@ -105,6 +105,13 @@ for (const { nom, url, pleinePage, largeurs, themes } of liste) {
       let options = { format: "png", captureBeyondViewport: false };
       if (pleinePage) {
         // Maquettes : toute la page, plafonnée pour rester lisible par un agent.
+        // 25/10 — les images en chargement paresseux hors écran restaient
+        // des cadres vides (Guide) : on les charge toutes avant la photo.
+        await cdp("Runtime.evaluate", {
+          expression: `Promise.all([...document.images].map((i) => { i.loading = "eager"; return i.complete ? 0 : new Promise((ok) => { i.onload = i.onerror = ok; setTimeout(ok, 4000); }); })).then(() => true)`,
+          awaitPromise: true,
+        });
+        await attendre(300);
         const { result: r } = await cdp("Runtime.evaluate", {
           expression: "JSON.stringify([document.documentElement.scrollWidth, document.documentElement.scrollHeight])",
         });

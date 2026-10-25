@@ -14,13 +14,13 @@ import { CHOIX_CAPTURE, LigneChoix } from "@/components/navigation/FeuilleCaptur
 export function PremiersPas() {
   return (
     <section aria-label="Créer votre premier projet">
-      <p className="px-1 text-base text-ink">Un client vous a écrit ? Partez de son message :</p>
+      <p className="text-base text-ink">Un client vous a écrit ? Partez de son message :</p>
       <div className="mt-3 flex flex-col gap-2.5">
         {CHOIX_CAPTURE.map((c) => (
           <LigneChoix key={c.href} c={c} surFermer={() => {}} />
         ))}
       </div>
-      <p className="mt-3 px-1 text-sm text-steel">Compyo prépare la fiche du client. Vous relisez avant que rien ne parte.</p>
+      <p className="mt-3 text-sm text-steel">Compyo prépare la fiche du client. Vous relisez avant que rien ne parte.</p>
     </section>
   );
 }

@@ -8,7 +8,6 @@ import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerEvenement } from "@/lib/timeline";
 import { marquerRendezVousDuChantierFaits } from "@/components/planning/actionsEvenement";
 import { Button } from "@/components/ui/Button";
-import { Field } from "@/components/ui/Input";
 import { FacturesProjet } from "@/components/dashboard/FacturesProjet";
 import { NotesVocales } from "@/components/dashboard/NotesVocales";
 import { PropositionUrgence } from "@/components/dashboard/PropositionUrgence";
@@ -39,7 +38,8 @@ import { Skeleton, SquelettePage } from "@/components/ui/Skeleton";
 import { empreinte, lireBrouillon, ecrireBrouillon, effacerBrouillon } from "@/lib/brouillonLocal";
 import { ouvrirMessage, type Canal } from "@/lib/messagesClient";
 import { tracerMessagePrepare } from "@/components/projet/FeuilleMessageClient";
-import { BOUTON_CONTOUR, BOUTON_TEXTE } from "@/components/projet/Blocs";
+import { BOUTON_CONTOUR, BOUTON_CREUX_SUR_TEINTE, BOUTON_TEXTE } from "@/components/projet/Blocs";
+import { BOUTON_PLEIN, CHAMP, ERREUR, LIBELLE, SECONDAIRE, SELECT } from "@/components/ui/recettes";
 import { IconeCoche } from "@/components/projet/icones";
 
 // Refonte (03/10, duel D lot 1) — le texte écrit avec l'IA, une fois
@@ -1095,10 +1095,7 @@ export default function DetailDemandePage({
       <div className="max-w-lg px-4 pt-8 pb-8 sm:p-8">
         <h1 className="font-display text-xl font-semibold text-ink">Projet introuvable.</h1>
         <p className="mt-1 text-base text-steel">Supprimé, ou d&apos;une autre équipe.</p>
-        <Link
-          href="/dashboard/demandes"
-          className="mt-4 inline-flex min-h-12 items-center rounded-2xl px-4 text-base font-semibold text-ink ring-1 ring-inset ring-ink/60 active:bg-ink/10"
-        >
+        <Link href="/dashboard/demandes" className={`mt-4 ${BOUTON_CONTOUR}`}>
           Voir les projets
         </Link>
       </div>
@@ -1287,29 +1284,44 @@ export default function DetailDemandePage({
               onAnnuler={fermer}
             />
           ),
+          // Design v3 (24/10) : les champs communs (libellé au-dessus,
+          // surface et contour fin), les mêmes valeurs et les mêmes gestes.
           infos: (fermer) => (
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
-                <Field
-                  label="Nom du client"
+                {/* 25/10 — l'astérisque et le py-3 des anciens <Field> reviennent. */}
+                <label htmlFor="infos-nom-client" className={LIBELLE}>
+                  Nom du client
+                </label>
+                <input
+                  id="infos-nom-client"
                   autoComplete="off"
                   value={infos.nom_client}
                   onChange={(e) => setInfos({ ...infos, nom_client: e.target.value })}
+                  className={`${CHAMP} py-3`}
                 />
               </div>
-              <Field
-                label="Téléphone du client"
-                type="tel"
-                value={infos.telephone_client}
-                onChange={(e) => setInfos({ ...infos, telephone_client: e.target.value })}
-              />
               <div>
-                <label className="mb-1.5 block text-sm text-steel">Type de chantier</label>
+                <label htmlFor="infos-telephone-client" className={LIBELLE}>
+                  Téléphone du client
+                </label>
+                <input
+                  id="infos-telephone-client"
+                  type="tel"
+                  value={infos.telephone_client}
+                  onChange={(e) => setInfos({ ...infos, telephone_client: e.target.value })}
+                  className={`${CHAMP} py-3 tabular-nums`}
+                />
+              </div>
+              <div>
+                <label htmlFor="infos-type-chantier" className={LIBELLE}>
+                  Type de chantier
+                </label>
                 <select
+                  id="infos-type-chantier"
                   value={infos.type_chantier}
                   onChange={(e) => setInfos({ ...infos, type_chantier: e.target.value })}
-                  aria-label="Type de chantier"
-                  className="min-h-12 w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-base text-ink transition-colors focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/15"
+                  className={SELECT}
                 >
                   {TYPES_CHANTIER.map((t) => (
                     <option key={t.value} value={t.value}>
@@ -1319,10 +1331,14 @@ export default function DetailDemandePage({
                 </select>
               </div>
               <div className="sm:col-span-2">
-                <Field
-                  label="Adresse du chantier"
+                <label htmlFor="infos-adresse-client" className={LIBELLE}>
+                  Adresse du chantier
+                </label>
+                <input
+                  id="infos-adresse-client"
                   value={infos.adresse_client}
                   onChange={(e) => setInfos({ ...infos, adresse_client: e.target.value })}
+                  className={`${CHAMP} py-3`}
                 />
               </div>
               <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
@@ -1361,19 +1377,24 @@ export default function DetailDemandePage({
           // 48 px, un succès écrit en encre à côté d'une coche verte.
           propositionTaches:
             tachesProposees && tachesProposees.length > 0 ? (
-              <div className="mt-3 rounded-2xl bg-paper-warm p-4">
+              // Design v3 (24/10) : l'encart en creux, « Oui » en creux posé
+              // en surface (visible sur l'encart).
+              <div className="mt-3 rounded-[16px] bg-paper-warm p-4">
                 <p className="text-base font-semibold text-ink">
                   {tachesProposees.length} tâche{tachesProposees.length > 1 ? "s" : ""} repérée{tachesProposees.length > 1 ? "s" : ""} dans vos notes. Les ajouter ?
                 </p>
-                <ul className="mt-2 space-y-1 text-base text-ink">
+                <ul className="mt-2 space-y-1.5 text-base text-ink">
                   {tachesProposees.map((t) => (
                     <li key={t}>· {t}</li>
                   ))}
                 </ul>
                 <div className="mt-3 flex flex-wrap items-center gap-2">
-                  <Button variant="ghost" onClick={accepterTaches} loading={ajoutTachesEnCours}>
+                  <button type="button" onClick={accepterTaches} disabled={ajoutTachesEnCours} className={BOUTON_CREUX_SUR_TEINTE}>
+                    {ajoutTachesEnCours && (
+                      <span className="h-3.5 w-3.5 shrink-0 rounded-full border-2 border-current border-t-transparent motion-safe:animate-spin" aria-hidden />
+                    )}
                     Oui, les ajouter
-                  </Button>
+                  </button>
                   <button type="button" onClick={() => setTachesProposees(null)} disabled={ajoutTachesEnCours} className={BOUTON_TEXTE}>
                     Non merci
                   </button>
@@ -1382,8 +1403,8 @@ export default function DetailDemandePage({
             ) : null,
           apresMaintenant:
             demande.statut === "termine" && TYPES_CHANTIER_RAPPEL_RECURRENT.includes(demande.type_chantier) ? (
-              <div className="mt-4 border-t border-ink/15 pt-3">
-                <p className="text-sm text-steel">Rappel de suivi</p>
+              <div className="mt-4 border-t border-gris-clair pt-3">
+                <p className="text-[15px] font-semibold text-ink">Rappel de suivi</p>
                 <div className="mt-2 flex flex-wrap gap-2">
                   {PRESETS_RAPPEL_RECURRENT.map(({ mois, libelle }) => (
                     <button
@@ -1402,9 +1423,9 @@ export default function DetailDemandePage({
                 </div>
                 <div aria-live="polite">
                   {rappelRecurrentCree !== null && (
-                    <p className="mt-2 flex items-center gap-2 text-sm text-ink">
+                    <p className="mt-2 flex items-center gap-2 text-[15px] text-ink">
                       <IconeCoche className="h-4 w-4 shrink-0 text-succes" />
-                      <span className="truncate">
+                      <span>
                         Rappel programmé, {PRESETS_RAPPEL_RECURRENT.find((p) => p.mois === rappelRecurrentCree)?.libelle.toLowerCase()}
                       </span>
                     </p>
@@ -1432,7 +1453,7 @@ export default function DetailDemandePage({
             </li>
           ))}
         </ul>
-        <p className="mt-3 text-sm text-steel">Le devis reste modifiable avant l&apos;envoi.</p>
+        <p className={`mt-3 ${SECONDAIRE}`}>Le devis reste modifiable avant l&apos;envoi.</p>
         <div className="mt-5 flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-3">
           <Button onClick={lancerGenerationDevis} className="min-h-14 w-full sm:w-auto">
             Préparer quand même
@@ -1463,7 +1484,7 @@ export default function DetailDemandePage({
         )}
         {brouillonReponse && (
           <>
-            <label htmlFor="message-ia" className="block truncate text-sm text-steel">
+            <label htmlFor="message-ia" className={LIBELLE}>
               Relisez, puis envoyez.
             </label>
             <textarea
@@ -1471,25 +1492,25 @@ export default function DetailDemandePage({
               value={brouillonReponse}
               onChange={(e) => changerReponse(e.target.value)}
               rows={8}
-              className="mt-2 w-full resize-none rounded-2xl bg-surface p-3 text-base text-ink ring-1 ring-inset ring-ink/15 focus:outline-none focus:ring-2 focus:ring-ink"
+              className={`${CHAMP} block resize-none py-3 leading-relaxed`}
             />
-            {reponseGardee && <p className="mt-1 text-sm text-steel">Gardé sur ce téléphone.</p>}
+            {reponseGardee && <p className={`mt-1 ${SECONDAIRE}`}>Gardé sur ce téléphone.</p>}
             {demande.telephone_client ? (
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => envoyerReponse("sms")}
-                  className="min-h-14 rounded-2xl bg-ink text-base font-semibold text-paper active:bg-ink/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+                  className={`${BOUTON_PLEIN} min-h-14 w-full`}
                 >
                   SMS
                 </button>
-                <button type="button" onClick={() => envoyerReponse("whatsapp")} className={`${BOUTON_CONTOUR} min-h-14`}>
+                <button type="button" onClick={() => envoyerReponse("whatsapp")} className={`${BOUTON_CONTOUR} min-h-14 w-full`}>
                   WhatsApp
                 </button>
               </div>
             ) : (
               <>
-                <p className="mt-3 truncate text-sm text-steel">Pas de numéro pour ce client.</p>
+                <p className={`mt-3 ${SECONDAIRE}`}>Pas de numéro pour ce client.</p>
                 <Button onClick={copierReponse} className="mt-2 min-h-14 w-full">
                   {copie ? "Copié" : "Copier le texte"}
                 </Button>
@@ -1497,7 +1518,7 @@ export default function DetailDemandePage({
             )}
             <div aria-live="polite">
               {erreurEnvoiReponse && (
-                <p className="mt-2 text-sm font-semibold text-signal-fonce dark:text-signal-clair">Numéro inutilisable. Corrigez-le dans les infos.</p>
+                <p className={ERREUR}>Numéro inutilisable. Corrigez-le dans les infos.</p>
               )}
             </div>
             <div className="mt-1 flex flex-wrap items-center justify-between gap-x-2">

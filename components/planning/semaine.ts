@@ -87,10 +87,11 @@ export function heureChamp(instant: Date | string): string {
   return `${deux(p.heure)}:${deux(p.minute)}`;
 }
 
-/** « 8h30 », « 14h00 » : l'heure de Paris, comme on la dit. */
+/** « 8 h 30 », « 14 h » : l'heure de Paris, écrite comme partout ailleurs
+ *  (lib/heure.ts), espaces fines insécables. */
 export function heureEnLettres(instant: Date | string): string {
   const p = parties(typeof instant === "string" ? new Date(instant) : instant);
-  return `${p.heure}h${deux(p.minute)}`;
+  return p.minute === 0 ? `${p.heure}\u202fh` : `${p.heure}\u202fh\u202f${deux(p.minute)}`;
 }
 
 /** « 1 h », « 1 h 30 », « 45 min ». */

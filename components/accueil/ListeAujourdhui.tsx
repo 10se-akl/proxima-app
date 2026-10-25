@@ -7,6 +7,7 @@ import { Pastille } from "@/components/ui/Pastille";
 import { IconeCalendrier } from "@/components/projet/icones";
 import { LigneAccueil } from "./Blocs";
 import { BlocAvecTrace, FinCoche, FinMot, useTraceAccueil } from "./TraceAccueil";
+import { heure as ecrireHeure } from "@/lib/heure";
 
 // ============================================================
 // « Aujourd'hui » (26/09, lot B) — une seule liste, triée par heure.
@@ -31,7 +32,6 @@ export type ElementJour = {
   href: string;
 };
 
-const HEURE = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", hour: "2-digit", minute: "2-digit" });
 
 export function ListeAujourdhui({ elements }: { elements: ElementJour[] }) {
   const supabase = createClient();
@@ -66,7 +66,7 @@ export function ListeAujourdhui({ elements }: { elements: ElementJour[] }) {
           <LigneAccueil
             key={e.cle}
             href={e.href}
-            repere={HEURE.format(new Date(e.date)).replace(":", "h")}
+            repere={ecrireHeure(e.date)}
             principal={e.principal}
             secondaire={e.secondaire}
             alerte={reessayer ? "Pas enregistré" : undefined}

@@ -85,8 +85,8 @@ test("fenetreSemaine : du lundi au dimanche", () => {
 });
 
 test("heures et durées", () => {
-  assert.equal(heureEnLettres("2026-10-03T06:00:00Z"), "8h00");
-  assert.equal(heureEnLettres("2026-10-03T12:30:00Z"), "14h30");
+  assert.equal(heureEnLettres("2026-10-03T06:00:00Z"), "8\u202fh");
+  assert.equal(heureEnLettres("2026-10-03T12:30:00Z"), "14\u202fh\u202f30");
   assert.equal(heureChamp("2026-10-03T06:05:00Z"), "08:05");
   assert.equal(dureeEnLettres(45), "45 min");
   assert.equal(dureeEnLettres(60), "1 h");

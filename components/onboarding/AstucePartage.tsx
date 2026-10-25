@@ -8,6 +8,8 @@ import {
   enregistrerAffichageAstucePartage,
   masquerAstucePartageDefinitivement,
 } from "@/lib/onboarding/astuces";
+import { IconeFermer } from "@/components/projet/icones";
+import { BOUTON_ICONE, CREUX, BOUTON_ICONE_DISCRET } from "@/components/ui/recettes";
 
 // ============================================================
 // "Premier contact sans friction" (27/08) — astuce contextuelle des
@@ -33,21 +35,24 @@ export function AstucePartage() {
 
   if (!visible) return null;
 
+  // Design v3 (24/10) : un encart en creux (plus de saumon ni d'émoji), le
+  // texte en 15 px lisible, la croix en vrai bouton de 48 px.
   return (
-    <div className="mb-4 flex items-center justify-between gap-3 rounded-xl border border-signal/20 bg-signal/5 px-4 py-2.5">
-      <p className="text-xs text-ink/70">
-        💡 Astuce : la prochaine fois, essayez WhatsApp/SMS → <strong>Partager</strong> →{" "}
-        <strong>Compyo</strong>. Compyo prépare le projet, vous validez.
+    <div className={`mb-4 flex items-center justify-between gap-2 py-1 pl-4 pr-1 ${CREUX}`}>
+      <p className="py-2 text-[15px] leading-snug text-ink [text-wrap:pretty]">
+        <span className="font-semibold">Astuce&nbsp;:</span> la prochaine fois, essayez WhatsApp/SMS →{" "}
+        <strong>Partager</strong> → <strong>Compyo</strong>. Compyo prépare le projet, vous validez.
       </p>
       <button
+        type="button"
         onClick={() => {
           setVisible(false);
           masquerAstucePartageDefinitivement();
         }}
         aria-label="Masquer cette astuce"
-        className="shrink-0 text-ink/40 hover:text-ink transition-colors text-sm"
+        className={BOUTON_ICONE_DISCRET}
       >
-        ✕
+        <IconeFermer className="h-5 w-5" />
       </button>
     </div>
   );

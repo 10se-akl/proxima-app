@@ -1,22 +1,30 @@
-import { Skeleton, SkeletonCarte } from "@/components/ui/Skeleton";
+import { Skeleton, SqueletteGroupe, SqueletteTitre } from "@/components/ui/Skeleton";
+import { CLASSE_PAGE_LARGE } from "@/components/ui/EnTetePage";
 
 // Squelette partagé par les pages "liste" du dashboard (projets, devis,
-// factures) — même mise en page (p-8 max-w-4xl, titre + bouton, barre de
-// recherche, lignes) sur les trois, voir components/ui/Skeleton.tsx pour
-// le raisonnement d'ensemble.
+// factures) — voir components/ui/Skeleton.tsx pour le raisonnement
+// d'ensemble.
+//
+// Design v3 (24/10) : la forme exacte des listes v3 — la grille commune
+// (CLASSE_PAGE_LARGE), le titre de 30 px et sa phrase, le champ de
+// recherche (48 px, rayon 14), une rangée de pastilles de filtre, puis la
+// carte de lignes (68 px). Les projets ont des vignettes photo de 56 px.
 export function SquelettePageListe({ titre }: { titre: string }) {
+  const projets = titre === "Projets";
   return (
-    <div className="mx-auto p-8 max-w-4xl">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <h1 className="font-display text-2xl font-semibold text-ink/20">{titre}</h1>
-        <Skeleton className="h-9 w-36" />
-      </div>
-      <div className="mt-6 flex flex-col gap-2">
-        <Skeleton className="h-10 mb-2" />
-        <SkeletonCarte />
-        <SkeletonCarte />
-        <SkeletonCarte />
-        <SkeletonCarte />
+    <div className={CLASSE_PAGE_LARGE} aria-busy="true" aria-label={`Chargement : ${titre}`}>
+      <SqueletteTitre />
+      <Skeleton className="mt-5 h-12 rounded-[14px]" />
+      {!projets && (
+        <div className="mt-3 flex gap-2 overflow-hidden">
+          <Skeleton className="h-11 w-20 shrink-0 rounded-full" />
+          <Skeleton className="h-11 w-28 shrink-0 rounded-full" />
+          <Skeleton className="h-11 w-28 shrink-0 rounded-full" />
+          <Skeleton className="h-11 w-24 shrink-0 rounded-full" />
+        </div>
+      )}
+      <div className="mt-5">
+        <SqueletteGroupe lignes={5} vignette={projets ? 56 : 40} />
       </div>
     </div>
   );

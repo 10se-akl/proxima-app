@@ -13,6 +13,8 @@ import {
 } from "@/components/dashboard/CorrespondanceProjetExistant";
 import type { BrouillonProjet } from "@/types";
 import { extraireTelephone } from "@/lib/clients/extraireTelephone";
+import { IconeEtincelle } from "@/components/projet/icones";
+import { BOUTON_TEXTE, CREUX, ERREUR, GROUPE, TITRE_ECRAN } from "@/components/ui/recettes";
 
 // ============================================================
 // "Premier contact sans friction" (26/08) — écran atteint après un partage
@@ -298,7 +300,7 @@ export default function RevuePartagePage() {
   // chargement (message partagé + matching + préparation).
   if (erreurChargement) {
     return (
-      <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
+      <div className="mx-auto max-w-lg px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
         <EtatErreur
           message="Le message partagé n'a pas pu être récupéré. Vérifiez la connexion et réessayez."
           onReessayer={charger}
@@ -321,7 +323,7 @@ export default function RevuePartagePage() {
   // silencieux (voir commentaire en tête de fichier).
   if (correspondances.length > 0) {
     return (
-      <div className="max-w-lg px-4 pb-8 pt-5 sm:p-8">
+      <div className="mx-auto max-w-lg px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
         <CorrespondanceProjetExistant
           correspondances={correspondances}
           onChoisir={ajouterAuProjet}
@@ -335,25 +337,35 @@ export default function RevuePartagePage() {
   }
 
   return (
-    <div className="mx-auto max-w-lg px-4 pb-8 pt-5 sm:max-w-2xl sm:p-8">
+    <div className="mx-auto max-w-lg px-4 pb-8 pt-5 sm:max-w-2xl sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
       {/* 06/10 — pendant la préparation : le message lui-même, puis la
-          forme vide du récapitulatif (règle 11 : la forme, pas un mot). */}
+          forme vide du récapitulatif (règle 11 : la forme, pas un mot).
+          Design v3 (24/10) : la forme vide est immobile (plus de pulsation
+          en boucle), dans la même liste groupée que le récapitulatif ; l'IA
+          se signale par l'étincelle et « avec l'IA ». */}
       {(etape === "chargement" || etape === "analyse") && (
         <div aria-busy="true" aria-live="polite">
-          <h1 className="font-display text-3xl font-semibold text-ink">Message reçu.</h1>
-          <p className="mt-1 truncate text-base text-steel">
-            {etape === "analyse" ? "Le projet se prépare." : "Un instant."}
+          <h1 className={TITRE_ECRAN}>Message reçu.</h1>
+          <p className="mt-1 flex items-center gap-1.5 text-base text-steel">
+            {etape === "analyse" ? (
+              <>
+                <IconeEtincelle className="h-4 w-4 shrink-0 text-ink" />
+                Le projet se prépare avec l&apos;IA.
+              </>
+            ) : (
+              "Un instant."
+            )}
           </p>
           {texteMessage?.trim() && (
-            <blockquote className="mt-5 rounded-2xl bg-paper-warm px-4 py-3 text-base text-ink">
+            <blockquote className={`mt-5 px-4 py-3 text-base text-ink ${CREUX}`}>
               <p className="line-clamp-4 whitespace-pre-line">{texteMessage.trim()}</p>
             </blockquote>
           )}
-          <ul className="mt-5 divide-y divide-ink/15 rounded-2xl bg-surface px-4 ring-1 ring-ink/15" aria-hidden>
+          <ul className={`mt-6 ${GROUPE}`} aria-hidden>
             {[40, 32, 56, 28].map((l, i) => (
-              <li key={i} className="flex min-h-16 flex-col justify-center gap-2 py-2">
-                <span className="h-3 w-16 rounded-full bg-ink/10 motion-safe:animate-pulse" />
-                <span className="h-4 rounded-full bg-ink/10 motion-safe:animate-pulse" style={{ width: `${l}%` }} />
+              <li key={i} className="flex min-h-16 flex-col justify-center gap-2 px-4 py-3">
+                <span className="h-3 w-16 rounded-full bg-paper-warm" />
+                <span className="h-4 rounded-full bg-paper-warm" style={{ width: `${l}%` }} />
               </li>
             ))}
           </ul>
@@ -361,8 +373,8 @@ export default function RevuePartagePage() {
       )}
 
       {etape === "erreur" && !brouillon && (
-        <div className="py-10 text-center space-y-4">
-          <p className="text-sm font-semibold text-signal-fonce dark:text-signal-clair">{erreur}</p>
+        <div className="space-y-4 py-10 text-center">
+          <p className={ERREUR}>{erreur}</p>
           <Button onClick={() => router.replace("/dashboard/demandes/nouvelle")}>Créer le projet à la main</Button>
         </div>
       )}
@@ -380,9 +392,10 @@ export default function RevuePartagePage() {
         <button
           type="button"
           onClick={() => lancerAnalyseIA(texteEchec)}
-          className="mt-3 inline-flex min-h-12 items-center text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+          className={`-ml-3 mt-3 gap-1.5 ${BOUTON_TEXTE}`}
         >
-          Relire le message automatiquement
+          <IconeEtincelle className="h-4 w-4 shrink-0" />
+          Relire le message avec l&apos;IA
         </button>
       )}
     </div>

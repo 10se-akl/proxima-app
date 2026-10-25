@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { BOUTON_CREUX_LARGE, BOUTON_PLEIN_LARGE } from "@/components/ui/recettes";
 import {
   declencherInstallation,
   demanderAffichageManuel,
@@ -100,45 +100,50 @@ export function PremierLancement() {
 
   if (!visible) return null;
 
+  // Design v3 (24/10) : une feuille comme les autres (coins de 28 px, fond
+  // papier, ombre-feuille, voile sans flou), le bouton plein large et le
+  // secondaire en creux.
   return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center bg-ink/40 p-0 backdrop-blur-sm sm:items-center sm:p-6">
+    <div className="fixed inset-0 z-[60] flex items-end justify-center p-0 sm:items-center sm:p-6">
+      <div aria-hidden className="absolute inset-0 feuille-voile bg-black/40 dark:bg-black/60" />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="titre-premier-lancement"
-        className="onboarding-entree w-full rounded-t-3xl bg-surface p-6 shadow-xl shadow-ink/20 ring-1 ring-ink/10 [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-3xl sm:p-8"
+        className="onboarding-entree relative w-full rounded-t-[28px] bg-paper p-6 ombre-feuille [padding-bottom:calc(1.5rem+env(safe-area-inset-bottom))] sm:max-w-md sm:rounded-[28px] sm:p-8"
       >
-        <h2 id="titre-premier-lancement" className="font-display text-xl font-semibold text-ink">
+        <h2 id="titre-premier-lancement" className="font-display text-2xl font-bold tracking-[-0.02em] text-ink [text-wrap:balance]">
           {ordinateur ? "Compyo sur votre ordinateur" : "Compyo sur votre téléphone"}
         </h2>
-        <p className="mt-2 text-base text-steel">
+        <p className="mt-2 text-base text-steel [text-wrap:pretty]">
           {bloqueAndroid
-            ? "Sur ce téléphone, Compyo s'installe depuis Chrome : ouvrez cette page dans Chrome, puis « Installer »."
+            ? "Sur ce téléphone, Compyo s'installe depuis Chrome : ouvrez cette page dans Chrome, puis « Installer »."
             : modeIOS
-              ? "Appuyez sur Partager, puis « Sur l'écran d'accueil » : Compyo s'ouvre ensuite d'un geste."
+              ? "Appuyez sur Partager, puis « Sur l'écran d'accueil » : Compyo s'ouvre ensuite d'un geste."
               : ordinateur
-                ? "Installez Compyo : il s'ouvre ensuite d'un clic, dans sa propre fenêtre."
-                : "Installez Compyo : il s'ouvre ensuite d'un geste, comme une application."}
+                ? "Installez Compyo : il s'ouvre ensuite d'un clic, dans sa propre fenêtre."
+                : "Installez Compyo : il s'ouvre ensuite d'un geste, comme une application."}
         </p>
         <div className="mt-6 flex flex-col gap-2">
           {bloqueAndroid ? (
-            <Button
+            <button
+              type="button"
               onClick={() => {
                 terminer();
                 window.location.href = "/installer";
               }}
-              className="min-h-14 w-full"
+              className={BOUTON_PLEIN_LARGE}
             >
               Voir comment faire
-            </Button>
+            </button>
           ) : (
-            <Button onClick={installer} loading={installationEnCours} className="min-h-14 w-full">
-              {modeIOS ? "J'ai compris" : "Installer Compyo"}
-            </Button>
+            <button type="button" onClick={installer} disabled={installationEnCours} className={BOUTON_PLEIN_LARGE}>
+              {installationEnCours ? "Un instant…" : modeIOS ? "J'ai compris" : "Installer Compyo"}
+            </button>
           )}
-          <Button variant="ghost" onClick={terminer} className="w-full">
+          <button type="button" onClick={terminer} className={BOUTON_CREUX_LARGE}>
             Continuer dans le navigateur
-          </Button>
+          </button>
         </div>
       </div>
     </div>

@@ -7,6 +7,7 @@ import { createClient } from "@/lib/supabase/client";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
 import { Avatar } from "@/components/ui/Avatar";
+import { BOUTON_PLEIN } from "@/components/ui/recettes";
 import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
 import { CentreNotifications } from "@/components/notifications/CentreNotifications";
 import { IconeSortie } from "@/components/ui/Icones";
@@ -95,7 +96,11 @@ async function purgerCachePagesHorsLigne() {
 // le menu du compte (MenuCompte).
 // Le site (présentation, tarifs, questions) suit, avec le logo : avant, un
 // « Site vitrine » de 12 px tout en bas.
-const IconeSite = ({ taille = 19 }: { taille?: number }) => <CompyoMark taille={taille} />;
+const IconeSite = ({ taille = 19 }: { taille?: number }) => (
+  <span aria-hidden>
+    <CompyoMark taille={taille} />
+  </span>
+);
 const AIDE_ET_REGLAGES = [
   { href: "/dashboard/guide", label: "Guide", Icone: IconeGuide },
   { href: "/dashboard/parametres", label: "Paramètres", Icone: IconeParametres },
@@ -137,7 +142,7 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
     <div className="px-4 py-5 border-t border-ink/[0.08] flex flex-col gap-3">
       <div className="flex items-center gap-2.5 px-2">
         <Avatar nom={nomArtisan || "?"} taille={30} />
-        <p className="text-sm text-ink font-semibold truncate">{nomArtisan}</p>
+        <p className="line-clamp-2 break-words text-sm font-semibold text-ink">{nomArtisan}</p>
       </div>
       {/* gap-1 (27/09) : quatre boutons de 44 px tiennent dans la barre
           (192 px utiles) ; avec gap-2.5 ils se tassaient sous 44 px. */}
@@ -236,7 +241,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           (fluidité sur Android d'entrée de gamme). */}
       <div className="sm:hidden sticky top-0 z-30 flex items-center justify-between border-b border-gris-clair bg-paper text-ink pl-4 pr-1 min-h-14 [padding-top:env(safe-area-inset-top)]">
         <span className="flex items-center gap-2">
-          <CompyoMark variante="couleur" taille={22} />
+          <span aria-hidden><CompyoMark variante="couleur" taille={22} /></span>
           <span className="font-display font-semibold">Compyo</span>
         </span>
         <span className="flex items-center">
@@ -271,11 +276,15 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
               className="group flex min-h-[4.25rem] w-full flex-col items-center justify-end gap-1 pb-2 focus-visible:outline-none"
             >
               {/* Design v3 : le + en bleu-nuit, posé dans la barre (8 px de
-                  débord au plus), sans halo coloré ni anneau. */}
-              <span className="-mt-2 grid h-14 w-14 place-items-center rounded-full bg-nuit text-white ombre-douce motion-safe:transition-transform motion-safe:duration-150 motion-safe:group-active:scale-95 group-focus-visible:ring-2 group-focus-visible:ring-ink group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-surface">
+                  débord au plus), sans halo coloré ni anneau. 25/10 : en
+                  sombre, le bouton principal clair (le bleu-nuit s'y perdait,
+                  1,25:1 face à la barre). */}
+              <span className="-mt-2 grid h-14 w-14 place-items-center rounded-full bg-ink text-paper ombre-douce motion-safe:transition-transform motion-safe:duration-150 motion-safe:group-active:scale-95 group-focus-visible:ring-2 group-focus-visible:ring-ink group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-surface">
                 <IconePlus className="h-7 w-7" />
               </span>
-              <span className="text-xs font-semibold text-ink">{libelleCapture ?? "Nouveau"}</span>
+              {/* 25/10 — en steel comme les autres onglets : en gras, il passait
+                  pour la page ouverte. */}
+              <span className="text-xs font-medium text-steel">{libelleCapture ?? "Nouveau"}</span>
             </button>
           </li>
           <li>
@@ -321,13 +330,13 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                 href={l.href}
                 onClick={() => setPlusOuvert(false)}
                 aria-current={estActif(pathname, l.href) ? "page" : undefined}
-                className="flex min-h-14 items-center gap-3.5 border-b border-ink/15 text-base text-ink active:bg-ink/10"
+                className="flex min-h-14 items-center gap-3.5 border-b border-gris-clair text-base text-ink active:bg-ink/10"
               >
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/[0.06] text-ink/70">
+                <span className="grid h-9 w-9 place-items-center rounded-xl bg-paper-warm text-ink">
                   <l.Icone taille={19} />
                 </span>
                 <span className={`flex-1 ${estActif(pathname, l.href) ? "font-semibold" : ""}`}>{l.label}</span>
-                <IconeChevron className="h-4 w-4 text-ink/30" />
+                <IconeChevron className="h-4 w-4 text-steel" />
               </Link>
             </li>
           ))}
@@ -350,14 +359,14 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             des rappels, qui s'ouvre vers le haut, n'est jamais coupé. */}
         <div className="min-h-0 overflow-y-auto">
           <div className="px-6 py-6 flex items-center gap-2.5">
-            <CompyoMark variante="couleur" taille={26} />
+            <span aria-hidden><CompyoMark variante="couleur" taille={26} /></span>
             <p className="font-display font-semibold">Compyo</p>
           </div>
           <div className="px-3 pt-4">
             <button
               type="button"
               onClick={() => setCaptureOuverte(true)}
-              className="flex w-full min-h-12 items-center justify-center gap-2 rounded-[14px] bg-nuit text-[15px] font-semibold text-white transition-colors hover:bg-nuit/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
+              className={`${BOUTON_PLEIN} w-full text-[15px]`}
             >
               <IconePlus className="h-5 w-5" /> Nouveau projet
             </button>
@@ -370,27 +379,27 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   key={lien.href}
                   href={lien.href}
                   aria-current={actif ? "page" : undefined}
-                  className={`relative flex items-center gap-3 px-3.5 py-3 text-[15px] rounded-xl transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                  className={`relative flex items-center gap-3 px-3.5 py-3 text-[15px] rounded-xl motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
                     actif
-                      ? "bg-paper-warm text-ink font-semibold"
+                      ? "bg-paper-warm text-ink font-semibold before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-full before:bg-ink"
                       : "text-steel hover:text-ink hover:bg-ink/[0.05]"
                   }`}
                 >
                   <lien.Icone taille={19} />
                   <span className="flex-1">{lien.label}</span>
                   {lien.href === "/dashboard" && nbEnRetard > 0 && (
-                    <span
-                      className={`rounded-full px-1.5 text-[11px] font-semibold bg-signal text-white`}
-                      aria-label={`${nbEnRetard} en retard`}
-                    >
-                      {nbEnRetard}
-                    </span>
+                    <>
+                      <span aria-hidden className="rounded-full bg-signal px-1.5 text-[13px] font-semibold text-white">
+                        {nbEnRetard}
+                      </span>
+                      <span className="sr-only">, {nbEnRetard} en retard</span>
+                    </>
                   )}
                 </Link>
               );
             })}
           </nav>
-          <nav aria-label="Aide et réglages" className="mx-3 mt-3 flex flex-col gap-1 border-t border-ink/[0.08] pt-3">
+          <nav aria-label="Aide et réglages" className="mx-3 mt-3 flex flex-col gap-1 border-t border-gris-clair pt-3">
             {AIDE_ET_REGLAGES.map((lien) => {
               const actif = lien.href !== "/" && estActif(pathname, lien.href);
               return (
@@ -398,8 +407,10 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   key={lien.href}
                   href={lien.href}
                   aria-current={actif ? "page" : undefined}
-                  className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
-                    actif ? "bg-paper-warm font-semibold text-ink" : "text-steel hover:bg-ink/[0.05] hover:text-ink"
+                  className={`relative flex items-center gap-3 rounded-xl px-3.5 py-3 text-[15px] motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink ${
+                    actif
+                      ? "bg-paper-warm font-semibold text-ink before:absolute before:inset-y-2.5 before:left-0 before:w-1 before:rounded-full before:bg-ink"
+                      : "text-steel hover:bg-ink/[0.05] hover:text-ink"
                   }`}
                 >
                   <lien.Icone taille={19} />
@@ -409,7 +420,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
             })}
           </nav>
           {CINQUIEME_CASE === "plus" && (
-          <nav aria-label="Autres pages" className="mt-4 mx-3 border-t border-ink/[0.08] pt-3 flex flex-col">
+          <nav aria-label="Autres pages" className="mt-4 mx-3 border-t border-gris-clair pt-3 flex flex-col">
             {SECONDAIRES.map((lien) => {
               const actif = estActif(pathname, lien.href);
               return (
@@ -458,24 +469,30 @@ function OngletBas({
       }`}
     >
       {/* Design v3 (23/10) : l'onglet actif porte une pilule derrière son
-          icône (lisible au soleil, pas seulement une couleur), comme dans
-          les applis natives. */}
+          icône, comme dans les applis natives. 25/10 (audit) : la pilule
+          crème ne se voyait pas sur la barre blanche (1,2:1) ; elle passe à
+          l'encre, icône claire : on sait où l'on est, même au soleil. */}
       <span
         className={`relative grid h-8 w-14 place-items-center rounded-full motion-safe:transition-colors motion-safe:duration-150 ${
-          actif ? "bg-paper-warm" : ""
+          actif ? "bg-ink text-paper" : ""
         }`}
       >
         {icone}
         {pastille > 0 && (
-          <span
-            className="absolute right-1 -top-1 min-w-[1.25rem] rounded-full bg-signal px-1 text-center text-xs font-semibold leading-5 text-white"
-            aria-label={`${pastille} en retard`}
-          >
-            {pastille}
-          </span>
+          <>
+            <span
+              aria-hidden
+              className="absolute right-1 -top-1 min-w-[1.25rem] rounded-full bg-signal px-1 text-center text-xs font-semibold leading-5 text-white ring-2 ring-surface"
+            >
+              {pastille}
+            </span>
+          </>
         )}
       </span>
-      <span className="whitespace-nowrap text-xs tracking-[-0.01em]">{label}</span>
+      {/* 25/10 (audit) : police agrandie à 130 %, le libellé passe à la ligne
+          plutôt que de sortir de sa colonne. */}
+      <span className="max-w-full text-center text-xs leading-tight tracking-[-0.01em] [overflow-wrap:anywhere]">{label}</span>
+      {pastille > 0 && <span className="sr-only">, {pastille} en retard</span>}
     </Link>
   );
 }

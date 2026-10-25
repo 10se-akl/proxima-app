@@ -6,7 +6,8 @@ import { DocumentDevis } from "@/components/devis/DocumentDevis";
 import { telechargerPdfDevis } from "@/components/devis/pdf/genererPdf";
 import { margeDuDevis } from "@/lib/moteur-metier/calculerDevis";
 import { mentionsEffectives } from "@/lib/devis/mentionsLegales";
-import { construireModeleDevis, formatMontant, sourceDepuisDevis } from "@/lib/devis/modeleDocument";
+import { construireModeleDevis, sourceDepuisDevis } from "@/lib/devis/modeleDocument";
+import { euros } from "@/components/ui/recettes";
 import type { Devis, ParametresEntreprise } from "@/types";
 
 // Le devis tel que le client le recevra (17/09) : exactement le même
@@ -65,18 +66,19 @@ export function DevisPreview({
       <DocumentDevis modele={modele} />
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
-        <Button variant="ghost" onClick={telecharger} loading={pdfEnCours}>
+        {/* Design v3 (24/10) : action secondaire en creux. */}
+        <Button variant="secondary" onClick={telecharger} loading={pdfEnCours}>
           Télécharger le PDF
         </Button>
         {marge !== 0 && (
-          <p className="text-xs text-ink/45">
-            Votre marge : <span className="font-medium text-ink/70">{formatMontant(marge)}</span> ({devis.marge_pct} %) —
+          <p className="text-sm text-steel [text-wrap:pretty]">
+            Votre marge&nbsp;: <span className="whitespace-nowrap font-semibold tabular-nums text-ink">{euros(marge, true)}</span> ({devis.marge_pct}&nbsp;%) —
             incluse dans les prix, jamais affichée au client.
           </p>
         )}
       </div>
       {erreurPdf && (
-        <p className="mt-2 text-sm text-signal">Le PDF n&apos;a pas pu être préparé. Réessayez.</p>
+        <p className="mt-2 text-sm font-semibold text-signal-fonce">Le PDF n&apos;a pas pu être préparé. Réessayez.</p>
       )}
     </div>
   );

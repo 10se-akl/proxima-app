@@ -4,9 +4,15 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
+import { BOUTON_CREUX, CHAMP, ERREUR, LIBELLE, SELECT, CASE as CASE_A_COCHER } from "@/components/ui/recettes";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import { METIERS } from "@/lib/metiers";
+
+// Design v3 (24/10) — les briques de mise en page des sections.
+const SECTION = "py-5 first:pt-0 last:pb-0";
+const TITRE = "mb-1 text-[17px] font-semibold text-ink";
+const TEXTE = "mb-3 text-[15px] leading-relaxed text-steel";
+const CASE = "flex min-h-12 cursor-pointer items-center gap-3 text-base text-ink";
 
 export function MonCompte() {
   const supabase = createClient();
@@ -205,19 +211,23 @@ export function MonCompte() {
     return <EtatErreur message={erreurChargement} onReessayer={charger} />;
   }
 
+  // Design v3 (24/10) : Mon compte s'ouvre DANS la carte des Paramètres —
+  // plus de cartes dans la carte : des sections séparées d'un filet, un
+  // titre de 17 px, les champs des recettes. Le seul bouton plein est
+  // « Enregistrer » du profil ; les autres gestes sont en creux.
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="p-6">
-        <h2 className="text-sm font-semibold text-ink/70 mb-4">Mon profil</h2>
-        <form onSubmit={enregistrerProfil} className="flex flex-col gap-4">
+    <div className="flex flex-col divide-y divide-gris-clair">
+      <section className={SECTION}>
+        <h3 className={TITRE}>Mon profil</h3>
+        <form onSubmit={enregistrerProfil} className="mt-3 flex flex-col gap-4">
           <Field label="Nom" required value={nom} onChange={(e) => setNom(e.target.value)} />
           <div>
-            <label htmlFor="metier-compte" className="block text-xs font-medium text-ink/70 mb-1.5">Métier</label>
+            <label htmlFor="metier-compte" className={LIBELLE}>Métier</label>
             <select
               id="metier-compte"
               value={metier}
               onChange={(e) => setMetier(e.target.value)}
-              className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
+              className={SELECT}
             >
               {METIERS.map((m) => (
                 <option key={m} value={m}>
@@ -226,15 +236,15 @@ export function MonCompte() {
               ))}
             </select>
           </div>
-          {erreurProfil && <p className="text-sm text-signal">{erreurProfil}</p>}
+          {erreurProfil && <p className={`!mt-0 ${ERREUR}`}>{erreurProfil}</p>}
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={enregistrementProfil} className="self-start">
               {enregistrementProfil ? "Enregistrement…" : "Enregistrer"}
             </Button>
-            {profilConfirme && <span className="text-xs text-steel">✓ Enregistré</span>}
+            {profilConfirme && <span className="text-[15px] font-semibold text-succes">Enregistré</span>}
           </div>
         </form>
-      </Card>
+      </section>
 
       {/*
         Sprint Notes (29/08) — philosophie "Compyo doit rester discret" :
@@ -246,49 +256,49 @@ export function MonCompte() {
         l'artisan programme son premier rappel (voir lib/pwa/
         notifications.ts, demanderAbonnementSiNecessaire).
       */}
-      <Card className="p-6">
-        <h2 className="text-sm font-semibold text-ink/70 mb-2">Notifications</h2>
-        <p className="text-sm text-ink/60 mb-4">
+      <section className={SECTION}>
+        <h3 className={TITRE}>Notifications</h3>
+        <p className={TEXTE}>
           Compyo ne vous notifie que pour les rappels que vous créez vous-même sur une note —
           jamais de rappel automatique de rendez-vous ou de devis.
         </p>
-        <label className="flex items-center gap-2.5 text-sm text-ink/80 cursor-pointer">
+        <label className={CASE}>
           <input
             type="checkbox"
             checked={notificationsActives}
             disabled={enregistrementNotifications}
             onChange={(e) => basculerNotifications(e.target.checked)}
-            className="w-4 h-4 rounded border-ink/30 accent-signal"
+            className={`mt-0.5 ${CASE_A_COCHER}`}
           />
           Autoriser les notifications de rappel
         </label>
-        {erreurNotifications && <p className="mt-2 text-sm text-signal">{erreurNotifications}</p>}
-      </Card>
+        {erreurNotifications && <p className={ERREUR}>{erreurNotifications}</p>}
+      </section>
 
-      <Card className="p-6">
-        <h2 className="text-sm font-semibold text-ink/70 mb-2">Ce que Compyo peut faire seul</h2>
-        <p className="text-sm text-ink/60 mb-4">
+      <section className={SECTION}>
+        <h3 className={TITRE}>Ce que Compyo peut faire seul</h3>
+        <p className={TEXTE}>
           Quand vous dictez un compte-rendu vocal sur un projet et que l&apos;IA y détecte une
           urgence, elle vous demande normalement confirmation avant de passer le projet en
           urgent. Cet interrupteur la laisse le faire directement, sans redemander — le
           changement reste toujours visible dans l&apos;historique du projet.
         </p>
-        <label className="flex items-center gap-2.5 text-sm text-ink/80 cursor-pointer">
+        <label className={CASE}>
           <input
             type="checkbox"
             checked={urgenceAutoIA}
             disabled={enregistrementUrgenceAuto}
             onChange={(e) => basculerUrgenceAuto(e.target.checked)}
-            className="w-4 h-4 rounded border-ink/30 accent-signal"
+            className={`mt-0.5 ${CASE_A_COCHER}`}
           />
           Laisser l&apos;IA passer un projet en urgent automatiquement
         </label>
-        {erreurUrgenceAuto && <p className="mt-2 text-sm text-signal">{erreurUrgenceAuto}</p>}
-      </Card>
+        {erreurUrgenceAuto && <p className={ERREUR}>{erreurUrgenceAuto}</p>}
+      </section>
 
-      <Card className="p-6">
-        <h2 className="text-sm font-semibold text-ink/70 mb-4">Mot de passe</h2>
-        <form onSubmit={changerMotDePasse} className="flex flex-col gap-4">
+      <section className={SECTION}>
+        <h3 className={TITRE}>Mot de passe</h3>
+        <form onSubmit={changerMotDePasse} className="mt-3 flex flex-col gap-4">
           <Field
             label="Nouveau mot de passe"
             type="password"
@@ -296,29 +306,30 @@ export function MonCompte() {
             value={nouveauMotDePasse}
             onChange={(e) => setNouveauMotDePasse(e.target.value)}
           />
-          {erreurMdp && <p className="text-sm text-signal">{erreurMdp}</p>}
+          {erreurMdp && <p className={`!mt-0 ${ERREUR}`}>{erreurMdp}</p>}
           <div className="flex items-center gap-3">
             <Button
               type="submit"
-              variant="ghost"
+              variant="secondary"
               disabled={enregistrementMdp}
               className="self-start"
             >
               {enregistrementMdp ? "Enregistrement…" : "Changer le mot de passe"}
             </Button>
-            {mdpConfirme && <span className="text-xs text-steel">✓ Changé</span>}
+            {mdpConfirme && <span className="text-[15px] font-semibold text-succes">Changé</span>}
           </div>
         </form>
-      </Card>
-      <Card className="p-6">
-        <h2 className="text-sm font-semibold text-ink/70 mb-2">Parrainer un collègue</h2>
-        <p className="text-sm text-ink/60 mb-4">
+      </section>
+      <section className={SECTION}>
+        <h3 className={TITRE}>Parrainer un collègue</h3>
+        <p className={TEXTE}>
           Un autre artisan pourrait gagner du temps avec Compyo ? Partagez ce lien — sa
           candidature à la bêta sera automatiquement marquée comme venant de vous.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Button
-            variant="ghost"
+          <button
+            type="button"
+            className={BOUTON_CREUX}
             onClick={async () => {
               const lien = `${window.location.origin}/demander-acces?parraine_par=${encodeURIComponent(
                 nom || "un artisan"
@@ -328,10 +339,10 @@ export function MonCompte() {
               setTimeout(() => setLienCopie(false), 2000);
             }}
           >
-            {lienCopie ? "✓ Lien copié" : "Copier mon lien d'invitation"}
-          </Button>
+            {lienCopie ? "Lien copié" : "Copier mon lien d'invitation"}
+          </button>
         </div>
-      </Card>
+      </section>
     </div>
   );
 }

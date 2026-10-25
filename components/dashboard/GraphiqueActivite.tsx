@@ -1,4 +1,5 @@
 import { memeMois, nomCourt, libelle, type Mois } from "@/lib/moisParis";
+import { euros } from "@/components/ui/recettes";
 
 // ============================================================
 // Six mois d'activité, en barres (21/09).
@@ -9,19 +10,17 @@ import { memeMois, nomCourt, libelle, type Mois } from "@/lib/moisParis";
 // un pourcentage, et les textes gardent leur taille réelle à toutes les
 // largeurs. Rendu côté serveur, sans bibliothèque, sans JavaScript.
 //
-// Deux séries seulement, toujours les mêmes couleurs : signé (anthracite)
-// et encaissé (terracotta). Au-delà, un graphique ne se lit plus en deux
-// secondes — c'est tout le temps qu'un artisan lui donnera.
+// Deux séries seulement, toujours les mêmes couleurs : signé (à l'encre)
+// et encaissé (en vert, la couleur de l'argent qui rentre — design v3,
+// 24/10 : plus de terracotta). Au-delà, un graphique ne se lit plus en deux
+// secondes — c'est tout le temps qu'un artisan lui donnera. Pas de
+// dégradé ; les graduations et les repères restent discrets (steel, filet).
 //
 // Pour les lecteurs d'écran, le graphique est décrit par un vrai tableau
 // (masqué à l'écran), pas par une phrase approximative.
 // ============================================================
 
 type Point = { mois: Mois; signe: number; encaisse: number };
-
-function euros(n: number): string {
-  return `${Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ")} €`;
-}
 
 // Graduation "ronde" au-dessus du maximum : 1 000, 2 000, 2 500, 5 000…
 // Un axe qui s'arrête à 3 847 € se lit mal.
@@ -57,7 +56,7 @@ export function GraphiqueActivite({ points, moisActif }: { points: Point[]; mois
         {/* Graduations, en vrais textes */}
         <div
           aria-hidden
-          className="flex h-44 shrink-0 flex-col justify-between text-right font-mono text-[10px] leading-none text-steel sm:h-52"
+          className="flex h-44 shrink-0 flex-col justify-between whitespace-nowrap text-right text-[13px] leading-none tabular-nums text-steel sm:h-52"
         >
           <span>{euros(max)}</span>
           <span>{euros(max / 2)}</span>
@@ -67,9 +66,9 @@ export function GraphiqueActivite({ points, moisActif }: { points: Point[]; mois
         <div className="relative min-w-0 flex-1">
           {/* Lignes de repère : haut, milieu, base */}
           <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-44 sm:h-52">
-            <div className="absolute inset-x-0 top-[5px] border-t border-dashed border-ink/10" />
-            <div className="absolute inset-x-0 top-1/2 border-t border-dashed border-ink/10" />
-            <div className="absolute inset-x-0 bottom-0 border-t border-ink/15" />
+            <div className="absolute inset-x-0 top-[6px] border-t border-gris-clair" />
+            <div className="absolute inset-x-0 top-1/2 border-t border-gris-clair" />
+            <div className="absolute inset-x-0 bottom-0 border-t border-steel/40" />
           </div>
 
           <div className="relative flex h-44 items-end sm:h-52">
@@ -78,17 +77,20 @@ export function GraphiqueActivite({ points, moisActif }: { points: Point[]; mois
               return (
                 <div
                   key={`${p.mois.annee}-${p.mois.mois}`}
-                  // Le mois regardé en plein, les autres en retrait : l'œil
-                  // sait tout de suite où il est.
-                  className={`flex h-full flex-1 items-end justify-center gap-[3px] px-1 ${actif ? "" : "opacity-40"}`}
+                  // 25/10 — toutes les barres dans les couleurs de la légende
+                  // (les mois passés étaient grisés par opacité : l'encre
+                  // devenait grise et ne répondait plus à la légende). Le
+                  // mois regardé se repère à un fond en creux et à son nom
+                  // en gras.
+                  className={`flex h-full flex-1 items-end justify-center gap-[3px] rounded-t-[8px] px-1 ${actif ? "bg-paper-warm" : ""}`}
                 >
-                  <Barre valeur={p.signe} max={max} couleur="bg-ink/80" />
-                  <Barre valeur={p.encaisse} max={max} couleur="bg-signal" />
+                  <Barre valeur={p.signe} max={max} couleur="bg-ink" />
+                  <Barre valeur={p.encaisse} max={max} couleur="bg-succes" />
                 </div>
               );
             })}
             {vide && (
-              <p className="absolute inset-x-0 top-1/3 px-4 text-center text-[13px] text-steel">
+              <p className="absolute inset-x-0 top-1/3 px-4 text-center text-[15px] text-steel">
                 Rien de signé ni d&apos;encaissé sur ces six mois pour l&apos;instant.
               </p>
             )}
@@ -98,7 +100,7 @@ export function GraphiqueActivite({ points, moisActif }: { points: Point[]; mois
             {points.map((p) => (
               <span
                 key={`l-${p.mois.annee}-${p.mois.mois}`}
-                className={`flex-1 text-center font-mono text-[11px] ${
+                className={`flex-1 text-center text-[13px] ${
                   memeMois(p.mois, moisActif) ? "font-semibold text-ink" : "text-steel"
                 }`}
               >
@@ -109,12 +111,12 @@ export function GraphiqueActivite({ points, moisActif }: { points: Point[]; mois
         </div>
       </div>
 
-      <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-ink/60">
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-ink/80" /> Signé (devis acceptés)
+      <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-steel">
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-3 w-3 rounded-[3px] bg-ink" /> Signé (devis acceptés)
         </span>
-        <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-2.5 rounded-sm bg-signal" /> Encaissé (factures payées)
+        <span className="inline-flex items-center gap-2">
+          <span aria-hidden className="h-3 w-3 rounded-[3px] bg-succes" /> Encaissé (factures payées)
         </span>
       </figcaption>
 

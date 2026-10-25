@@ -13,8 +13,21 @@ import {
   messageErreurDictee,
   type SpeechRecognitionInstance,
 } from "@/lib/dictee";
-import { Field } from "@/components/ui/Input";
 import { IconeMicro } from "@/components/projet/icones";
+import {
+  AIDE,
+  BOUTON_PLEIN_LARGE,
+  BOUTON_TEXTE,
+  CHAMP,
+  CREUX,
+  ERREUR,
+  ETIQUETTE,
+  LIBELLE,
+  SECONDAIRE,
+  TITRE_ECRAN,
+  TITRE_SECTION,
+  puce,
+} from "@/components/ui/recettes";
 import { LABEL_STATUT, LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 
 // Revue métier (06/09) — élargi de 7 à 18 branches, une par métier
@@ -419,43 +432,45 @@ export default function NouveauProjetPage() {
     router.replace(`/dashboard/demandes/${data.id}?cree=1`);
   }
 
+  // Design v3 (24/10) : titre d'écran, champs des recettes (libellé au-dessus,
+  // contour fin), une grande zone pour « ce que veut le client », le bouton
+  // plein collé en bas au-dessus de la barre (ou du clavier). Les champs sont
+  // écrits ici plutôt qu'avec <Field> (components/ui/Input.tsx, hors zone)
+  // pour porter les recettes v3 ; mêmes id, attributs et gestionnaires.
   return (
-    <div className="mx-auto px-4 pt-5 pb-8 sm:p-8 max-w-lg">
-      <h1 className="font-display text-2xl font-semibold text-ink">Nouveau projet</h1>
+    <div className="mx-auto max-w-lg px-4 pb-8 pt-5 sm:p-8 lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
+      <h1 className={TITRE_ECRAN}>Nouveau projet</h1>
 
       {messageErreurPartage && (
-        <div className="mt-4 rounded-xl border border-signal/25 bg-signal/5 px-4 py-3">
-          <p className="text-sm text-signal">{messageErreurPartage}</p>
-        </div>
+        <p role="alert" className={`mt-4 rounded-[14px] px-4 py-3 text-[15px] ${ETIQUETTE.attention}`}>
+          {messageErreurPartage}
+        </p>
       )}
 
       {/* 27/09 — Pendant la dictée, l'écran est tout entier à l'écoute : un
           grand micro, le texte qui s'écrit en gros, un seul bouton. Avant,
           on arrivait sur un formulaire, le clavier s'ouvrait sur « Nom du
-          client », et le seul signe d'écoute était un petit lien. */}
+          client », et le seul signe d'écoute était un petit lien.
+          Design v3 (24/10) : plus de halo qui pulse en boucle ; le micro
+          plein suffit à dire « j'écoute ». */}
       {enregistrement && (
         <div className="mt-12 flex flex-col items-center text-center">
           <button
             type="button"
             onClick={arreterDictee}
             aria-label="Arrêter l'écoute"
-            className="relative grid h-28 w-28 place-items-center rounded-full bg-signal text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-signal/40"
+            className="grid h-28 w-28 place-items-center rounded-full bg-signal text-white focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
           >
-            <span aria-hidden className="absolute -inset-4 rounded-full bg-signal/15 motion-safe:animate-pulse" />
-            <IconeMicro className="relative h-11 w-11" />
+            <IconeMicro className="h-11 w-11" />
           </button>
-          <p className="mt-6 font-display text-xl font-semibold text-ink">Je vous écoute</p>
-          <p className="mt-1 text-[15px] text-ink/65">Le client, le chantier, son numéro.</p>
+          <p className={`mt-6 ${TITRE_SECTION}`}>Je vous écoute</p>
+          <p className={`mt-1 ${SECONDAIRE}`}>Le client, le chantier, son numéro.</p>
           {description && (
-            <p className="mt-6 w-full rounded-2xl bg-surface p-4 text-left text-[17px] leading-relaxed text-ink ring-1 ring-ink/10">
+            <p className="mt-6 w-full rounded-[20px] bg-surface p-4 text-left text-[17px] leading-relaxed text-ink ombre-douce">
               {description}
             </p>
           )}
-          <button
-            type="button"
-            onClick={arreterDictee}
-            className="mt-6 w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-          >
+          <button type="button" onClick={arreterDictee} className={`mt-6 ${BOUTON_PLEIN_LARGE}`}>
             Terminé
           </button>
         </div>
@@ -464,29 +479,33 @@ export default function NouveauProjetPage() {
       <div className={`mt-6 ${enregistrement ? "hidden" : ""}`}>
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
-            <Field
+            {/* 25/10 — l'astérisque d'un champ requis revient (perdu avec <Field>). */}
+            <label htmlFor="nom-client" className={LIBELLE}>
+              Nom du client{" "}<span className="text-signal-fonce">*</span>
+            </label>
+            <input
               id="nom-client"
-              label="Nom du client"
               required
               // Arrivé par « Parler », pas de clavier : on écoute d'abord.
               autoFocus={searchParams.get("dictee") !== "1"}
               value={nomClient}
               onChange={(e) => setNomClient(e.target.value)}
               onBlur={() => verifierClientExistant("nom")}
+              className={`${CHAMP} py-3`}
             />
             {anciensProjets.length > 0 && (
-              <div className="mt-2 rounded-xl border border-ink/10 bg-paper-warm p-3">
-                <p className="text-sm text-steel">
+              <div className={`mt-2 p-4 ${CREUX}`}>
+                <p className={SECONDAIRE}>
                   {anciensProjets.length === 1
                     ? "Ce client a déjà un projet :"
                     : `Ce client a déjà ${anciensProjets.length} projets :`}
                 </p>
-                <div className="mt-2 flex flex-col gap-1">
+                <div className="mt-1 flex flex-col">
                   {anciensProjets.map((p) => (
                     <Link
                       key={p.id}
                       href={`/dashboard/demandes/${p.id}`}
-                      className="inline-flex min-h-12 items-center text-base text-ink underline decoration-ink/30 underline-offset-4"
+                      className={`-ml-3 text-left ${BOUTON_TEXTE}`}
                     >
                       {LABEL_TYPE_CHANTIER[p.type_chantier] || "Chantier"} —{" "}
                       {LABEL_STATUT[p.statut as keyof typeof LABEL_STATUT] ?? p.statut} (
@@ -494,63 +513,63 @@ export default function NouveauProjetPage() {
                     </Link>
                   ))}
                 </div>
-                <p className="mt-2 text-[11px] text-ink/35">
+                <p className={AIDE}>
                   Si c&apos;est un nouveau chantier pour ce client, continuez : un nouveau
                   projet séparé est la bonne approche.
                 </p>
               </div>
             )}
           </div>
-          <Field
-            label="Téléphone (facultatif)"
-            type="tel"
-            value={telephoneClient}
-            onChange={(e) => setTelephoneClient(e.target.value)}
-            onBlur={() => verifierClientExistant("telephone")}
-          />
+          <div>
+            <label htmlFor="telephone-client" className={LIBELLE}>
+              Téléphone <span className="font-normal text-steel">(facultatif)</span>
+            </label>
+            <input
+              id="telephone-client"
+              type="tel"
+              value={telephoneClient}
+              onChange={(e) => setTelephoneClient(e.target.value)}
+              onBlur={() => verifierClientExistant("telephone")}
+              className={`${CHAMP} py-3`}
+            />
+          </div>
 
           <div>
-            <div className="flex items-center justify-between gap-3 mb-1.5">
-              <label htmlFor="description-projet" className="text-xs font-medium text-ink/70">
-                Ce que veut le client
+            <div className="mb-1.5 flex items-center justify-between gap-3">
+              <label htmlFor="description-projet" className="block text-[15px] font-medium text-ink">
+                Ce que veut le client{" "}<span className="text-signal-fonce">*</span>
               </label>
               {/* Seulement si le téléphone sait dicter ; sinon, le micro du
                   clavier fait très bien l'affaire. */}
               {dicteePossible && (
-                <button
-                  type="button"
-                  onClick={dicter}
-                  className="inline-flex min-h-12 items-center gap-1.5 rounded-full px-3.5 text-[14px] font-medium text-ink ring-1 ring-ink/15 transition hover:ring-ink/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-                >
-                  <IconeMicro className="h-4 w-4 text-signal" /> Dicter
+                <button type="button" onClick={dicter} className={`gap-1.5 ${puce(false)}`}>
+                  <IconeMicro className="h-4 w-4" /> Dicter
                 </button>
               )}
             </div>
             {brouillonRestaure && (
-              <p className="mb-1.5 text-xs text-steel">
+              <p className={`mb-1.5 ${SECONDAIRE}`}>
                 Description non enregistrée retrouvée — relisez-la avant de créer le projet.
               </p>
             )}
             <textarea
               id="description-projet"
               required
-              rows={3}
+              rows={5}
               placeholder="Ex : veut refaire sa salle de bain, douche à l'italienne"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15 resize-none"
+              className={`${CHAMP} min-h-[8.5rem] resize-none py-3 leading-relaxed`}
             />
           </div>
 
-          {erreur && <p className="text-sm text-signal">{erreur}</p>}
+          {erreur && <p className={ERREUR}>{erreur}</p>}
 
-          <button
-            type="submit"
-            disabled={chargement}
-            className="w-full min-h-14 rounded-2xl bg-ink text-[16px] font-semibold text-paper transition disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50"
-          >
-            {chargement ? "Création…" : "Créer le projet"}
-          </button>
+          <div className="sticky bottom-[calc(var(--barre-bas,0px)+env(safe-area-inset-bottom)+1rem)] z-10 -mx-4 bg-paper px-4 pb-1 pt-2 sm:static sm:mx-0 sm:bg-transparent sm:p-0">
+            <button type="submit" disabled={chargement} className={BOUTON_PLEIN_LARGE}>
+              {chargement ? "Création…" : "Créer le projet"}
+            </button>
+          </div>
         </form>
       </div>
     </div>

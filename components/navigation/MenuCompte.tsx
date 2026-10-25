@@ -9,6 +9,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { BoutonInstallerDiscret } from "@/components/pwa/BoutonInstallerDiscret";
 import { IconeGuide, IconeParametres, IconeRetours } from "@/components/ui/Icones";
 import { CompyoMark } from "@/components/marketing/CompyoMark";
+import { BOUTON_TEXTE, FOCUS, GROUPE, SECONDAIRE, TUILE_ICONE } from "@/components/ui/recettes";
+
+// Design v3 (24/10) : les liens du compte en liste groupée (surface, ombre
+// douce, filets fins), lignes de 60 px, tuile d'icône neutre.
+const LIGNE = `flex min-h-[3.75rem] w-full items-center gap-3.5 px-4 text-left text-[17px] text-ink active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ink`;
 
 // ============================================================
 // Le compte (refonte 03/10 — duel B, lot 1).
@@ -76,21 +81,21 @@ export function MenuCompte({ nom, surDeconnexion }: { nom: string; surDeconnexio
       </button>
 
       <Feuille ouverte={ouvert} titre="Compte" surFermer={() => setOuvert(false)}>
-        {nom && <p className="mb-2 truncate text-sm text-steel">{nom}</p>}
-        <ul className="flex flex-col">
+        {nom && <p className={`mb-3 truncate px-1 ${SECONDAIRE}`}>{nom}</p>}
+        <ul className={GROUPE}>
           {LIENS.map((l) => (
             <li key={l.href}>
               <Link
                 href={l.href}
                 onClick={() => setOuvert(false)}
                 aria-current={estDans(pathname, l.href) ? "page" : undefined}
-                className="flex min-h-14 items-center gap-3.5 border-b border-ink/15 text-base text-ink active:bg-ink/10"
+                className={LIGNE}
               >
-                <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/[0.06] text-ink">
-                  <l.Icone taille={19} />
+                <span className={TUILE_ICONE}>
+                  <l.Icone taille={20} />
                 </span>
                 <span className={`flex-1 ${estDans(pathname, l.href) ? "font-semibold" : ""}`}>{l.label}</span>
-                <IconeChevron className="h-4 w-4 text-steel" />
+                <IconeChevron className="h-5 w-5 text-steel" />
               </Link>
             </li>
           ))}
@@ -101,13 +106,13 @@ export function MenuCompte({ nom, surDeconnexion }: { nom: string; surDeconnexio
             <Link
               href="/"
               onClick={() => setOuvert(false)}
-              className="flex min-h-14 items-center gap-3.5 border-b border-ink/15 text-base text-ink active:bg-ink/10"
+              className={LIGNE}
             >
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/[0.06]">
+              <span aria-hidden className={TUILE_ICONE}>
                 <CompyoMark taille={20} />
               </span>
               <span className="flex-1">Voir le site Compyo</span>
-              <IconeChevron className="h-4 w-4 text-steel" />
+              <IconeChevron className="h-5 w-5 text-steel" />
             </Link>
           </li>
           <li>
@@ -117,30 +122,30 @@ export function MenuCompte({ nom, surDeconnexion }: { nom: string; surDeconnexio
                 setOuvert(false);
                 ouvrirRetour();
               }}
-              className="flex min-h-14 w-full items-center gap-3.5 border-b border-ink/15 text-left text-base text-ink active:bg-ink/10"
+              className={LIGNE}
             >
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink/[0.06] text-ink">
-                <IconeRetours taille={19} />
+              <span className={TUILE_ICONE}>
+                <IconeRetours taille={20} />
               </span>
               <span className="flex-1">Donner mon avis</span>
-              <IconeChevron className="h-4 w-4 text-steel" />
+              <IconeChevron className="h-5 w-5 text-steel" />
             </button>
           </li>
         </ul>
 
-        <div className="mt-4 flex items-center justify-between">
+        <div className="mt-5 flex items-center justify-between">
           <div className="flex items-center gap-1 text-ink">
-            <ThemeToggle className="grid h-12 w-12 place-items-center rounded-2xl active:bg-ink/10 sm:hover:bg-ink/5" />
+            <ThemeToggle className={`grid h-12 w-12 place-items-center rounded-full active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors ${FOCUS}`} />
             <BoutonInstallerDiscret
               compact
-              className="grid h-12 w-12 place-items-center rounded-2xl active:bg-ink/10 sm:hover:bg-ink/5"
+              className={`grid h-12 w-12 place-items-center rounded-full active:bg-ink/10 sm:hover:bg-ink/5 motion-safe:transition-colors ${FOCUS}`}
             />
           </div>
           {/* La confirmation reste dans surDeconnexion (Sidebar.tsx). */}
           <button
             type="button"
             onClick={surDeconnexion}
-            className="min-h-12 px-3 text-base font-semibold text-ink underline decoration-ink/30 underline-offset-4"
+            className={`-mr-3 ${BOUTON_TEXTE}`}
           >
             Se déconnecter
           </button>

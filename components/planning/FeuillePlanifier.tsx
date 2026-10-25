@@ -8,7 +8,9 @@ import { vibrer, vibrerEchec } from "@/lib/retour";
 import { IconeCoche } from "@/components/projet/icones";
 import { Feuille } from "@/components/projet/Feuille";
 import { ChoisirJour } from "./ChoisirJour";
+import { BOUTON_PLEIN_LARGE, CHAMP, LIBELLE, SECONDAIRE, puce } from "@/components/ui/recettes";
 import { chargerCreneauParDefaut, titreParDefaut } from "./creneau";
+import { heure as ecrireHeure } from "@/lib/heure";
 import {
   aujourdhuiCle,
   creneauParDefaut,
@@ -49,19 +51,15 @@ const PLAGES: Record<Exclude<Plage, "heure">, { libelle: string; heure: string; 
 
 const DUREES = [30, 60, 90, 120, 180, 240];
 
-const FOCUS =
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper";
-
-/** La trace d'un rendez-vous planifié, qui reste jusqu'à ce qu'on quitte l'écran (règle 16). */
+/** La trace d'un rendez-vous planifié, qui reste jusqu'à ce qu'on quitte l'écran (règle 16).
+ *  Design v3 (24/10) : teinte opaque (succes-fond), texte entier sur plusieurs lignes s'il le faut. */
 export function TracePlanifie({ texte }: { texte: string | null }) {
   return (
     <div aria-live="polite">
       {texte && (
-        <p className="mb-3 flex min-h-12 items-center gap-3 rounded-2xl bg-succes/10 px-4 text-sm text-ink">
-          <span aria-hidden className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-succes/10 text-succes">
-            <IconeCoche className="h-4 w-4" />
-          </span>
-          <span className="min-w-0 truncate">{texte}</span>
+        <p className="mb-3 flex min-h-12 items-center gap-3 rounded-[20px] bg-succes-fond px-4 py-2.5 text-[15px] text-ink">
+          <IconeCoche aria-hidden className="h-5 w-5 shrink-0 text-succes" />
+          <span className="min-w-0">{texte}</span>
         </p>
       )}
     </div>
@@ -129,7 +127,7 @@ export function FeuillePlanifier({
 
   const aujourdhui = aujourdhuiCle();
   const quand = quandEnLettres(jour, aujourdhui);
-  const resume = plage && plage !== "heure" ? PLAGES[plage].libelle.toLowerCase() : `à ${heureEnLettres(instantParis(jour, heure))}`;
+  const resume = plage && plage !== "heure" ? PLAGES[plage].libelle.toLowerCase() : `à ${ecrireHeure(instantParis(jour, heure))}`;
 
   async function planifier() {
     if (!projet || enCours) return;
@@ -189,17 +187,12 @@ export function FeuillePlanifier({
     }
   }
 
-  const puce = (actif: boolean) =>
-    `min-h-12 rounded-full px-4 text-base font-semibold motion-safe:transition-colors active:bg-ink/10 ${FOCUS} ${
-      actif ? "bg-ink text-paper active:bg-ink/80" : "text-ink ring-1 ring-inset ring-ink/60"
-    }`;
-  const champ =
-    "mt-1.5 w-full min-h-12 rounded-xl border border-ink/15 bg-paper px-3 text-base text-ink focus:border-ink focus:outline-none focus:ring-2 focus:ring-ink/20";
-
+  // Design v3 (24/10) : les choix rapides en puce() des recettes (creux,
+  // l'actif à l'encre), les champs en CHAMP, un seul plein en bas.
   return (
     <Feuille ouverte={!!projet} titre="Quand ?" surFermer={surFermer}>
       <div className="flex flex-col gap-3">
-        <p className="truncate text-base text-steel">{projet?.nom_client}</p>
+        <p className={SECONDAIRE}>{projet?.nom_client}</p>
 
         <ChoisirJour
           jour={jour}
@@ -223,8 +216,8 @@ export function FeuillePlanifier({
 
         {plage === "heure" && (
           <div className="grid grid-cols-2 gap-3">
-            <label className="block text-sm font-semibold text-ink">
-              Heure
+            <label className="block">
+              <span className={LIBELLE}>Heure</span>
               <input
                 type="time"
                 required
@@ -233,18 +226,18 @@ export function FeuillePlanifier({
                   touche.current = true;
                   setHeure(e.target.value);
                 }}
-                className={champ}
+                className={CHAMP}
               />
             </label>
-            <label className="block text-sm font-semibold text-ink">
-              Durée
+            <label className="block">
+              <span className={LIBELLE}>Durée</span>
               <select
                 value={duree}
                 onChange={(e) => {
                   touche.current = true;
                   setDuree(Number(e.target.value));
                 }}
-                className={champ}
+                className={CHAMP}
               >
                 {[...new Set([...DUREES, duree])].sort((a, b) => a - b).map((m) => (
                   <option key={m} value={m}>
@@ -258,17 +251,19 @@ export function FeuillePlanifier({
 
         {/* « Planifier » reste sous le pouce même si la liste des jours fait
             défiler la feuille (360 × 640). */}
-        <div className="sticky bottom-[calc(-1.25rem_-_env(safe-area-inset-bottom))] -mx-5 -mb-[calc(1.25rem_+_env(safe-area-inset-bottom))] border-t border-ink/15 bg-paper px-5 pt-3 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">
-          <p aria-live="polite" className="min-h-5 text-sm font-semibold text-signal-fonce dark:text-signal-clair">
+        <div className="sticky bottom-[calc(-1.25rem_-_env(safe-area-inset-bottom))] -mx-5 -mb-[calc(1.25rem_+_env(safe-area-inset-bottom))] border-t border-gris-clair bg-paper px-5 pt-3 [padding-bottom:calc(1.25rem+env(safe-area-inset-bottom))]">
+          <p aria-live="polite" className="min-h-5 text-sm font-semibold text-signal-fonce">
             {erreur}
           </p>
           <button
             type="button"
             disabled={enCours || !heure}
             onClick={() => void planifier()}
-            className={`mt-1 min-h-14 w-full rounded-2xl bg-ink px-5 text-base font-semibold text-paper active:bg-ink/80 disabled:opacity-60 ${FOCUS}`}
+            className={`mt-1 py-3 ${BOUTON_PLEIN_LARGE}`}
           >
-            <span className="block truncate">{enCours ? "…" : `Planifier ${quand} ${resume}`}</span>
+            {/* Design v3 (25/10) : la date à confirmer ne disparaît jamais
+                (deux lignes au plus, plus de troncature). */}
+            <span className="line-clamp-2 text-center">{enCours ? "…" : `Planifier ${quand} ${resume}`}</span>
           </button>
         </div>
       </div>

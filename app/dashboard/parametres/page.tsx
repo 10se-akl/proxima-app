@@ -7,6 +7,8 @@ import { VueParametres } from "@/components/parametres/VueParametres";
 import { EtatErreur } from "@/components/ui/EtatErreur";
 import type { FormulaireParametres } from "@/lib/parametres";
 import { SquelettePage } from "@/components/ui/Skeleton";
+import { CLASSE_PAGE_ETROITE } from "@/components/ui/EnTetePage";
+import { CARTE } from "@/components/ui/recettes";
 
 // Paramètres — le chargement ; l'écran est dans
 // components/parametres/VueParametres.tsx (26/09, lot F).
@@ -108,7 +110,14 @@ export default function ParametresPage() {
   }, [charger]);
 
   if (erreur) {
-    return <EtatErreur onReessayer={charger} className="px-4 pt-5 pb-8 sm:p-8" />;
+    // Design v3 (24/10) : dans la grille commune, posé dans une carte calme.
+    return (
+      <div className={CLASSE_PAGE_ETROITE}>
+        <div className={CARTE}>
+          <EtatErreur onReessayer={charger} />
+        </div>
+      </div>
+    );
   }
   if (!etat) {
     return <SquelettePage />;

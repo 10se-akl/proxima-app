@@ -105,6 +105,22 @@ const NOMS_APPAREILS: Record<string, string> = {
 
 export type Part = { nom: string; valeur: number };
 
+/** Les votes d'idées : un votant (empreinte du jour) compte une fois par
+ *  idée et par choix. */
+function compterVotes(visites: { chemin: string; visiteur: string }[]): { idee: string; oui: number; non: number }[] {
+  const parIdee = new Map<string, { oui: Set<string>; non: Set<string> }>();
+  for (const v of visites) {
+    const [, , idee, choix] = v.chemin.split("/");
+    if (!idee || (choix !== "oui" && choix !== "non")) continue;
+    const e = parIdee.get(idee) ?? { oui: new Set<string>(), non: new Set<string>() };
+    e[choix].add(v.visiteur);
+    parIdee.set(idee, e);
+  }
+  return Array.from(parIdee, ([idee, e]) => ({ idee, oui: e.oui.size, non: e.non.size })).sort(
+    (a, b) => b.oui + b.non - (a.oui + a.non)
+  );
+}
+
 export type CompteStats = {
   id: string;
   nom: string;
@@ -125,6 +141,10 @@ export type Statistiques = {
     parJour: { jour: number; visiteurs: number }[];
     appareils: Part[];
     pages: Part[];
+    /** Les votes « Pas encore dans Compyo » de l'accueil (01/11/2026) :
+     *  par idée, le nombre de votants distincts « Bonne idée » / « Pas pour
+     *  moi » sur le mois. Un vote arrive comme une visite /vote/<id>/<choix>. */
+    votes: { idee: string; oui: number; non: number }[];
     origines: Part[];
     pays: Part[];
     navigateurs: Part[];
@@ -282,7 +302,9 @@ export async function calculerStatistiques(
   if (lectureVisites.erreur) migrationManquante = true;
 
   // ---- Le site -------------------------------------------------------------
-  const estPageDuSite = (v: Visite) => !v.chemin.startsWith("/dashboard");
+  // 01/11/2026 — un vote d'idée (/vote/…) n'est pas une page vue.
+  const estVote = (v: Visite) => v.chemin.startsWith("/vote/");
+  const estPageDuSite = (v: Visite) => !v.chemin.startsWith("/dashboard") && !estVote(v);
   const visitesMois = lectureVisites.lignes.filter((v) => dansPeriode(v.cree_le, debut, fin));
   const visitesPrecedent = lectureVisites.lignes.filter((v) => dansPeriode(v.cree_le, precedent.debut, finComparaison));
   const site = visitesMois.filter(estPageDuSite);
@@ -375,6 +397,7 @@ export async function calculerStatistiques(
       parJour: parJour.map((j) => ({ jour: j.jour, visiteurs: j.visiteurs.size })),
       appareils: repartition(site, (v) => NOMS_APPAREILS[v.appareil] ?? v.appareil, 3),
       pages: compter(site, (v) => libellePage(v.chemin), 10),
+      votes: compterVotes(visitesMois.filter(estVote)),
       origines,
       pays: repartition(site, (v) => v.pays, 6),
       navigateurs: repartition(site, (v) => v.navigateur, 6),

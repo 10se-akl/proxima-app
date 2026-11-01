@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { metaPage } from "@/lib/seo";
-import { Accueil } from "@/components/marketing/vitrine/Accueil";
-import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
+import { AccueilCarnet } from "@/components/marketing/carnet/AccueilCarnet";
 
 // ============================================================
 // Refonte navigation (Module 16, voir supabase/schema.sql) : Axel veut que
@@ -19,14 +18,16 @@ import { SectionAvisGoogle } from "@/components/marketing/AvisGoogle";
 // 24/09 — Le titre et la description suivent le nouveau message de
 // l'accueil. Titre « absolu » : le gabarit « %s — Compyo » du layout
 // l'aurait doublé.
-const TITRE = "Compyo — Le compagnon des artisans";
+// 01/11/2026 — Nouvel accueil « carnet de chantier » : le look de la vitrine
+// expérience et le texte « vos clients n'attendent plus », gagnants des tests
+// du 01/11 (compyo/test-accueil-01-11/RESULTATS.md, hors dépôt). L'ancien
+// accueil (components/marketing/vitrine/Accueil.tsx) est gardé, non affiché.
+const TITRE = "Compyo — Devis, relances et factures pour artisans du bâtiment";
 const DESCRIPTION =
-  "Vos soirées ne sont pas faites pour la paperasse. Du premier message du client à la facture, Compyo garde chaque chantier rangé, sans rien ressaisir. Bêta privée gratuite.";
+  "Compyo range les demandes de vos clients et prépare la réponse, le devis, la relance et la facture. Vous relisez, vous envoyez de votre téléphone : rien ne part sans vous. Bêta gratuite pour les artisans du bâtiment.";
 
 export const metadata: Metadata = metaPage({ titre: TITRE, description: DESCRIPTION, chemin: "/", titreAbsolu: true });
 
 export default function HomePage() {
-  // Les avis Google se lisent côté serveur (clé d'API privée) : la section
-  // ne rend rien tant qu'il n'y a pas de fiche Google.
-  return <Accueil avis={<SectionAvisGoogle />} />;
+  return <AccueilCarnet />;
 }

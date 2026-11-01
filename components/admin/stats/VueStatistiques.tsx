@@ -147,6 +147,22 @@ export function VueStatistiques({ stats }: { stats: Statistiques }) {
         <Bloc titre="Pages les plus vues">
           <ListeBarres parts={site.pages} unite="vues" />
         </Bloc>
+        <Bloc titre="Idées votées sur l'accueil" sousTitre="« Pas encore dans Compyo » · votants distincts du mois">
+          {site.votes.length === 0 ? (
+            <p className="text-sm text-steel">Aucun vote ce mois-ci.</p>
+          ) : (
+            <ul className="grid gap-2 text-sm">
+              {site.votes.map((v) => (
+                <li key={v.idee} className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 break-words text-ink">{v.idee.replace(/-/g, " ")}</span>
+                  <span className="shrink-0 tabular-nums text-steel">
+                    {v.oui} bonne idée · {v.non} pas pour moi
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Bloc>
         <div className="grid gap-3">
           <Bloc titre="Pays">
             <ListeBarres parts={avecPays(site.pays)} unite="visiteurs" vide="Indisponible en local — renseigné en production." />

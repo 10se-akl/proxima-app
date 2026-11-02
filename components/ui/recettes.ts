@@ -35,9 +35,12 @@ export const CREUX = "rounded-[20px] bg-paper-warm";
 // 20 des cartes. Avant : 12, 14, 16, 20 et la pilule selon l'écran.
 const BASE =
   "inline-flex items-center justify-center gap-2 font-semibold motion-safe:transition-colors motion-safe:duration-150 disabled:cursor-not-allowed disabled:opacity-60";
-const COMPACT = `${BASE} min-h-12 rounded-full px-5 text-base`;
-const LARGE = `${BASE} min-h-14 w-full rounded-full px-6 text-[17px]`;
-const PLEIN = "bg-ink text-paper active:bg-ink/85 sm:hover:bg-ink/90";
+const COMPACT = `${BASE} min-h-12 rounded-[12px] px-5 text-base`;
+const LARGE = `${BASE} min-h-14 w-full rounded-[12px] px-6 text-[17px]`;
+// 02/11/2026 — le bleu du cordeau, avec sa petite ombre dessous qui s'écrase
+// à l'appui (le bouton du carnet de chantier).
+const PLEIN =
+  "bg-action text-sur-action shadow-[0_4px_0_rgb(var(--c-action-ombre))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-action-ombre))] sm:hover:brightness-110";
 const EN_CREUX = "bg-paper-warm text-ink active:bg-ink/10 sm:hover:bg-ink/[0.08]";
 const EN_SURFACE = "bg-surface text-ink active:bg-ink/10 sm:hover:bg-ink/[0.06]";
 

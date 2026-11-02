@@ -22,6 +22,9 @@
   --chevron-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23424855' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
   --coche: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23F6F5F2' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12.5 4.5 4.5L19 7.5'/%3E%3C/svg%3E");
   --c-signal: 201 107 74; /* terracotta */
+  --c-action: 35 86 196; /* 02/11 : le bleu du cordeau, partout */
+  --c-action-ombre: 23 62 150;
+  --c-sur-action: 255 255 255;
   --c-signal-clair: 232 197 182;
   --c-signal-fonce: 168 86 58;
   --c-anthracite: 31 41 55; /* fixe, ne s'inverse jamais avec le mode */
@@ -847,22 +850,28 @@ html:has([data-da="atelier"]) {
   color-scheme: light;
   --t-xs: 0.8125rem; /* plancher : text-xs = 13 px dans l'application */
   --t-xs-lh: 1.15rem;
-  --c-paper: 246 245 242; /* fond : papier presque blanc */
-  --c-paper-warm: 237 235 230; /* creux : boutons secondaires, champs, pilule active */
-  --c-surface: 255 255 255; /* cartes */
-  --c-ink: 20 25 36; /* encre bleu-nuit : texte, boutons pleins (17,6:1) */
-  /* 25/10 (audit) : un cran plus foncé, AAA aussi sur les creux (7,7:1). */
-  --c-steel: 66 72 85; /* le seul gris de texte (9,2:1 sur blanc, 8,4:1 sur le fond) */
-  --c-gris-clair: 226 224 219; /* filets (décor seulement) */
+  /* 02/11/2026 — le carnet de chantier (même direction que le site) :
+     papier quadrillé, encre graphite, bleu du cordeau pour l'action,
+     rouge du crayon pour l'urgent. */
+  --c-paper: 243 242 237; /* le papier du carnet */
+  --c-paper-warm: 234 232 225; /* creux : boutons secondaires, pilule active */
+  --c-surface: 255 255 255; /* cartes pleines et blanches, lisibles au soleil */
+  --c-ink: 28 30 33; /* encre graphite (16,5:1) */
+  --c-steel: 70 75 82; /* le seul gris de texte (7,9:1 sur le papier) */
+  --c-gris-clair: 210 213 218; /* filets (décor seulement) */
+  --c-action: 35 86 196; /* bleu du cordeau : l'action principale (blanc dessus 6,5:1) */
+  --c-action-ombre: 23 62 150;
+  --c-sur-action: 255 255 255;
+  --carreau: rgb(56 96 170 / 0.07);
   --c-contour: 130 127 121; /* contour des champs, gris chaud : 4:1, on voit où taper (WCAG 1.4.11) */
-  --c-nuit: 23 31 48; /* la carte « Maintenant », le + */
-  --c-anthracite: 23 31 48;
-  --c-signal: 184 76 36; /* orange brûlé : maintenant, urgent (blanc dessus 5,1:1) */
-  --c-signal-fonce: 146 58 24; /* orange en texte (7,4:1) */
-  --c-signal-clair: 255 178 140; /* orange sur la carte sombre */
+  --c-nuit: 16 21 27; /* la carte « Maintenant » : la nuit du carnet */
+  --c-anthracite: 16 21 27;
+  --c-signal: 181 55 34; /* rouge du crayon : maintenant, urgent (blanc dessus 6,2:1) */
+  --c-signal-fonce: 150 45 28; /* rouge crayon en texte (7,2:1) */
+  --c-signal-clair: 255 178 156; /* sur la carte de nuit */
   --c-succes: 18 96 58; /* argent qui rentre, c'est fait */
   --c-alerte-orange: 122 70 0; /* à faire, attention */
-  --c-bleu: 28 78 160; /* information, rendez-vous */
+  --c-bleu: 35 86 196; /* information, rendez-vous */
   --c-violet: 86 54 158; /* factures */
   /* Teintes d'étiquettes, opaques. */
   --c-succes-fond: 226 242 232;
@@ -879,18 +888,23 @@ html:has([data-da="atelier"]) {
 }
 html.dark:has([data-da="atelier"]) {
   color-scheme: dark;
-  --c-paper: 14 15 18;
-  --c-paper-warm: 38 41 48;
-  --c-surface: 25 27 32;
-  --c-ink: 237 236 232; /* jamais de blanc pur */
-  --c-steel: 180 184 194; /* 8,7:1 sur la surface, 7,3:1 sur les creux */
-  --c-gris-clair: 44 47 54;
-  --c-contour: 118 116 111; /* 3,7:1 sur la surface */
-  --c-nuit: 40 45 58; /* « Maintenant » : un palier plus haut, légèrement bleu */
-  --c-anthracite: 40 45 58;
-  --c-signal: 184 76 36; /* même orange plein, blanc dessus 5,1:1 */
-  --c-signal-fonce: 246 162 124; /* orange en texte sur fond sombre (8,5:1) */
-  --c-signal-clair: 246 162 124;
+  /* 02/11/2026 — l'ardoise du chantier : fond ardoise, texte craie. */
+  --c-paper: 27 32 35;
+  --c-paper-warm: 42 50 55;
+  --c-surface: 37 44 49;
+  --c-ink: 236 237 233; /* la craie, jamais de blanc pur */
+  --c-steel: 188 193 191; /* 7,7:1 sur la surface */
+  --c-gris-clair: 54 62 67;
+  --c-action: 142 176 255; /* cordeau éclairci (texte sombre dessus 8,4:1) */
+  --c-action-ombre: 79 111 184;
+  --c-sur-action: 12 20 36;
+  --carreau: rgb(255 255 255 / 0.04);
+  --c-contour: 118 116 111; /* 3:1 sur la surface ardoise */
+  --c-nuit: 16 21 27; /* « Maintenant » : la nuit, plus profonde que l'ardoise */
+  --c-anthracite: 16 21 27;
+  --c-signal: 181 55 34;
+  --c-signal-fonce: 255 159 135; /* crayon éclairci en texte (7:1) */
+  --c-signal-clair: 255 159 135;
   --c-succes: 120 204 150;
   --c-alerte-orange: 238 182 92;
   --c-bleu: 140 180 255;
@@ -910,11 +924,27 @@ html.dark:has([data-da="atelier"]) {
 /* Une seule police, Inter (next/font, app/layout.tsx), pour le texte, les
    titres et les chiffres : fin des trois familles et de la rustine des
    chiffres. cv11 : le « a » à un étage, plus doux ; tnum là où on aligne. */
+/* 02/11/2026 — les polices du carnet : Atkinson Hyperlegible pour le texte
+   (dessinée pour ceux qui voient mal : l, I, 1, O, 0 distincts), Bricolage
+   Grotesque pour les titres et les grands chiffres. */
 html:has([data-da="atelier"]) body,
 html:has([data-da="atelier"]) .font-sans,
-html:has([data-da="atelier"]) .font-display,
 html:has([data-da="atelier"]) .font-mono {
+  font-family: "Atkinson Texte", var(--font-app), Verdana, "Segoe UI", system-ui, sans-serif;
+}
+html:has([data-da="atelier"]) .font-display {
+  font-family: "Bricolage Grotesque", "Arial Black", "Segoe UI", system-ui, sans-serif;
+}
+/* Le document du devis et de la facture reste sobre : Inter, comme avant. */
+html:has([data-da="atelier"]) :is(.document-papier, .doc-imprimable),
+html:has([data-da="atelier"]) :is(.document-papier, .doc-imprimable) :is(.font-sans, .font-display, .font-mono) {
   font-family: var(--font-app), Inter, ui-sans-serif, system-ui, sans-serif;
+}
+/* Le quadrillage du carnet, très discret, derrière les cartes blanches. */
+html:has([data-da="atelier"]) body {
+  background-color: rgb(var(--c-paper));
+  background-image: linear-gradient(var(--carreau) 1px, transparent 1px), linear-gradient(90deg, var(--carreau) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 html:has([data-da="atelier"]) body {
   font-feature-settings: "cv11", "ss03";
@@ -994,4 +1024,65 @@ html:has([data-da="atelier"]) :is(.backdrop-blur, .backdrop-blur-sm, .backdrop-b
     opacity: 1;
     transform: none;
   }
+}
+
+/* ============================================================
+   Site carnet (02/11/2026) — tout le site public prend les couleurs et les
+   polices du carnet de chantier de l'accueil (components/marketing/carnet/).
+   Les pages utilisent les jetons (bg-paper, text-ink, bg-signal…) : on les
+   redéfinit ici, toujours en clair, même si <html> porte encore « dark »
+   (navigation depuis l'application). Le bleu du cordeau remplace la
+   terracotta pour les actions ; la nuit reste pour les blocs sombres.
+   ============================================================ */
+@font-face{font-family:"Bricolage Grotesque";src:url("/fonts/carnet/bricolage-grotesque-latin-wght-normal.woff2") format("woff2");font-weight:200 800;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/fonts/carnet/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"Atkinson Hyperlegible";src:url("/fonts/carnet/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
+/* « Atkinson Texte » : Atkinson pour les lettres, mais pas pour les chiffres
+   (son zéro barré, « 2 137,Ø8 € », déroutait sur les montants) : les
+   chiffres passent à la police suivante, Inter (--font-app). */
+@font-face{font-family:"Atkinson Texte";src:url("/fonts/carnet/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap;unicode-range:U+0000-002F,U+003A-FFFF}
+@font-face{font-family:"Atkinson Texte";src:url("/fonts/carnet/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");font-weight:500 800;font-style:normal;font-display:swap;unicode-range:U+0000-002F,U+003A-FFFF}
+html.site-carnet,
+html.dark.site-carnet {
+  color-scheme: light;
+  --c-paper: 243 242 237;
+  --c-paper-warm: 234 232 225;
+  --c-surface: 255 255 255;
+  --c-ink: 28 30 33;
+  --c-steel: 70 75 82;
+  --c-gris-clair: 210 213 218;
+  --c-contour: 98 104 111;
+  --c-signal: 35 86 196; /* bleu du cordeau : les actions */
+  --c-signal-fonce: 23 62 150;
+  --c-signal-clair: 147 180 255;
+  --c-anthracite: 16 21 27; /* la nuit du carnet */
+  --c-nuit: 16 21 27;
+  --c-succes: 33 117 74;
+  --c-alerte-orange: 122 70 0;
+  --c-bleu: 35 86 196;
+  --ombre-douce: 0 1px 2px rgb(28 30 33 / 0.06), 0 18px 36px -22px rgb(28 30 33 / 0.4);
+}
+html.site-carnet body {
+  background-color: rgb(243 242 237);
+  background-image: linear-gradient(rgb(56 96 170 / 0.085) 1px, transparent 1px), linear-gradient(90deg, rgb(56 96 170 / 0.085) 1px, transparent 1px);
+  background-size: 24px 24px;
+  color: rgb(28 30 33);
+  font-family: "Atkinson Texte", var(--font-app), Verdana, "Segoe UI", system-ui, sans-serif;
+}
+html.site-carnet .font-sans { font-family: "Atkinson Texte", var(--font-app), Verdana, "Segoe UI", system-ui, sans-serif; }
+html.site-carnet .font-display { font-family: "Bricolage Grotesque", "Arial Black", "Segoe UI", system-ui, sans-serif; letter-spacing: -0.02em; }
+/* Les petites étiquettes « machine à écrire » en capitales espacées
+   deviennent des étiquettes du carnet : lisibles, en rouge crayon. */
+html.site-carnet .font-mono {
+  font-family: "Atkinson Texte", var(--font-app), Verdana, system-ui, sans-serif;
+}
+html.site-carnet .font-mono.uppercase:not(.tabular-nums) {
+  letter-spacing: 0.01em;
+  text-transform: none;
+  font-weight: 700;
+  color: rgb(181 55 34);
+}
+/* Sur un bloc de nuit ou une pastille bleue : le crayon éclairci. */
+html.site-carnet :where(.bg-anthracite, .bg-nuit, .bg-signal) .font-mono.uppercase:not(.tabular-nums) {
+  color: rgb(255 178 156);
 }

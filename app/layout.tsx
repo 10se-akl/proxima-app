@@ -6,6 +6,7 @@ import { InstallPWA } from "@/components/pwa/InstallPWA";
 import { MiseAJourPWA } from "@/components/pwa/MiseAJourPWA";
 import { EnregistrerServiceWorker } from "@/components/pwa/EnregistrerServiceWorker";
 import { MesureAudience } from "@/components/MesureAudience";
+import { ThemeSite } from "@/components/ThemeSite";
 
 const URL_SITE = SITE_URL;
 const TITRE = "Compyo — Le compagnon des artisans";
@@ -307,7 +308,10 @@ export default function RootLayout({
             // « 0 » clair) : Gérard a le clair au soleil, le sombre le soir.
             // Le site vitrine garde son sombre par défaut. La couleur de la
             // barre d'état suit le thème réellement affiché.
-            __html: `try{var c=localStorage.getItem("compyo-mode-sombre"),a=location.pathname.indexOf("/dashboard")===0||location.pathname.indexOf("/devis/")===0,s=c==="1"||(c!=="0"&&(!a||matchMedia("(prefers-color-scheme: dark)").matches));if(s){document.documentElement.classList.add("dark")}if(a){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#0E0F12":"#F6F5F2")})}if(location.pathname==="/"){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content","#F3F2ED")})}}catch(e){}`,
+            // 02/11/2026 — le site public (tout sauf l'application, l'admin et
+            // le devis client) prend le carnet de chantier : toujours clair,
+            // marque « site-carnet » (components/ThemeSite.tsx la suit ensuite).
+            __html: `try{var p=location.pathname,c=localStorage.getItem("compyo-mode-sombre"),a=p.indexOf("/dashboard")===0||p.indexOf("/devis/")===0,w=!(a||p.indexOf("/admin")===0||p.indexOf("/apercu")===0),s=!w&&(c==="1"||(c!=="0"&&(!a||matchMedia("(prefers-color-scheme: dark)").matches)));if(w){document.documentElement.classList.add("site-carnet")}if(s){document.documentElement.classList.add("dark")}if(a){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#1B2023":"#F3F2ED")})}if(w){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content","#F3F2ED")})}}catch(e){}`,
           }}
         />
       </head>
@@ -326,6 +330,7 @@ export default function RootLayout({
         {/* Mesure d'audience maison, sans cookie (Module 44) — voir
             components/MesureAudience.tsx et app/api/visite/route.ts. */}
         <MesureAudience />
+        <ThemeSite />
       </body>
     </html>
   );

@@ -10,7 +10,9 @@ type Variant = "primary" | "secondary" | "ghost" | "danger";
 // jamais pleine : contour d'alerte. Pas de zoom au survol (sans effet sous
 // le doigt) : l'appui fonce la couleur.
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-ink text-paper active:bg-ink/80 sm:hover:bg-ink/90",
+  // 02/11/2026 — le bleu du cordeau (comme les recettes).
+  primary:
+    "bg-action text-sur-action shadow-[0_4px_0_rgb(var(--c-action-ombre))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-action-ombre))] sm:hover:brightness-110",
   // Design v3 (23/10) : « secondary » était identique à « primary » (relevé
   // par l'inventaire du design system) — un seul plein par écran ; le
   // secondaire est en creux.
@@ -54,7 +56,7 @@ export function Button({
   return (
     <button
       disabled={disabled || loading}
-      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-5 text-base font-semibold motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${VARIANTS[variant]} ${className}`}
+      className={`inline-flex min-h-12 items-center justify-center gap-2 rounded-[12px] px-5 text-base font-semibold motion-safe:transition-colors disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink focus-visible:ring-offset-2 focus-visible:ring-offset-paper ${VARIANTS[variant]} ${className}`}
       {...props}
     >
       {loading && (

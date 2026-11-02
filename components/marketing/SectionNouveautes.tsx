@@ -74,8 +74,7 @@ export function SectionNouveautes() {
               Compyo évolue régulièrement
             </h2>
             <p className="mt-5 text-base text-ink/60 leading-relaxed">
-              Le produit avance vite, avec les retours des artisans bêta-testeurs. Voici les
-              derniers ajouts.
+              Le produit avance vite. Voici les derniers ajouts.
             </p>
           </div>
         </Reveal>

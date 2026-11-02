@@ -8,7 +8,7 @@ import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cad
 export const metadata: Metadata = metaPage({
   titre: "À propos",
   description:
-    "Compyo est développé par Axel Thfoin, développeur indépendant de 15 ans, en bêta privée avec de vrais retours d'artisans du bâtiment.",
+    "Compyo est développé par Axel Thfoin, développeur indépendant de 15 ans, en bêta privée gratuite, construit pour les artisans du bâtiment.",
   chemin: "/a-propos",
 });
 
@@ -136,12 +136,12 @@ function Construction() {
         <Reveal>
           <SectionLabel>Comment il est construit</SectionLabel>
           <h2 className="font-display text-2xl sm:text-4xl font-semibold tracking-tight text-balance">
-            Développé en bêta privée, avec de vrais artisans.
+            Une bêta privée, pour construire avec les premiers artisans.
           </h2>
           <p className="mt-6 text-base text-ink/70 leading-relaxed">
-            Compyo n&apos;est pas construit dans son coin. Le produit avance de façon itérative,
-            en bêta privée, avec les retours d&apos;artisans qui l&apos;utilisent réellement sur
-            leurs chantiers. Chaque retour compte et fait évoluer l&apos;outil.
+            Compyo ne veut pas se construire dans son coin. La bêta privée sert à ça&nbsp;:
+            le mettre entre les mains de ses premiers artisans, sur leurs chantiers, et le faire
+            évoluer avec leurs retours. Chaque retour comptera.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">

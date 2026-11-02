@@ -84,7 +84,7 @@ export function VotesIdees({ idees }: { idees: Idee[] }) {
             </button>
           </div>
           <p className="merci" aria-live="polite">
-            {votes[idee.id] ? "Merci, c’est noté. Sans nom, sans e-mail, sans adresse IP gardée." : ""}
+            {votes[idee.id] ? "Merci, c’est noté." : ""}
           </p>
         </li>
       ))}

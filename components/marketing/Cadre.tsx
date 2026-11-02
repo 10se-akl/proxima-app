@@ -3,7 +3,6 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
-import { ThemeToggle } from "@/components/ThemeToggle";
 import { FICHES_REDIGEES } from "@/lib/metiersPages";
 
 // ============================================================
@@ -209,7 +208,7 @@ export function Header({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 bg-paper/90 backdrop-blur-md border-b border-ink/10">
+    <header className="sticky top-0 z-40 bg-paper border-b border-gris-clair">
       {/* Conteneur volontairement plus large (7xl) que le contenu des pages
           (6xl) : avec 8 liens de nav + logo + Connexion + CTA, l'ensemble
           dépassait la largeur 6xl au breakpoint xl. Un flex en overflow n'a
@@ -224,15 +223,15 @@ export function Header({
             disparaître pendant qu'un autre apparaît. */}
         <Link id="ancre-logo-entete" href="/" className="flex min-h-11 items-center gap-2.5 shrink-0">
           <CompyoMark taille={30} />
-          <span className="font-display font-semibold tracking-tight">Compyo</span>
+          <span className="font-display text-[1.15rem] sm:text-[1.35rem] font-extrabold tracking-tight">Compyo</span>
         </Link>
 
-        <nav aria-label="Navigation principale" className="hidden lg:flex items-center gap-7">
+        <nav aria-label="Navigation principale" className="hidden xl:flex items-center gap-7">
           {LIENS_NAV.filter((lien) => lien.principal).map((lien) => (
             <Link
               key={lien.href}
               href={lien.href}
-              className="text-[13.5px] font-medium text-ink/65 hover:text-ink transition-colors whitespace-nowrap"
+              className="text-[15px] font-bold text-steel hover:text-ink transition-colors whitespace-nowrap"
             >
               {lien.label}
             </Link>
@@ -240,24 +239,20 @@ export function Header({
         </nav>
 
         <div className="flex items-center gap-3 shrink-0">
-          {!masquerToggleTheme && (
-            <ThemeToggle className="hidden sm:inline-block text-base leading-none hover:scale-110 transition-transform" />
-          )}
+          {/* 02/11/2026 — le site est toujours clair (carnet de chantier) :
+              plus de bouton de thème ici. */}
           {connecte ? (
-            <Link
-              href="/dashboard"
-              className="inline-flex items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap"
-            >
-              Dashboard
+            <Link href="/dashboard" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-11 px-4 text-[15px]">
+              Mon espace
             </Link>
           ) : (
             <>
-              <Link href="/login" className="hidden lg:block text-sm text-ink/70 hover:text-ink whitespace-nowrap">
+              <Link href="/login" className="hidden sm:inline-flex min-h-11 items-center px-2 text-[15px] font-bold text-steel hover:text-ink whitespace-nowrap">
                 Connexion
               </Link>
               <Link
                 href="/demander-acces"
-                className={`inline-flex min-h-11 items-center gap-1.5 rounded-full bg-ink text-paper text-[13px] sm:min-h-0 sm:text-sm font-medium px-3.5 py-1.5 sm:px-4 sm:py-2 hover:bg-signal hover:scale-[1.04] active:scale-[0.96] transition-all whitespace-nowrap ${
+                className={`inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-11 px-4 text-[15px] ${
                   ctaTelephone ? "" : "max-md:hidden"
                 }`}
               >
@@ -273,7 +268,7 @@ export function Header({
             onClick={() => setMenuOuvert((v) => !v)}
             aria-expanded={menuOuvert}
             aria-label={menuOuvert ? "Fermer le menu" : "Ouvrir le menu"}
-            className="lg:hidden grid place-items-center w-11 h-11 rounded-full border border-ink/15 text-ink hover:border-ink/30 transition-colors shrink-0"
+            className="xl:hidden grid place-items-center w-11 h-11 rounded-full border border-ink/15 text-ink hover:border-ink/30 transition-colors shrink-0"
           >
             <span className="relative w-4 h-3 block">
               <span
@@ -295,7 +290,7 @@ export function Header({
           ferme. Il occupe tout l'écran restant (100dvh) et défile seul si
           l'écran est court. */}
       {menuOuvert && (
-        <div className="menu-mobile lg:hidden absolute inset-x-0 top-full h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-ink/10 bg-paper">
+        <div className="menu-mobile xl:hidden absolute inset-x-0 top-full h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-ink/10 bg-paper">
           <nav aria-label="Menu" className="max-w-6xl mx-auto min-h-full px-5 sm:px-8 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col">
             <ul>
               {LIENS_NAV.map((lien, i) => (
@@ -327,28 +322,19 @@ export function Header({
                   ici, dans le panneau qui, lui, est justement fait pour le
                   mobile. Résultat : totalement injoignable sur téléphone,
                   seul moyen de le voir était un écran large. */}
-              {!masquerToggleTheme && (
-                <div className="flex items-center justify-between py-1">
-                  <span className="text-sm font-medium text-ink/70">Thème</span>
-                  <ThemeToggle className="text-lg leading-none text-ink/70 hover:text-ink transition-colors" />
-                </div>
-              )}
+
               {connecte ? (
-                <Link
-                  href="/dashboard"
-                  onClick={() => setMenuOuvert(false)}
-                  className="inline-flex items-center justify-center gap-1.5 rounded-full bg-ink text-paper text-[15px] font-semibold px-4 py-4 hover:bg-signal transition-colors"
-                >
-                  Dashboard
+                <Link href="/dashboard" onClick={() => setMenuOuvert(false)} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-14 px-4 text-[17px]">
+                  Mon espace
                 </Link>
               ) : (
                 <>
                   <Link
                     href="/demander-acces"
                     onClick={() => setMenuOuvert(false)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-full bg-signal text-white text-[15px] font-semibold px-4 py-4 shadow-[0_12px_30px_-12px_rgb(201_107_74/0.9)] transition-transform active:scale-[0.98]"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-14 px-4 text-[17px]"
                   >
-                    Rejoindre la bêta privée
+                    Rejoindre la bêta gratuite
                   </Link>
                   <Link
                     href="/login"
@@ -377,78 +363,47 @@ export function Header({
 // rejoignent sans se chevaucher).
 // ============================================================
 export function Footer() {
+  // 02/11/2026 — pied de page clair, aux couleurs du carnet (comme celui de
+  // l'accueil). Plus d'adresse e-mail Gmail affichée : la page Contact.
+  const lien = "inline-flex min-h-11 items-center font-bold text-ink hover:text-signal hover:underline";
   return (
-    // Même raison qu'ailleurs sur le site : bg-anthracite fixe + texte
-    // blanc fixe, pas ink/paper qui s'inverseraient avec le mode.
-    <footer className="bg-anthracite">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 py-10 flex flex-col gap-6">
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
-          <div className="flex flex-col items-center sm:items-start gap-1.5">
+    <footer className="border-t border-gris-clair bg-paper-warm">
+      <div className="max-w-6xl mx-auto px-5 sm:px-8 pt-12 pb-[calc(2.5rem+env(safe-area-inset-bottom))] flex flex-col gap-8">
+        <div className="grid gap-8 md:grid-cols-[1fr_1.4fr]">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center gap-2.5">
-              <CompyoMark variante="blanc" taille={26} />
-              <span className="text-sm font-medium text-white/85">Compyo</span>
+              <CompyoMark variante="couleur" taille={28} />
+              <span className="font-display text-[1.35rem] font-extrabold">Compyo</span>
             </div>
-            <p className="text-xs text-white/45 max-w-[220px] text-center sm:text-left leading-relaxed">
-              Le copilote administratif des artisans du bâtiment.
-            </p>
+            <p className="max-w-xs text-steel">Le secrétariat de l’artisan, dans sa poche. Bêta gratuite.</p>
           </div>
-          {/* Second niveau de navigation : le site étant maintenant réparti
-              sur plusieurs pages, le pied de page redonne un accès complet
-              à toutes, pas seulement aux pages légales. */}
-          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/60 max-sm:gap-y-0 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center max-sm:[&_a]:relative max-sm:[&_a]:before:absolute max-sm:[&_a]:before:inset-y-0 max-sm:[&_a]:before:-inset-x-2 max-sm:[&_a]:before:content-['']">
-            <Link href="/fonctionnalites" className="hover:text-white transition-colors">
-              Fonctionnalités
-            </Link>
-            <Link href="/comment-ca-fonctionne" className="hover:text-white transition-colors">
-              Comment ça fonctionne
-            </Link>
-            <Link href="/pourquoi-compyo" className="hover:text-white transition-colors">
-              Pourquoi Compyo
-            </Link>
-            <Link href="/carte-mentale" className="hover:text-white transition-colors">
-              Carte mentale
-            </Link>
-            <Link href="/comparatif" className="hover:text-white transition-colors">
-              Comparatif
-            </Link>
-            <Link href="/confiance" className="hover:text-white transition-colors">
-              Sécurité & transparence
-            </Link>
-            <Link href="/beta" className="hover:text-white transition-colors">
-              Bêta
-            </Link>
-            <Link href="/a-propos" className="hover:text-white transition-colors">
-              À propos
-            </Link>
-            <Link href="/questions-frequentes" className="hover:text-white transition-colors">
-              Questions fréquentes
-            </Link>
-            <Link href="/contact" className="hover:text-white transition-colors">
-              Contact
-            </Link>
-            {/* 20/09 — Seul point d'entrée permanent vers l'installation :
-                la carte de InstallPWA.tsx ne se propose qu'une fois par
-                navigateur, donc un artisan qui l'a fermée n'avait plus
-                aucun moyen d'installer Compyo depuis le site. */}
-            <Link href="/installer" className="hover:text-white transition-colors">
-              Installer l&apos;application
-            </Link>
+          <nav aria-label="Pages du site" className="grid grid-cols-2 gap-x-6 sm:grid-cols-3">
+            <Link href="/" className={lien}>Accueil</Link>
+            <Link href="/comment-ca-fonctionne" className={lien}>Comment ça marche</Link>
+            <Link href="/fonctionnalites" className={lien}>Fonctionnalités</Link>
+            <Link href="/pourquoi-compyo" className={lien}>Pourquoi Compyo</Link>
+            <Link href="/comparatif" className={lien}>Comparatif</Link>
+            <Link href="/confiance" className={lien}>Sécurité et transparence</Link>
+            <Link href="/beta" className={lien}>La bêta</Link>
+            <Link href="/a-propos" className={lien}>À propos</Link>
+            <Link href="/questions-frequentes" className={lien}>Questions fréquentes</Link>
+            <Link href="/carte-mentale" className={lien}>Carte mentale</Link>
+            <Link href="/installer" className={lien}>Installer l’application</Link>
+            <Link href="/contact" className={lien}>Contact</Link>
           </nav>
         </div>
 
-        {/* 25/09 — Une page par métier, accessible de partout : pour
-            l'artisan qui cherche la sienne, et pour les moteurs qui ne
-            trouvaient ces pages que par le sitemap. */}
-        <nav aria-label="Compyo pour votre métier" className="pt-6 border-t border-white/10">
-          <p className="text-center sm:text-left text-[11px] font-mono uppercase tracking-[0.18em] text-white/40">
-            <Link href="/metiers" className="inline-flex min-h-11 items-center hover:text-white/80 transition-colors sm:min-h-0">
+        {/* Une page par métier, accessible de partout. */}
+        <nav aria-label="Compyo pour votre métier" className="border-t border-gris-clair pt-6">
+          <p className="font-bold text-ink">
+            <Link href="/metiers" className="inline-flex min-h-11 items-center hover:text-signal">
               Compyo pour votre métier
             </Link>
           </p>
-          <ul className="mt-3 flex flex-wrap justify-center sm:justify-start gap-x-4 gap-y-1.5 text-xs text-white/55 max-sm:mt-1 max-sm:gap-y-0 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center max-sm:[&_a]:relative max-sm:[&_a]:before:absolute max-sm:[&_a]:before:inset-y-0 max-sm:[&_a]:before:-inset-x-2 max-sm:[&_a]:before:content-['']">
+          <ul className="flex flex-wrap gap-x-4 text-steel">
             {FICHES_REDIGEES.map((f) => (
               <li key={f.slug}>
-                <Link href={`/metiers/${f.slug}`} className="hover:text-white transition-colors">
+                <Link href={`/metiers/${f.slug}`} className="inline-flex min-h-11 items-center hover:text-ink hover:underline">
                   {f.nom}
                 </Link>
               </li>
@@ -456,25 +411,11 @@ export function Footer() {
           </ul>
         </nav>
 
-        <div className="pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-white/50 max-sm:gap-y-0 max-sm:[&_a]:inline-flex max-sm:[&_a]:min-h-11 max-sm:[&_a]:items-center max-sm:[&_a]:relative max-sm:[&_a]:before:absolute max-sm:[&_a]:before:inset-y-0 max-sm:[&_a]:before:-inset-x-2 max-sm:[&_a]:before:content-['']">
-            <Link href="/mentions-legales" className="hover:text-white/80 transition-colors">
-              Mentions légales
-            </Link>
-            <Link href="/politique-de-confidentialite" className="hover:text-white/80 transition-colors">
-              Confidentialité
-            </Link>
-            <Link href="/cgu" className="hover:text-white/80 transition-colors">
-              CGU
-            </Link>
-          </nav>
-          <a
-            href="mailto:proxima.saas@gmail.com"
-            className="inline-flex min-h-11 items-center font-mono text-xs text-white/40 hover:text-white/70 transition-colors sm:min-h-0"
-          >
-            proxima.saas@gmail.com
-          </a>
-        </div>
+        <nav aria-label="Informations légales" className="flex flex-wrap gap-x-5 border-t border-gris-clair pt-5 text-[15px] text-steel">
+          <Link href="/mentions-legales" className="inline-flex min-h-11 items-center hover:text-ink">Mentions légales</Link>
+          <Link href="/politique-de-confidentialite" className="inline-flex min-h-11 items-center hover:text-ink">Confidentialité</Link>
+          <Link href="/cgu" className="inline-flex min-h-11 items-center hover:text-ink">CGU</Link>
+        </nav>
       </div>
     </footer>
   );

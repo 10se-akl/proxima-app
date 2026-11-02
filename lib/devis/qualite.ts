@@ -373,7 +373,9 @@ export function lignesADoute(
         return { id: "prix_a_verifier", libelle: "Prix à vérifier" };
       }
     }
-    if (estPrixCompyo(l)) return { id: "prix_compyo", libelle: "Prix Compyo" };
+    // 02/11/2026 — « Prix de référence » (et plus « Prix Compyo ») : le même mot
+    // que le site ; « Prix Compyo » laissait croire que l'IA fixait le prix.
+    if (estPrixCompyo(l)) return { id: "prix_compyo", libelle: "Prix de référence" };
     return null;
   });
 }

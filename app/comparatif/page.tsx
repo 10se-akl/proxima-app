@@ -294,7 +294,7 @@ function CTA() {
       <div className="max-w-2xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
         <Reveal>
           <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-            Compyo est en bêta privée, avec quelques artisans.
+            Compyo est en bêta privée et cherche ses premiers artisans.
           </h2>
           <p className="mt-4 text-base text-ink/60 leading-relaxed max-w-lg mx-auto">
             Chaque candidature est lue et examinée individuellement — pas de réponse

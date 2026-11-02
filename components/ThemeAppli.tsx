@@ -16,7 +16,7 @@ const CLE = "compyo-mode-sombre";
 
 function appliquer(sombre: boolean) {
   document.documentElement.classList.toggle("dark", sombre);
-  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", sombre ? "#0E0F12" : "#F6F5F2"));
+  document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", sombre ? "#1B2023" : "#F3F2ED"));
 }
 
 export function ThemeAppli() {

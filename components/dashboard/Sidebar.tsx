@@ -279,7 +279,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
                   débord au plus), sans halo coloré ni anneau. 25/10 : en
                   sombre, le bouton principal clair (le bleu-nuit s'y perdait,
                   1,25:1 face à la barre). */}
-              <span className="-mt-2 grid h-14 w-14 place-items-center rounded-full bg-ink text-paper ombre-douce motion-safe:transition-transform motion-safe:duration-150 motion-safe:group-active:scale-95 group-focus-visible:ring-2 group-focus-visible:ring-ink group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-surface">
+              <span className="-mt-2 grid h-14 w-14 place-items-center rounded-full bg-action text-sur-action ombre-douce motion-safe:transition-transform motion-safe:duration-150 motion-safe:group-active:scale-95 group-focus-visible:ring-2 group-focus-visible:ring-ink group-focus-visible:ring-offset-2 group-focus-visible:ring-offset-surface">
                 <IconePlus className="h-7 w-7" />
               </span>
               {/* 25/10 — en steel comme les autres onglets : en gras, il passait

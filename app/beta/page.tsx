@@ -28,11 +28,11 @@ export default function BetaPage() {
             Bêta privée
           </p>
           <h1 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-balance">
-            Compyo se construit avec quelques artisans, pas seul dans son coin.
+            Compyo se construira avec ses premiers artisans, pas seul dans son coin.
           </h1>
           <p className="mt-6 text-lg text-ink/70 max-w-xl mx-auto leading-relaxed">
             Pas de lancement ouvert, pas de liste d&apos;attente de masse. Une candidature, lue
-            individuellement, et un produit qui évolue avec les gens qui l&apos;utilisent
+            individuellement, et un produit qui évoluera avec les gens qui l&apos;utiliseront
             vraiment.
           </p>
         </div>
@@ -54,7 +54,7 @@ export default function BetaPage() {
             </p>
             <p className="mt-4 text-base text-ink/70 leading-relaxed">
               Une bêta privée oblige à faire l&apos;inverse : mettre le produit entre les mains
-              d&apos;un petit nombre de personnes qui l&apos;utilisent réellement, sur de vrais
+              d&apos;un petit nombre de personnes qui l&apos;utiliseront réellement, sur de vrais
               chantiers, et ajuster en fonction de ce qui se passe concrètement plutôt que de ce
               qui semblait une bonne idée sur le papier.
             </p>

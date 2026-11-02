@@ -10,7 +10,7 @@ import { CATEGORIES } from "@/lib/retours/taxonomie";
 export const metadata: Metadata = metaPage({
   titre: "Carte mentale",
   description:
-    "Les grands thèmes remontés par les artisans qui utilisent Compyo, regroupés automatiquement par IA — sans jamais révéler qui a dit quoi.",
+    "Les grands thèmes que remonteront les artisans qui utiliseront Compyo, regroupés automatiquement par IA — sans jamais révéler qui a dit quoi.",
   chemin: "/carte-mentale",
 });
 
@@ -47,11 +47,11 @@ export default async function CarteMentalePage() {
           <Reveal>
             <SectionLabel>Vous construisez Compyo avec nous</SectionLabel>
             <h1 className="mt-3 font-display text-3xl sm:text-5xl font-semibold tracking-tight text-balance">
-              Ce qui compte vraiment pour les artisans qui utilisent Compyo.
+              Ce qui comptera vraiment pour les artisans qui utiliseront Compyo.
             </h1>
             <p className="mt-6 text-lg text-ink/70 max-w-xl mx-auto leading-relaxed">
-              Chaque retour est analysé, regroupé avec les retours similaires, et nous aide à
-              décider des prochaines améliorations. Les informations des autres artisans restent
+              Chaque retour sera analysé, regroupé avec les retours similaires, et nous aidera à
+              décider des prochaines améliorations. Les informations des autres artisans resteront
               toujours anonymes.
             </p>
           </Reveal>

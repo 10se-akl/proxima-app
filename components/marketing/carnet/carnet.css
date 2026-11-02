@@ -26,7 +26,7 @@
   --bulle-client:#E6E8EB;--bulle-moi:#DCE5FA;--bulle-envoyee:#D6EEDD;
   --nuit:#10151B;--nuit-2:#18202A;--nuit-encre:#EEF1F4;--nuit-encre-2:#AAB4BF;--nuit-cordeau:#93B4FF;--lune:#F3E8B6;
   --f-titre:"Bricolage Grotesque","Arial Black","Segoe UI",system-ui,sans-serif;
-  --f-texte:"Atkinson Hyperlegible",Verdana,"Segoe UI",system-ui,sans-serif;
+  --f-texte:"Atkinson Texte",var(--font-app),Verdana,"Segoe UI",system-ui,sans-serif;
   --f-main:"Caveat","Segoe Print","Bradley Hand",cursive;
   --cadre:1180px;--gouttiere:clamp(16px,5vw,40px);--rayon:14px;--tactile:52px;
   color-scheme:light;

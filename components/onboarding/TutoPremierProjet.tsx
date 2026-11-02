@@ -186,7 +186,7 @@ export function TutoPremierProjet() {
                       onClick={() => setEtape("choix")}
                       aria-label="Nouveau projet"
                       // Le même « + » que la vraie barre du bas (Sidebar.tsx).
-                      className={`-mt-4 grid h-14 w-14 place-items-center rounded-full bg-nuit text-white dark:bg-ink dark:text-paper ring-signal ring-offset-surface ${CIBLE}`}
+                      className={`-mt-4 grid h-14 w-14 place-items-center rounded-full bg-action text-sur-action ring-signal ring-offset-surface ${CIBLE}`}
                     >
                       <IconePlus className="h-7 w-7" />
                     </button>

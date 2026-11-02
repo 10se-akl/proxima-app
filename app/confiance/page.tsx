@@ -163,9 +163,9 @@ function StatutJuridique() {
               une complexité réels, et avant de s&apos;engager dans cette démarche, Axel veut
               d&apos;abord avoir de vrais retours d&apos;artisans : est-ce que l&apos;outil fait
               vraiment gagner du temps, est-ce qu&apos;il tient dans la durée, est-ce que les
-              artisans qui l&apos;essaient reviennent. C&apos;est précisément pour ça que Compyo
+              artisans qui l&apos;essaieront reviendront. C&apos;est précisément pour ça que Compyo
               reste en bêta privée, sur candidature, avec un nombre volontairement limité
-              d&apos;artisans testeurs.
+              de premiers testeurs.
             </p>
             <p>
               Concrètement, ça veut dire : sans structure juridique (SIRET, assurance

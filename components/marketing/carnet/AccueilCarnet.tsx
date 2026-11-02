@@ -22,7 +22,7 @@ import "./carnet.css";
 //   - une page courte (environ 8 écrans de téléphone, pas 16) ;
 //   - pas de promesse « plus rien à faire » ;
 //   - l'honnêteté sur les prix (« ou un tarif de référence que vous
-//     ajustez » : c'est ce que l'éditeur appelle « Prix Compyo ») ;
+//     ajustez » : c'est ce que l'éditeur appelle « Prix de référence ») ;
 //   - les idées à venir clairement séparées de ce qui existe, en votes
 //     d'un appui ;
 //   - pas d'adresse Gmail en vue : la page Contact.

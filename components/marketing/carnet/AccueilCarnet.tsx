@@ -153,7 +153,7 @@ export function AccueilCarnet() {
               </div>
               <figcaption className="legende">
                 Sur Android&nbsp;: Partager → Compyo. Sur iPhone, pour l’instant&nbsp;: une capture d’écran ou un
-                copier-coller.
+                copier-coller. Si la bêta prend, une vraie application arrivera, avec le partage sur iPhone aussi.
               </figcaption>
             </figure>
           </div>

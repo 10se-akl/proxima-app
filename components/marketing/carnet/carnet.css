@@ -197,7 +197,7 @@
 .carnet .coche path{stroke-dasharray:40;stroke-dashoffset:0}
 .carnet .finale .hero-mention{color:var(--nuit-encre-2)}
 .carnet .finale :focus-visible{outline-color:var(--nuit-cordeau)}
-.carnet .legende{margin-top:14px;max-width:300px;text-align:center;font-size:.95rem;color:var(--encre-2)}
+.carnet .legende{margin-top:14px;max-width:320px;text-align:center;font-size:.95rem;color:var(--encre-2)}
 
 /* Les téléphones dessinés (exemples inventés) */
 .carnet .tel{position:relative;width:min(100%,300px);aspect-ratio:9/18.4;margin-inline:auto;border-radius:44px;background:var(--boitier);padding:11px;box-shadow:0 30px 60px -28px rgb(15 18 22 / .55),inset 0 0 0 2px rgb(255 255 255 / .06)}
@@ -208,7 +208,7 @@
 .carnet .tel-tete{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .carnet .tel-titre{font:780 16px/1.15 var(--f-titre)}
 .carnet .tel-sous{font-size:12px;color:var(--ecran-encre-2)}
-.carnet .puce-app{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--cordeau);color:#fff;flex:none;font:800 15px/1 var(--f-titre)}
+.carnet .puce-app{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:9px;background:var(--cordeau);color:var(--sur-cordeau);flex:none;font:800 15px/1 var(--f-titre)}
 .carnet .fil{display:flex;flex-direction:column;gap:8px}
 .carnet .bulle{max-width:88%;padding:9px 12px;border-radius:16px 16px 16px 5px;background:var(--bulle-client);font-size:13px;line-height:1.38;transition:opacity .4s ease,transform .5s cubic-bezier(.5,0,.2,1)}
 .carnet .bulle.moi{align-self:flex-end;border-radius:16px 16px 5px 16px;background:var(--bulle-moi)}
@@ -221,7 +221,7 @@
 .carnet .partage-apps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;font-size:11px;color:var(--ecran-encre-2)}
 .carnet .partage-apps span{display:grid;justify-items:center;gap:5px}
 .carnet .app-rond{width:46px;height:46px;border-radius:14px;background:var(--ecran-2);display:grid;place-items:center;color:var(--ecran-encre);font:800 18px/1 var(--f-titre);transition:box-shadow .3s ease,transform .2s ease}
-.carnet .app-compyo .app-rond{background:var(--cordeau);color:#fff}
+.carnet .app-compyo .app-rond{background:var(--cordeau);color:var(--sur-cordeau)}
 .carnet .app-compyo b{color:var(--ecran-encre);font-size:11px}
 .carnet .app-compyo.touche .app-rond{box-shadow:0 0 0 4px var(--metre);transform:scale(.94)}
 .carnet .voile{position:absolute;inset:0;background:rgb(0 0 0 / .18);z-index:1;transition:opacity .4s ease}
@@ -251,7 +251,7 @@
 .carnet .tampon{align-self:center;margin-top:4px;padding:6px 14px;border:3px solid var(--ok);border-radius:8px;color:var(--ok);font:800 15px/1 var(--f-titre);letter-spacing:.04em;transform:rotate(-5deg);transition:opacity .3s ease,transform .35s cubic-bezier(.2,1.6,.4,1)}
 .carnet .tel-boutons{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:auto;flex:none}
 .carnet .tel-bouton{display:grid;place-items:center;min-height:46px;border-radius:12px;border:2px solid var(--trait);font:700 13px/1.1 var(--f-texte);color:var(--ecran-encre);background:var(--carte);transition:transform .15s ease,box-shadow .15s ease}
-.carnet .tel-bouton.fort{background:var(--cordeau);border-color:var(--cordeau);color:#fff}
+.carnet .tel-bouton.fort{background:var(--cordeau);border-color:var(--cordeau);color:var(--sur-cordeau)}
 .carnet .tel-bouton.appuye{transform:scale(.95);box-shadow:0 0 0 4px var(--metre)}
 .carnet .toast{position:absolute;left:14px;right:14px;bottom:70px;z-index:3;padding:11px 12px;border-radius:12px;background:var(--ok);color:#fff;font:700 12.5px/1.3 var(--f-texte);transition:opacity .35s ease,transform .35s ease}
 .carnet .doigt{position:absolute;z-index:5;width:44px;height:44px;border-radius:50%;background:rgb(242 192 46 / .45);border:2px solid rgb(28 30 33 / .55);pointer-events:none;transition:left .7s cubic-bezier(.5,0,.2,1),top .7s cubic-bezier(.5,0,.2,1),transform .15s ease,opacity .3s ease}

@@ -30,9 +30,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     document.documentElement.classList.toggle("dark", nouveau);
     localStorage.setItem(CLE_STOCKAGE, nouveau ? "1" : "0");
     // Design v3 : la barre d'état du téléphone suit, dans l'application.
-    if (location.pathname.startsWith("/dashboard")) {
-      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", nouveau ? "#0E0F12" : "#F6F5F2"));
-    }
+    // 02/11/2026 : le papier du carnet et l'ardoise, partout.
+    document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", nouveau ? "#1B2023" : "#F3F2ED"));
   }
 
   // Évite un flash "mauvais état" avant que la préférence sauvegardée soit lue.

@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
+import { ThemeToggle } from "@/components/ThemeToggle";
 import { FICHES_REDIGEES } from "@/lib/metiersPages";
 
 // ============================================================
@@ -239,10 +240,13 @@ export function Header({
         </nav>
 
         <div className="flex items-center gap-3 shrink-0">
-          {/* 02/11/2026 — le site est toujours clair (carnet de chantier) :
-              plus de bouton de thème ici. */}
+          {/* 02/11/2026 — le thème : le carnet (clair, par défaut) ou l'ardoise
+              (sombre). */}
+          {!masquerToggleTheme && (
+            <ThemeToggle className="hidden sm:grid h-11 w-11 place-items-center rounded-full text-steel hover:text-ink hover:bg-paper-warm transition-colors" />
+          )}
           {connecte ? (
-            <Link href="/dashboard" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-11 px-4 text-[15px]">
+            <Link href="/dashboard" className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-action text-sur-action font-bold shadow-[0_4px_0_rgb(var(--c-action-ombre))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-action-ombre))] transition-transform whitespace-nowrap min-h-11 px-4 text-[15px]">
               Mon espace
             </Link>
           ) : (
@@ -252,7 +256,7 @@ export function Header({
               </Link>
               <Link
                 href="/demander-acces"
-                className={`inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-11 px-4 text-[15px] ${
+                className={`inline-flex items-center justify-center gap-1.5 rounded-xl bg-action text-sur-action font-bold shadow-[0_4px_0_rgb(var(--c-action-ombre))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-action-ombre))] transition-transform whitespace-nowrap min-h-11 px-4 text-[15px] ${
                   ctaTelephone ? "" : "max-md:hidden"
                 }`}
               >
@@ -316,6 +320,10 @@ export function Header({
               className="menu-mobile-lien mt-auto pt-6 flex flex-col gap-2.5"
               style={{ "--i": LIENS_NAV.length } as React.CSSProperties}
             >
+              <div className="flex min-h-12 items-center justify-between">
+                <span className="text-[15px] font-bold text-steel">Thème (clair ou ardoise)</span>
+                <ThemeToggle className="grid h-11 w-11 place-items-center rounded-full text-ink hover:bg-paper-warm" />
+              </div>
               {/* Repéré (10/09) : le bouton mode sombre/clair de la barre
                   (juste au-dessus) est en "hidden sm:inline-block" — invisible
                   sur un téléphone en portrait — et n'avait jamais été repris
@@ -324,7 +332,7 @@ export function Header({
                   seul moyen de le voir était un écran large. */}
 
               {connecte ? (
-                <Link href="/dashboard" onClick={() => setMenuOuvert(false)} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-14 px-4 text-[17px]">
+                <Link href="/dashboard" onClick={() => setMenuOuvert(false)} className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-action text-sur-action font-bold shadow-[0_4px_0_rgb(var(--c-action-ombre))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-action-ombre))] transition-transform whitespace-nowrap min-h-14 px-4 text-[17px]">
                   Mon espace
                 </Link>
               ) : (
@@ -332,7 +340,7 @@ export function Header({
                   <Link
                     href="/demander-acces"
                     onClick={() => setMenuOuvert(false)}
-                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-signal text-white font-bold shadow-[0_4px_0_rgb(var(--c-signal-fonce))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-signal-fonce))] transition-transform whitespace-nowrap min-h-14 px-4 text-[17px]"
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-action text-sur-action font-bold shadow-[0_4px_0_rgb(var(--c-action-ombre))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-action-ombre))] transition-transform whitespace-nowrap min-h-14 px-4 text-[17px]"
                   >
                     Rejoindre la bêta gratuite
                   </Link>

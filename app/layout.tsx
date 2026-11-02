@@ -311,7 +311,7 @@ export default function RootLayout({
             // 02/11/2026 — le site public (tout sauf l'application, l'admin et
             // le devis client) prend le carnet de chantier : toujours clair,
             // marque « site-carnet » (components/ThemeSite.tsx la suit ensuite).
-            __html: `try{var p=location.pathname,c=localStorage.getItem("compyo-mode-sombre"),a=p.indexOf("/dashboard")===0||p.indexOf("/devis/")===0,w=!(a||p.indexOf("/admin")===0||p.indexOf("/apercu")===0),s=!w&&(c==="1"||(c!=="0"&&(!a||matchMedia("(prefers-color-scheme: dark)").matches)));if(w){document.documentElement.classList.add("site-carnet")}if(s){document.documentElement.classList.add("dark")}if(a){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#1B2023":"#F3F2ED")})}if(w){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content","#F3F2ED")})}}catch(e){}`,
+            __html: `try{var p=location.pathname,c=localStorage.getItem("compyo-mode-sombre"),a=p.indexOf("/dashboard")===0||p.indexOf("/devis/")===0,w=!(a||p.indexOf("/admin")===0||p.indexOf("/apercu")===0),s=w?c==="1":(c==="1"||(c!=="0"&&(!a||matchMedia("(prefers-color-scheme: dark)").matches)));if(w){document.documentElement.classList.add("site-carnet")}if(s){document.documentElement.classList.add("dark")}if(a){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#1B2023":"#F3F2ED")})}if(w){document.querySelectorAll('meta[name="theme-color"]').forEach(function(m){m.setAttribute("content",s?"#1B2023":"#F3F2ED")})}}catch(e){}`,
           }}
         />
       </head>

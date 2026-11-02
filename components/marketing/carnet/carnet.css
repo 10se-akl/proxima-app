@@ -162,6 +162,19 @@
 .carnet .vote{flex:1 1 140px;min-height:48px;border-radius:12px;border:2px solid var(--encre);background:transparent;color:var(--encre);font:700 1rem var(--f-texte);cursor:pointer}
 .carnet .vote:hover{background:var(--papier-2)}
 .carnet .vote[aria-pressed="true"]{background:var(--cordeau);border-color:var(--cordeau);color:var(--sur-cordeau)}
+/* Le sondage (02/11) : après le vote, chaque case se remplit jusqu'à son
+   pourcentage ; le choix fait garde le contour bleu. */
+.carnet .vote{position:relative;overflow:hidden}
+.carnet .vote.avec-resultat,.carnet .vote.avec-resultat[aria-pressed="true"]{background:var(--carte);color:var(--encre)}
+.carnet .vote.avec-resultat[aria-pressed="true"]{border-color:var(--cordeau);box-shadow:inset 0 0 0 1px var(--cordeau)}
+.carnet .remplissage{position:absolute;inset:0 auto 0 0;background:var(--surligne);transition:width .9s cubic-bezier(.3,.9,.3,1)}
+.carnet .vote.avec-resultat[aria-pressed="true"] .remplissage{background:rgb(35 86 196 / .18)}
+.carnet .vote-texte{position:relative;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:0 14px}
+.carnet .vote:not(.avec-resultat) .vote-texte{justify-content:center}
+.carnet .vote-pct{font-variant-numeric:tabular-nums;font-weight:800}
+.carnet .votes:has(.avec-resultat){flex-direction:column}
+.carnet .vote.avec-resultat{flex:none;width:100%}
+.carnet .vote-texte>span:first-child{white-space:nowrap}
 .carnet .merci{font-weight:700;color:var(--ok);min-height:1.6em}
 @media (min-width:900px){.carnet .idees{grid-template-columns:repeat(3,minmax(0,1fr))}}
 
@@ -280,6 +293,20 @@
 .carnet .cache-zoom{opacity:0;transform:scale(.6)}
 .carnet .feuille-basse{transform:translateY(105%)}
 .carnet .masque{opacity:0}
+/* L'ardoise du chantier (02/11) : le mode sombre, quand on le choisit. */
+html.dark .carnet{
+  --papier:#1B2023;--papier-2:#232A2E;--carreau:rgb(255 255 255 / .045);--marge:rgb(240 122 106 / .5);
+  --encre:#ECEDE9;--encre-2:#BCC1BF;--encre-3:#989F9C;
+  --cordeau:#8EB0FF;--cordeau-ombre:#4F6FB8;--sur-cordeau:#0C1424;
+  --crayon:#FF9F87;--metre:#E3B52B;--surligne:rgb(227 181 43 / .3);
+  --carte:#252C31;--trait:#363E43;--ok:#72D19A;
+  --ombre:0 1px 2px rgb(0 0 0 / .4),0 18px 36px -22px rgb(0 0 0 / .8);
+  --boitier:#08090A;--ecran:#14191C;--ecran-2:#1F262B;--ecran-encre:#ECEDE9;--ecran-encre-2:#9BA3A8;
+  --bulle-client:#283036;--bulle-moi:#22345A;--bulle-envoyee:#1E3A2B;
+  color-scheme:dark;
+}
+html.dark .carnet .vote.avec-resultat[aria-pressed="true"] .remplissage{background:rgb(142 176 255 / .22)}
+
 @media (prefers-reduced-motion: reduce){
   .carnet *,.carnet *::before,.carnet *::after{animation-duration:.01ms!important;transition-duration:.01ms!important;transition-delay:0s!important}
 }

@@ -27,10 +27,15 @@ export function ThemeSite() {
     const site = estPageDuSite(chemin);
     document.documentElement.classList.toggle("site-carnet", site);
     if (site) {
-      // Le site est toujours clair : un reste de « dark » venu de
-      // l'application garderait les variantes dark: de Tailwind.
-      document.documentElement.classList.remove("dark");
-      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", "#F3F2ED"));
+      // Le site est clair par défaut ; l'ardoise seulement si on l'a
+      // choisie (« 1 »). Un « dark » venu de l'application qui suit le
+      // téléphone ne doit pas la déclencher.
+      let sombre = false;
+      try {
+        sombre = localStorage.getItem("compyo-mode-sombre") === "1";
+      } catch {}
+      document.documentElement.classList.toggle("dark", sombre);
+      document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute("content", sombre ? "#1B2023" : "#F3F2ED"));
     }
   }, [chemin]);
   return null;

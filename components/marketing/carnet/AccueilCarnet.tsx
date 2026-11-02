@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { CompyoMark } from "@/components/marketing/CompyoMark";
 import { AnimationsCarnet } from "./AnimationsCarnet";
-import { EnteteActions } from "./EnteteActions";
-import { VotesIdees, type Idee } from "./VotesIdees";
+import { VotesIdees } from "./VotesIdees";
+import { IDEES_VOTEES } from "@/lib/ideesVotees";
+import { Header, Footer } from "@/components/marketing/Cadre";
 import "./carnet.css";
 
 // ============================================================
@@ -41,24 +41,8 @@ const METIERS: Array<[string, string]> = [
   ["chauffagiste", "Chauffagiste"],
 ];
 
-const IDEES: Idee[] = [
-  {
-    id: "assistant-telephone",
-    titre: "Un assistant qui répond au téléphone pendant vos chantiers.",
-    detail:
-      " Avec vos mots : il dit au client quand vous rappelez et lui demande l’adresse ou une photo. Les urgences vous sonnent toujours, et vous pouvez le couper.",
-  },
-  {
-    id: "anciens-devis",
-    titre: "Vos anciens devis repris.",
-    detail: " Une photo, un PDF ou un fichier Word : vos prix et vos postes habituels sont là dès le premier jour.",
-  },
-  {
-    id: "avis-google",
-    titre: "L’avis Google, demandé au bon moment.",
-    detail: " En fin de chantier, seulement si vous le voulez, au client que vous choisissez.",
-  },
-];
+// Les idées soumises au vote : lib/ideesVotees.ts (partagées avec la route
+// des résultats).
 
 const INSCRIPTION = "/demander-acces";
 
@@ -90,20 +74,12 @@ function Coche() {
 
 export function AccueilCarnet() {
   return (
-    <div id="accueil-carnet" className="carnet">
-      <AnimationsCarnet racine="accueil-carnet" />
-
-      <header className="entete">
-        <div className="cadre entete-in">
-          <Link href="/" className="logo" aria-label="Compyo, accueil">
-            <span aria-hidden>
-              <CompyoMark variante="couleur" taille={30} />
-            </span>
-            Compyo
-          </Link>
-          <EnteteActions inscription={INSCRIPTION} />
-        </div>
-      </header>
+    <>
+      {/* 02/11/2026 — l'en-tête et le pied de page de tout le site (Cadre.tsx) :
+          la navigation vers les autres pages, le thème, « Mon espace ». */}
+      <Header />
+      <div id="accueil-carnet" className="carnet">
+        <AnimationsCarnet racine="accueil-carnet" />
 
       <main id="contenu">
         {/* L'ouverture : comprendre Compyo en cinq secondes. */}
@@ -494,7 +470,7 @@ export function AccueilCarnet() {
               Ces trois idées n’existent pas encore. Tout le reste de cette page, si. Dites-nous si elles vous serviraient&nbsp;:
               un appui, sans nom ni e-mail.
             </p>
-            <VotesIdees idees={IDEES} />
+            <VotesIdees idees={IDEES_VOTEES} />
           </div>
         </section>
 
@@ -536,35 +512,8 @@ export function AccueilCarnet() {
         </section>
       </main>
 
-      <footer className="pied">
-        <div className="cadre">
-          <div className="pied-grille">
-            <div className="pied-marque">
-              <span className="logo" aria-hidden>
-                <CompyoMark variante="couleur" taille={28} />
-                Compyo
-              </span>
-              <p>Le secrétariat de l’artisan, dans sa poche. Bêta gratuite.</p>
-            </div>
-            <nav className="pied-liens" aria-label="Pages du site">
-              <Link href="/comment-ca-fonctionne">Comment ça marche</Link>
-              <Link href="/fonctionnalites">Fonctionnalités</Link>
-              <Link href="/comparatif">Comparatif</Link>
-              <Link href="/confiance">Sécurité et transparence</Link>
-              <Link href="/a-propos">À propos</Link>
-              <Link href="/questions-frequentes">Questions fréquentes</Link>
-              <Link href="/metiers">Les métiers</Link>
-              <Link href="/installer">Installer l’application</Link>
-              <Link href="/contact">Contact</Link>
-            </nav>
-          </div>
-          <div className="pied-bas">
-            <Link href="/mentions-legales">Mentions légales</Link>
-            <Link href="/politique-de-confidentialite">Confidentialité</Link>
-            <Link href="/cgu">CGU</Link>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
+      <Footer />
+    </>
   );
 }

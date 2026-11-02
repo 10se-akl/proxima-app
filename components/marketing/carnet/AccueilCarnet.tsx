@@ -152,7 +152,8 @@ export function AccueilCarnet() {
                 </div>
               </div>
               <figcaption className="legende">
-                Sur Android&nbsp;: Partager → Compyo. Sur iPhone&nbsp;: une capture d’écran ou un copier-coller.
+                Sur Android&nbsp;: Partager → Compyo. Sur iPhone, pour l’instant&nbsp;: une capture d’écran ou un
+                copier-coller.
               </figcaption>
             </figure>
           </div>
@@ -453,6 +454,15 @@ export function AccueilCarnet() {
                   Un développeur indépendant, en France, qui construit Compyo pour les artisans et cherche ses premiers
                   testeurs.{" "}
                   <Link href="/a-propos">En savoir plus</Link>
+                </dd>
+              </div>
+              {/* 02/11/2026 (Axel) — dit au conditionnel : ce n'est pas une promesse. */}
+              <div>
+                <dt>Une vraie application&nbsp;?</dt>
+                <dd>
+                  Aujourd’hui, Compyo s’installe depuis le navigateur, sur Android comme sur iPhone. Selon comment les
+                  choses avancent, et s’il y a assez de bêta-testeurs, une vraie application arrivera dans les magasins
+                  d’applications&nbsp;: avec, sur iPhone aussi, le partage direct d’un message vers Compyo.
                 </dd>
               </div>
             </dl>

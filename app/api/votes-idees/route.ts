@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { IDEES_VOTEES, type ResultatVote } from "@/lib/ideesVotees";
+import { IDEES_VOTEES, compterLesVotes, type ResultatVote } from "@/lib/ideesVotees";
 
 // ============================================================
 // Les résultats du sondage de l'accueil (02/11/2026) : pour chaque idée,
-// combien de votants « Bonne idée » et « Pas pour moi ». Lecture seule.
+// combien de votes « Bonne idée » et « Pas pour moi », votes retirés
+// déduits (lib/ideesVotees.ts). Lecture seule.
 //
 // Un vote est une visite anonyme /vote/<idée>/<oui|non> (voir
 // components/marketing/carnet/VotesIdees.tsx et app/api/visite) : on
@@ -15,23 +16,17 @@ import { IDEES_VOTEES, type ResultatVote } from "@/lib/ideesVotees";
 export const dynamic = "force-dynamic";
 
 export async function GET() {
-  const resultats: Record<string, ResultatVote> = Object.fromEntries(IDEES_VOTEES.map((i) => [i.id, { oui: 0, non: 0 }]));
+  const ids = IDEES_VOTEES.map((i) => i.id);
+  let resultats: Record<string, ResultatVote> = Object.fromEntries(ids.map((id) => [id, { oui: 0, non: 0 }]));
   try {
     const { data, error } = await createAdminClient()
       .from("visites")
-      .select("chemin, visiteur")
+      .select("chemin")
       .like("chemin", "/vote/%")
       .limit(20000);
     if (error) throw error;
-    const vus = new Set<string>();
-    for (const ligne of data ?? []) {
-      const [, , idee, choix] = String(ligne.chemin).split("/");
-      if (!(idee in resultats) || (choix !== "oui" && choix !== "non")) continue;
-      const cle = `${idee}|${choix}|${ligne.visiteur}`;
-      if (vus.has(cle)) continue;
-      vus.add(cle);
-      resultats[idee][choix] += 1;
-    }
+    // Un vote ajoute 1, un vote retiré (annule-…) enlève 1.
+    resultats = compterLesVotes((data ?? []).map((l) => String(l.chemin)), ids);
   } catch (err) {
     console.error("Résultats des votes :", err);
   }

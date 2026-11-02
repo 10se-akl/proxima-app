@@ -37,7 +37,7 @@ function neRienCompter(): boolean {
   }
 }
 
-function envoyer(id: string, choix: Choix) {
+function envoyer(id: string, choix: Choix | `annule-${Choix}`) {
   const corps = JSON.stringify({ chemin: `/vote/${id}/${choix}`, referent: "", source: "", tactile: navigator.maxTouchPoints > 1 });
   try {
     const parti = navigator.sendBeacon?.("/api/visite", new Blob([corps], { type: "application/json" }));
@@ -76,18 +76,26 @@ export function VotesIdees({ idees }: { idees: Idee[] }) {
   }, []);
 
   function voter(id: string, choix: Choix) {
-    if (votes[id] === choix) return;
-    const dejaVote = Boolean(votes[id]);
-    const suivant = { ...votes, [id]: choix };
+    const avant = votes[id];
+    // 02/11/2026 (Axel) — toucher à nouveau la même réponse retire le vote ;
+    // changer de réponse retire l'ancien et compte le nouveau.
+    const retrait = avant === choix;
+    const suivant = { ...votes };
+    if (retrait) delete suivant[id];
+    else suivant[id] = choix;
     setVotes(suivant);
     try {
       window.localStorage.setItem(CLE, JSON.stringify(suivant));
     } catch {
       // Stockage indisponible : le vote part quand même.
     }
-    if (!dejaVote && !neRienCompter()) envoyer(id, choix);
+    if (!neRienCompter()) {
+      if (avant) envoyer(id, `annule-${avant}`);
+      if (!retrait) envoyer(id, choix);
+    }
+    if (retrait) return;
     // Laisser au vote le temps d'arriver avant de relire les résultats.
-    window.setTimeout(() => void chargerResultats().then((r) => r && setResultats(r)), dejaVote ? 0 : 900);
+    window.setTimeout(() => void chargerResultats().then((r) => r && setResultats(r)), 900);
   }
 
   return (
@@ -125,7 +133,9 @@ export function VotesIdees({ idees }: { idees: Idee[] }) {
               ))}
             </div>
             <p className="merci" aria-live="polite">
-              {choix ? (r ? `Merci, c’est noté. ${total} vote${total > 1 ? "s" : ""} pour l’instant.` : "Merci, c’est noté.") : ""}
+              {choix
+                ? `${r ? `Merci, c’est noté. ${total} vote${total > 1 ? "s" : ""} pour l’instant.` : "Merci, c’est noté."} Touchez à nouveau votre réponse pour retirer votre vote.`
+                : ""}
             </p>
           </li>
         );

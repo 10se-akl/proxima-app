@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { aujourdhuiParis, bornes, decaler, memeMois, moisCourant, type Mois } from "@/lib/moisParis";
+import { compterLesVotes } from "@/lib/ideesVotees";
 
 // ============================================================
 // Statistiques d'Axel (Module 44, 22/09) — ce que lit /admin/statistiques.
@@ -105,20 +106,12 @@ const NOMS_APPAREILS: Record<string, string> = {
 
 export type Part = { nom: string; valeur: number };
 
-/** Les votes d'idées : un votant (empreinte du jour) compte une fois par
- *  idée et par choix. */
-function compterVotes(visites: { chemin: string; visiteur: string }[]): { idee: string; oui: number; non: number }[] {
-  const parIdee = new Map<string, { oui: Set<string>; non: Set<string> }>();
-  for (const v of visites) {
-    const [, , idee, choix] = v.chemin.split("/");
-    if (!idee || (choix !== "oui" && choix !== "non")) continue;
-    const e = parIdee.get(idee) ?? { oui: new Set<string>(), non: new Set<string>() };
-    e[choix].add(v.visiteur);
-    parIdee.set(idee, e);
-  }
-  return Array.from(parIdee, ([idee, e]) => ({ idee, oui: e.oui.size, non: e.non.size })).sort(
-    (a, b) => b.oui + b.non - (a.oui + a.non)
-  );
+/** Les votes d'idées : même décompte que la page publique (un vote retiré
+ *  est déduit, voir lib/ideesVotees.ts). */
+function compterVotes(visites: { chemin: string }[]): { idee: string; oui: number; non: number }[] {
+  return Object.entries(compterLesVotes(visites.map((v) => v.chemin)))
+    .map(([idee, e]) => ({ idee, oui: e.oui, non: e.non }))
+    .sort((x, y) => y.oui + y.non - (x.oui + x.non));
 }
 
 export type CompteStats = {

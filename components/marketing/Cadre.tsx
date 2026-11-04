@@ -3,8 +3,47 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { CompyoMark } from "./CompyoMark";
+import dynamic from "next/dynamic";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { IconeLoupe } from "@/components/ui/Icones";
 import { FICHES_REDIGEES } from "@/lib/metiersPages";
+
+// 04/11/2026 — la cloche du bandeau (comptes connectés seulement). Chargée
+// à part : un visiteur anonyme ne télécharge ni elle ni le client Supabase.
+const CentreNotifications = dynamic(
+  () => import("@/components/notifications/CentreNotifications").then((m) => m.CentreNotifications),
+  { ssr: false, loading: () => <span aria-hidden className="block h-12 w-12" /> }
+);
+
+// ============================================================
+// Le bandeau des comptes connectés (04/11/2026, demande d'Axel) : sous
+// l'en-tête du site, une recherche dans ses projets (nom, téléphone,
+// adresse : la même que la liste des projets, qui reçoit ?q=) et la
+// cloche de l'app : messages de Compyo et rappels dus en chiffre, chantiers
+// du jour en point rouge (lib/notifications/badgeCloche.ts).
+// ============================================================
+function BandeauCompte() {
+  return (
+    <div className="border-t border-gris-clair bg-paper-warm">
+      <div className="max-w-7xl mx-auto px-5 sm:px-8 h-14 flex items-center gap-2">
+        <form role="search" action="/dashboard/demandes" method="get" className="relative min-w-0 flex-1 max-w-xl">
+          <IconeLoupe taille={18} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-steel" />
+          <input
+            type="search"
+            name="q"
+            placeholder="Client, téléphone, adresse…"
+            aria-label="Chercher dans mes projets"
+            enterKeyHint="search"
+            className="h-11 w-full rounded-[12px] border border-gris-clair bg-surface pl-10 pr-3 text-base text-ink placeholder:text-steel focus:outline-none focus-visible:ring-2 focus-visible:ring-ink"
+          />
+        </form>
+        <div className="ml-auto shrink-0">
+          <CentreNotifications vers="bas" />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ============================================================
 // Le cadre commun des pages du site vitrine (24/09) : l'en-tête, le pied
@@ -286,6 +325,8 @@ export function Header({
         </div>
       </div>
 
+      {connecte && <BandeauCompte />}
+
       {/* Panneau mobile : rendu conditionnellement (pas juste caché en
           opacity) pour ne jamais intercepter de clics quand il est fermé.
           25/09 — plein écran sous l'en-tête, comme le menu d'une
@@ -294,7 +335,7 @@ export function Header({
           ferme. Il occupe tout l'écran restant (100dvh) et défile seul si
           l'écran est court. */}
       {menuOuvert && (
-        <div className="menu-mobile xl:hidden absolute inset-x-0 top-full h-[calc(100dvh-4rem)] overflow-y-auto overscroll-contain border-t border-ink/10 bg-paper">
+        <div className={`menu-mobile xl:hidden absolute inset-x-0 top-full ${connecte ? "h-[calc(100dvh-7.5rem)]" : "h-[calc(100dvh-4rem)]"} overflow-y-auto overscroll-contain border-t border-ink/10 bg-paper`}>
           <nav aria-label="Menu" className="max-w-6xl mx-auto min-h-full px-5 sm:px-8 pt-3 pb-[calc(1.5rem+env(safe-area-inset-bottom))] flex flex-col">
             <ul>
               {LIENS_NAV.map((lien, i) => (

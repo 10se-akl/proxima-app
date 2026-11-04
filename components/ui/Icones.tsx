@@ -188,3 +188,13 @@ export function IconeInstaller({ className, taille = 18 }: Props) {
     </svg>
   );
 }
+
+// 04/11/2026 — la loupe du bandeau de recherche (en-tête du site).
+export function IconeLoupe({ className, taille = 18 }: Props) {
+  return (
+    <svg {...base(taille)} className={className}>
+      <circle cx="11" cy="11" r="6.5" />
+      <path d="m16 16 4 4" />
+    </svg>
+  );
+}

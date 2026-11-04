@@ -8,6 +8,7 @@ import { usePathname } from "next/navigation";
 const PAGES = [
   { href: "/admin/statistiques", label: "Statistiques" },
   { href: "/admin/projection", label: "Projection" },
+  { href: "/admin/annonces", label: "Messages" },
   { href: "/admin/candidatures", label: "Candidatures" },
   { href: "/admin/retours", label: "Retours" },
   { href: "/admin/logs", label: "Journaux" },

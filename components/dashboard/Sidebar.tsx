@@ -137,7 +137,17 @@ const argentActif = (pathname: string) => PAGES_ARGENT.some((h) => estActif(path
 // Bloc "compte" en bas de la barre latérale (ordinateur) : identité,
 // actions courantes en une rangée, « Donner mon avis » (Guide et
 // Paramètres sont montés dans la barre le 23/10), liens du site vitrine.
-function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; onDeconnexion: () => void }) {
+function BlocCompteSidebar({
+  nomArtisan,
+  onDeconnexion,
+  cloche = true,
+}: {
+  nomArtisan: string;
+  onDeconnexion: () => void;
+  /** 05/11/2026 — sur « Aujourd'hui », la cloche est dans le bandeau de
+   *  l'accueil (BandeauAccueil.tsx) : on n'en montre jamais deux. */
+  cloche?: boolean;
+}) {
   return (
     <div className="px-4 py-5 border-t border-ink/[0.08] flex flex-col gap-3">
       <div className="flex items-center gap-2.5 px-2">
@@ -147,7 +157,7 @@ function BlocCompteSidebar({ nomArtisan, onDeconnexion }: { nomArtisan: string; 
       {/* gap-1 (27/09) : quatre boutons de 44 px tiennent dans la barre
           (192 px utiles) ; avec gap-2.5 ils se tassaient sous 44 px. */}
       <div className="flex items-center gap-1 px-2">
-        <CentreNotifications />
+        {cloche && <CentreNotifications />}
         <ThemeToggle className="w-11 h-11 grid place-items-center rounded-lg text-steel hover:text-ink hover:bg-ink/[0.05] transition-colors" />
         <BoutonInstallerDiscret
           compact
@@ -230,6 +240,8 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
   }
 
   const plusActif = SECONDAIRES.some((l) => estActif(pathname, l.href));
+  // 05/11/2026 — « Aujourd'hui » a sa cloche dans son bandeau.
+  const clocheDansLaPage = pathname === "/dashboard";
 
   return (
     <>
@@ -245,7 +257,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           <span className="font-display font-semibold">Compyo</span>
         </span>
         <span className="flex items-center">
-          <CentreNotifications vers="bas" />
+          {!clocheDansLaPage && <CentreNotifications vers="bas" />}
           <MenuCompte nom={nomArtisan} surDeconnexion={handleLogout} />
         </span>
       </div>
@@ -441,7 +453,7 @@ export function Sidebar({ nomArtisan, nbEnRetard = 0 }: { nomArtisan: string; nb
           )}
         </div>
 
-        <BlocCompteSidebar nomArtisan={nomArtisan} onDeconnexion={handleLogout} />
+        <BlocCompteSidebar nomArtisan={nomArtisan} onDeconnexion={handleLogout} cloche={!clocheDansLaPage} />
       </aside>
     </>
   );

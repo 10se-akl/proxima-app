@@ -8,6 +8,7 @@ import { TraceAccueil } from "./TraceAccueil";
 import { PremiersPas } from "./PremiersPas";
 import { RafraichirAuRetour } from "./RafraichirAuRetour";
 import { EnTeteAccueil } from "./EnTeteAccueil";
+import { BandeauAccueil } from "./BandeauAccueil";
 import { ChantiersAccueil, type ChantierAccueil } from "./ChantiersAccueil";
 import { ChiffresMois, type ChiffresDuMois } from "./ChiffresMois";
 import { COMPTEUR, TITRE_SECTION } from "@/components/ui/recettes";
@@ -151,6 +152,7 @@ export function VueAccueil({
     // gauche ; l'argent et les chantiers, le contexte, à droite.
     <div className="mx-auto max-w-2xl px-4 pb-10 pt-6 min-[400px]:px-5 sm:p-10 xl:max-w-6xl lg:mr-auto lg:ml-[max(0px,calc((100%-72rem)/2))] lg:px-10">
       <RafraichirAuRetour />
+      <BandeauAccueil />
       <EnTeteAccueil dateDuJour={dateDuJour} titre={titre} sousTitre={sousTitre} />
 
       {/* La trace du dernier geste et les feuilles ouvertes survivent au

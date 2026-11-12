@@ -260,7 +260,7 @@ export function Header({
                   ctaTelephone ? "" : "max-md:hidden"
                 }`}
               >
-                Rejoindre<span className="hidden sm:inline"> la bêta</span>
+                Essayer<span className="hidden sm:inline"> gratuitement</span>
               </Link>
             </>
           )}
@@ -342,7 +342,7 @@ export function Header({
                     onClick={() => setMenuOuvert(false)}
                     className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-action text-sur-action font-bold shadow-[0_4px_0_rgb(var(--c-action-ombre))] active:translate-y-[3px] active:shadow-[0_1px_0_rgb(var(--c-action-ombre))] transition-transform whitespace-nowrap min-h-14 px-4 text-[17px]"
                   >
-                    Rejoindre la bêta gratuite
+                    Essayer gratuitement
                   </Link>
                   <Link
                     href="/login"

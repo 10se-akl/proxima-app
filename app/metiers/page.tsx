@@ -231,9 +231,9 @@ export default function PageMetiers() {
             href="/demander-acces"
             className="mt-10 inline-flex rounded-full bg-signal px-9 py-4 text-[15px] font-medium text-white transition-transform hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-signal/50 focus-visible:ring-offset-2 focus-visible:ring-offset-paper"
           >
-            Rejoindre la bêta privée
+            Essayer gratuitement
           </Link>
-          <p className="mt-7 font-mono text-[11px] tracking-wide text-steel">Chaque candidature est lue · réponse sous 48 h</p>
+          <p className="mt-7 text-sm text-steel">Gratuit pendant la bêta · sans carte bancaire · compte ouvert tout de suite</p>
         </section>
       </main>
       <Footer />

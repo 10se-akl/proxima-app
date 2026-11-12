@@ -47,13 +47,13 @@ const THEMES: { id: string; titre: string; questions: Question[] }[] = [
       {
         question: "Combien coûte Compyo ?",
         reponse:
-          "Il n'y a pas encore de tarif public. Compyo est en bêta privée : pendant cette période, il est gratuit pour les artisans dont la candidature est acceptée.",
+          "Il n'y a pas encore de tarif public. Compyo est en bêta : pendant cette période, il est gratuit, sans carte bancaire. Le prix sera annoncé avant la fin de la bêta.",
       },
       {
-        question: "Comment obtenir un accès ?",
+        question: "Comment commencer ?",
         reponse:
-          "En remplissant la demande d'accès : quelques informations sur votre métier et votre activité. Chaque candidature est lue, avec une réponse sous 48 heures.",
-        lien: { href: "/demander-acces", texte: "Demander un accès" },
+          "En créant votre compte : votre nom, votre métier, votre téléphone, votre email et un mot de passe. Votre espace s'ouvre tout de suite, dans la limite des 20 places de la bêta (ensuite, liste d'attente).",
+        lien: { href: "/demander-acces", texte: "Créer mon compte gratuit" },
       },
     ],
   },
@@ -171,7 +171,7 @@ export default function PageQuestionsFrequentes() {
               </Link>{" "}
               ou{" "}
               <Link href="/beta" className="font-medium text-ink underline decoration-ink/25 underline-offset-4 hover:decoration-signal">
-                la bêta privée
+                la bêta gratuite
               </Link>
               .
             </p>

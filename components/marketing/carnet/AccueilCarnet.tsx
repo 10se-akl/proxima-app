@@ -138,7 +138,7 @@ export function AccueilCarnet() {
             </p>
             <div className="actions">
               <Link className="btn btn-cordeau btn-hero" href={INSCRIPTION}>
-                Rejoindre la bêta gratuite
+                Essayer gratuitement
               </Link>
               <a className="btn btn-ligne btn-voir" href="#comment">
                 Voir comment
@@ -527,8 +527,8 @@ export function AccueilCarnet() {
               <div>
                 <dt>Et le prix&nbsp;?</dt>
                 <dd>
-                  Gratuit pendant la bêta, sans carte bancaire. Le prix sera annoncé avant la fin de la bêta&nbsp;: vous
-                  déciderez à ce moment-là.
+                  Gratuit pendant la bêta (20 places), sans carte bancaire. Le prix sera annoncé avant la fin de la
+                  bêta&nbsp;: vous déciderez à ce moment-là.
                 </dd>
               </div>
               <div>
@@ -596,10 +596,10 @@ export function AccueilCarnet() {
             </ul>
             <div className="actions">
               <Link className="btn btn-lune" href={INSCRIPTION}>
-                Rejoindre la bêta gratuite
+                Essayer gratuitement
               </Link>
             </div>
-            <p className="hero-mention">Gratuit pendant la bêta, sans carte bancaire. On vous répond sous 48&nbsp;h.</p>
+            <p className="hero-mention">Gratuit pendant la bêta, sans carte bancaire. Votre espace s’ouvre tout de suite.</p>
           </div>
         </section>
       </main>

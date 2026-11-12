@@ -32,7 +32,7 @@ const FAQ = [
   {
     question: "Compyo remplace-t-il un logiciel de devis et facturation classique ?",
     reponse:
-      "De plus en plus : Compyo couvre désormais tout le cycle, du message client jusqu'à la facture (devis, acomptes, avoirs, numérotation légale, export comptable), en plus de tout ce qui précède le devis (notes, photos, rendez-vous). C'est cependant un produit jeune, en bêta privée, avec moins de recul et de fonctionnalités annexes qu'un logiciel de facturation établi depuis longtemps.",
+      "De plus en plus : Compyo couvre désormais tout le cycle, du message client jusqu'à la facture (devis, acomptes, avoirs, numérotation légale, export comptable), en plus de tout ce qui précède le devis (notes, photos, rendez-vous). C'est cependant un produit jeune, en bêta, avec moins de recul et de fonctionnalités annexes qu'un logiciel de facturation établi depuis longtemps.",
   },
 ] as const;
 
@@ -166,7 +166,7 @@ function TableauComparatif() {
       nom: "Compyo",
       pour: "Centralise tout le cycle : message client → devis → facture → rendez-vous → photos → notes vocales, avec un moteur de calcul de prix déterministe validé par l'artisan, adapté à 19 corps de métier.",
       limite:
-        "En bêta privée sur candidature, pas encore ouvert au grand public — moins de recul et d'historique de fiabilité qu'un logiciel de facturation établi depuis des années.",
+        "En bêta gratuite limitée à 20 places, pas encore ouvert au grand public — moins de recul et d'historique de fiabilité qu'un logiciel de facturation établi depuis des années.",
     },
   ];
 
@@ -277,9 +277,9 @@ function PourquoiCompyo() {
               sans validation.
             </p>
             <p>
-              En contrepartie, Compyo est un produit jeune, en bêta privée sur candidature :
+              En contrepartie, Compyo est un produit jeune, en bêta limitée à 20 places :
               moins de recul et de fonctionnalités qu&apos;un logiciel de facturation qui existe
-              depuis dix ans. Voir <Link href="/fonctionnalites" className="underline hover:text-ink">le détail des fonctionnalités</Link> pour se faire une idée précise avant de candidater.
+              depuis dix ans. Voir <Link href="/fonctionnalites" className="underline hover:text-ink">le détail des fonctionnalités</Link> pour se faire une idée précise avant de vous inscrire.
             </p>
           </div>
         </Reveal>
@@ -294,17 +294,16 @@ function CTA() {
       <div className="max-w-2xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
         <Reveal>
           <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-            Compyo est en bêta privée et cherche ses premiers artisans.
+            Compyo est en bêta gratuite et cherche ses premiers artisans.
           </h2>
           <p className="mt-4 text-base text-ink/60 leading-relaxed max-w-lg mx-auto">
-            Chaque candidature est lue et examinée individuellement — pas de réponse
-            automatique.
+            20 places, sans carte bancaire : votre espace s&apos;ouvre tout de suite.
           </p>
           <Link
             href="/demander-acces"
             className="mt-9 inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce hover:scale-[1.03] active:scale-[0.97] transition-all shadow-sm shadow-signal/20"
           >
-            Demander un accès
+            Créer mon compte gratuit
           </Link>
         </Reveal>
       </div>

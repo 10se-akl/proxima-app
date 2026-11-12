@@ -217,7 +217,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel est le meilleur logiciel de devis pour un électricien ?",
         reponse:
-          "Celui qui colle à votre façon de travailler. Compyo part de ce que vous faites déjà sur le chantier — des photos du tableau, quelques phrases dictées — et prépare le devis avec vos prix, en lots, avec le bon taux de TVA et les mentions obligatoires. Il est pensé pour être utilisé sur téléphone, entre deux interventions. Il est en bêta privée gratuite, sur candidature ; un logiciel de facturation établi depuis longtemps aura plus de recul et de fonctions annexes.",
+          "Celui qui colle à votre façon de travailler. Compyo part de ce que vous faites déjà sur le chantier — des photos du tableau, quelques phrases dictées — et prépare le devis avec vos prix, en lots, avec le bon taux de TVA et les mentions obligatoires. Il est pensé pour être utilisé sur téléphone, entre deux interventions. Il est en bêta gratuite (20 places, compte ouvert à l'inscription) ; un logiciel de facturation établi depuis longtemps aura plus de recul et de fonctions annexes.",
       },
       {
         question: "Quel taux de TVA pour une mise aux normes électrique ?",

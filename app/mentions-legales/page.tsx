@@ -19,7 +19,7 @@ export default function MentionsLegalesPage() {
         <p>
           Le site et l&apos;application Compyo (accessibles à l&apos;adresse{" "}
           <a href="https://compyo.fr">compyo.fr</a>) sont édités à titre
-          non professionnel, dans le cadre d&apos;un projet personnel encore en bêta privée
+          non professionnel, dans le cadre d&apos;un projet personnel encore en bêta
           gratuite, par :
         </p>
         <ul>

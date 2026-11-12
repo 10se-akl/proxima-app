@@ -24,18 +24,27 @@ async function envoyerViaResend(candidature: Candidature, destinataire: string) 
     body: JSON.stringify({
       from: "Compyo <onboarding@resend.dev>",
       to: destinataire,
-      subject: `Nouvelle candidature bêta — ${candidature.prenom} ${candidature.nom}`,
-      text: `${candidature.prenom} ${candidature.nom} (${candidature.metier}) souhaite rejoindre la bêta privée de Compyo.
+      // 12/11 — accès immédiat : tant qu'il reste des places, le compte
+      // est déjà ouvert à l'arrivée de cet e-mail. Il dit à Axel d'écrire à
+      // l'artisan ; s'il est resté en attente (bêta complète, invité d'une
+      // équipe, ouverture ratée), il le dit aussi.
+      subject:
+        candidature.statut === "accepted"
+          ? `Nouvel inscrit, compte ouvert — ${candidature.prenom} ${candidature.nom} (${candidature.metier})`
+          : `Nouvelle inscription en attente — ${candidature.prenom} ${candidature.nom} (${candidature.metier})`,
+      text: `${candidature.prenom} ${candidature.nom} (${candidature.metier}) vient de s'inscrire sur Compyo.
+${
+  candidature.statut === "accepted"
+    ? "Son compte est déjà ouvert. Écris-lui dans la semaine pour l'aider à démarrer."
+    : "Son compte n'est PAS ouvert (bêta complète, invitation d'équipe, ou ouverture automatique ratée) : à regarder dans l'admin."
+}
 
-Entreprise : ${candidature.entreprise ?? "non précisé"}
-Email : ${candidature.email}
 Téléphone : ${candidature.telephone}
-Employés : ${candidature.nb_employes ?? "non précisé"}
-Devis/semaine : ${candidature.devis_par_semaine ?? "non précisé"}
-Problème principal : ${candidature.probleme_principal}
+Email : ${candidature.email}
+Entreprise : ${candidature.entreprise ?? "non précisé"}
 Découverte : ${candidature.decouverte ?? "non précisé"}
 
-Pour accepter ou refuser : ${SITE_URL}/admin/candidatures`,
+Liste des inscrits : ${SITE_URL}/admin/candidatures`,
     }),
   });
 
@@ -162,9 +171,9 @@ export async function envoyerAccesAccepte(params: {
 
   const texte = `Bonjour ${params.prenom},
 
-Bonne nouvelle : votre candidature à la bêta de Compyo est acceptée.
+Bonne nouvelle : une place s'est libérée dans la bêta de Compyo, votre compte est ouvert.
 
-Vous pouvez vous connecter dès maintenant, avec l'adresse email et le mot de passe que vous avez choisis en faisant votre demande :
+Vous pouvez vous connecter dès maintenant, avec l'adresse email et le mot de passe que vous avez choisis à l'inscription :
 ${params.urlConnexion}
 
 Si vous avez oublié votre mot de passe, la page de connexion vous permet d'en recevoir un nouveau.

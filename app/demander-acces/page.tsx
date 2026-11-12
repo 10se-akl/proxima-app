@@ -3,96 +3,77 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Field, TextareaField } from "@/components/ui/Input";
+import { Field } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { Card } from "@/components/ui/Card";
 import { ErreurInline } from "@/components/ui/EtatErreur";
+import { CARTE_PLEINE, CHAMP, LIBELLE, AIDE, SELECT, BOUTON_TEXTE_DISCRET } from "@/components/ui/recettes";
 import { METIERS } from "@/lib/metiers";
+import { PLACES_BETA } from "@/lib/candidatures/places-constante";
 import { createClient } from "@/lib/supabase/client";
 
-// Module 43 (21/09) — la candidature crée directement le compte, avec le
-// mot de passe choisi ici. Plus d'email « définissez votre mot de passe »
-// après l'acceptation : l'artisan se connecte avec celui-ci dès qu'Axel a
-// dit oui. Voir app/api/candidatures/route.ts.
+// ============================================================
+// Créer son compte (12/11, accès immédiat — décision d'Axel).
+//
+// Avant : « Demander un accès », 12 champs dont une question ouverte
+// obligatoire, puis 48 h d'attente. Maintenant : 6 champs, un seul mot de
+// passe (avec « Afficher »), et l'artisan entre tout de suite dans son
+// espace tant que la bêta a des places (lib/candidatures/places.ts). Au-delà,
+// le compte est créé en liste d'attente (app/candidature-en-cours).
+// Voir app/api/candidatures/route.ts.
+// ============================================================
 const LONGUEUR_MIN_MOT_DE_PASSE = 8;
 
-// 25/09 — Plus de useSearchParams (qui imposait une frontière <Suspense>
-// et un rendu vide côté serveur : la page n'avait ni titre ni texte pour
-// les moteurs). Le code de parrainage se lit dans l'URL au montage.
 export default function DemanderAccesPage() {
-  return <DemanderAccesForm />;
+  return <FormulaireInscription />;
 }
 
-function DemanderAccesForm() {
+function FormulaireInscription() {
   const router = useRouter();
 
   const [form, setForm] = useState({
     prenom: "",
     nom: "",
-    entreprise: "",
     metier: "",
     telephone: "",
     email: "",
     motDePasse: "",
-    motDePasseConfirmation: "",
-    nbEmployes: "",
-    devisParSemaine: "",
-    problemePrincipal: "",
+    entreprise: "",
     decouverte: "",
     // Champ piège : invisible pour un humain, rempli par les robots qui
     // remplissent tout. Voir app/api/candidatures/route.ts.
     siteWeb: "",
   });
+  const [voirMotDePasse, setVoirMotDePasse] = useState(false);
   const [compteExistant, setCompteExistant] = useState(false);
+  const [envoi, setEnvoi] = useState(false);
+  const [envoye, setEnvoye] = useState<null | { ouvert: boolean }>(null);
+  const [erreur, setErreur] = useState<string | null>(null);
+  // « Réessayer » seulement quand renvoyer la même chose peut marcher
+  // (réseau, serveur) ; pas pour une erreur de saisie.
+  const [reessayable, setReessayable] = useState(false);
 
   useEffect(() => {
     const parrain = new URLSearchParams(window.location.search).get("parraine_par");
-    if (parrain) {
-      setForm((f) => ({ ...f, decouverte: `Recommandé par ${parrain}` }));
-    }
+    if (parrain) setForm((f) => ({ ...f, decouverte: `Recommandé par ${parrain}` }));
   }, []);
-  const [envoi, setEnvoi] = useState(false);
-  const [envoye, setEnvoye] = useState(false);
-  const [erreur, setErreur] = useState<string | null>(null);
-  // 13/10 — « Réessayer » seulement quand renvoyer la même chose peut
-  // marcher (réseau, serveur) ; pas pour une erreur de saisie.
-  const [reessayable, setReessayable] = useState(false);
 
   function update(field: keyof typeof form) {
-    return (
-      e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
-    ) => setForm({ ...form, [field]: e.target.value });
+    return (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm({ ...form, [field]: e.target.value });
   }
 
-  // Audit sécurité/bugs (05/09) — 🟠 : cette fonction est isolée (plutôt que
-  // écrite en ligne dans handleSubmit) pour pouvoir être rappelée depuis le
-  // bouton "Réessayer" de ErreurInline, pas seulement depuis la soumission
-  // du <form>. Surtout : le try/catch manquait autour de fetch() — un
-  // authentique échec réseau (hors-ligne, DNS, coupure), pas seulement une
-  // réponse HTTP non-2xx, faisait rejeter la promesse AVANT setEnvoi(false),
-  // laissant le bouton bloqué indéfiniment sur "Envoi en cours…" sans
-  // aucun message ni moyen de réessayer sans recharger la page (et perdre
-  // la saisie). Même pattern que components/carte-mentale/CarteMentale.tsx.
-  async function envoyerCandidature() {
+  async function creerCompte() {
     setErreur(null);
     setReessayable(false);
     setCompteExistant(false);
 
-    // Vérifiées ici pour une réponse immédiate, et de nouveau côté serveur
-    // (lib/candidatures/creerCompteCandidat.ts), seul contrôle qui compte.
     if (form.motDePasse.length < LONGUEUR_MIN_MOT_DE_PASSE) {
       setErreur(`Choisissez un mot de passe d'au moins ${LONGUEUR_MIN_MOT_DE_PASSE} caractères.`);
       return;
     }
-    if (form.motDePasse !== form.motDePasseConfirmation) {
-      setErreur("Les deux mots de passe ne sont pas identiques.");
-      return;
-    }
 
     setEnvoi(true);
-    // Pendant la redirection vers la page d'attente, le bouton reste
-    // désactivé : sinon il redevient cliquable une fraction de seconde et
-    // un double appui renverrait la candidature.
+    // Pendant la redirection, le bouton reste désactivé : un double appui
+    // renverrait l'inscription.
     let redirection = false;
     try {
       const res = await fetch("/api/candidatures", {
@@ -100,9 +81,9 @@ function DemanderAccesForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
       });
+      const data = await res.json().catch(() => null);
 
       if (!res.ok) {
-        const data = await res.json().catch(() => null);
         if (res.status === 409) {
           setCompteExistant(true);
           return;
@@ -112,21 +93,23 @@ function DemanderAccesForm() {
         return;
       }
 
-      // Le compte existe : on connecte l'artisan tout de suite, pour qu'il
-      // voie où en est sa candidature et n'ait rien à retaper plus tard.
-      // S'il n'est pas connecté pour une raison quelconque, la candidature
-      // est quand même partie : on le lui dit simplement.
+      const ouvert = Boolean(data?.ouvert);
+      const suite: string = typeof data?.suite === "string" && data.suite.startsWith("/") ? data.suite : "/dashboard";
+
+      // Le compte existe : on connecte l'artisan tout de suite, il n'a rien
+      // à retaper. Si la connexion échoue, le compte est quand même créé :
+      // on le lui dit simplement.
       const { error } = await createClient().auth.signInWithPassword({
         email: form.email.trim().toLowerCase(),
         password: form.motDePasse,
       });
       if (!error) {
         redirection = true;
-        router.push("/candidature-en-cours");
+        router.push(suite);
         router.refresh();
         return;
       }
-      setEnvoye(true);
+      setEnvoye({ ouvert });
     } catch {
       setReessayable(true);
       setErreur("Connexion impossible. Vérifiez votre réseau et réessayez.");
@@ -137,173 +120,116 @@ function DemanderAccesForm() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    await envoyerCandidature();
+    await creerCompte();
   }
 
   if (envoye) {
     return (
-      <main className="min-h-screen flex items-center justify-center px-5 bg-paper">
-        <Card className="w-full max-w-md p-10 text-center">
-          <p className="font-display font-semibold text-lg">Compyo</p>
-          <h1 className="mt-4 text-xl font-semibold">Candidature envoyée.</h1>
-          <p className="mt-3 text-sm text-ink/65">
-            Votre compte est créé. Nous examinons chaque candidature individuellement : dès
-            qu&apos;elle est acceptée, vous pourrez vous connecter avec votre email et le mot de
-            passe que vous venez de choisir.
+      <main className="flex min-h-screen items-center justify-center bg-paper px-5">
+        <div className={`${CARTE_PLEINE} w-full max-w-md p-8 text-center`}>
+          <h1 className="font-display text-2xl font-bold text-ink">Votre compte est créé.</h1>
+          <p className="mt-3 text-base text-steel">
+            {envoye.ouvert
+              ? "Connectez-vous avec votre email et le mot de passe que vous venez de choisir."
+              : "La bêta est complète pour l'instant : vous êtes sur la liste d'attente. Vous pourrez vous connecter dès que votre compte sera ouvert."}
           </p>
-          <Link href="/login" className="mt-6 inline-block text-sm text-ink underline">
+          <Link href="/login" className="mt-6 inline-block font-semibold text-ink underline">
             Aller à la connexion
           </Link>
-        </Card>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen bg-paper px-5 py-16">
-      <div className="max-w-2xl mx-auto">
-        <Link href="/" className="-ml-1 inline-flex min-h-11 items-center px-1 text-sm text-ink/60 hover:text-ink">
+    <main className="min-h-screen bg-paper px-5 pb-16 pt-8 sm:pt-14">
+      <div className="mx-auto max-w-xl">
+        <Link href="/" className={`${BOUTON_TEXTE_DISCRET} -ml-3`}>
           ← Retour
         </Link>
 
-        <p className="mt-6 font-mono text-[11px] tracking-[0.2em] uppercase text-steel">
-          Bêta privée
-        </p>
-        <h1 className="mt-2 font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-          Demander un accès
+        <h1 className="mt-4 font-display text-3xl font-bold leading-tight tracking-[-0.02em] text-ink sm:text-4xl">
+          Créez votre compte Compyo
         </h1>
-        <p className="mt-3 text-sm text-ink/65 max-w-md">
-          Nous acceptons un nombre limité d&apos;artisans pour garantir un accompagnement de
-          qualité sur cette première version.
+        <p className="mt-3 text-lg text-steel">
+          Gratuit pendant la bêta, sans carte bancaire. Votre espace s&apos;ouvre tout de suite.
         </p>
 
-        <Card className="mt-8 p-6 sm:p-8">
+        <div className={`${CARTE_PLEINE} mt-7 p-5 sm:p-7`}>
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="grid sm:grid-cols-2 gap-5">
-              {/* 27/09 — autoComplete : le téléphone propose de remplir le
-                  formulaire d'un appui (nom, entreprise, numéro). */}
+            <div className="grid gap-5 sm:grid-cols-2">
               <Field label="Prénom" required autoComplete="given-name" value={form.prenom} onChange={update("prenom")} />
               <Field label="Nom" required autoComplete="family-name" value={form.nom} onChange={update("nom")} />
-              <Field
-                label="Entreprise"
-                autoComplete="organization"
-                value={form.entreprise}
-                onChange={update("entreprise")}
-              />
-
-              <div>
-                <label htmlFor="metier-candidature" className="block text-xs font-medium text-ink/70 mb-1.5">
-                  Métier <span className="text-signal">*</span>
-                </label>
-                <select
-                  id="metier-candidature"
-                  required
-                  value={form.metier}
-                  onChange={update("metier")}
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                >
-                  <option value="">Sélectionner…</option>
-                  {METIERS.map((m) => (
-                    <option key={m} value={m}>
-                      {m}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <Field
-                label="Téléphone"
-                type="tel"
-                required
-                autoComplete="tel"
-                value={form.telephone}
-                onChange={update("telephone")}
-              />
-              <Field
-                label="Email"
-                type="email"
-                required
-                autoComplete="email"
-                value={form.email}
-                onChange={update("email")}
-              />
-
-              {/* Le mot de passe du futur compte : c'est celui que l'artisan
-                  utilisera dès l'acceptation, sans autre étape. autoComplete
-                  "new-password" permet au téléphone de le proposer et de le
-                  mémoriser — le meilleur moyen de ne pas l'oublier d'ici là. */}
-              <Field
-                label="Mot de passe"
-                type="password"
-                required
-                minLength={LONGUEUR_MIN_MOT_DE_PASSE}
-                autoComplete="new-password"
-                value={form.motDePasse}
-                onChange={update("motDePasse")}
-              />
-              <Field
-                label="Confirmer le mot de passe"
-                type="password"
-                required
-                minLength={LONGUEUR_MIN_MOT_DE_PASSE}
-                autoComplete="new-password"
-                value={form.motDePasseConfirmation}
-                onChange={update("motDePasseConfirmation")}
-              />
-              <p className="-mt-3 text-xs text-ink/50 sm:col-span-2">
-                8 caractères minimum. C&apos;est avec ce mot de passe que vous vous connecterez dès
-                que votre candidature sera acceptée.
-              </p>
-
-              <div>
-                <label htmlFor="employes-candidature" className="block text-xs font-medium text-ink/70 mb-1.5">
-                  Nombre d&apos;employés
-                </label>
-                <select
-                  id="employes-candidature"
-                  value={form.nbEmployes}
-                  onChange={update("nbEmployes")}
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                >
-                  <option value="">Sélectionner…</option>
-                  <option>Seul (aucun salarié)</option>
-                  <option>2 à 5</option>
-                  <option>6 à 15</option>
-                  <option>Plus de 15</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="devis-candidature" className="block text-xs font-medium text-ink/70 mb-1.5">
-                  Devis réalisés par semaine
-                </label>
-                <select
-                  id="devis-candidature"
-                  value={form.devisParSemaine}
-                  onChange={update("devisParSemaine")}
-                  className="w-full rounded-xl border border-ink/15 bg-paper px-3 py-2.5 text-sm transition-colors focus:outline-none focus:border-signal focus:ring-2 focus:ring-signal/15"
-                >
-                  <option value="">Sélectionner…</option>
-                  <option>Moins de 5</option>
-                  <option>5 à 10</option>
-                  <option>10 à 20</option>
-                  <option>Plus de 20</option>
-                </select>
-              </div>
             </div>
 
-            <TextareaField
-              label="Quel est aujourd'hui votre plus gros problème administratif ?"
-              required
-              rows={3}
-              value={form.problemePrincipal}
-              onChange={update("problemePrincipal")}
-            />
+            <div>
+              <label htmlFor="metier-inscription" className={LIBELLE}>
+                Votre métier <span className="text-signal-fonce">*</span>
+              </label>
+              <select id="metier-inscription" required value={form.metier} onChange={update("metier")} className={SELECT}>
+                <option value="">Choisir…</option>
+                {METIERS.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
 
             <Field
-              label="Comment avez-vous découvert Compyo ?"
-              value={form.decouverte}
-              onChange={update("decouverte")}
+              label="Téléphone"
+              type="tel"
+              inputMode="tel"
+              required
+              autoComplete="tel"
+              value={form.telephone}
+              onChange={update("telephone")}
+            />
+            <Field
+              label="Email"
+              type="email"
+              inputMode="email"
+              required
+              autoComplete="email"
+              value={form.email}
+              onChange={update("email")}
+            />
+
+            <div>
+              <label htmlFor="mdp-inscription" className={LIBELLE}>
+                Mot de passe <span className="text-signal-fonce">*</span>
+              </label>
+              <div className="relative">
+                <input
+                  id="mdp-inscription"
+                  type={voirMotDePasse ? "text" : "password"}
+                  required
+                  minLength={LONGUEUR_MIN_MOT_DE_PASSE}
+                  autoComplete="new-password"
+                  value={form.motDePasse}
+                  onChange={update("motDePasse")}
+                  aria-describedby="aide-mdp"
+                  className={`${CHAMP} py-3 pr-24`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setVoirMotDePasse((v) => !v)}
+                  aria-pressed={voirMotDePasse}
+                  className="absolute inset-y-0 right-0 min-w-[48px] px-4 text-[15px] font-semibold text-ink"
+                >
+                  {voirMotDePasse ? "Cacher" : "Afficher"}
+                </button>
+              </div>
+              <span id="aide-mdp" className={AIDE}>
+                8 caractères minimum. C&apos;est avec lui que vous vous connecterez.
+              </span>
+            </div>
+
+            <Field
+              label="Entreprise (facultatif)"
+              autoComplete="organization"
+              value={form.entreprise}
+              onChange={update("entreprise")}
             />
 
             {/* Champ piège : hors de l'écran (pas display:none, que les
@@ -312,45 +238,40 @@ function DemanderAccesForm() {
             <div aria-hidden className="absolute -left-[9999px] h-px w-px overflow-hidden">
               <label>
                 Site web
-                <input
-                  type="text"
-                  tabIndex={-1}
-                  autoComplete="off"
-                  value={form.siteWeb}
-                  onChange={update("siteWeb")}
-                />
+                <input type="text" tabIndex={-1} autoComplete="off" value={form.siteWeb} onChange={update("siteWeb")} />
               </label>
             </div>
 
             {compteExistant && (
-              <p className="rounded-xl border border-ink/10 bg-paper-warm px-4 py-3 text-sm text-ink/80">
+              <p className="rounded-[14px] bg-paper-warm px-4 py-3 text-base text-ink">
                 Un compte existe déjà avec cette adresse email.{" "}
-                <Link href="/login" className="font-medium underline">
+                <Link href="/login" className="font-semibold underline">
                   Connectez-vous
-                </Link>{" "}
-                pour voir où en est votre candidature.
+                </Link>
+                .
               </p>
             )}
 
-            {erreur && <ErreurInline message={erreur} onReessayer={reessayable ? envoyerCandidature : undefined} />}
+            {erreur && <ErreurInline message={erreur} onReessayer={reessayable ? creerCompte : undefined} />}
 
-            <p className="text-xs text-ink/50 -mt-1">
-              En envoyant ce formulaire, vous acceptez nos{" "}
-              <Link href="/cgu" className="underline hover:text-ink/80">
+            <Button type="submit" disabled={envoi} className="min-h-[52px] w-full text-base">
+              {envoi ? "Création du compte…" : "Créer mon compte gratuit"}
+            </Button>
+
+            <p className="text-sm text-steel">
+              {PLACES_BETA} places pour cette bêta. Quand elles sont prises, l&apos;inscription vous met sur la liste
+              d&apos;attente. En créant votre compte, vous acceptez nos{" "}
+              <Link href="/cgu" className="underline">
                 CGU
               </Link>{" "}
               et notre{" "}
-              <Link href="/politique-de-confidentialite" className="underline hover:text-ink/80">
+              <Link href="/politique-de-confidentialite" className="underline">
                 politique de confidentialité
               </Link>
               .
             </p>
-
-            <Button type="submit" disabled={envoi} className="min-h-12 w-full sm:w-auto sm:self-start">
-              {envoi ? "Envoi en cours…" : "Envoyer ma candidature"}
-            </Button>
           </form>
-        </Card>
+        </div>
       </div>
     </main>
   );

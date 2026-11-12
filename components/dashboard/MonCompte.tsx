@@ -323,8 +323,8 @@ export function MonCompte() {
       <section className={SECTION}>
         <h3 className={TITRE}>Parrainer un collègue</h3>
         <p className={TEXTE}>
-          Un autre artisan pourrait gagner du temps avec Compyo ? Partagez ce lien — sa
-          candidature à la bêta sera automatiquement marquée comme venant de vous.
+          Un autre artisan pourrait gagner du temps avec Compyo ? Partagez ce lien — son
+          inscription sera automatiquement marquée comme venant de vous.
         </p>
         <div className="flex flex-wrap gap-3">
           <button

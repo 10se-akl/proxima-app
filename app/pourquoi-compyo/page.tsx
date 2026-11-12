@@ -211,17 +211,16 @@ function CTA() {
       <div className="max-w-2xl mx-auto px-5 sm:px-8 py-20 sm:py-28 text-center">
         <Reveal>
           <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-            Compyo est en bêta privée et cherche ses premiers artisans.
+            Compyo est en bêta gratuite et cherche ses premiers artisans.
           </h2>
           <p className="mt-4 text-base text-ink/60 leading-relaxed max-w-lg mx-auto">
-            Chaque candidature est lue et examinée individuellement — pas de réponse
-            automatique.
+            20 places, sans carte bancaire : votre espace s&apos;ouvre tout de suite.
           </p>
           <Link
             href="/demander-acces"
             className="mt-9 inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce hover:scale-[1.03] active:scale-[0.97] transition-all shadow-sm shadow-signal/20"
           >
-            Demander un accès
+            Créer mon compte gratuit
           </Link>
         </Reveal>
       </div>

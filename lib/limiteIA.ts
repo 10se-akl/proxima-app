@@ -36,6 +36,30 @@ const TYPES_APPELS_IA = [
 const PLAFOND_PAR_HEURE = 80;
 const PLAFOND_PAR_JOUR = 300;
 
+// ============================================================
+// Accès immédiat (écrit le 04/10, branché le 12/11 avec 20 places, voir
+// lib/candidatures/places.ts) — un artisan peut désormais ouvrir un compte
+// sans attendre l'accord d'Axel. Deux garde-fous de plus, qui ne touchent
+// JAMAIS un compte de plus d'une semaine :
+//
+// 1. Pendant sa première semaine, une organisation a des plafonds plus
+//    bas. Ils restent hors de portée d'un artisan qui découvre l'outil
+//    (une soirée à tout essayer, c'est 20 à 40 appels), mais un faux
+//    compte ne peut pas brûler plus de 150 appels par jour.
+// 2. Toutes les organisations de moins d'une semaine RÉUNIES ont un
+//    plafond commun par 24 h. Si quelqu'un ouvre des comptes en série
+//    pour contourner le premier garde-fou, c'est l'IA des nouveaux
+//    comptes qui se met en pause jusqu'au lendemain — jamais celle des
+//    artisans déjà installés.
+//
+// Le plafond absolu, lui, se règle hors du code : la limite de dépenses
+// mensuelle de la console Anthropic.
+// ============================================================
+const JOURS_DECOUVERTE = 7;
+const PLAFOND_DECOUVERTE_PAR_HEURE = 60;
+const PLAFOND_DECOUVERTE_PAR_JOUR = 150;
+const PLAFOND_NOUVEAUX_COMPTES_PAR_JOUR = 1500;
+
 export async function verifierLimiteIA(
   _supabase: SupabaseClient,
   organisationId: string
@@ -50,6 +74,18 @@ export async function verifierLimiteIA(
   const supabase = createAdminClient();
   const ilYAUneHeure = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const ilYAUnJour = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const debutDecouverte = new Date(Date.now() - JOURS_DECOUVERTE * 24 * 60 * 60 * 1000).toISOString();
+
+  // Organisation de moins d'une semaine ? Une lecture impossible compte
+  // comme « ancienne » : on ne bride pas un artisan pour une panne.
+  const { data: organisation } = await supabase
+    .from("organisations")
+    .select("created_at")
+    .eq("id", organisationId)
+    .maybeSingle();
+  const enDecouverte = Boolean(organisation && organisation.created_at >= debutDecouverte);
+  const plafondHeure = enDecouverte ? PLAFOND_DECOUVERTE_PAR_HEURE : PLAFOND_PAR_HEURE;
+  const plafondJour = enDecouverte ? PLAFOND_DECOUVERTE_PAR_JOUR : PLAFOND_PAR_JOUR;
 
   // Un compteur imprécis en cas de deux requêtes strictement simultanées
   // est acceptable ici : l'objectif est de couper une boucle d'abus, pas de
@@ -69,18 +105,39 @@ export async function verifierLimiteIA(
       .gte("created_at", ilYAUnJour),
   ]);
 
-  if ((nbDerniereHeure ?? 0) >= PLAFOND_PAR_HEURE) {
+  if ((nbDerniereHeure ?? 0) >= plafondHeure) {
     return {
       autorise: false,
       message: "Trop d'appels IA sur la dernière heure pour votre équipe. Réessayez un peu plus tard.",
     };
   }
 
-  if ((nbDernierJour ?? 0) >= PLAFOND_PAR_JOUR) {
+  if ((nbDernierJour ?? 0) >= plafondJour) {
     return {
       autorise: false,
       message: "Limite quotidienne d'appels IA atteinte pour votre équipe. Réessayez demain.",
     };
+  }
+
+  if (enDecouverte) {
+    // Un seul comptage, par jointure sur l'organisation de chaque appel
+    // (logs.organisation_id → organisations) : pas de liste d'identifiants
+    // qui grossirait justement quand des comptes sont ouverts en série.
+    const { count: nbNouveaux, error: erreurNouveaux } = await supabase
+      .from("logs")
+      .select("id, organisations!inner(created_at)", { count: "exact", head: true })
+      .gte("organisations.created_at", debutDecouverte)
+      .in("type", TYPES_APPELS_IA)
+      .gte("created_at", ilYAUnJour);
+    if (erreurNouveaux) console.error("Limite IA : comptage des nouveaux comptes impossible —", erreurNouveaux.message);
+    if ((nbNouveaux ?? 0) >= PLAFOND_NOUVEAUX_COMPTES_PAR_JOUR) {
+      console.error(`Limite IA : plafond commun des nouveaux comptes atteint (${nbNouveaux} appels en 24 h)`);
+      return {
+        autorise: false,
+        message:
+          "L'IA est très demandée aujourd'hui par les nouveaux comptes : elle reprend demain. Tout le reste de Compyo fonctionne normalement.",
+      };
+    }
   }
 
   return { autorise: true };

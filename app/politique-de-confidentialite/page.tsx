@@ -13,10 +13,10 @@ export const metadata: Metadata = metaPage({
 
 export default function PolitiqueConfidentialitePage() {
   return (
-    <LayoutJuridique titre="Politique de confidentialité" misAJour="6 septembre 2026">
+    <LayoutJuridique titre="Politique de confidentialité" misAJour="12 novembre 2026">
       <section>
         <p>
-          Compyo est un outil destiné aux artisans du bâtiment, actuellement en bêta privée
+          Compyo est un outil destiné aux artisans du bâtiment, actuellement en bêta
           gratuite. Cette page explique quelles données sont collectées, pourquoi, et comment les
           artisans utilisateurs et leurs clients peuvent exercer leurs droits, conformément au
           Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et
@@ -32,27 +32,25 @@ export default function PolitiqueConfidentialitePage() {
       </section>
 
       <section>
-        <h2>Données collectées via le formulaire de candidature à la bêta</h2>
+        <h2>Données collectées à l&apos;inscription</h2>
         <p>
-          Pour candidater à l&apos;accès bêta (page &laquo;&nbsp;Demander un accès&nbsp;&raquo;) :
-          nom, prénom, entreprise (facultatif), métier, téléphone, email, nombre d&apos;employés
-          (facultatif), nombre de devis par semaine (facultatif), description du problème
-          principal rencontré, et comment vous avez découvert Compyo (facultatif).
+          Pour créer votre compte (page &laquo;&nbsp;Créez votre compte Compyo&nbsp;&raquo;) :
+          nom, prénom, métier, téléphone, email, mot de passe et entreprise (facultatif). Les
+          inscriptions faites avant le 12 novembre 2026 ont pu aussi indiquer le nombre
+          d&apos;employés, le nombre de devis par semaine, le problème principal rencontré et
+          comment elles ont découvert Compyo.
         </p>
         <p>
-          Ces informations servent uniquement à évaluer et traiter votre candidature, et à vous
-          contacter à ce sujet. Elles sont conservées le temps de l&apos;examen de la candidature,
-          puis pendant la durée de la relation si elle est acceptée ; en cas de refus, elles
-          peuvent être conservées un temps raisonnable pour garder une trace des échanges, puis
+          Ces informations servent à ouvrir et gérer votre compte, et à vous contacter pour
+          vous aider à démarrer. Elles sont conservées pendant la durée de la relation, puis
           supprimées sur simple demande.
         </p>
         <p>
-          Envoyer une candidature crée aussi votre compte Compyo, avec l&apos;email et le mot de
-          passe que vous choisissez. Le mot de passe est confié à notre prestataire
+          Votre compte Compyo est créé avec l&apos;email et le mot de passe que vous choisissez. Le mot de passe est confié à notre prestataire
           d&apos;authentification (Supabase), qui le conserve sous une forme chiffrée
-          irréversible : personne chez Compyo ne peut le lire. Tant que votre candidature n&apos;est
-          pas acceptée, ce compte ne donne accès à aucune fonctionnalité ; si elle est refusée, il
-          est supprimé.
+          irréversible : personne chez Compyo ne peut le lire. Si les places de la bêta sont
+          prises, le compte est créé sur une liste d&apos;attente et ne donne accès à aucune
+          fonctionnalité tant qu&apos;il n&apos;est pas ouvert.
         </p>
       </section>
 
@@ -118,7 +116,7 @@ export default function PolitiqueConfidentialitePage() {
           <li><strong>Vercel</strong> — hébergement de l&apos;application et du site (États-Unis).</li>
           <li><strong>Supabase</strong> — base de données, authentification et stockage des fichiers (photos, captures d&apos;écran).</li>
           <li><strong>Anthropic</strong> — traitement par intelligence artificielle (voir ci-dessus).</li>
-          <li><strong>Resend</strong> — envoi des emails de notification (ex. nouvelle candidature à la bêta).</li>
+          <li><strong>Resend</strong> — envoi des emails de notification (ex. nouvelle inscription).</li>
         </ul>
         <p>
           Certains de ces prestataires (Vercel, Anthropic) sont situés aux États-Unis. La base de

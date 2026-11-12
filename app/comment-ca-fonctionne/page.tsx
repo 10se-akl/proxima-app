@@ -208,7 +208,7 @@ function AppelFinal() {
             href="/demander-acces"
             className="mt-9 inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce hover:scale-[1.03] active:scale-[0.97] transition-all shadow-sm shadow-signal/20"
           >
-            Rejoindre la bêta privée
+            Essayer gratuitement
           </Link>
         </Reveal>
       </div>

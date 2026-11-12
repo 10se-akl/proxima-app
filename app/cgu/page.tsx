@@ -7,7 +7,7 @@ import { LayoutJuridique } from "@/components/marketing/LayoutJuridique";
 export const metadata: Metadata = metaPage({
   titre: "Conditions générales d'utilisation",
   description:
-    "Conditions d'utilisation de Compyo : accès en bêta privée, rôle de l'IA, responsabilités de l'artisan et de l'éditeur.",
+    "Conditions d'utilisation de Compyo : accès en bêta gratuite, rôle de l'IA, responsabilités de l'artisan et de l'éditeur.",
   chemin: "/cgu",
 });
 
@@ -23,7 +23,7 @@ export default function CguPage() {
           Les présentes conditions générales d&apos;utilisation (CGU) régissent l&apos;accès et
           l&apos;utilisation de Compyo, un outil destiné à aider les artisans du bâtiment à
           organiser leurs chantiers, clients et devis. Compyo est actuellement proposé en{" "}
-          <strong>bêta privée, gratuite, sur invitation</strong>. L&apos;utilisation du service
+          <strong>bêta gratuite, limitée à 20 places</strong>. L&apos;utilisation du service
           implique l&apos;acceptation pleine et entière des présentes CGU.
         </p>
       </section>
@@ -31,8 +31,9 @@ export default function CguPage() {
       <section>
         <h2>2. Accès au service</h2>
         <p>
-          L&apos;accès à Compyo se fait sur candidature, examinée manuellement. L&apos;éditeur se
-          réserve le droit d&apos;accepter, de refuser ou de retirer un accès à tout moment,
+          L&apos;accès à Compyo s&apos;ouvre à l&apos;inscription, dans la limite des places de la
+          bêta ; au-delà, l&apos;inscription place sur une liste d&apos;attente. L&apos;éditeur se
+          réserve le droit de suspendre ou de retirer un accès à tout moment,
           notamment en cas d&apos;utilisation non conforme à ces CGU, sans que cela ouvre droit à
           une quelconque indemnité, le service étant gratuit et fourni à titre de bêta-test.
         </p>

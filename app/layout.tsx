@@ -11,7 +11,7 @@ import { ThemeSite } from "@/components/ThemeSite";
 const URL_SITE = SITE_URL;
 const TITRE = "Compyo — Le compagnon des artisans";
 const DESCRIPTION =
-  "Du premier message du client à la facture, Compyo garde chaque chantier rangé : le projet, les notes, les photos, le planning, le devis et la facture, sans rien ressaisir. Bêta privée pour les artisans du bâtiment.";
+  "Du premier message du client à la facture, Compyo garde chaque chantier rangé : le projet, les notes, les photos, le planning, le devis et la facture, sans rien ressaisir. Bêta gratuite pour les artisans du bâtiment.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(URL_SITE),
@@ -193,7 +193,7 @@ const DONNEES_STRUCTUREES = {
         "@type": "Offer",
         price: "0",
         priceCurrency: "EUR",
-        description: "Bêta privée gratuite, sur candidature, pour les artisans du bâtiment en France.",
+        description: "Bêta gratuite (20 places), compte ouvert à l'inscription, pour les artisans du bâtiment en France.",
         eligibleRegion: { "@type": "Country", name: "France" },
         url: `${URL_SITE}/demander-acces`,
       },

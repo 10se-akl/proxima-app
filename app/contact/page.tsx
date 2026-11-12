@@ -9,7 +9,7 @@ import { SectionContact } from "@/components/marketing/SectionContact";
 export const metadata: Metadata = metaPage({
   titre: "Contact",
   description:
-    "Une question sur Compyo ? Écrivez directement à l'équipe — chaque message est lu. Réponses aux questions les plus fréquentes sur la bêta privée.",
+    "Une question sur Compyo ? Écrivez directement à l'équipe — chaque message est lu. Réponses aux questions les plus fréquentes sur la bêta.",
   chemin: "/contact",
 });
 
@@ -17,12 +17,12 @@ const FAQ = [
   {
     question: "Compyo est-il déjà disponible ?",
     reponse:
-      "Compyo est en bêta privée, sur candidature. L'accès est volontairement limité pendant cette phase — voir la page Bêta pour comprendre pourquoi.",
+      "Oui, en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription. Quand les places sont prises, l'inscription met sur une liste d'attente. Voir la page Bêta pour comprendre pourquoi.",
   },
   {
-    question: "Combien de temps pour recevoir une réponse à ma candidature ?",
+    question: "Combien de temps pour avoir accès ?",
     reponse:
-      "Chaque candidature est lue et examinée individuellement, sous 48h en général — pas de réponse automatique.",
+      "Tout de suite, tant qu'il reste des places : votre espace s'ouvre dès que vous avez créé votre compte. Une vraie personne vous écrit ensuite pour vous aider à démarrer.",
   },
   {
     question: "Mes données sont-elles en sécurité ?",

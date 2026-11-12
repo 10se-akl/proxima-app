@@ -18,7 +18,7 @@ export function SectionContact() {
             Une question ? Écrivez-nous directement.
           </h1>
           <p className="mt-5 text-base text-ink/60 leading-relaxed">
-            Compyo est encore un petit projet en bêta privée — pas une grosse équipe support.
+            Compyo est encore un petit projet en bêta — pas une grosse équipe support.
             Mais chaque message est lu et vous aurez une vraie réponse, rapidement.
           </p>
         </Reveal>

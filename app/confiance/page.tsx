@@ -164,8 +164,7 @@ function StatutJuridique() {
               d&apos;abord avoir de vrais retours d&apos;artisans : est-ce que l&apos;outil fait
               vraiment gagner du temps, est-ce qu&apos;il tient dans la durée, est-ce que les
               artisans qui l&apos;essaieront reviendront. C&apos;est précisément pour ça que Compyo
-              reste en bêta privée, sur candidature, avec un nombre volontairement limité
-              de premiers testeurs.
+              reste en bêta gratuite, limitée à 20 places pour les premiers testeurs.
             </p>
             <p>
               Concrètement, ça veut dire : sans structure juridique (SIRET, assurance
@@ -250,7 +249,7 @@ const DONNEES_STRUCTUREES_FAQ = {
       name: "Compyo est-il une entreprise officielle ?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Pas encore. Compyo est en bêta privée sur candidature, sans structure juridique constituée à ce stade. Le développeur veut d'abord obtenir de vrais retours d'usage avant de s'engager dans la création d'une société.",
+        text: "Pas encore. Compyo est en bêta gratuite, sans structure juridique constituée à ce stade. Le développeur veut d'abord obtenir de vrais retours d'usage avant de s'engager dans la création d'une société.",
       },
     },
   ],

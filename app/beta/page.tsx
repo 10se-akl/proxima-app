@@ -6,9 +6,9 @@ import { Header, Footer, Reveal, SectionLabel } from "@/components/marketing/Cad
 // 25/09 — metaPage : adresse canonique et aperçu de partage propres à
 // la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
 export const metadata: Metadata = metaPage({
-  titre: "Bêta privée",
+  titre: "La bêta gratuite",
   description:
-    "Pourquoi Compyo se construit en bêta privée, sur candidature, avec un petit nombre d'artisans plutôt qu'en lancement ouvert — et comment rejoindre.",
+    "Pourquoi Compyo se construit en bêta gratuite, avec 20 places pour les premiers artisans plutôt qu'en lancement ouvert, et comment créer son compte.",
   chemin: "/beta",
 });
 
@@ -25,15 +25,14 @@ export default function BetaPage() {
       <div className="bg-paper">
         <div className="max-w-3xl mx-auto px-5 sm:px-8 pt-16 pb-4 sm:pt-24 sm:pb-6 text-center">
           <p className="font-mono text-[11px] tracking-[0.2em] uppercase text-steel mb-3">
-            Bêta privée
+            Bêta gratuite · 20 places
           </p>
           <h1 className="font-display text-3xl sm:text-5xl font-semibold tracking-tight text-balance">
             Compyo se construira avec ses premiers artisans, pas seul dans son coin.
           </h1>
           <p className="mt-6 text-lg text-ink/70 max-w-xl mx-auto leading-relaxed">
-            Pas de lancement ouvert, pas de liste d&apos;attente de masse. Une candidature, lue
-            individuellement, et un produit qui évoluera avec les gens qui l&apos;utiliseront
-            vraiment.
+            Pas de lancement ouvert : 20 places, un compte qui s&apos;ouvre tout de suite, et un
+            produit qui évoluera avec les gens qui l&apos;utiliseront vraiment.
           </p>
         </div>
       </div>
@@ -41,7 +40,7 @@ export default function BetaPage() {
       <section className="bg-paper">
         <div className="max-w-3xl mx-auto px-5 sm:px-8 py-16 sm:py-20">
           <Reveal>
-            <SectionLabel>Pourquoi une bêta privée</SectionLabel>
+            <SectionLabel>Pourquoi une bêta</SectionLabel>
             <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
               Construire avec de vrais artisans, plutôt que deviner seul.
             </h2>
@@ -53,7 +52,7 @@ export default function BetaPage() {
               des détails qui, pour un artisan, changent tout au quotidien.
             </p>
             <p className="mt-4 text-base text-ink/70 leading-relaxed">
-              Une bêta privée oblige à faire l&apos;inverse : mettre le produit entre les mains
+              Une bêta oblige à faire l&apos;inverse : mettre le produit entre les mains
               d&apos;un petit nombre de personnes qui l&apos;utiliseront réellement, sur de vrais
               chantiers, et ajuster en fonction de ce qui se passe concrètement plutôt que de ce
               qui semblait une bonne idée sur le papier.
@@ -77,10 +76,10 @@ export default function BetaPage() {
               perdue dans un grand nombre.
             </p>
             <p className="mt-4 text-base text-ink/70 leading-relaxed">
-              Concrètement, chaque candidature est lue et examinée individuellement. Pas de
-              réponse automatique, pas de formulaire qui débouche sur un accès générique : une
-              vraie lecture, pour comprendre le métier et les besoins de la personne qui
-              candidate, avant de décider si Compyo, à ce stade, peut réellement lui être utile.
+              Concrètement, la bêta a 20 places. Chaque nouvel inscrit est vu par une vraie
+              personne, qui lui écrit pour l&apos;aider à démarrer. Quand les 20 places sont
+              prises, l&apos;inscription met sur une liste d&apos;attente, et les comptes suivants
+              s&apos;ouvrent quand on peut les suivre correctement.
             </p>
           </Reveal>
         </div>
@@ -117,13 +116,13 @@ export default function BetaPage() {
           <Reveal>
             <SectionLabel>Comment rejoindre</SectionLabel>
             <h2 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight">
-              Une candidature, examinée sous 48h.
+              Un compte créé en deux minutes, ouvert tout de suite.
             </h2>
             <p className="mt-5 text-base text-ink/70 leading-relaxed">
-              L&apos;accès se fait uniquement par candidature, via le formulaire dédié. Quelques
-              questions sur votre métier et votre activité suffisent — chaque réponse est lue
-              par une vraie personne, pas triée automatiquement. La réponse arrive sous 48h,
-              qu&apos;elle soit positive ou non.
+              Votre nom, votre métier, votre téléphone, votre email et un mot de passe : votre
+              espace s&apos;ouvre aussitôt, sans carte bancaire. Dans la semaine, vous recevez un
+              message pour vous aider à démarrer. Si les 20 places sont prises, vous êtes sur la
+              liste d&apos;attente et prévenu par email dès que votre compte s&apos;ouvre.
             </p>
           </Reveal>
         </div>
@@ -139,7 +138,7 @@ export default function BetaPage() {
               href="/demander-acces"
               className="mt-9 inline-flex items-center justify-center gap-2 rounded-full bg-signal text-white font-medium px-7 py-3.5 hover:bg-signal-fonce hover:scale-[1.03] active:scale-[0.97] transition-all shadow-sm shadow-signal/20"
             >
-              Demander un accès
+              Créer mon compte gratuit
             </Link>
           </Reveal>
         </div>

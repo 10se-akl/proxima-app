@@ -121,7 +121,7 @@ export default function DefinirMotDePassePage() {
     ? "Choisissez un nouveau mot de passe pour votre compte Compyo."
     : invitation
       ? `Choisissez votre mot de passe pour rejoindre l'équipe de ${invitation.entreprise}. Vous verrez tout : devis, prix, factures.`
-      : "Votre candidature a été acceptée. Définissez votre mot de passe pour accéder à votre espace.";
+      : "Votre compte Compyo est ouvert. Définissez votre mot de passe pour accéder à votre espace.";
 
   return (
     <main className="min-h-screen flex items-center justify-center px-5">

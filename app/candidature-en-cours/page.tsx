@@ -18,7 +18,7 @@ import { BoutonDeconnexionAttente } from "./BoutonDeconnexionAttente";
 // ============================================================
 
 export const metadata: Metadata = {
-  title: "Candidature en cours d'examen",
+  title: "Liste d'attente",
   robots: { index: false, follow: false },
 };
 
@@ -41,19 +41,20 @@ export default async function CandidatureEnCoursPage() {
     <main className="flex min-h-screen items-center justify-center bg-paper px-5 py-16">
       <Card className="w-full max-w-md p-8 sm:p-10">
         <p className="font-display text-lg font-semibold">Compyo</p>
+        {/* 12/11 — accès immédiat : on n'arrive ici que si la bêta est
+            complète (20 places, lib/candidatures/places.ts) ou si
+            l'ouverture automatique a raté. Axel ouvre le compte à la main. */}
         <h1 className="mt-6 font-display text-2xl font-semibold leading-tight">
-          Votre candidature est en cours d&apos;examen.
+          Vous êtes sur la liste d&apos;attente.
         </h1>
-        <div className="mt-5 space-y-3 text-[15px] leading-relaxed text-ink/70">
-          <p>Merci pour votre demande d&apos;accès à Compyo{prenom ? `, ${prenom}` : ""}.</p>
-          <p>Nous étudions actuellement votre candidature.</p>
-          <p>Vous recevrez un email dès qu&apos;elle sera acceptée.</p>
-          <p>En général, la réponse est donnée sous 48 heures.</p>
+        <div className="mt-5 space-y-3 text-[15px] leading-relaxed text-steel">
+          <p>Merci{prenom ? `, ${prenom}` : ""} : votre compte est créé.</p>
+          <p>Les places de la bêta sont prises pour l&apos;instant. Dès qu&apos;une place s&apos;ouvre, votre compte est ouvert et vous recevez un email.</p>
         </div>
 
         <div className="mt-8 border-t border-ink/10 pt-6 text-sm text-ink/55">
           <p>
-            Votre compte est déjà prêt : une fois la candidature acceptée, connectez-vous avec
+            Votre compte est déjà prêt : une fois ouvert, connectez-vous avec
             <span className="font-medium text-ink/80"> {user.email} </span>
             et le mot de passe que vous avez choisi.
           </p>

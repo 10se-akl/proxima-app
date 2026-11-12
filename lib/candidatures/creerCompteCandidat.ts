@@ -1,14 +1,21 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { METIERS } from "@/lib/metiers";
+import { ouvrirCompte } from "@/lib/candidatures/ouvrirCompte";
 import type { Candidature } from "@/types";
 
 // ============================================================
 // Création du compte d'un candidat (Module 43, 21/09).
 //
-// La demande d'accès crée désormais le compte tout de suite, avec le mot
-// de passe choisi par l'artisan, mais « en attente » : il ne donne accès à
-// rien tant qu'Axel n'a pas accepté la candidature (voir middleware.ts et
-// app/candidature-en-cours/page.tsx).
+// La demande d'accès crée le compte tout de suite, avec le mot de passe
+// choisi par l'artisan. Il naît « en attente ». Depuis le 12/11 (accès
+// immédiat, 20 places, voir lib/candidatures/places.ts), il est aussitôt
+// OUVERT tant qu'il reste des places (ouvrirCompte : profil, organisation,
+// puis accès, dans cet ordre). Sinon il reste « en attente » : la liste
+// d'attente (app/candidature-en-cours), qu'Axel ouvre à la main.
+//
+// Exception : une personne invitée par une équipe reste « en attente » et
+// sans organisation à elle : elle rejoint l'équipe depuis /rejoindre (un
+// compte = une organisation, memberships.user_id unique).
 //
 // ⚠️ SEULE EXCEPTION à la règle de lib/supabase/admin.ts (clé service_role
 // jamais dans une route publique). Elle est nécessaire : le statut
@@ -75,7 +82,10 @@ export function validerCandidat(corps: unknown): Validation {
     decouverte: facultatif(c.decouverte, 300),
   };
 
-  if (!donnees.prenom || !donnees.nom || !donnees.telephone || !donnees.problemePrincipal) {
+  // 12/11 — formulaire réduit à l'essentiel (prénom, nom, métier,
+  // téléphone, email, mot de passe). Les autres champs restent acceptés
+  // (anciens onglets ouverts, parrainage) mais ne sont plus obligatoires.
+  if (!donnees.prenom || !donnees.nom || !donnees.telephone) {
     return { ok: false, message: "Merci de remplir tous les champs obligatoires." };
   }
   if (!METIERS.includes(donnees.metier)) {
@@ -83,6 +93,15 @@ export function validerCandidat(corps: unknown): Validation {
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(donnees.email)) {
     return { ok: false, message: "Cette adresse email ne semble pas valide." };
+  }
+  if (DOMAINES_JETABLES.has(donnees.email.split("@")[1] ?? "")) {
+    return {
+      ok: false,
+      message: "Utilisez votre adresse email habituelle : c'est là que vous recevrez les signatures de vos clients.",
+    };
+  }
+  if (donnees.telephone.replace(/\D/g, "").length < 9) {
+    return { ok: false, message: "Ce numéro de téléphone ne semble pas complet." };
   }
   if (donnees.motDePasse.length < LONGUEUR_MIN_MOT_DE_PASSE) {
     return {
@@ -93,18 +112,49 @@ export function validerCandidat(corps: unknown): Validation {
   if (new TextEncoder().encode(donnees.motDePasse).length > LONGUEUR_MAX_MOT_DE_PASSE) {
     return { ok: false, message: "Ce mot de passe est trop long (72 caractères au maximum)." };
   }
-  if (c.motDePasseConfirmation !== donnees.motDePasse) {
+  // Le formulaire n'a plus qu'un champ (avec « Afficher ») ; un ancien
+  // formulaire encore ouvert envoie la confirmation : vérifiée si présente.
+  if (typeof c.motDePasseConfirmation === "string" && c.motDePasseConfirmation !== donnees.motDePasse) {
     return { ok: false, message: "Les deux mots de passe ne sont pas identiques." };
   }
 
   return { ok: true, donnees };
 }
 
+// Adresses jetables les plus courantes : un vrai artisan n'en a pas besoin,
+// et c'est le premier réflexe de qui veut ouvrir des comptes en série pour
+// consommer l'IA gratuitement.
+const DOMAINES_JETABLES = new Set([
+  "yopmail.com",
+  "yopmail.fr",
+  "yopmail.net",
+  "mailinator.com",
+  "guerrillamail.com",
+  "sharklasers.com",
+  "10minutemail.com",
+  "temp-mail.org",
+  "tempmail.com",
+  "trashmail.com",
+  "getnada.com",
+  "maildrop.cc",
+  "dispostable.com",
+  "jetable.org",
+  "throwawaymail.com",
+  "mohmal.com",
+  "fakeinbox.com",
+  "moakt.com",
+  "tempr.email",
+  "emailondeck.com",
+]);
+
 export type ResultatCreation =
-  | { ok: true; candidature: Candidature }
+  | { ok: true; candidature: Candidature; ouvert: boolean }
   | { ok: false; raison: "email_existant" | "erreur"; message: string };
 
-export async function creerCompteCandidat(d: DonneesCandidat): Promise<ResultatCreation> {
+export async function creerCompteCandidat(
+  d: DonneesCandidat,
+  options: { ouvrir: boolean }
+): Promise<ResultatCreation> {
   const admin = createAdminClient();
 
   const { data: cree, error: erreurCompte } = await admin.auth.admin.createUser({
@@ -166,8 +216,33 @@ export async function creerCompteCandidat(d: DonneesCandidat): Promise<ResultatC
     if (erreurAnnulation) {
       console.error("Candidature : l'annulation du compte a échoué aussi —", cree.user.id, erreurAnnulation.message);
     }
-    return { ok: false, raison: "erreur", message: "Impossible d'enregistrer votre candidature. Réessayez dans un instant." };
+    return { ok: false, raison: "erreur", message: "Impossible de créer votre compte. Réessayez dans un instant." };
   }
 
-  return { ok: true, candidature: candidature as Candidature };
+  if (!options.ouvrir) {
+    return { ok: true, candidature: candidature as Candidature, ouvert: false };
+  }
+
+  // Ouverture immédiate. Un échec ici n'annule rien : le compte reste
+  // fermé, la candidature « en attente », et Axel la termine d'un appui
+  // sur « Accepter » (étapes rejouables).
+  const ouverture = await ouvrirCompte(admin, {
+    userId: cree.user.id,
+    nomComplet: `${d.prenom} ${d.nom}`,
+    entreprise: d.entreprise,
+    metier: d.metier,
+    email: d.email,
+  });
+  if (!ouverture.ok) {
+    console.error("Inscription : ouverture automatique impossible, compte laissé en attente —", cree.user.id);
+    return { ok: true, candidature: candidature as Candidature, ouvert: false };
+  }
+
+  // « accepted » : le statut que l'admin et les statistiques comprennent
+  // déjà (« Acceptée », « Comptes ouverts ») ; c'est aussi lui qui compte
+  // les places (lib/candidatures/places.ts).
+  const { error: erreurStatut } = await admin.from("candidatures").update({ statut: "accepted" }).eq("id", candidature.id);
+  if (erreurStatut) console.error("Inscription : statut « accepted » non enregistré —", erreurStatut.message);
+
+  return { ok: true, candidature: { ...(candidature as Candidature), statut: "accepted" }, ouvert: true };
 }

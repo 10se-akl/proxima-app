@@ -283,9 +283,9 @@ export default function PageMetier({ params }: { params: { slug: string } }) {
               Vos soirées ne sont pas faites pour la paperasse.
             </h2>
             <Link href="/demander-acces" className={`mt-10 ${CLASSE_CTA} px-9`}>
-              Rejoindre la bêta privée
+              Essayer gratuitement
             </Link>
-            <p className="mt-7 font-mono text-[11px] tracking-wide text-steel">Chaque candidature est lue · réponse sous 48 h</p>
+            <p className="mt-7 text-sm text-steel">Gratuit pendant la bêta · sans carte bancaire · compte ouvert tout de suite</p>
           </Reveal>
         </section>
       </main>

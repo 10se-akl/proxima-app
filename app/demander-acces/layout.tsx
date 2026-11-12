@@ -9,9 +9,9 @@ import { metaPage } from "@/lib/seo";
 // 25/09 — metaPage : adresse canonique et aperçu de partage propres à
 // la page (avant, ils étaient hérités de l'accueil). Voir lib/seo.ts.
 export const metadata: Metadata = metaPage({
-  titre: "Demander un accès à la bêta privée",
+  titre: "Créer votre compte Compyo",
   description:
-    "Rejoignez la bêta privée de Compyo, l'assistant administratif pensé pour les artisans du bâtiment. Chaque candidature est lue et examinée individuellement.",
+    "Créez votre compte Compyo, le compagnon administratif des artisans du bâtiment : gratuit pendant la bêta, sans carte bancaire, votre espace s'ouvre tout de suite.",
   chemin: "/demander-acces",
 });
 

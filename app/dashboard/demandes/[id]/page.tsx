@@ -15,6 +15,7 @@ import { ChampAppareil, EtatEnvoiPhotos, PhotosProjet, idChampAppareil, useEnvoi
 import type { TimelineItem } from "@/components/dashboard/Timeline";
 import { LABEL_TYPE_CHANTIER } from "@/components/dashboard/DemandeCard";
 import { adresseEspaceDevis, dupliquerDevis as creerNouvelleVersion } from "@/lib/devis/actions";
+import { choisirDevisAFacturer } from "@/lib/devis/versions";
 import { obtenirChecklist } from "@/lib/checklistsMetier";
 import {
   listerNotesProjet,
@@ -73,6 +74,11 @@ export default function DetailDemandePage({
 
   const [demande, setDemande] = useState<Projet | null>(null);
   const [devis, setDevis] = useState<Devis | null>(null);
+  // 12/11 — le devis qu'on facture n'est pas forcément le dernier : si le
+  // client a signé la version 1 et que l'artisan prépare une version 2, les
+  // factures suivent la version signée (avant, elles disparaissaient de la
+  // fiche, ou partaient sur une version jamais acceptée).
+  const [devisAFacturer, setDevisAFacturer] = useState<Devis | null>(null);
   const [nomArtisan, setNomArtisan] = useState("");
   const [metierArtisan, setMetierArtisan] = useState<string | null>(null);
   const [chargementAnalyse, setChargementAnalyse] = useState(false);
@@ -234,13 +240,15 @@ export default function DetailDemandePage({
         { data: rdvData },
       ] = await Promise.all([
         supabase.from("demandes").select("*").eq("id", params.id).maybeSingle(),
+        // 12/11 — toutes les versions du devis (rarement plus de 2 ou 3) :
+        // la fiche montre la dernière, mais on facture celle que le client a
+        // signée (voir devisAFacturer plus bas).
         supabase
           .from("devis")
           .select("*")
           .eq("demande_id", params.id)
           .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+          .limit(10),
         supabase
           .from("notes_vocales")
           .select("*")
@@ -274,7 +282,9 @@ export default function DetailDemandePage({
         return;
       }
       setDemande(demandeData as Projet);
-      setDevis(devisData as Devis | null);
+      const versions = (devisData as Devis[] | null) ?? [];
+      setDevis(versions[0] ?? null);
+      setDevisAFacturer(choisirDevisAFacturer(versions));
       setNotesVocales((notesData as NoteVocale[]) ?? []);
       setEvenementsProjet((evenementsData as EvenementProjet[]) ?? []);
       setNotes(notesProjet);
@@ -1185,12 +1195,9 @@ export default function DetailDemandePage({
   };
 
   const factures =
-    devis &&
-    devis.statut !== "brouillon" &&
-    devis.statut !== "refuse" &&
-    ["accepte", "en_cours", "termine"].includes(demande.statut) ? (
+    devisAFacturer && ["accepte", "en_cours", "termine"].includes(demande.statut) ? (
       <FacturesProjet
-        devis={devis}
+        devis={devisAFacturer}
         nomClient={demande.nom_client}
         telephoneClient={demande.telephone_client}
         adresseClient={demande.adresse_client}

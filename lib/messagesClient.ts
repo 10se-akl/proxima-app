@@ -268,7 +268,9 @@ export function suggererMessages(
     .sort((a, b) => Date.parse(a.date_emission) - Date.parse(b.date_emission));
   const devisSansReponse = ctx.devisEnvoyes
     .filter((d) => d.envoye_le && t - Date.parse(d.envoye_le) >= JOURS_RELANCE_DEVIS * JOUR)
-    .sort((a, b) => Date.parse(a.envoye_le as string) - Date.parse(b.envoye_le as string));
+    // 12/11 — la version la plus récente d'abord : avec un devis v1 puis v2,
+    // la relance doit parler du dernier envoyé, pas du premier.
+    .sort((a, b) => Date.parse(b.envoye_le as string) - Date.parse(a.envoye_le as string));
   const rdvs = [...ctx.rdvs].sort((a, b) => Date.parse(a.date_heure) - Date.parse(b.date_heure));
   const rdvAujourdhui = rdvs.find((r) => memeJourParis(new Date(r.date_heure), maintenant));
   const rdvAVenir = rdvs.find((r) => Date.parse(r.date_heure) > t && !memeJourParis(new Date(r.date_heure), maintenant));

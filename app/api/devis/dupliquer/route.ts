@@ -1,3 +1,4 @@
+import { prochainNumeroDevis } from "@/lib/devis/numero";
 import { anneeParis } from "@/lib/moisParis";
 import { NextRequest, NextResponse } from "next/server";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
@@ -63,14 +64,8 @@ export async function POST(request: NextRequest) {
   const artisanId = user.id;
 
   async function inserer() {
-    const { count: nbDevisCetteAnnee } = await supabase
-      .from("devis")
-      .select("id", { count: "exact", head: true })
-      .eq("organisation_id", organisationId)
-      .gte("created_at", `${anneeCourante}-01-01`)
-      .lt("created_at", `${anneeCourante + 1}-01-01`);
-
-    const numero = `${anneeCourante}-${String((nbDevisCetteAnnee ?? 0) + 1).padStart(3, "0")}`;
+    // 12/11 — plus grand numéro pris + 1 (voir lib/devis/numero.ts).
+    const numero = await prochainNumeroDevis(supabase, organisationId as string /* vérifié plus haut */, anneeCourante);
 
     return supabase
       .from("devis")

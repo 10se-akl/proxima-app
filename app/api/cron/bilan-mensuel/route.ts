@@ -21,6 +21,8 @@ import { bornes, cle, decaler, moisCourant } from "@/lib/moisParis";
 // reste de toute façon consultable dans l'app à tout moment.
 // ============================================================
 
+// 12/11 — jamais figé au build : un cron mis en cache ne tournerait plus.
+export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 // 21/09 — À l'heure de Paris : le serveur tourne en UTC, et

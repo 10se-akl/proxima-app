@@ -432,3 +432,25 @@ export function recalculerDevis(
     total_ttc: totalTTC,
   };
 }
+
+// 12/11 — « Vos tarifs sont-ils réglés ? ». Avant, il suffisait que la ligne
+// des paramètres EXISTE : or compléter une mention depuis un devis (le SIRET,
+// par exemple) crée cette ligne avec les tarifs par défaut (45 €/h, 15 %).
+// Les devis suivants étaient alors chiffrés à 45 €/h sans plus aucun
+// avertissement. Maintenant : des tarifs restés exactement aux valeurs par
+// défaut comptent comme « pas réglés », et l'éditeur le signale. Un artisan
+// qui facture vraiment 45 €/h avec 15 % de marge voit l'avertissement : il
+// lui demande seulement de vérifier, ce qui reste vrai.
+export function tarifsRegles(
+  parametres: Pick<ParametresEntreprise, "cout_horaire" | "marge_defaut_pct" | "cout_journalier" | "forfait_deplacement"> | null | undefined
+): boolean {
+  if (!parametres) return false;
+  const d = PARAMETRES_PAR_DEFAUT;
+  const memeNombre = (a: unknown, b: unknown) => Number(a ?? 0) === Number(b ?? 0);
+  return !(
+    memeNombre(parametres.cout_horaire, d.cout_horaire) &&
+    memeNombre(parametres.marge_defaut_pct, d.marge_defaut_pct) &&
+    memeNombre(parametres.cout_journalier, d.cout_journalier) &&
+    memeNombre(parametres.forfait_deplacement, d.forfait_deplacement)
+  );
+}

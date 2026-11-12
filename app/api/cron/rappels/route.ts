@@ -47,6 +47,8 @@ import { envoyerPush } from "@/lib/notifications/push";
 // déjà à 60. Avec l'envoi désormais parallélisé ci-dessous, une seule
 // itération lente ne devrait plus jamais s'approcher de cette limite, mais
 // autant rester cohérent avec relance-devis/bilan-mensuel.
+// 12/11 — jamais figé au build : un cron mis en cache ne tournerait plus.
+export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 export async function GET(request: NextRequest) {

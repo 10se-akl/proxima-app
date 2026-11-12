@@ -71,13 +71,17 @@ export async function POST(_request: NextRequest, { params }: { params: { id: st
   // coup : annuler d'abord la facture de solde (elle redeviendra
   // réémettable, cette fois sans la déduction), ensuite seulement l'acompte.
   if (factureOriginale.type === "acompte") {
-    const { data: soldeActif } = await supabase
+    // 12/11 — sur tout le projet : le solde d'une autre version du devis
+    // a lui aussi déduit cet acompte (voir /api/factures/creer).
+    const { data: soldesActifs } = await supabase
       .from("factures")
       .select("id, numero")
-      .eq("devis_id", factureOriginale.devis_id)
+      .eq("demande_id", factureOriginale.demande_id)
+      .eq("organisation_id", organisationId)
       .eq("type", "facture")
       .neq("statut", "annulee")
-      .maybeSingle();
+      .limit(1);
+    const soldeActif = soldesActifs?.[0];
     if (soldeActif) {
       return NextResponse.json(
         {

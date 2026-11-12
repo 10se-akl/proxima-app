@@ -31,6 +31,8 @@ import { messageRelanceFacture, AVERTISSEMENT_BROUILLON } from "@/lib/relances/t
 // recouvrement) ne s'automatise pas et reste la décision de l'artisan.
 // ============================================================
 
+// 12/11 — jamais figé au build : un cron mis en cache ne tournerait plus.
+export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const JOURS_APRES_ECHEANCE = 3;

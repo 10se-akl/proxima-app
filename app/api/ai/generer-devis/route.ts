@@ -1,9 +1,10 @@
+import { prochainNumeroDevis } from "@/lib/devis/numero";
 import { anneeParis } from "@/lib/moisParis";
 import { heuresDuPoste } from "@/lib/moteur-metier/tempsMainOeuvre";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { appelerClaude, parserReponseJSON, ErreurIA, reponseErreurIA } from "@/lib/ai/client";
-import { calculerDevis, PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
+import { calculerDevis, PARAMETRES_PAR_DEFAUT, tarifsRegles } from "@/lib/moteur-metier/calculerDevis";
 import { enregistrerLog } from "@/lib/logs";
 import { getOrganisationId } from "@/lib/organisation";
 import { verifierLimiteIA } from "@/lib/limiteIA";
@@ -236,7 +237,8 @@ export async function POST(request: NextRequest) {
     ? `\nPoints de vigilance habituels pour ce métier (informationnel, pas des postes en soi) :\n${checklist.map((p) => `- ${p}`).join("\n")}`
     : "";
 
-  const parametresConfigures = Boolean(parametresBrutes);
+  // 12/11 — la ligne existe ET les tarifs ne sont plus ceux par défaut.
+  const parametresConfigures = tarifsRegles(parametresBrutes as ParametresEntreprise | null);
   const parametres: ParametresEntreprise = parametresBrutes
     ? (parametresBrutes as ParametresEntreprise)
     : { id: "defaut", artisan_id: user.id, organisation_id: organisationId, ...PARAMETRES_PAR_DEFAUT };
@@ -356,14 +358,8 @@ ${blocNotesVocales ? `\nNotes vocales dictées sur le terrain (les plus récente
     const orgId = organisationId;
 
     async function inserer() {
-      const { count: nbDevisCetteAnnee } = await supabase
-        .from("devis")
-        .select("id", { count: "exact", head: true })
-        .eq("organisation_id", orgId)
-        .gte("created_at", `${anneeCourante}-01-01`)
-        .lt("created_at", `${anneeCourante + 1}-01-01`);
-
-      const numero = `${anneeCourante}-${String((nbDevisCetteAnnee ?? 0) + 1).padStart(3, "0")}`;
+      // 12/11 — plus grand numéro pris + 1 (voir lib/devis/numero.ts).
+      const numero = await prochainNumeroDevis(supabase, orgId, anneeCourante);
 
       return supabase
         .from("devis")

@@ -239,8 +239,15 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
 
   // Ce que la page sait déjà de la réponse — exactement les mêmes
   // conditions qu'avant, nommées une fois pour l'en-tête et le bloc du bas.
+  // 12/11 — ancien lien : une version plus récente du devis a été envoyée
+  // au client. On ne propose plus de la signer.
+  const remplace = !!devis?.remplace && !reponseEnregistree;
+  // 12/11 — le projet est accepté, mais sur une AUTRE version : ne pas
+  // écrire « Vous avez validé le devis n° X » pour celle-ci.
+  const autreSignee = !!devis?.autre_version_signee && !reponseEnregistree;
   const reponseConnue =
     !!devis &&
+    !remplace &&
     !!(
       reponseEnregistree ||
       devis.devis_statut === "refuse" ||
@@ -248,6 +255,7 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
     );
   const estAccepte =
     !!devis &&
+    !autreSignee &&
     (reponseEnregistree === "accepte" || ["accepte", "en_cours", "termine"].includes(devis.demande_statut ?? ""));
   // Les deux conditions que le client cherche avant de signer, reprises
   // telles quelles du document (aucun calcul ici).
@@ -298,10 +306,13 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
               <div className={`${CARTE_PLEINE} mt-5 sm:p-6`}>
                 <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
                   <p className="text-[15px] text-steel">{modele.totaux.libelleTotal}</p>
-                  {reponseConnue && (
+                  {reponseConnue && !autreSignee && (
                     <span className={`${FORME_ETIQUETTE} ${ETIQUETTE[estAccepte ? "succes" : "neutre"]}`}>
                       {estAccepte ? "Accepté" : "Refusé"}
                     </span>
+                  )}
+                  {(remplace || autreSignee) && (
+                    <span className={`${FORME_ETIQUETTE} ${ETIQUETTE.neutre}`}>Remplacé</span>
                   )}
                 </div>
                 <p className="mt-1 whitespace-nowrap text-[36px] font-bold leading-none tracking-[-0.03em] tabular-nums text-ink">
@@ -324,7 +335,7 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
                     )}
                   </dl>
                 )}
-                {!reponseConnue && (
+                {!reponseConnue && !remplace && (
                   <a href="#votre-reponse" className={`${BOUTON_TEXTE} -ml-3 mt-2`}>
                     Aller à la signature
                     {/* 25/10 — la flèche dit que c'est un lien (il descend à la signature). */}
@@ -358,7 +369,16 @@ export function DevisPublicClient({ devisId }: { devisId: string }) {
             </div>
 
             <section id="votre-reponse" className="mt-8 scroll-mt-6">
-              {reponseConnue ? (
+              {remplace || autreSignee ? (
+                <div role="status" className={`${CARTE_PLEINE} px-6 py-8 text-center`}>
+                  <p className="text-xl font-bold text-ink">Ce devis a été remplacé</p>
+                  <p className="mx-auto mt-2 max-w-md text-[15px] text-steel">
+                    {autreSignee
+                      ? `Une autre version de ce devis a déjà été acceptée. ${nomArtisan} a votre accord : rien d'autre à faire ici.`
+                      : `${nomArtisan} vous a envoyé une version plus récente de ce devis. Ouvrez le dernier lien reçu pour la lire et la signer.`}
+                  </p>
+                </div>
+              ) : reponseConnue ? (
                 // Retravaillé le 13/09 : ce bloc est le dernier écran que
                 // voit le client après avoir engagé plusieurs milliers
                 // d'euros. Une phrase grise dans un cadre, sans le montant

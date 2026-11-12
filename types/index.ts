@@ -501,6 +501,10 @@ export type DevisPublic = {
   type_chantier: string | null;
   logo_url: string | null;
   mentions_legales: MentionsLegales | null;
+  // 12/11 — une version plus récente de ce devis a été envoyée au client
+  // (il ne peut plus signer celle-ci), ou une autre version est déjà signée.
+  remplace?: boolean;
+  autre_version_signee?: boolean;
 };
 
 // ============================================================

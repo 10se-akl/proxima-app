@@ -1,3 +1,4 @@
+import { estRemplace, type VersionDevis } from "@/lib/devis/versions";
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { notifierRelances, type RelancePreparee } from "@/lib/notifications/budget";
@@ -43,6 +44,8 @@ import {
 // lib/notifications/budget.ts).
 // ============================================================
 
+// 12/11 — jamais figé au build : un cron mis en cache ne tournerait plus.
+export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const JOURS_PALIER_1 = 5;
@@ -51,6 +54,14 @@ const JOURS_PALIER_2 = 10;
 // "demandes(nom_client)" est typé par Supabase comme un tableau (relation
 // jointe), même si demande_id ne pointe jamais vers plus d'un projet —
 // même flatten que resume-journee/route.ts.
+const PROJET_DEJA_ACCEPTE = ["accepte", "en_cours", "termine"];
+
+function statutProjetDe(item: unknown): string | undefined {
+  const demandes = (item as { demandes?: { statut?: string } | { statut?: string }[] })?.demandes;
+  const demande = Array.isArray(demandes) ? demandes[0] : demandes;
+  return demande?.statut;
+}
+
 function nomClientDe(item: unknown): string | undefined {
   const demandes = (item as { demandes?: { nom_client?: string } | { nom_client?: string }[] })
     ?.demandes;
@@ -81,7 +92,7 @@ export async function GET(request: NextRequest) {
   const { data: devisEnAttente, error } = await supabase
     .from("devis")
     .select(
-      "id, artisan_id, organisation_id, demande_id, numero, envoye_le, notifie_relance_j5_le, notifie_relance_j10_le, demandes(nom_client)"
+      "id, artisan_id, organisation_id, demande_id, numero, statut, created_at, envoye_le, signe_le, notifie_relance_j5_le, notifie_relance_j10_le, demandes(nom_client, statut)"
     )
     .eq("statut", "envoye")
     .not("envoye_le", "is", null);
@@ -99,7 +110,23 @@ export async function GET(request: NextRequest) {
   // jamais un rattrapage des deux à la suite. Calculé ici pour ne garder,
   // avant le parallélisme ci-dessous, que les devis qui ont réellement
   // quelque chose à notifier.
-  const aNotifier = devisEnAttente
+  // 12/11 — un devis signé en ligne garde le statut « envoyé » (seul le
+  // projet passe à « accepté ») : il recevait quand même sa relance J+5,
+  // avec un message « avez-vous regardé mon devis ? » prêt à partir chez un
+  // client qui avait signé. On ne relance que les devis vraiment en attente :
+  // pas signés, projet pas accepté, et pas remplacés par une version plus
+  // récente envoyée au même client.
+  const enAttente = devisEnAttente.filter(
+    (devis) =>
+      !devis.signe_le &&
+      !PROJET_DEJA_ACCEPTE.includes(statutProjetDe(devis) ?? "") &&
+      !estRemplace(
+        devis as VersionDevis,
+        devisEnAttente.filter((autre) => autre.demande_id === devis.demande_id) as VersionDevis[]
+      )
+  );
+
+  const aNotifier = enAttente
     .map((devis) => {
       const joursDepuis = Math.floor(
         (maintenant - new Date(devis.envoye_le as string).getTime()) / 86400000
@@ -112,7 +139,7 @@ export async function GET(request: NextRequest) {
       }
       return palier ? { devis, joursDepuis, palier } : null;
     })
-    .filter((item): item is { devis: (typeof devisEnAttente)[number]; joursDepuis: number; palier: 5 | 10 } => item !== null);
+    .filter((item): item is { devis: (typeof enAttente)[number]; joursDepuis: number; palier: 5 | 10 } => item !== null);
 
   // Le brouillon est signé au nom de l'artisan : on récupère nom/entreprise
   // en UNE requête pour tous les artisans concernés, plutôt qu'une par

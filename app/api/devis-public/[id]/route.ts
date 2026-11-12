@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { etatDesVersions } from "@/lib/devis/versionsServeur";
 import { lignesDeVente } from "@/lib/moteur-metier/prixDeVente";
 import type { DevisPublic, LigneDevisCalculee, MentionsLegales } from "@/types";
 
@@ -147,5 +149,12 @@ export async function GET(_request: NextRequest, { params }: { params: { id: str
     return NextResponse.json({ error: "Devis introuvable ou plus disponible." }, { status: 404 });
   }
 
-  return NextResponse.json({ devis: versDevisPublic(data as ReponseRpc) });
+  // 12/11 — ancien lien d'un devis remplacé par une version plus récente :
+  // la page le dit et ne propose plus de signer. Lu seulement pour un devis
+  // que la fonction publique vient d'accepter de montrer.
+  const versions = await etatDesVersions(createAdminClient(), params.id);
+
+  return NextResponse.json({
+    devis: { ...versDevisPublic(data as ReponseRpc), remplace: versions.remplace, autre_version_signee: versions.autreVersionSignee },
+  });
 }

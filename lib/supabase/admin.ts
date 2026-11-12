@@ -24,6 +24,10 @@ import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 //     réserve repondre_devis_public au serveur (F11), pour que l'IP et le
 //     navigateur de la signature viennent de la route et non de
 //     l'appelant. La fonction valide elle-même tout l'état du devis.
+//   - lib/devis/versionsServeur.ts (12/11), appelée par les deux routes
+//     devis-public : lit seulement les dates et statuts des autres versions
+//     du même projet, et n'en renvoie que deux booléens (« remplacé »,
+//     « une autre version est signée »). Rien d'autre ne sort.
 //   - lib/notifications/push.ts               (appelée par les crons
 //     seulement, avec leur client admin : retrouver le destinataire actif)
 //   - lib/limiteIA.ts                         (comptage seul, sur un

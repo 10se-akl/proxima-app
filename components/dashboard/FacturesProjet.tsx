@@ -96,7 +96,10 @@ export function FacturesProjet({
       const { data, error } = await supabase
         .from("factures")
         .select("*")
-        .eq("devis_id", devis.id)
+        // 12/11 — toutes les factures du PROJET, pas seulement celles de ce
+        // devis : un acompte facturé sur une version précédente du devis
+        // compte dans ce qui a déjà été facturé (sinon, facturé deux fois).
+        .eq("demande_id", devis.demande_id)
         .order("date_emission", { ascending: true });
       if (error) throw error;
       setFactures((data ?? []) as Facture[]);
@@ -319,6 +322,9 @@ export function FacturesProjet({
                 <div className="mt-3">
                   <FacturePreview
                     facture={f}
+                    numeroFactureAnnulee={
+                      f.facture_liee_id ? factures.find((x) => x.id === f.facture_liee_id)?.numero ?? null : null
+                    }
                     nomClient={nomClient}
                     telephoneClient={telephoneClient}
                     adresseClient={adresseClient}

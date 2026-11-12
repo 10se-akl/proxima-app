@@ -58,9 +58,10 @@ async function chargerContexte(
   } = await supabase.auth.getUser();
   const [{ data: demande }, { data: profil }, { data: devis }, { data: factures }, { data: rdvs }, { count: nbMessages }] =
     await Promise.all([
-      supabase.from("demandes").select("nom_client, telephone_client, adresse_client, created_at").eq("id", demandeId).single(),
+      supabase.from("demandes").select("nom_client, telephone_client, adresse_client, created_at, statut").eq("id", demandeId).single(),
       user ? supabase.from("profils").select("nom, entreprise").eq("id", user.id).single() : Promise.resolve({ data: null }),
-      supabase.from("devis").select("id, numero, envoye_le").eq("demande_id", demandeId).eq("statut", "envoye"),
+      // 12/11 — pas les devis signés : ils gardent le statut « envoyé ».
+      supabase.from("devis").select("id, numero, envoye_le").eq("demande_id", demandeId).eq("statut", "envoye").is("signe_le", null),
       supabase
         .from("factures")
         .select("id, numero, date_emission, date_echeance, total_ttc")
@@ -90,7 +91,9 @@ async function chargerContexte(
       dejaContacte: (nbMessages ?? 0) > 0,
       signature: { nom: profil?.nom, entreprise: profil?.entreprise },
       facturesDues: factures ?? [],
-      devisEnvoyes: devis ?? [],
+      // 12/11 — projet accepté (signé ou noté à la main) : plus aucune
+      // relance de devis à proposer.
+      devisEnvoyes: ["accepte", "en_cours", "termine"].includes(demande.statut) ? [] : devis ?? [],
       rdvs: rdvs ?? [],
       meteo,
     },

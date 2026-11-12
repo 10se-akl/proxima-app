@@ -11,6 +11,7 @@ import {
   formaterNumeroFacture,
 } from "@/lib/moteur-metier/genererFacture";
 import { PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
+import { autreVersionSignee } from "@/lib/devis/versions";
 import type { Facture, ParametresEntreprise, TypeFacture } from "@/types";
 
 // ============================================================
@@ -111,6 +112,30 @@ export async function POST(request: NextRequest) {
   if (devis.statut === "refuse") {
     return NextResponse.json({ error: "Ce devis a été refusé — impossible de le facturer." }, { status: 400 });
   }
+  // 12/11 — un brouillon (par exemple une « nouvelle version » pas encore
+  // envoyée) n'a jamais été accepté par le client : on ne le facture pas.
+  if (devis.statut !== "envoye") {
+    return NextResponse.json(
+      { error: "Ce devis n'a pas été envoyé au client — impossible de le facturer." },
+      { status: 400 }
+    );
+  }
+  // 12/11 — si le client a signé une AUTRE version de ce devis, c'est elle
+  // qu'on facture, pas celle-ci.
+  const { data: versions } = await supabase
+    .from("devis")
+    .select("id, numero, statut, created_at, envoye_le, signe_le")
+    .eq("demande_id", devis.demande_id)
+    .eq("organisation_id", organisationId);
+  const versionSignee = autreVersionSignee(devis, versions ?? []);
+  if (versionSignee) {
+    return NextResponse.json(
+      {
+        error: `Le client a signé le devis n° ${(versionSignee as { numero?: string }).numero ?? ""} : facturez celui-là. Rechargez la page.`,
+      },
+      { status: 409 }
+    );
+  }
 
   const { data: parametresBrutes } = await supabase
     .from("parametres_entreprise")
@@ -167,7 +192,8 @@ export async function POST(request: NextRequest) {
     const { data: acomptesExistants } = await supabase
       .from("factures")
       .select("total_ttc")
-      .eq("devis_id", devisId)
+      .eq("demande_id", devis.demande_id)
+      .eq("organisation_id", organisationId)
       .eq("type", "acompte")
       .neq("statut", "annulee");
     const montantAcomptesExistants = (acomptesExistants ?? []).reduce((s, f) => s + f.total_ttc, 0);
@@ -189,17 +215,22 @@ export async function POST(request: NextRequest) {
     // chantier. Pour corriger une facture de solde déjà émise, la bonne
     // voie reste l'avoir (voir /api/factures/[id]/avoir), jamais une
     // seconde facture de solde qui s'ajouterait à la première.
-    const { data: soldeExistant } = await supabase
+    // 12/11 — sur tout le projet (toutes versions du devis confondues), et
+    // limit(1) plutôt que maybeSingle() : deux soldes existants feraient
+    // échouer maybeSingle(), qui répondrait « aucun » et laisserait passer.
+    const { data: soldesExistants } = await supabase
       .from("factures")
       .select("id, numero")
-      .eq("devis_id", devisId)
+      .eq("demande_id", devis.demande_id)
+      .eq("organisation_id", organisationId)
       .eq("type", "facture")
       .neq("statut", "annulee")
-      .maybeSingle();
+      .limit(1);
+    const soldeExistant = soldesExistants?.[0];
     if (soldeExistant) {
       return NextResponse.json(
         {
-          error: `Une facture de solde (n° ${soldeExistant.numero}) existe déjà pour ce devis. Annulez-la (avoir) avant d'en créer une nouvelle.`,
+          error: `Une facture de solde (n° ${soldeExistant.numero}) existe déjà pour ce projet. Annulez-la (avoir) avant d'en créer une nouvelle.`,
         },
         { status: 409 }
       );
@@ -211,7 +242,8 @@ export async function POST(request: NextRequest) {
     const { data: acomptesLies } = await supabase
       .from("factures")
       .select("*")
-      .eq("devis_id", devisId)
+      .eq("demande_id", devis.demande_id)
+      .eq("organisation_id", organisationId)
       .eq("type", "acompte")
       .neq("statut", "annulee");
     lignesEtTva = genererLignesFactureComplete(devis, (acomptesLies ?? []) as Facture[], tvaImposee);

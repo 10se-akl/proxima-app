@@ -1,9 +1,10 @@
+import { prochainNumeroDevis } from "@/lib/devis/numero";
 import { anneeParis } from "@/lib/moisParis";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { getOrganisationId } from "@/lib/organisation";
 import { enregistrerLog } from "@/lib/logs";
-import { PARAMETRES_PAR_DEFAUT } from "@/lib/moteur-metier/calculerDevis";
+import { PARAMETRES_PAR_DEFAUT, tarifsRegles } from "@/lib/moteur-metier/calculerDevis";
 import { conditionsParDefaut } from "@/lib/devis/mentionsLegales";
 import { estColonneManquante, MESSAGE_BASE_PAS_A_JOUR } from "@/lib/supabase/erreurs";
 import type { ParametresEntreprise } from "@/types";
@@ -60,7 +61,8 @@ export async function POST(request: NextRequest) {
     .select("*")
     .eq("organisation_id", organisationId)
     .maybeSingle();
-  const parametresConfigures = Boolean(parametresBrutes);
+  // 12/11 — la ligne existe ET les tarifs ne sont plus ceux par défaut.
+  const parametresConfigures = tarifsRegles(parametresBrutes as ParametresEntreprise | null);
   const parametres: ParametresEntreprise = parametresBrutes
     ? (parametresBrutes as ParametresEntreprise)
     : { id: "defaut", artisan_id: userId, organisation_id: organisationId, ...PARAMETRES_PAR_DEFAUT };
@@ -74,14 +76,8 @@ export async function POST(request: NextRequest) {
   const MAX_TENTATIVES_NUMERO = 5;
 
   async function inserer() {
-    const { count: nbDevisCetteAnnee } = await supabase
-      .from("devis")
-      .select("id", { count: "exact", head: true })
-      .eq("organisation_id", organisationId)
-      .gte("created_at", `${anneeCourante}-01-01`)
-      .lt("created_at", `${anneeCourante + 1}-01-01`);
-
-    const numero = `${anneeCourante}-${String((nbDevisCetteAnnee ?? 0) + 1).padStart(3, "0")}`;
+    // 12/11 — plus grand numéro pris + 1 (voir lib/devis/numero.ts).
+    const numero = await prochainNumeroDevis(supabase, organisationId as string /* vérifié plus haut */, anneeCourante);
 
     return supabase
       .from("devis")

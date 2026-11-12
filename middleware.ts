@@ -7,7 +7,22 @@ import { NextResponse, type NextRequest } from "next/server";
 // évite d'importer ici @supabase/supabase-js (sa dépendance realtime-js tire
 // du code Node incompatible avec l'Edge Runtime). "no-store" systématique :
 // un cache rendrait le bouton on/off inefficace pendant plusieurs minutes.
+//
+// 12/11 — le résultat est gardé 30 s en mémoire : avant, CHAQUE page du
+// site (accueil, pages métier…) attendait un aller-retour vers Stockholm
+// avant de répondre. Activer ou couper la maintenance prend donc au plus
+// 30 s à s'appliquer partout.
+let maintenanceEnMemoire: { valeur: boolean; jusqua: number } | null = null;
+
 async function estEnMaintenance(): Promise<boolean> {
+  const maintenant = Date.now();
+  if (maintenanceEnMemoire && maintenanceEnMemoire.jusqua > maintenant) return maintenanceEnMemoire.valeur;
+  const valeur = await lireMaintenance();
+  maintenanceEnMemoire = { valeur, jusqua: maintenant + 30_000 };
+  return valeur;
+}
+
+async function lireMaintenance(): Promise<boolean> {
   try {
     const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/parametres_systeme?cle=eq.maintenance_actif&select=valeur`;
     const res = await fetch(url, {
@@ -46,7 +61,12 @@ export async function middleware(request: NextRequest) {
 
   let userEmail: string | null = null;
 
-  if (maintenancePossible || besoinSession) {
+  // 12/11 — la session n'est lue que si elle sert : pour /dashboard, ou
+  // pendant une maintenance (laisser passer l'admin). Avant, chaque page
+  // publique lisait la session d'un visiteur anonyme, pour rien.
+  const enMaintenance = maintenancePossible ? await estEnMaintenance() : false;
+
+  if (enMaintenance || besoinSession) {
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -73,7 +93,7 @@ export async function middleware(request: NextRequest) {
     // La maintenance a priorité sur la redirection /login habituelle : un
     // visiteur non connecté qui arrive sur /dashboard pendant la
     // maintenance doit voir l'écran de maintenance, pas /login.
-    if (maintenancePossible && userEmail !== process.env.ADMIN_EMAIL && (await estEnMaintenance())) {
+    if (enMaintenance && userEmail !== process.env.ADMIN_EMAIL) {
       const url = request.nextUrl.clone();
       url.pathname = "/maintenance";
       return NextResponse.rewrite(url);

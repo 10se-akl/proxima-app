@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { etatDesVersions } from "@/lib/devis/versionsServeur";
 
 // ============================================================
 // Signature électronique en ligne (08/09) — voir Module 31,
@@ -45,13 +46,37 @@ export async function POST(request: NextRequest, { params }: { params: { id: str
     );
   }
 
+  // 12/11 — le tracé de signature est une image en base64 : quelques
+  // dizaines de Ko (pavé de 500 × 160). Au-delà, ce n'est pas une signature (route publique).
+  if (typeof signatureData === "string" && signatureData.length > 600_000) {
+    return NextResponse.json({ error: "Signature trop lourde. Effacez-la et signez à nouveau." }, { status: 413 });
+  }
+  if (signatureData !== undefined && signatureData !== null && typeof signatureData !== "string") {
+    return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
+  }
+  if (typeof nomSignataire === "string" && nomSignataire.length > 200) {
+    return NextResponse.json({ error: "Nom trop long." }, { status: 400 });
+  }
+
+  const admin = createAdminClient();
+
+  // 12/11 — une version plus récente de ce devis a été envoyée au client :
+  // l'ancien lien (encore dans ses SMS) ne doit plus engager personne.
+  const versions = await etatDesVersions(admin, params.id);
+  if (versions.remplace) {
+    return NextResponse.json(
+      { error: "Ce devis a été remplacé par une version plus récente. Ouvrez le dernier lien reçu." },
+      { status: 409 }
+    );
+  }
+
   const ip =
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
     request.headers.get("x-real-ip") ??
     null;
   const userAgent = request.headers.get("user-agent");
 
-  const { error } = await createAdminClient().rpc("repondre_devis_public", {
+  const { error } = await admin.rpc("repondre_devis_public", {
     p_devis_id: params.id,
     p_reponse: reponse,
     p_nom_signataire: nomSignataire?.trim() || null,

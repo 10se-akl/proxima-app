@@ -51,12 +51,16 @@ export function FacturePreview({
   telephoneClient,
   adresseClient,
   logoUrl,
+  numeroFactureAnnulee,
 }: {
   facture: Facture;
   nomClient: string;
   telephoneClient?: string | null;
   adresseClient?: string | null;
   logoUrl?: string | null;
+  // 12/11 — un avoir doit citer la facture qu'il annule (CGI, art. 242
+  // nonies A). Avant, le document disait « la facture n° correspondante ».
+  numeroFactureAnnulee?: string | null;
 }) {
   const m = facture.mentions_legales;
   const estAvoir = facture.type === "avoir";
@@ -118,8 +122,15 @@ export function FacturePreview({
 
         {estAvoir && (
           <p className="mt-6 rounded-[8px] border border-steel px-4 py-2.5 text-[14px] font-medium text-ink">
-            Cet avoir annule la facture n° {facture.facture_liee_id ? "correspondante" : ""} — les montants ci-dessous
-            viennent en déduction.
+            {numeroFactureAnnulee ? (
+              <>
+                Cet avoir annule la facture n°{" "}
+                <span className="tabular-nums">{numeroFactureAnnulee}</span>. Les montants ci-dessous viennent en
+                déduction.
+              </>
+            ) : (
+              "Cet avoir annule une facture précédente. Les montants ci-dessous viennent en déduction."
+            )}
           </p>
         )}
 

@@ -82,80 +82,82 @@ export function AccueilCarnet() {
         <AnimationsCarnet racine="accueil-carnet" />
 
       <main id="contenu">
-        {/* L'ouverture : comprendre Compyo en cinq secondes. */}
-        <section className="hero" aria-labelledby="titre-accueil">
-          <div className="cadre hero-grille">
-            <div className="hero-texte">
-              <p className="etiquette">Pour les artisans du bâtiment</p>
-              <h1 id="titre-accueil">
-                Sur le chantier, vos clients n’attendent <span className="trait">plus</span>.
-              </h1>
-              <p className="chapeau">
-                Vous partagez le message d’un client à Compyo&nbsp;: il range la demande et vous prépare la réponse, le
-                devis, la relance et la facture. Vous relisez, vous envoyez de votre téléphone&nbsp;: rien ne part sans vous.
-              </p>
-              <div className="actions">
-                <Link className="btn btn-cordeau" href={INSCRIPTION}>
-                  Rejoindre la bêta gratuite
-                </Link>
-                <a className="btn btn-ligne" href="#comment">
-                  Voir comment
-                </a>
+        {/* 12/11/2026 — L'ouverture refaite pour le premier coup d'œil : un
+            vrai artisan (photo libre Pexels, déjà utilisée dans la pub, licence
+            commerciale sans attribution : pexels.com/fr-fr/license), et par-dessus
+            ce que Compyo lui prépare. Sur téléphone, la photo remplit l'écran et
+            le texte se pose dessus ; sur ordinateur, texte à gauche, photo à
+            droite. Le message, le devis de 387,20 € et Mme Garnier sont les mêmes
+            exemples inventés que le film et la journée. La photo n'est qu'une
+            illustration : la personne ne recommande pas Compyo (condition de la
+            licence), d'où la mention sous la photo. */}
+        <section className="hero2" aria-labelledby="titre-accueil">
+          <figure className="hero2-photo">
+            <picture>
+              <source media="(max-width: 899px)" srcSet="/accueil/artisan-camion.webp" />
+              <img
+                src="/accueil/artisan-camion.webp"
+                alt="Un artisan remplit un papier dans son utilitaire, entre deux chantiers."
+                width={830}
+                height={1107}
+                fetchPriority="high"
+              />
+            </picture>
+            <div className="hero2-cartes" aria-hidden="true">
+              <div className="carte-flottante carte-client">
+                <span className="cf-tete">
+                  <i className="cf-rond">G</i>
+                  Mme Garnier · WhatsApp
+                </span>
+                <span className="cf-texte">Fuite sous l’évier depuis hier soir. Vous pouvez passer&nbsp;?</span>
               </div>
-              <p className="hero-mention">Gratuit pendant la bêta, sans carte bancaire. On vous répond sous 48&nbsp;h.</p>
+              <div className="carte-flottante carte-compyo">
+                <span className="cf-tete">
+                  <i className="cf-rond cf-compyo">C</i>
+                  Compyo · prêt à relire
+                </span>
+                <span className="cf-ligne">
+                  <Coche /> Réponse à Mme Garnier
+                </span>
+                <span className="cf-ligne">
+                  <Coche /> Devis fuite évier · 387,20&nbsp;€
+                </span>
+                <span className="cf-bouton">Relire et envoyer</span>
+              </div>
             </div>
-
-            <figure className="hero-visuel">
-              <div
-                className="tel"
-                data-anim="partage"
-                data-boucle
-                role="img"
-                aria-label="Exemple inventé : depuis la conversation WhatsApp d’une cliente, l’artisan partage le message vers Compyo."
-              >
-                <div className="tel-ecran" aria-hidden="true">
-                  <div className="tel-barre">
-                    <span>8:04</span>
-                    <span />
-                  </div>
-                  <div className="tel-app">
-                    <div className="tel-tete">
-                      <span className="tel-titre">Mme Garnier</span>
-                      <span className="tel-sous">WhatsApp</span>
-                    </div>
-                    <div className="fil">
-                      <div className="bulle">
-                        Bonjour, fuite sous l’évier depuis hier soir. Vous pouvez passer&nbsp;? 12 rue des Lilas, Nantes.
-                      </div>
-                    </div>
-                    <div className="voile" />
-                    <div className="partage-feuille">
-                      <b>Partager avec…</b>
-                      <div className="partage-apps">
-                        <span>
-                          <i className="app-rond">✉</i>Messages
-                        </span>
-                        <span>
-                          <i className="app-rond">@</i>E-mail
-                        </span>
-                        <span className="app-compyo touche">
-                          <i className="app-rond">C</i>
-                          <b>Compyo</b>
-                        </span>
-                        <span>
-                          <i className="app-rond">⧉</i>Copier
-                        </span>
-                      </div>
-                    </div>
-                    <span className="doigt masque" />
-                  </div>
-                </div>
-              </div>
-              <figcaption className="legende">
-                Sur Android&nbsp;: Partager → Compyo. Sur iPhone, pour l’instant&nbsp;: une capture d’écran ou un
-                copier-coller. Si la bêta prend, une vraie application arrivera, avec le partage sur iPhone aussi.
-              </figcaption>
-            </figure>
+            <figcaption className="hero2-credit">Photo d’illustration · exemples inventés</figcaption>
+          </figure>
+          <div className="cadre hero2-texte">
+            <p className="etiquette">Pour les artisans du bâtiment</p>
+            <h1 id="titre-accueil">
+              Sur le chantier, vos clients n’attendent <span className="trait">plus</span>.
+            </h1>
+            <p className="chapeau">
+              Compyo prépare la réponse, le devis et la facture. Vous relisez, vous envoyez&nbsp;: rien ne part sans
+              vous.
+            </p>
+            <div className="actions">
+              <Link className="btn btn-cordeau btn-hero" href={INSCRIPTION}>
+                Rejoindre la bêta gratuite
+              </Link>
+              <a className="btn btn-ligne btn-voir" href="#comment">
+                Voir comment
+              </a>
+            </div>
+            <ul className="garanties">
+              <li>
+                <Coche />
+                Gratuit pendant la bêta
+              </li>
+              <li>
+                <Coche />
+                Sans carte bancaire
+              </li>
+              <li>
+                <Coche />
+                Sur Android et iPhone
+              </li>
+            </ul>
           </div>
         </section>
 
@@ -183,6 +185,21 @@ export function AccueilCarnet() {
             <h2 id="titre-probleme" className="titre-section">
               Un client sans réponse, c’est un chantier qui part ailleurs.
             </h2>
+            {/* 12/11 — la même pub (Pexels, licence commerciale) : le soir, le
+                carnet et le téléphone. Illustration seulement. */}
+            <figure className="photo-soir">
+              <img
+                src="/accueil/soir-carnet.webp"
+                alt="Le soir, sur une table : un carnet de chantier, un stylo et un téléphone."
+                width={810}
+                height={960}
+                loading="lazy"
+                decoding="async"
+              />
+              <figcaption>
+                <span className="photo-soir-heure">18 h 45.</span> Il reste un devis à faire.
+              </figcaption>
+            </figure>
             <ul className="problemes">
               <li className="probleme">
                 <span className="num-main" aria-hidden="true">1</span>
@@ -225,6 +242,72 @@ export function AccueilCarnet() {
             </p>
           </div>
           <ol className="moments">
+
+            <li className="moment">
+              <div className="cadre moment-grille">
+                <p className="moment-heure">
+                  <Horloge h={8} m={4} />
+                  <span>8 h 04</span>
+                </p>
+                <div className="moment-corps">
+                  <div className="moment-texte">
+                    <h3>Un message arrive&nbsp;? Partagez-le à Compyo.</h3>
+                    <p>
+                      Il range la demande dans un projet, avec le client, l’adresse et les photos. Pas de ressaisie.
+                    </p>
+                      <p className="legende-moment">
+                        Sur Android&nbsp;: Partager → Compyo. Sur iPhone, pour l’instant&nbsp;: une capture d’écran ou un
+                        copier-coller. Si la bêta prend, une vraie application arrivera, avec le partage sur iPhone aussi.
+                      </p>
+                  </div>
+                    <div
+                      className="tel"
+                      data-anim="partage"
+                      data-boucle
+                      role="img"
+                      aria-label="Exemple inventé : depuis la conversation WhatsApp d’une cliente, l’artisan partage le message vers Compyo."
+                    >
+                      <div className="tel-ecran" aria-hidden="true">
+                        <div className="tel-barre">
+                          <span>8:04</span>
+                          <span />
+                        </div>
+                        <div className="tel-app">
+                          <div className="tel-tete">
+                            <span className="tel-titre">Mme Garnier</span>
+                            <span className="tel-sous">WhatsApp</span>
+                          </div>
+                          <div className="fil">
+                            <div className="bulle">
+                              Bonjour, fuite sous l’évier depuis hier soir. Vous pouvez passer&nbsp;? 12 rue des Lilas, Nantes.
+                            </div>
+                          </div>
+                          <div className="voile" />
+                          <div className="partage-feuille">
+                            <b>Partager avec…</b>
+                            <div className="partage-apps">
+                              <span>
+                                <i className="app-rond">✉</i>Messages
+                              </span>
+                              <span>
+                                <i className="app-rond">@</i>E-mail
+                              </span>
+                              <span className="app-compyo touche">
+                                <i className="app-rond">C</i>
+                                <b>Compyo</b>
+                              </span>
+                              <span>
+                                <i className="app-rond">⧉</i>Copier
+                              </span>
+                            </div>
+                          </div>
+                          <span className="doigt masque" />
+                        </div>
+                      </div>
+                    </div>
+                </div>
+              </div>
+            </li>
 
             <li className="moment">
               <div className="cadre moment-grille">
@@ -460,9 +543,8 @@ export function AccueilCarnet() {
               <div>
                 <dt>Une vraie application&nbsp;?</dt>
                 <dd>
-                  Aujourd’hui, Compyo s’installe depuis le navigateur, sur Android comme sur iPhone. Selon comment les
-                  choses avancent, et s’il y a assez de bêta-testeurs, une vraie application arrivera dans les magasins
-                  d’applications&nbsp;: avec, sur iPhone aussi, le partage direct d’un message vers Compyo.
+                  Aujourd’hui, Compyo s’installe depuis le navigateur, sur Android comme sur iPhone. Si la bêta prend,
+                  une application arrivera dans les magasins, avec le partage direct sur iPhone aussi.
                 </dd>
               </div>
             </dl>

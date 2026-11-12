@@ -108,6 +108,79 @@
 .carnet .hero-visuel{margin:0;display:grid;justify-items:center}
 @media (min-width:900px){.carnet .hero-grille{grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr)}.carnet h1{font-size:clamp(3.4rem,5vw,4.9rem)}}
 
+/* 12/11/2026 — L'ouverture refaite : un vrai artisan au premier coup d'œil.
+   Téléphone : la photo remplit l'écran, le texte se pose dessus (dégradé
+   sombre, texte blanc : lisible au soleil), bouton jaune du mètre comme sur
+   la nuit finale. Ordinateur : texte sur le papier à gauche, photo à droite.
+   Les deux cartes posées sur la photo sont des exemples inventés. */
+.carnet .hero2{position:relative;display:grid;align-items:end;min-height:calc(100svh - 68px);max-height:880px;overflow:hidden;background:var(--nuit);isolation:isolate}
+.carnet .hero2-photo{position:absolute;inset:0;margin:0;z-index:-1}
+.carnet .hero2-photo picture,.carnet .hero2-photo img{display:block;width:100%;height:100%}
+.carnet .hero2-photo img{object-fit:cover;object-position:68% 30%}
+.carnet .hero2-photo::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgb(16 21 27 / .05) 0%,rgb(16 21 27 / .1) 30%,rgb(16 21 27 / .78) 56%,rgb(16 21 27 / .94) 100%)}
+.carnet .hero2-cartes{position:absolute;z-index:2;top:16px;left:var(--gouttiere);right:var(--gouttiere);display:grid;gap:10px;justify-items:start}
+.carnet .carte-flottante{display:grid;gap:5px;width:min(80%,300px);padding:9px 12px;border-radius:16px;background:#FFFFFF;color:#1C1E21;box-shadow:0 14px 30px -12px rgb(0 0 0 / .55);font:400 14px/1.35 var(--f-texte)}
+.carnet .carte-compyo{margin-left:12%;border:2px solid var(--cordeau)}
+.carnet .cf-tete{display:flex;align-items:center;gap:8px;font:700 12.5px/1.2 var(--f-texte);color:#5A6067}
+.carnet .cf-rond{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:#E6E8EB;color:#1C1E21;font:800 12px/1 var(--f-titre);font-style:normal;flex:none}
+.carnet .cf-compyo{border-radius:7px;background:#2356C4;color:#fff}
+.carnet .cf-texte{font-size:14px}
+.carnet .cf-ligne{display:flex;align-items:center;gap:6px;font-weight:700;font-size:14px}
+.carnet .cf-ligne .coche{width:18px;height:18px;stroke:#21754A;stroke-width:3.4}
+.carnet .cf-bouton{display:none;justify-self:start;margin-top:2px;padding:7px 12px;border-radius:10px;background:#2356C4;color:#fff;font:700 13px/1 var(--f-texte)}
+.carnet .hero2-credit{position:absolute;z-index:2;right:10px;bottom:6px;font-size:11px;color:rgb(255 255 255 / .62)}
+.carnet .hero2-texte{position:relative;z-index:1;display:grid;gap:14px;justify-items:start;padding-top:clamp(196px,30svh,260px);padding-bottom:26px}
+.carnet .hero2 .etiquette{color:var(--metre);margin-bottom:0}
+.carnet .hero2 h1{color:#FFFFFF;font-size:clamp(2.45rem,10.4vw,4.9rem);line-height:.98}
+.carnet .hero2 .trait::after{background:var(--metre)}
+.carnet .hero2 .chapeau{color:#E7EAEE;font-size:1.1rem;line-height:1.42}
+.carnet .hero2 .actions{width:100%;gap:10px}
+.carnet .btn-hero{flex:1 1 100%;min-height:58px;font-size:1.15rem}
+.carnet .hero2 .btn-hero{background:var(--metre);color:#14171A;box-shadow:0 4px 0 #B48A12}
+.carnet .hero2 .btn-hero:hover{box-shadow:0 5px 0 #B48A12}
+.carnet .hero2 .btn-hero:active{box-shadow:0 1px 0 #B48A12}
+.carnet .hero2 .btn-voir{display:none}
+.carnet .hero2 :focus-visible{outline-color:var(--metre)}
+.carnet .garanties{list-style:none;margin:0;padding:0;display:flex;flex-wrap:wrap;gap:4px 16px;color:#E7EAEE;font-size:.98rem;font-weight:700}
+.carnet .garanties li{display:inline-flex;align-items:center;gap:6px}
+.carnet .garanties .coche{width:18px;height:18px;stroke:var(--metre);stroke-width:3.4}
+@media (min-width:900px){
+  .carnet .hero2{min-height:0;max-height:none;background:transparent;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);align-items:center;max-width:var(--cadre);margin-inline:auto;padding:clamp(28px,4vw,56px) var(--gouttiere) clamp(48px,6vw,80px);gap:clamp(32px,5vw,64px);overflow:visible}
+  .carnet .hero2-photo{position:relative;inset:auto;z-index:auto;grid-column:2;grid-row:1;aspect-ratio:4/5;max-height:640px;justify-self:end;width:100%;max-width:520px;border-radius:24px;overflow:visible}
+  .carnet .hero2-photo picture{border-radius:24px;overflow:hidden;box-shadow:0 30px 60px -30px rgb(15 18 22 / .6)}
+  .carnet .hero2-photo::after{display:none}
+  .carnet .hero2-photo img{object-position:60% 40%}
+  .carnet .hero2-cartes{top:auto;bottom:56px;left:-56px;right:auto;width:330px}
+  .carnet .carte-flottante{width:100%;font-size:15px}
+  .carnet .carte-compyo{margin-left:36px}
+  .carnet .hero2-credit{bottom:-26px;right:4px;color:var(--encre-3)}
+  .carnet .hero2-texte{grid-column:1;grid-row:1;padding:0;max-width:none;gap:22px}
+  .carnet .hero2 .etiquette{color:var(--crayon)}
+  .carnet .hero2 h1{color:var(--encre);font-size:clamp(3rem,4.6vw,4.4rem)}
+  .carnet .cf-bouton{display:inline-block}
+  .carnet .carte-flottante{gap:6px;padding:11px 13px}
+  .carnet .hero2 .trait::after{background:var(--cordeau)}
+  .carnet .hero2 .chapeau{color:var(--encre-2);font-size:1.3rem}
+  .carnet .hero2 .actions{width:auto;gap:14px}
+  .carnet .btn-hero{flex:0 0 auto}
+  .carnet .hero2 .btn-hero{background:var(--cordeau);color:var(--sur-cordeau);box-shadow:0 4px 0 var(--cordeau-ombre)}
+  .carnet .hero2 .btn-hero:hover{box-shadow:0 5px 0 var(--cordeau-ombre)}
+  .carnet .hero2 .btn-hero:active{box-shadow:0 1px 0 var(--cordeau-ombre)}
+  .carnet .hero2 .btn-voir{display:inline-flex}
+  .carnet .hero2 :focus-visible{outline-color:var(--cordeau)}
+  .carnet .garanties{color:var(--encre-2)}
+  .carnet .garanties .coche{stroke:var(--ok)}
+}
+
+.carnet .legende-moment{font-size:.98rem!important;color:var(--encre-3)!important}
+
+/* La photo du soir, dans « Le problème » */
+.carnet .photo-soir{position:relative;margin:0 0 clamp(20px,4vw,32px);border-radius:var(--rayon);overflow:hidden;aspect-ratio:16/9;background:var(--nuit)}
+.carnet .photo-soir img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 45%}
+.carnet .photo-soir figcaption{position:absolute;left:0;right:0;bottom:0;padding:28px 18px 14px;background:linear-gradient(180deg,transparent,rgb(16 21 27 / .85));color:#fff;font:700 1.15rem/1.25 var(--f-texte)}
+.carnet .photo-soir-heure{font:700 1.6rem/1 var(--f-main);color:var(--metre)}
+@media (min-width:900px){.carnet .photo-soir{aspect-ratio:21/8}}
+
 /* Les métiers, tout de suite sous le titre */
 .carnet .bande-metiers{padding-bottom:clamp(40px,7vw,72px)}
 .carnet .bande-metiers p{font-weight:700;color:var(--encre-2);margin-bottom:12px}

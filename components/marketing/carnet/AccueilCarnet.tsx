@@ -46,6 +46,29 @@ const METIERS: Array<[string, string]> = [
 
 const INSCRIPTION = "/demander-acces";
 
+// Les vraies captures de l'application (public/guide/, version téléphone
+// claire). À garder en phase avec le Guide : ce sont les mêmes fichiers.
+const CAPTURES = [
+  {
+    src: "/guide/journee-maintenant-telephone-clair.webp",
+    alt: "Capture de Compyo, écran Aujourd’hui : le rendez-vous en cours, l’argent à encaisser et les tâches du jour.",
+    titre: "Aujourd’hui",
+    texte: "Le rendez-vous en cours, ce qui reste à encaisser, la journée.",
+  },
+  {
+    src: "/guide/nouveau-choix-telephone-clair.webp",
+    alt: "Capture de Compyo, nouveau projet : coller un message, envoyer une photo ou une capture, ou écrire soi-même.",
+    titre: "Nouveau projet",
+    texte: "Un message collé, une capture d’écran, ou quelques mots.",
+  },
+  {
+    src: "/guide/planning-semaine-telephone-clair.webp",
+    alt: "Capture de Compyo, planning de la semaine : les chantiers jour par jour, une alerte météo et le bouton Prévenir le client.",
+    titre: "Planning",
+    texte: "La semaine, la météo des chantiers dehors, « Prévenir le client ».",
+  },
+];
+
 function Horloge({ h, m }: { h: number; m: number }) {
   // Les angles des aiguilles pour l'heure écrite à côté.
   const angleH = (h % 12) * 30 + m * 0.5;
@@ -238,76 +261,10 @@ export function AccueilCarnet() {
               Vous partagez. Compyo prépare. Vous envoyez.
             </h2>
             <p className="chapeau" style={{ marginBottom: "clamp(28px,5vw,48px)" }}>
-              Une journée, avec des exemples inventés.
+              Trois moments d’une journée. Les exemples sont inventés.
             </p>
           </div>
           <ol className="moments">
-
-            <li className="moment">
-              <div className="cadre moment-grille">
-                <p className="moment-heure">
-                  <Horloge h={8} m={4} />
-                  <span>8 h 04</span>
-                </p>
-                <div className="moment-corps">
-                  <div className="moment-texte">
-                    <h3>Un message arrive&nbsp;? Partagez-le à Compyo.</h3>
-                    <p>
-                      Il range la demande dans un projet, avec le client, l’adresse et les photos. Pas de ressaisie.
-                    </p>
-                      <p className="legende-moment">
-                        Sur Android&nbsp;: Partager → Compyo. Sur iPhone, pour l’instant&nbsp;: une capture d’écran ou un
-                        copier-coller. Si la bêta prend, une vraie application arrivera, avec le partage sur iPhone aussi.
-                      </p>
-                  </div>
-                    <div
-                      className="tel"
-                      data-anim="partage"
-                      data-boucle
-                      role="img"
-                      aria-label="Exemple inventé : depuis la conversation WhatsApp d’une cliente, l’artisan partage le message vers Compyo."
-                    >
-                      <div className="tel-ecran" aria-hidden="true">
-                        <div className="tel-barre">
-                          <span>8:04</span>
-                          <span />
-                        </div>
-                        <div className="tel-app">
-                          <div className="tel-tete">
-                            <span className="tel-titre">Mme Garnier</span>
-                            <span className="tel-sous">WhatsApp</span>
-                          </div>
-                          <div className="fil">
-                            <div className="bulle">
-                              Bonjour, fuite sous l’évier depuis hier soir. Vous pouvez passer&nbsp;? 12 rue des Lilas, Nantes.
-                            </div>
-                          </div>
-                          <div className="voile" />
-                          <div className="partage-feuille">
-                            <b>Partager avec…</b>
-                            <div className="partage-apps">
-                              <span>
-                                <i className="app-rond">✉</i>Messages
-                              </span>
-                              <span>
-                                <i className="app-rond">@</i>E-mail
-                              </span>
-                              <span className="app-compyo touche">
-                                <i className="app-rond">C</i>
-                                <b>Compyo</b>
-                              </span>
-                              <span>
-                                <i className="app-rond">⧉</i>Copier
-                              </span>
-                            </div>
-                          </div>
-                          <span className="doigt masque" />
-                        </div>
-                      </div>
-                    </div>
-                </div>
-              </div>
-            </li>
 
             <li className="moment">
               <div className="cadre moment-grille">
@@ -317,10 +274,10 @@ export function AccueilCarnet() {
                 </p>
                 <div className="moment-corps">
                   <div className="moment-texte">
-                    <h3>Entre deux tâches, le client est prévenu.</h3>
+                    <h3>Un message arrive. La réponse est prête.</h3>
                     <p>
-                      Compyo prépare la réponse. Vous la relisez, puis vous l’envoyez par SMS ou WhatsApp, depuis votre
-                      téléphone. Le client sait que vous avez lu son message.
+                      Vous partagez le message du client à Compyo. Il range la demande et prépare la réponse. Vous la
+                      relisez, vous l’envoyez par SMS ou WhatsApp, depuis votre téléphone.
                     </p>
                   </div>
                   <div
@@ -369,9 +326,8 @@ export function AccueilCarnet() {
                   <div className="moment-texte">
                     <h3>Le devis se prépare. Les prix, c’est vous.</h3>
                     <p>
-                      Compyo propose les lignes et les quantités à partir de la demande et de vos notes&nbsp;: vous les
-                      vérifiez. Les totaux suivent un calcul fixe&nbsp;; les prix viennent de vos tarifs, ou d’un tarif de
-                      référence que vous ajustez. Vous validez.
+                      Compyo propose les lignes et les quantités&nbsp;: vous les vérifiez. Les prix viennent de vos tarifs,
+                      ou d’un tarif de référence que vous ajustez. Les totaux suivent un calcul fixe.
                     </p>
                   </div>
                   <div
@@ -393,7 +349,7 @@ export function AccueilCarnet() {
                         <p className="tel-sous">Mme Roux · 4 rue des Tilleuls</p>
                         <div className="devis" data-taux="0.10">
                           <div className="devis-ligne">
-                            <span>Dépose de l’ancienne faïence</span>
+                            <span>Dépose de la faïence</span>
                             <span className="qte">1</span>
                             <span className="prix" data-v="240">240,00&nbsp;€</span>
                           </div>
@@ -499,12 +455,47 @@ export function AccueilCarnet() {
           </ol>
         </section>
 
+        {/* 14/11/2026 — La preuve : de vraies captures de l'application
+            d'aujourd'hui (celles du Guide, public/guide/, refaites à chaque
+            changement de design), pas des écrans dessinés. Données de
+            démonstration. Sur téléphone, la rangée défile au doigt et la
+            capture suivante dépasse pour le montrer. */}
+        <section className="section section-papier" aria-labelledby="titre-vrai">
+          <div className="cadre">
+            <p className="etiquette">En vrai</p>
+            <h2 id="titre-vrai" className="titre-section">
+              Ce n’est pas une maquette. C’est l’application.
+            </h2>
+            <p className="chapeau" style={{ marginBottom: "clamp(24px,4vw,40px)" }}>
+              Trois écrans tels qu’ils sont aujourd’hui, avec des données de démonstration.
+            </p>
+          </div>
+          <ul className="captures" aria-label="Captures de l’application">
+            {CAPTURES.map((c) => (
+              <li key={c.src} className="capture">
+                <figure>
+                  <div className="capture-cadre">
+                    <img src={c.src} alt={c.alt} width={780} height={1688} loading="lazy" decoding="async" />
+                  </div>
+                  <figcaption>
+                    <b>{c.titre}</b>
+                    <span>{c.texte}</span>
+                  </figcaption>
+                </figure>
+              </li>
+            ))}
+          </ul>
+        </section>
+
         {/* Ce qui ne bouge pas, et les questions qu'on nous pose. */}
-        <section className="section section-papier" aria-labelledby="titre-regles">
+        <section className="section" aria-labelledby="titre-regles">
           <div className="cadre">
             <h2 id="titre-regles" className="titre-section">
               Compyo prépare. Vous décidez. Toujours.
             </h2>
+            {/* 14/11/2026 — les deux promesses restent écrites en grand ; les
+                questions s'ouvrent au doigt (une page plus courte, et chacun
+                lit ce qui l'inquiète). <details> : fonctionne sans script. */}
             <dl className="regles">
               <div>
                 <dt>Aucun prix inventé.</dt>
@@ -517,42 +508,50 @@ export function AccueilCarnet() {
                 <dt>Rien ne part sans votre geste.</dt>
                 <dd>Compyo prépare le message. Vous l’envoyez vous-même, depuis votre téléphone.</dd>
               </div>
-              <div>
-                <dt>Où vont vos données&nbsp;?</dt>
-                <dd>
-                  La base de données est hébergée dans l’Union européenne (Suède). L’analyse par l’IA passe par Anthropic,
-                  aux États-Unis. <Link href="/confiance">Le détail</Link>
-                </dd>
-              </div>
-              <div>
-                <dt>Et le prix&nbsp;?</dt>
-                <dd>
+            </dl>
+            <div className="questions">
+              <details>
+                <summary>Et le prix&nbsp;?</summary>
+                <p>
                   Gratuit pendant la bêta (20 places), sans carte bancaire. Le prix sera annoncé avant la fin de la
                   bêta&nbsp;: vous déciderez à ce moment-là.
-                </dd>
-              </div>
-              <div>
-                <dt>Qui est derrière&nbsp;?</dt>
-                <dd>
+                </p>
+              </details>
+              <details>
+                <summary>Et sur iPhone&nbsp;?</summary>
+                <p>
+                  Compyo marche sur Android, sur iPhone et sur ordinateur. Sur Android, vous partagez un message
+                  directement à Compyo. Sur iPhone, pour l’instant&nbsp;: une capture d’écran ou un copier-coller.
+                </p>
+              </details>
+              <details>
+                <summary>Où vont mes données&nbsp;?</summary>
+                <p>
+                  La base de données est hébergée dans l’Union européenne (Suède). L’analyse par l’IA passe par Anthropic,
+                  aux États-Unis. <Link href="/confiance">Le détail</Link>
+                </p>
+              </details>
+              <details>
+                <summary>Qui est derrière&nbsp;?</summary>
+                <p>
                   Un développeur indépendant, en France, qui construit Compyo pour les artisans et cherche ses premiers
-                  testeurs.{" "}
-                  <Link href="/a-propos">En savoir plus</Link>
-                </dd>
-              </div>
+                  testeurs. <Link href="/a-propos">En savoir plus</Link>
+                </p>
+              </details>
               {/* 02/11/2026 (Axel) — dit au conditionnel : ce n'est pas une promesse. */}
-              <div>
-                <dt>Une vraie application&nbsp;?</dt>
-                <dd>
+              <details>
+                <summary>Une vraie application dans les magasins&nbsp;?</summary>
+                <p>
                   Aujourd’hui, Compyo s’installe depuis le navigateur, sur Android comme sur iPhone. Si la bêta prend,
                   une application arrivera dans les magasins, avec le partage direct sur iPhone aussi.
-                </dd>
-              </div>
-            </dl>
+                </p>
+              </details>
+            </div>
           </div>
         </section>
 
         {/* Les idées à venir, séparées de ce qui existe. */}
-        <section className="section" aria-labelledby="titre-idees">
+        <section className="section section-papier" aria-labelledby="titre-idees">
           <div className="cadre">
             <p className="etiquette">Pas encore dans Compyo</p>
             <h2 id="titre-idees" className="titre-section">

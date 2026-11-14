@@ -225,7 +225,7 @@ export default function PageQuestionsFrequentes() {
               href="/demander-acces"
               className="inline-flex rounded-full bg-signal px-8 py-4 text-[15px] font-medium text-white transition-transform hover:scale-[1.03] active:scale-[0.98]"
             >
-              Rejoindre la bêta
+              Essayer gratuitement
             </Link>
             <Link href="/contact" className="inline-flex min-h-11 items-center text-[15px] font-medium text-ink underline decoration-ink/25 underline-offset-8 hover:decoration-ink">
               Nous écrire

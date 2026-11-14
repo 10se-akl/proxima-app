@@ -165,7 +165,7 @@ export default function PageMetier({ params }: { params: { slug: string } }) {
                 : `La page dédiée aux ${minuscule}s est en cours d'écriture. En attendant, voici ce que Compyo demande avant de chiffrer un chantier de ${minuscule}, et à quoi ressemble le devis qui en sort.`}
             </p>
             <Link href="/demander-acces" className={`mt-10 ${CLASSE_CTA}`}>
-              Rejoindre la bêta
+              Essayer gratuitement
             </Link>
           </Reveal>
         </section>

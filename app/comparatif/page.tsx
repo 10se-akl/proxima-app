@@ -164,7 +164,7 @@ function TableauComparatif() {
     },
     {
       nom: "Compyo",
-      pour: "Centralise tout le cycle : message client → devis → facture → rendez-vous → photos → notes vocales, avec un moteur de calcul de prix déterministe validé par l'artisan, adapté à 19 corps de métier.",
+      pour: "Centralise tout le cycle : message client → devis → facture → rendez-vous → photos → notes vocales, avec un moteur de calcul de prix déterministe validé par l'artisan, adapté à 17 métiers du bâtiment et à la rénovation.",
       limite:
         "En bêta gratuite limitée à 20 places, pas encore ouvert au grand public — moins de recul et d'historique de fiabilité qu'un logiciel de facturation établi depuis des années.",
     },

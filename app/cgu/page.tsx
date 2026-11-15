@@ -15,7 +15,7 @@ export default function CguPage() {
   return (
     <LayoutJuridique
       titre="Conditions générales d'utilisation"
-      misAJour="10 août 2026"
+      misAJour="12 novembre 2026"
     >
       <section>
         <h2>1. Objet et champ d&apos;application</h2>

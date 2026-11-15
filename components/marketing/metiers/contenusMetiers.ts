@@ -75,7 +75,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis choisir quand on est plombier ?",
         reponse:
-          "Un logiciel qui suit le vrai rythme d'un plombier : des demandes qui arrivent par SMS ou WhatsApp à toute heure, des dépannages chiffrés sur place et des chantiers plus longs (salle de bains, chauffe-eau). Compyo crée le projet depuis le message du client, range vos photos et vos notes dictées, prépare le devis avec vos propres prix et le fait signer en ligne. Il est en bêta privée gratuite, sur candidature.",
+          "Un logiciel qui suit le vrai rythme d'un plombier : des demandes qui arrivent par SMS ou WhatsApp à toute heure, des dépannages chiffrés sur place et des chantiers plus longs (salle de bains, chauffe-eau). Compyo crée le projet depuis le message du client, range vos photos et vos notes dictées, prépare le devis avec vos propres prix et le fait signer en ligne. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Peut-on faire le devis d'un dépannage directement chez le client ?",
@@ -266,7 +266,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel pour un chauffagiste ?",
         reponse:
-          "Un chauffagiste alterne dépannages urgents, remplacements d'appareils et entretiens annuels. Compyo crée le projet depuis le message du client et repère l'urgence, prépare le devis avec vos prix, fait signer le client en ligne, puis vous rappelle ses entretiens chaque année. Il est en bêta privée gratuite, sur candidature.",
+          "Un chauffagiste alterne dépannages urgents, remplacements d'appareils et entretiens annuels. Compyo crée le projet depuis le message du client et repère l'urgence, prépare le devis avec vos prix, fait signer le client en ligne, puis vous rappelle ses entretiens chaque année. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour le remplacement d'une chaudière ?",
@@ -315,7 +315,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un climaticien ?",
         reponse:
-          "En saison, les visites s'enchaînent et le devis doit partir vite. Compyo range ce que vous dictez et photographiez pendant la visite technique, prépare le devis avec vos prix et le fait signer en ligne ; il garde ensuite le rappel d'entretien de chaque client. Il est en bêta privée gratuite, sur candidature.",
+          "En saison, les visites s'enchaînent et le devis doit partir vite. Compyo range ce que vous dictez et photographiez pendant la visite technique, prépare le devis avec vos prix et le fait signer en ligne ; il garde ensuite le rappel d'entretien de chaque client. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour une installation de climatisation ?",
@@ -359,7 +359,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un maçon ?",
         reponse:
-          "Pour un maçon, le devis doit être découpé, justifié et porter les bonnes mentions. Compyo prépare le devis en lots à partir de vos notes et photos de chantier, avec vos prix, écrit votre assurance décennale et le délai de validité, puis le fait signer en ligne. Il est en bêta privée gratuite, sur candidature.",
+          "Pour un maçon, le devis doit être découpé, justifié et porter les bonnes mentions. Compyo prépare le devis en lots à partir de vos notes et photos de chantier, avec vos prix, écrit votre assurance décennale et le délai de validité, puis le fait signer en ligne. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "L'assurance décennale doit-elle figurer sur le devis ?",
@@ -408,7 +408,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un couvreur ?",
         reponse:
-          "Un couvreur chiffre à partir d'un relevé fait en hauteur, souvent à la hâte. Compyo range ce que vous dictez et photographiez sur le toit, prépare le devis avec vos prix, le fait signer en ligne et émet l'acompte depuis ce devis. Il est en bêta privée gratuite, sur candidature.",
+          "Un couvreur chiffre à partir d'un relevé fait en hauteur, souvent à la hâte. Compyo range ce que vous dictez et photographiez sur le toit, prépare le devis avec vos prix, le fait signer en ligne et émet l'acompte depuis ce devis. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour une réfection de toiture ?",
@@ -452,7 +452,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un charpentier ?",
         reponse:
-          "Compyo prépare le devis d'un charpentier à partir de ce qu'il a vu et photographié sur place : lots clairs, vos prix, assurance décennale et délai de validité écrits sur le document, signature en ligne, puis acompte et facture depuis le devis. Il est en bêta privée gratuite, sur candidature.",
+          "Compyo prépare le devis d'un charpentier à partir de ce qu'il a vu et photographié sur place : lots clairs, vos prix, assurance décennale et délai de validité écrits sur le document, signature en ligne, puis acompte et facture depuis le devis. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour un traitement de charpente ?",
@@ -496,7 +496,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un carreleur ?",
         reponse:
-          "Un carreleur chiffre au mètre carré, avec la dépose, la préparation du support et la coupe. Compyo prépare ces postes avec vos prix à partir du métré que vous dictez, retient vos postes fréquents, et fait signer le devis en ligne. Il est en bêta privée gratuite, sur candidature.",
+          "Un carreleur chiffre au mètre carré, avec la dépose, la préparation du support et la coupe. Compyo prépare ces postes avec vos prix à partir du métré que vous dictez, retient vos postes fréquents, et fait signer le devis en ligne. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour la pose de carrelage ?",
@@ -540,7 +540,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un peintre en bâtiment ?",
         reponse:
-          "Compyo prépare le devis d'un peintre à partir du métré dicté pendant la visite, avec vos prix au mètre carré, le fait signer en ligne, prépare les relances des devis restés sans réponse et facture depuis le devis signé. Il est en bêta privée gratuite, sur candidature.",
+          "Compyo prépare le devis d'un peintre à partir du métré dicté pendant la visite, avec vos prix au mètre carré, le fait signer en ligne, prépare les relances des devis restés sans réponse et facture depuis le devis signé. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour des travaux de peinture ?",
@@ -584,7 +584,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un façadier ?",
         reponse:
-          "Compyo prépare le devis d'un façadier à partir de ses photos et de son relevé : lots clairs (échafaudage, préparation, traitement, finition), vos prix, signature en ligne et acompte depuis le devis ; le planning signale les jours de mauvais temps. Il est en bêta privée gratuite, sur candidature.",
+          "Compyo prépare le devis d'un façadier à partir de ses photos et de son relevé : lots clairs (échafaudage, préparation, traitement, finition), vos prix, signature en ligne et acompte depuis le devis ; le planning signale les jours de mauvais temps. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour un ravalement de façade ?",
@@ -628,7 +628,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un terrassier ?",
         reponse:
-          "Un devis de terrassement dépend des volumes, de l'accès et de l'évacuation des terres. Compyo range ce que vous dictez et photographiez sur le terrain, pose les questions d'accès avant le chiffrage, prépare le devis avec vos prix et signale sur le planning les jours de fortes pluies. Il est en bêta privée gratuite, sur candidature.",
+          "Un devis de terrassement dépend des volumes, de l'accès et de l'évacuation des terres. Compyo range ce que vous dictez et photographiez sur le terrain, pose les questions d'accès avant le chiffrage, prépare le devis avec vos prix et signale sur le planning les jours de fortes pluies. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Que faut-il vérifier avant de chiffrer un terrassement ?",
@@ -672,7 +672,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel pour un paysagiste ?",
         reponse:
-          "Un paysagiste mêle créations chiffrées sur devis et entretiens qui reviennent chaque saison. Compyo range les photos et le métré du terrain, prépare le devis avec vos prix, le fait signer en ligne, relance les devis restés sans réponse et rappelle les entretiens saisonniers de chaque client. Il est en bêta privée gratuite, sur candidature.",
+          "Un paysagiste mêle créations chiffrées sur devis et entretiens qui reviennent chaque saison. Compyo range les photos et le métré du terrain, prépare le devis avec vos prix, le fait signer en ligne, relance les devis restés sans réponse et rappelle les entretiens saisonniers de chaque client. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour des travaux de jardin ?",
@@ -721,7 +721,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel pour un pisciniste ?",
         reponse:
-          "Un pisciniste vit au rythme des saisons : remises en route au printemps, hivernages à l'automne, et des devis de réparation au milieu. Compyo rappelle chaque client à la bonne saison, tient un planning sans double réservation, prépare les devis avec vos prix et les fait signer en ligne. Il est en bêta privée gratuite, sur candidature.",
+          "Un pisciniste vit au rythme des saisons : remises en route au printemps, hivernages à l'automne, et des devis de réparation au milieu. Compyo rappelle chaque client à la bonne saison, tient un planning sans double réservation, prépare les devis avec vos prix et les fait signer en ligne. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour l'entretien d'une piscine ?",
@@ -765,7 +765,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un serrurier ?",
         reponse:
-          "En dépannage, le prix doit être connu du client avant l'intervention. Compyo permet de faire un devis express sur place, de le faire signer sur le téléphone du client, puis de facturer depuis ce devis ; la fiche client garde l'historique. Il est en bêta privée gratuite, sur candidature.",
+          "En dépannage, le prix doit être connu du client avant l'intervention. Compyo permet de faire un devis express sur place, de le faire signer sur le téléphone du client, puis de facturer depuis ce devis ; la fiche client garde l'historique. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Peut-on faire signer un devis sur place, sur le téléphone du client ?",
@@ -809,7 +809,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel de devis pour un vitrier ?",
         reponse:
-          "Compyo prépare le devis d'un vitrier à partir des mesures dictées devant la fenêtre et de la photo prise sur place, avec vos prix ; le client le signe en ligne et la facture se fait depuis ce devis. Il est en bêta privée gratuite, sur candidature.",
+          "Compyo prépare le devis d'un vitrier à partir des mesures dictées devant la fenêtre et de la photo prise sur place, avec vos prix ; le client le signe en ligne et la facture se fait depuis ce devis. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Quel taux de TVA pour un remplacement de vitrage ?",
@@ -853,7 +853,7 @@ export const CONTENUS_METIERS: Record<string, ContenuMetier> = {
       {
         question: "Quel logiciel pour une entreprise de rénovation ?",
         reponse:
-          "Une entreprise de rénovation chiffre des chantiers qui mêlent plusieurs métiers. Compyo prépare des devis en lots avec vos prix, garde tout le dossier du chantier dans un seul projet (messages, notes, photos, devis, signature, factures) et tient un planning sans double réservation. Il est en bêta privée gratuite, sur candidature.",
+          "Une entreprise de rénovation chiffre des chantiers qui mêlent plusieurs métiers. Compyo prépare des devis en lots avec vos prix, garde tout le dossier du chantier dans un seul projet (messages, notes, photos, devis, signature, factures) et tient un planning sans double réservation. Il est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
       },
       {
         question: "Comment présenter un devis de rénovation lisible ?",

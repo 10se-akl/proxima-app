@@ -1109,6 +1109,41 @@ html.site-carnet .font-mono.uppercase:not(.tabular-nums) {
   font-weight: 700;
   color: rgb(181 55 34);
 }
+/* ------------------------------------------------------------
+   Lisibilité du site (15/11/2026) — fiche de marque, docs/marque-site.md.
+   Les pages écrites en septembre (Fonctionnalités, Comment ça marche,
+   métiers, comparatif…) avaient un texte courant de 13 à 14 px en gris à
+   60-70 % : illisible au soleil pour l'artisan de référence. Plutôt que de
+   retoucher 12 pages une à une, on relève ici les tailles et les tons, pour
+   le site seulement (jamais l'application : elle n'a pas « site-carnet »).
+   Exclus : l'en-tête, le pied, l'accueil (.carnet, déjà réglé) et le
+   contenu des faux écrans ([data-maquette]), qui gardent leur échelle.
+   ------------------------------------------------------------ */
+html.site-carnet body :where(.text-sm, .text-\[14px\], .text-\[14\.5px\], .text-\[15px\], .text-\[15\.5px\]):not(:where(header, footer, nav, .carnet, [data-maquette]) *) {
+  font-size: 1.0625rem;
+  line-height: 1.55;
+}
+html.site-carnet body :where(.text-base, .text-\[16px\]):not(:where(header, footer, nav, .carnet, [data-maquette]) *) {
+  font-size: 1.125rem;
+  line-height: 1.55;
+}
+html.site-carnet body :where(.text-xs, .text-\[12px\], .text-\[12\.5px\], .text-\[13px\], .text-\[13\.5px\]):not(:where(header, footer, nav, .carnet, [data-maquette]) *) {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+html.site-carnet body :where(.text-\[9px\], .text-\[10px\], .text-\[10\.5px\], .text-\[11px\]):not(:where(header, footer, nav, .carnet, [data-maquette]) *) {
+  font-size: 0.875rem;
+  line-height: 1.4;
+}
+html.site-carnet body :where(.text-ink\/80, .text-ink\/75, .text-ink\/70, .text-ink\/65, .text-ink\/60, .text-ink\/55, .text-ink\/50):not(:where(.carnet, [data-maquette]) *) {
+  color: rgb(var(--c-steel));
+}
+html.site-carnet body :where(.text-ink\/45, .text-ink\/40, .text-ink\/30):not(:where(.carnet, [data-maquette]) *) {
+  color: rgb(var(--c-contour));
+}
+html.site-carnet body :where(.text-white\/70, .text-white\/60, .text-white\/50, .text-white\/45):not(:where(.carnet, [data-maquette]) *) {
+  color: rgb(255 255 255 / 0.82);
+}
 html.dark.site-carnet body {
   background-image: linear-gradient(rgb(255 255 255 / 0.045) 1px, transparent 1px), linear-gradient(90deg, rgb(255 255 255 / 0.045) 1px, transparent 1px);
 }

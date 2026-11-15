@@ -68,7 +68,9 @@ export function DemoPanel({
         </span>
       ))}
 
-      <div className="relative p-6 sm:p-8">{children}</div>
+      {/* 15/11 — data-maquette : le faux écran garde sa petite échelle (voir
+          « Lisibilité du site » dans app/globals.css). */}
+      <div data-maquette className="relative p-6 sm:p-8">{children}</div>
     </div>
   );
 }

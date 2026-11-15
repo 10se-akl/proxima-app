@@ -250,6 +250,39 @@
   .carnet .capture{flex:1 1 0;max-width:300px}
 }
 
+/* 15/11 — les pages intérieures dans le même carnet (Fonctionnalités…) */
+.carnet .page-tete{padding-block:clamp(28px,6vw,72px) clamp(28px,5vw,56px)}
+.carnet .page-tete .cadre{display:grid;gap:18px;justify-items:start}
+.carnet .page-tete h1{font-size:clamp(2.3rem,8.4vw,4.4rem);max-width:16ch}
+.carnet .page-tete .etiquette{margin-bottom:0}
+.carnet .fonction{padding-block:clamp(44px,8vw,96px)}
+.carnet .fonction-papier{background-color:var(--papier-2)}
+.carnet .fonction-grille{display:grid;gap:clamp(24px,5vw,56px);align-items:center}
+.carnet .fonction-texte{display:grid;gap:14px;align-content:start}
+.carnet .fonction-texte .etiquette{margin-bottom:0}
+.carnet .fonction-texte h2{max-width:18ch}
+.carnet .points{list-style:none;margin:4px 0 0;padding:0;display:grid;gap:10px}
+.carnet .points li{display:grid;grid-template-columns:24px minmax(0,1fr);gap:10px;align-items:start;font-size:1.1rem;line-height:1.45;color:var(--encre)}
+.carnet .points .coche{width:22px;height:22px;margin-top:2px;stroke:var(--ok);stroke-width:3.4}
+.carnet .fonction-visuel{margin:0;justify-self:center;width:min(72%,270px)}
+.carnet .fonction-visuel.large{width:100%;max-width:460px}
+.carnet .capture-large{border-radius:18px;border:1.5px solid var(--trait);background:var(--carte);overflow:hidden;box-shadow:var(--ombre)}
+.carnet .capture-large img{display:block;width:100%;height:auto}
+@media (min-width:900px){
+  .carnet .fonction-grille{grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr)}
+  .carnet .fonction:nth-child(even) .fonction-texte{order:2}
+  .carnet .fonction-visuel{width:min(100%,290px)}
+}
+.carnet .aussi{margin:0;display:grid;gap:0;border-top:1.5px solid var(--encre)}
+.carnet .aussi>div{display:grid;gap:4px;padding-block:16px;border-bottom:1.5px solid var(--trait)}
+.carnet .aussi dt{font:740 1.2rem/1.2 var(--f-titre)}
+.carnet .aussi dd{margin:0;color:var(--encre-2);font-size:1.08rem;line-height:1.45}
+@media (min-width:760px){.carnet .aussi{grid-template-columns:1fr 1fr;column-gap:48px}}
+.carnet .pas-encore{list-style:none;margin:0;padding:0;display:grid;gap:10px;max-width:40em}
+.carnet .pas-encore li{position:relative;padding-left:26px;font-size:1.15rem;line-height:1.45}
+.carnet .pas-encore li::before{content:"";position:absolute;left:0;top:.72em;width:14px;height:2.5px;border-radius:2px;background:var(--crayon)}
+.carnet .appel .actions{margin-top:4px}
+
 /* Les idées à voter */
 .carnet .idees{list-style:none;margin:0;padding:0;display:grid;gap:14px}
 .carnet .idee{display:grid;gap:14px;background:var(--carte);border:2px dashed var(--encre-3);border-radius:var(--rayon);padding:18px 20px}

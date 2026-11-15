@@ -93,7 +93,7 @@ export default function LoginPage() {
             href="/demander-acces"
             className="text-ink font-medium underline decoration-ink/30 underline-offset-2 transition-colors hover:text-signal hover:decoration-signal/50"
           >
-            Demander l&apos;accès à la bêta
+            Créer mon compte gratuit
           </Link>
         </p>
       </Card>

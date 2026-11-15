@@ -70,7 +70,7 @@ const FAQ = [
   {
     question: "Existe-t-il un assistant IA pour les artisans du bâtiment ?",
     reponse:
-      "Oui. Compyo est un assistant administratif conçu pour les artisans du bâtiment en France. À partir du message d'un client, d'une note dictée sur le chantier ou d'une photo, il crée le projet, range les informations, prépare le devis avec les prix de l'artisan, suit la signature en ligne, puis la facture et les relances. L'IA propose ; l'artisan valide tout ce qui part chez le client, et les prix viennent d'un calcul fixe, jamais d'une estimation de l'IA. Compyo est en bêta privée gratuite, sur candidature.",
+      "Oui. Compyo est un assistant administratif conçu pour les artisans du bâtiment en France. À partir du message d'un client, d'une note dictée sur le chantier ou d'une photo, il crée le projet, range les informations, prépare le devis avec les prix de l'artisan, suit la signature en ligne, puis la facture et les relances. L'IA propose ; l'artisan valide tout ce qui part chez le client, et les prix viennent d'un calcul fixe, jamais d'une estimation de l'IA. Compyo est en bêta gratuite : 20 places, et le compte s'ouvre dès l'inscription.",
   },
   {
     question: "Compyo convient-il à tous les métiers du bâtiment ?",
